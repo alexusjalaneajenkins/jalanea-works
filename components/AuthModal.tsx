@@ -180,6 +180,7 @@ interface EducationEntry {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode, onComplete }) => {
+    const { loginWithGoogle, signup, login } = useAuth();
     const [currentView, setCurrentView] = useState(VIEWS.LOGIN);
     const [carouselIndex, setCarouselIndex] = useState(0);
 
@@ -335,11 +336,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
         }
     };
 
-    const handleGoogleAuth = () => {
-        if (currentView === VIEWS.LOGIN) {
+    const handleGoogleAuth = async () => {
+        try {
+            await loginWithGoogle();
             onComplete();
-        } else {
-            setCurrentView(VIEWS.WIZARD_BASICS);
+        } catch (error) {
+            console.error("Google Sign-In failed", error);
         }
     };
 
