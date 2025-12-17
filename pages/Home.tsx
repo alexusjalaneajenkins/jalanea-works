@@ -131,8 +131,8 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
       {isMissionOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-jalanea-950/90 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setIsMissionOpen(false)} />
-          {/* INCREASED WIDTH TO max-w-6xl */}
-          <Card variant="glass-dark" className="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 border-white/10 shadow-2xl bg-jalanea-900">
+          {/* INCREASED WIDTH TO max-w-7xl */}
+          <Card variant="glass-dark" className="relative w-full max-w-7xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 border-white/10 shadow-2xl bg-jalanea-900">
             <button onClick={() => setIsMissionOpen(false)} className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors z-50">
               <X size={24} />
             </button>
@@ -282,7 +282,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
 
       {/* Navbar - Glass Effect */}
       <header className="fixed w-full z-40 bg-jalanea-950/90 backdrop-blur-md border-b border-white/10 transition-colors duration-300">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center gap-2 font-display font-bold text-2xl tracking-tighter text-white">
             <div className="w-8 h-8 rounded-lg bg-gold-sheen flex items-center justify-center text-jalanea-950">
               <Zap size={18} fill="currentColor" />
@@ -304,14 +304,13 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
       </header>
 
       {/* Hero Section */}
-      {/* REDUCED PADDING AND HEIGHT: pt-20 to allow nav space, min-h-screen to center content vertically */}
-      <section className="relative min-h-screen flex items-center pt-20 pb-12 bg-jalanea-900 overflow-hidden">
+      <section className="relative min-h-screen flex items-center pt-32 pb-12 bg-jalanea-900 overflow-hidden">
         {/* Background Mesh Gradients - Slate & Gold */}
         <div className="absolute inset-0 bg-premium-gradient"></div>
         <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-jalanea-800/60 rounded-full blur-[100px] mix-blend-overlay"></div>
         <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-gold/5 rounded-full blur-[100px] mix-blend-overlay"></div>
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
           {/* REDUCED GRID GAP from 12 to 6 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 items-center">
 
@@ -330,25 +329,28 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                 Our goal is simple: <span className="text-white font-bold">3 quality applications per day.</span> Let our AI turn your Valencia credentials into a direct pipeline to the life you deserve.
               </p>
 
-              {/* Updated Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 pt-2">
-                <Button size="lg" onClick={() => openAuth('signup')} variant="primary" icon={<Zap size={18} />}>
-                  Match My Credentials
+              {/* CTA Buttons - ALIGNED IN ONE ROW */}
+              <div className="flex flex-row items-center gap-4 pt-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
+                <Button
+                  onClick={() => {
+                    const element = document.getElementById('career-map');
+                    element?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  variant="primary"
+                  size="lg"
+                  className="bg-gold hover:bg-gold-light text-jalanea-950 font-bold border-none shadow-[0_0_20px_rgba(255,196,37,0.3)] hover:shadow-[0_0_30px_rgba(255,196,37,0.5)] transform hover:-translate-y-1 transition-all h-14 px-8 text-lg"
+                >
+                  <Zap className="mr-2 fill-current" size={20} /> Match My Credentials
                 </Button>
-                <Button size="lg" variant="glass-light" className="text-white hover:bg-white/10 hover:text-gold transition-colors" icon={<HomeIcon size={18} />} onClick={() => setIsMissionOpen(true)}>
-                  Our Mission: Alumni Housing
-                </Button>
-              </div>
 
-              <div className="flex items-center gap-6 text-sm font-medium text-jalanea-300/80 pt-2">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="text-gold" size={18} />
-                  <span>Verified Orlando Employers</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Globe className="text-gold" size={18} />
-                  <span>Alumni Network</span>
-                </div>
+                <Button
+                  onClick={() => setIsMissionOpen(true)}
+                  variant="outline"
+                  size="lg"
+                  className="border-white/20 hover:bg-white/10 hover:border-white/40 text-white h-14 px-8 text-lg backdrop-blur-sm"
+                >
+                  <HomeIcon className="mr-2" size={20} /> Our Mission: Alumni Housing
+                </Button>
               </div>
             </div>
 
@@ -482,7 +484,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
       <section className="py-24 relative overflow-hidden bg-jalanea-50">
         <div className="absolute inset-0 bg-subtle-mesh opacity-50"></div>
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-5xl font-display font-bold text-jalanea-900 mb-6 tracking-tight">From Graduation to <span className="text-transparent bg-clip-text bg-premium-gradient">Stability.</span></h2>
             <p className="text-xl text-jalanea-700/80 leading-relaxed">
@@ -537,7 +539,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
 
       {/* Footer */}
       <footer className="bg-jalanea-950 text-white py-20 border-t border-white/5">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-start gap-12">
             <div>
               <div className="flex items-center gap-2 font-display font-bold text-2xl tracking-tighter mb-6">
