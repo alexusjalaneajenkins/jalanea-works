@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="https://lucide.dev/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jalanea Works | Intelligent Career Launchpad</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              display: ['Space Grotesk', 'sans-serif'],
+            },
+            colors: {
+              gold: {
+                DEFAULT: '#FFC425', // Valencia Gold - Vibrant
+                light: '#FFD768',
+                dark: '#B38600',
+                dim: '#4A3700', 
+              },
+              red: {
+                 DEFAULT: '#BE1E2D', // Valencia Red (Accents only)
+                 dim: 'rgba(190, 30, 45, 0.1)',
+              },
+              jalanea: {
+                950: '#020617', // Rich Black/Slate
+                900: '#0f172a', // Deep Slate (Primary Brand)
+                800: '#1e293b', // Gunmetal
+                700: '#334155',
+                600: '#475569',
+                500: '#64748b', 
+                400: '#94a3b8',
+                300: '#cbd5e1',
+                200: '#e2e8f0',
+                100: '#f1f5f9', // Light Gray-Blue
+                50: '#f8fafc', // Very light Slate
+                
+                // Functional
+                glass: 'rgba(255, 255, 255, 0.1)',
+                glassBorder: 'rgba(255, 255, 255, 0.2)',
+                glassDark: 'rgba(15, 23, 42, 0.7)',
+              }
+            },
+            backgroundImage: {
+              'premium-gradient': 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', // Slate Gradient
+              'gold-sheen': 'linear-gradient(135deg, #FFC425 0%, #FFD768 100%)',
+              'gold-flow': 'linear-gradient(90deg, #FFC425 0%, #FFD768 25%, #FFFFFF 50%, #FFD768 75%, #FFC425 100%)',
+              'subtle-mesh': 'radial-gradient(at 0% 0%, rgba(15, 23, 42, 0.03) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(255, 196, 37, 0.05) 0px, transparent 50%)',
+            },
+            backgroundSize: {
+              '200%': '200% auto',
+            },
+            keyframes: {
+              'flow': {
+                '0%': { backgroundPosition: '0% 50%' },
+                '100%': { backgroundPosition: '200% 50%' },
+              }
+            },
+            animation: {
+              'text-flow': 'flow 3s linear infinite',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        background-color: #f8fafc;
+        color: #0f172a;
+      }
+      
+      /* Glassmorphism Utilities */
+      .glass-panel {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      }
+
+      .glass-panel-dark {
+        background: rgba(15, 23, 42, 0.75);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+      }
+
+      /* Focus Utilities */
+      .focus-ring {
+        transition: all 0.2s ease;
+      }
+      .focus-ring:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 4px rgba(255, 196, 37, 0.4);
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
+    "react": "https://aistudiocdn.com/react@^19.2.1",
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.31.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.556.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="font-sans antialiased selection:bg-gold-light selection:text-jalanea-900 bg-subtle-mesh min-h-screen">
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
