@@ -180,7 +180,7 @@ interface EducationEntry {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode, onComplete }) => {
-    const { loginWithGoogle, signup, login } = useAuth();
+    const { loginWithGoogle, signup, login, saveUserProfile } = useAuth();
     const [currentView, setCurrentView] = useState(VIEWS.LOGIN);
     const [carouselIndex, setCarouselIndex] = useState(0);
 
@@ -365,6 +365,40 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
             onComplete();
         } else {
             setCurrentView(VIEWS.WIZARD_BASICS);
+        }
+    };
+
+    const handleFinalSubmit = async () => {
+        const profileData = {
+            fullName,
+            photoURL: profilePic,
+            location,
+            linkedinUrl,
+            portfolioUrl,
+            education: educationList,
+            experience: experiences,
+            preferences: {
+                targetRoles,
+                workStyles,
+                learningStyle,
+                salary,
+                transportMode
+            },
+            logistics: {
+                isParent,
+                childCount: isParent ? childCount : 0,
+                employmentStatus
+            },
+            onboardingCompleted: true,
+            updatedAt: new Date().toISOString()
+        };
+
+        try {
+            await saveUserProfile(profileData);
+            onComplete();
+        } catch (error) {
+            console.error("Failed to save profile", error);
+            // Optionally show error state to user
         }
     };
 
@@ -877,7 +911,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
             <WizardLayout
                 title="Lifestyle & Commute."
                 prevStep={() => setCurrentView(VIEWS.WIZARD_LOGISTICS)}
-                nextStep={onComplete}
+                nextStep={handleFinalSubmit}
                 isLast
                 currentView={currentView}
             >

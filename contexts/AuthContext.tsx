@@ -11,7 +11,8 @@ import {
     AuthError,
     UserCredential
 } from 'firebase/auth';
-import { auth } from '../services/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../services/firebase';
 
 interface AuthContextType {
     currentUser: User | null;
@@ -20,6 +21,7 @@ interface AuthContextType {
     login: (email: string, password: string) => Promise<void>;
     loginWithGoogle: () => Promise<UserCredential>;
     logout: () => Promise<void>;
+    saveUserProfile: (data: any) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -71,13 +73,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await signOut(auth);
     };
 
+    const saveUserProfile = async (data: any) => {
+        if (!auth.currentUser) return;
+        try {
+            await setDoc(doc(db, "users", auth.currentUser.uid), data, { merge: true });
+        } catch (error) {
+            console.error("Error saving user profile:", error);
+            throw error;
+        }
+    };
+
     const value = {
         currentUser,
         loading,
         signup,
         login,
         loginWithGoogle,
-        logout
+        logout,
+        saveUserProfile
     };
 
     return (
