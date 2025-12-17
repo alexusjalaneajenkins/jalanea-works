@@ -12,7 +12,7 @@ export interface Job {
   description?: string; // Added for resume tailoring context
   experienceLevel: 'Entry Level' | 'Internship' | 'Associate' | 'Mid-Senior';
   bulletPoints?: string[]; // Added for scannable descriptions
-  
+
   // Extended UI Fields
   matchReason?: string;
   timeToApply?: string;
@@ -24,7 +24,7 @@ export interface Job {
   locationType?: 'Remote' | 'On-site' | 'Hybrid';
   experienceYears?: string;
   logo?: string;
-  
+
   // The AI "Mission Briefing" Data
   analysis?: JobAnalysis;
 }
@@ -34,20 +34,20 @@ export interface JobAnalysis {
   idealCandidateProfile: string;
   candidateExpectations: string;
   interviewProcess: string[];
-  
+
   // Enhanced Hiring Team
-  hiringTeamTargets: Array<{ 
-    role: string; 
+  hiringTeamTargets: Array<{
+    role: string;
     reason: string;
   }>;
-  
+
   // Enhanced Portfolio
-  portfolioAdvice: Array<{ 
-    title: string; 
-    description: string; 
-    action: string; 
+  portfolioAdvice: Array<{
+    title: string;
+    description: string;
+    action: string;
   }>;
-  
+
   actionPlan: {
     research: string;
     synthesis: string;
@@ -104,6 +104,7 @@ export type EmploymentStatus = 'Unemployed' | 'Full-time' | 'Part-time' | 'Multi
 export interface UserProfile {
   name: string;
   email: string;
+  photoURL?: string;
   phone?: string;
   location?: string;
   education: Education[];
@@ -114,11 +115,11 @@ export interface UserProfile {
     soft: string[];
   };
   certifications: Certification[];
-  
+
   // Preferences
   learningStyle: LearningStyle[]; // Changed to array
   transportMode: TransportMode[]; // Changed to array
-  
+
   // Logistics & Lifestyle
   isParent: boolean;
   childCount?: number;

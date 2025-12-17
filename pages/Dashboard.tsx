@@ -237,8 +237,17 @@ export const Dashboard: React.FC = () => {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-display font-bold text-jalanea-900">Dashboard</h1>
-                    <p className="text-jalanea-600 mt-2 text-lg">
+                    <div className="flex items-center gap-3 mb-2">
+                        {currentUser?.photoURL && (
+                            <img
+                                src={currentUser.photoURL}
+                                alt={currentUser.displayName || 'Profile'}
+                                className="w-10 h-10 rounded-full border-2 border-white shadow-sm"
+                            />
+                        )}
+                        <h1 className="text-3xl font-display font-bold text-jalanea-900">Dashboard</h1>
+                    </div>
+                    <p className="text-jalanea-600 text-lg">
                         Welcome back, <span className="font-bold text-jalanea-900">{currentUser?.displayName || 'Friend'}</span>. Your profile is ready.
                     </p>
                 </div>

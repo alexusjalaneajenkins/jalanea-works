@@ -16,7 +16,7 @@ import { FeedbackModal } from './components/FeedbackModal';
 import { NavRoute } from './types';
 import { Menu, Loader } from 'lucide-react';
 
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser, loading } = useAuth();
 
   if (loading) {
@@ -92,7 +92,7 @@ const AppLayout: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <BrowserRouter basename="/jalanea-works">
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Home setRoute={() => { }} />} />

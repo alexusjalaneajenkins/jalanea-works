@@ -3,38 +3,38 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { UserProfile, JobAnalysis, Job } from "../types";
 
 // Initialize Gemini AI
-const apiKey = (typeof process !== 'undefined' && process.env && process.env.API_KEY) || '';
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
 const ai = new GoogleGenAI({ apiKey });
 
 export const getCareerAdvice = async (userQuery: string): Promise<string> => {
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: userQuery,
-      config: {
-        systemInstruction: "You are an expert career coach for Jalanea Works. Your goal is to help entry-level and transitioning professionals. Be empowering, concise, and strategic. Focus on actionable advice.",
-      },
-    });
-    return response.text || "I couldn't generate a response at this time.";
-  } catch (error) {
-    console.error("Gemini API Error:", error);
-    return "I'm having trouble connecting to the career intelligence network right now. Please try again later.";
-  }
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: userQuery,
+            config: {
+                systemInstruction: "You are an expert career coach for Jalanea Works. Your goal is to help entry-level and transitioning professionals. Be empowering, concise, and strategic. Focus on actionable advice.",
+            },
+        });
+        return response.text || "I couldn't generate a response at this time.";
+    } catch (error) {
+        console.error("Gemini API Error:", error);
+        return "I'm having trouble connecting to the career intelligence network right now. Please try again later.";
+    }
 };
 
 export const analyzeJobMatch = async (resumeText: string, jobDescription: string): Promise<string> => {
-  try {
-    const prompt = `Analyze the fit between this resume and job description. Provide a match score (0-100) and 3 key missing skills.\n\nResume: ${resumeText}\n\nJob: ${jobDescription}`;
-    
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-    });
-    return response.text || "Analysis failed.";
-  } catch (error) {
-    console.error("Gemini API Error:", error);
-    return "Could not analyze job match.";
-  }
+    try {
+        const prompt = `Analyze the fit between this resume and job description. Provide a match score (0-100) and 3 key missing skills.\n\nResume: ${resumeText}\n\nJob: ${jobDescription}`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
+        return response.text || "Analysis failed.";
+    } catch (error) {
+        console.error("Gemini API Error:", error);
+        return "Could not analyze job match.";
+    }
 };
 
 export const getFollowUpStrategy = async (company: string, daysSinceApplied: number): Promise<string> => {
@@ -47,12 +47,12 @@ export const getFollowUpStrategy = async (company: string, daysSinceApplied: num
 export const generateResume = async (type: string, userProfile: UserProfile, jobDescription: string): Promise<string> => {
     try {
         const educationString = userProfile.education
-          .map(e => `${e.degree} from ${e.school} (${e.year}) - GPA: ${e.gpa || 'N/A'}`)
-          .join('\n');
+            .map(e => `${e.degree} from ${e.school} (${e.year}) - GPA: ${e.gpa || 'N/A'}`)
+            .join('\n');
 
         const experienceString = userProfile.experience
-          .map(e => `Role: ${e.role} at ${e.company} (${e.duration})\nDetails:\n${e.description.map(d => `- ${d}`).join('\n')}`)
-          .join('\n\n');
+            .map(e => `Role: ${e.role} at ${e.company} (${e.duration})\nDetails:\n${e.description.map(d => `- ${d}`).join('\n')}`)
+            .join('\n\n');
 
         const skillsString = `
           Technical: ${userProfile.skills.technical.join(', ')}
@@ -61,8 +61,8 @@ export const generateResume = async (type: string, userProfile: UserProfile, job
         `;
 
         const certsString = userProfile.certifications
-          .map(c => `${c.name} (${c.issuer})`)
-          .join(', ');
+            .map(c => `${c.name} (${c.issuer})`)
+            .join(', ');
 
         const prompt = `
             Act as an expert Resume Writer for Valencia College Alumni.
@@ -155,29 +155,29 @@ export const recommendResumeStrategy = async (userProfile: UserProfile, jobDescr
 };
 
 export const suggestRolesForDegree = async (degree: string): Promise<string[]> => {
-  try {
-    const prompt = `List 4 specific entry-level job titles suitable for someone with a "${degree}" degree in the current Orlando, FL job market. Return ONLY a JSON array of strings.`;
-    
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          items: { type: Type.STRING }
+    try {
+        const prompt = `List 4 specific entry-level job titles suitable for someone with a "${degree}" degree in the current Orlando, FL job market. Return ONLY a JSON array of strings.`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING }
+                }
+            }
+        });
+
+        if (response.text) {
+            return JSON.parse(response.text);
         }
-      }
-    });
-    
-    if (response.text) {
-        return JSON.parse(response.text);
+        return [];
+    } catch (error) {
+        console.error("Gemini Role Suggestion Error:", error);
+        return ["Entry Level Associate", "Junior Specialist", "Trainee"];
     }
-    return [];
-  } catch (error) {
-    console.error("Gemini Role Suggestion Error:", error);
-    return ["Entry Level Associate", "Junior Specialist", "Trainee"];
-  }
 };
 
 // NEW: Real-Time Job Search Simulation
@@ -185,7 +185,7 @@ export const findRealTimeJobs = async (userProfile: UserProfile): Promise<Job[]>
     try {
         const degrees = userProfile.education.map(e => e.degree).join(", ");
         const skills = userProfile.skills.technical.join(", ");
-        
+
         const prompt = `
             Act as a Real-Time Job Scraper for Orlando, FL.
             Find 3 currently active (or highly realistic based on current market data) job listings for a candidate with these credentials:
@@ -281,26 +281,26 @@ export const generateJobIntel = async (jobTitle: string, company: string, descri
                         idealCandidateProfile: { type: Type.STRING },
                         candidateExpectations: { type: Type.STRING },
                         interviewProcess: { type: Type.ARRAY, items: { type: Type.STRING } },
-                        hiringTeamTargets: { 
-                            type: Type.ARRAY, 
-                            items: { 
+                        hiringTeamTargets: {
+                            type: Type.ARRAY,
+                            items: {
                                 type: Type.OBJECT,
                                 properties: {
                                     role: { type: Type.STRING },
                                     reason: { type: Type.STRING }
                                 }
-                            } 
+                            }
                         },
-                        portfolioAdvice: { 
-                            type: Type.ARRAY, 
-                            items: { 
+                        portfolioAdvice: {
+                            type: Type.ARRAY,
+                            items: {
                                 type: Type.OBJECT,
                                 properties: {
                                     title: { type: Type.STRING },
                                     description: { type: Type.STRING },
                                     action: { type: Type.STRING }
                                 }
-                            } 
+                            }
                         },
                         actionPlan: {
                             type: Type.OBJECT,
@@ -373,7 +373,7 @@ export interface WellnessInsight {
 export const generateWellnessInsights = async (schedule: any[], userProfile: UserProfile): Promise<WellnessInsight | null> => {
     try {
         const scheduleSummary = schedule.map(s => `${s.title} (${s.type}): ${s.startTime} to ${s.endTime}`).join(", ");
-        
+
         const prompt = `
             Act as a Performance Recovery Coach. Analyze this user's daily schedule and profile.
             
@@ -482,7 +482,7 @@ export const generateScheduleSuggestions = async (schedule: any[]): Promise<Sche
                 }
             }
         });
-        
+
         if (response.text) return JSON.parse(response.text);
         return [];
     } catch (e) {

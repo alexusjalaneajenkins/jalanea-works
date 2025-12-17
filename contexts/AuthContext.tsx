@@ -3,6 +3,8 @@ import {
     User,
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
+    signInWithPopup,
+    GoogleAuthProvider,
     signOut,
     onAuthStateChanged,
     updateProfile,
@@ -15,6 +17,7 @@ interface AuthContextType {
     loading: boolean;
     signup: (email: string, password: string, name: string) => Promise<void>;
     login: (email: string, password: string) => Promise<void>;
+    loginWithGoogle: () => Promise<void>;
     logout: () => Promise<void>;
 }
 
@@ -48,8 +51,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await updateProfile(userCredential.user, {
                 displayName: name
             });
-            // Force reload user to get the display name update locally if needed, 
-            // though onAuthStateChanged usually picks it up or we can rely on userCredential.user.
         } catch (error) {
             console.error("Signup Error", error);
             throw error;
@@ -58,6 +59,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const login = async (email: string, password: string) => {
         await signInWithEmailAndPassword(auth, email, password);
+    };
+
+    const loginWithGoogle = async () => {
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
     };
 
     const logout = async () => {
@@ -69,6 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         signup,
         login,
+        loginWithGoogle,
         logout
     };
 

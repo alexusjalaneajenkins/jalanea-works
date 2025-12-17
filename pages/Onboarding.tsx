@@ -89,6 +89,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
       const profile: UserProfile = {
          name: basics.name,
          email: currentUser.email || '',
+         photoURL: currentUser.photoURL || '',
          location: basics.location,
          education: [{
             school: education.school,
