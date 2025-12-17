@@ -217,6 +217,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
     const [learningStyle, setLearningStyle] = useState<LearningStyle[]>(['Video']);
     const [transportMode, setTransportMode] = useState<TransportMode[]>(['Car']);
 
+    // --- Profile State (New) ---
+    const [fullName, setFullName] = useState('');
+    const [location, setLocation] = useState('');
+    const [linkedinUrl, setLinkedinUrl] = useState('');
+    const [portfolioUrl, setPortfolioUrl] = useState('');
+    const [profilePic, setProfilePic] = useState<string | null>(null);
+
     // --- Logic Helpers ---
 
     // Housing Tier Logic
@@ -338,8 +345,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
 
     const handleGoogleAuth = async () => {
         try {
-            await loginWithGoogle();
-            onComplete();
+            const result = await loginWithGoogle();
+            const user = result.user;
+
+            // Extract Google Profile Data
+            if (user.displayName) setFullName(user.displayName);
+            if (user.photoURL) setProfilePic(user.photoURL);
+
+            // Move to Wizard instead of closing immediately
+            // This allows the user to confirm/add location, linkedin, etc.
+            setCurrentView(VIEWS.WIZARD_BASICS);
         } catch (error) {
             console.error("Google Sign-In failed", error);
         }
@@ -497,7 +512,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
             <div className="flex justify-center mb-6">
                 <div className="relative group">
                     <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-jalanea-500 group-hover:border-gold group-hover:text-gold transition-all overflow-hidden cursor-pointer">
-                        <User size={40} />
+                        {profilePic ? (
+                            <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                            <User size={40} />
+                        )}
                     </div>
                     {/* Camera Button */}
                     <button className="absolute bottom-0 right-0 p-2 bg-gold text-jalanea-950 rounded-full shadow-lg hover:bg-gold-light hover:scale-105 transition-all">
@@ -505,10 +524,33 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                     </button>
                 </div>
             </div>
-            <Input variant="dark-glass" placeholder="Full Name" />
-            <Input variant="dark-glass" placeholder="Location (e.g. Orlando, FL)" icon={<MapPin size={16} />} />
-            <Input variant="dark-glass" placeholder="LinkedIn URL" icon={<Linkedin size={16} />} />
-            <Input variant="dark-glass" placeholder="Portfolio URL (Optional)" icon={<Globe size={16} />} />
+            <Input
+                variant="dark-glass"
+                placeholder="Full Name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+            />
+            <Input
+                variant="dark-glass"
+                placeholder="Location (e.g. Orlando, FL)"
+                icon={<MapPin size={16} />}
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+            />
+            <Input
+                variant="dark-glass"
+                placeholder="LinkedIn URL"
+                icon={<Linkedin size={16} />}
+                value={linkedinUrl}
+                onChange={(e) => setLinkedinUrl(e.target.value)}
+            />
+            <Input
+                variant="dark-glass"
+                placeholder="Portfolio URL (Optional)"
+                icon={<Globe size={16} />}
+                value={portfolioUrl}
+                onChange={(e) => setPortfolioUrl(e.target.value)}
+            />
         </WizardLayout>
     );
 

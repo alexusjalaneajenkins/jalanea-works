@@ -8,7 +8,8 @@ import {
     signOut,
     onAuthStateChanged,
     updateProfile,
-    AuthError
+    AuthError,
+    UserCredential
 } from 'firebase/auth';
 import { auth } from '../services/firebase';
 
@@ -17,7 +18,7 @@ interface AuthContextType {
     loading: boolean;
     signup: (email: string, password: string, name: string) => Promise<void>;
     login: (email: string, password: string) => Promise<void>;
-    loginWithGoogle: () => Promise<void>;
+    loginWithGoogle: () => Promise<UserCredential>;
     logout: () => Promise<void>;
 }
 
@@ -63,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const loginWithGoogle = async () => {
         const provider = new GoogleAuthProvider();
-        await signInWithPopup(auth, provider);
+        return await signInWithPopup(auth, provider);
     };
 
     const logout = async () => {
