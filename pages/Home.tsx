@@ -337,19 +337,17 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                     element?.scrollIntoView({ behavior: 'smooth' });
                   }}
                   variant="primary"
-                  size="lg"
-                  className="bg-gold hover:bg-gold-light text-jalanea-950 font-bold border-none shadow-[0_0_20px_rgba(255,196,37,0.3)] hover:shadow-[0_0_30px_rgba(255,196,37,0.5)] transform hover:-translate-y-1 transition-all h-14 px-8 text-lg"
+                  className="bg-gold hover:bg-gold-light text-jalanea-950 font-bold border-none shadow-[0_0_20px_rgba(255,196,37,0.3)] hover:shadow-[0_0_30px_rgba(255,196,37,0.5)] transform hover:-translate-y-1 transition-all whitespace-nowrap"
                 >
-                  <Zap className="mr-2 fill-current" size={20} /> Match My Credentials
+                  <Zap className="mr-2 fill-current" size={18} /> Match My Credentials
                 </Button>
 
                 <Button
                   onClick={() => setIsMissionOpen(true)}
                   variant="outline"
-                  size="lg"
-                  className="border-white/20 hover:bg-white/10 hover:border-white/40 text-white h-14 px-8 text-lg backdrop-blur-sm"
+                  className="border-white/20 hover:bg-white/10 hover:border-white/40 text-white backdrop-blur-sm whitespace-nowrap"
                 >
-                  <HomeIcon className="mr-2" size={20} /> Our Mission: Alumni Housing
+                  <HomeIcon className="mr-2" size={18} /> Our Mission: Alumni Housing
                 </Button>
               </div>
             </div>
