@@ -400,7 +400,7 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                                                 {job.location}
                                             </div>
                                             <span className="hidden md:inline text-jalanea-300">•</span>
-                                            <CommuteBadge options={calculateCommute(job.location, MOCK_PROFILE.transportMode)} />
+                                            <CommuteBadge options={calculateCommute(job.location, MOCK_PROFILE.preferences.transportMode as TransportMode[])} />
                                         </div>
                                     </div>
                                 </div>
