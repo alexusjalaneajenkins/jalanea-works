@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Home } from './pages/Home';
 import { Dashboard } from './pages/Dashboard';
@@ -38,6 +38,7 @@ const AppLayout: React.FC = () => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const getNavRoute = (path: string): NavRoute => {
     if (path.includes('dashboard')) return NavRoute.DASHBOARD;
@@ -48,13 +49,39 @@ const AppLayout: React.FC = () => {
     return NavRoute.HOME; // Fallback
   };
 
+  const handleSetRoute = (route: NavRoute) => {
+    if (route === NavRoute.HOME) {
+      if (currentUser) {
+        navigate('/dashboard');
+      } else {
+        navigate('/');
+      }
+    } else if (route === NavRoute.DASHBOARD) {
+      navigate('/dashboard');
+    } else if (route === NavRoute.JOBS) {
+      navigate('/jobs');
+    } else if (route === NavRoute.RESUME) {
+      navigate('/resume');
+    } else if (route === NavRoute.SCHEDULE) {
+      navigate('/schedule');
+    } else if (route === NavRoute.PROFILE) {
+      navigate('/profile');
+    } else if (route === NavRoute.ONBOARDING) {
+      navigate('/onboarding');
+    } else {
+      // Fallback
+      navigate(`/${route}`);
+    }
+  };
+
   const currentRoute = getNavRoute(location.pathname);
+  const { currentUser } = useAuth(); // Need currentUser for Home redirection logic
 
   return (
     <div className="flex h-screen bg-jalanea-50 overflow-hidden">
       <Sidebar
         currentRoute={currentRoute}
-        setRoute={() => { }}
+        setRoute={handleSetRoute}
         isMobileOpen={isMobileOpen}
         setIsMobileOpen={setIsMobileOpen}
         onOpenFeedback={() => setIsFeedbackOpen(true)}
@@ -73,9 +100,9 @@ const AppLayout: React.FC = () => {
           <div className="max-w-7xl mx-auto">
             <Routes>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/onboarding" element={<Onboarding setRoute={() => { }} />} />
+              <Route path="/onboarding" element={<Onboarding setRoute={handleSetRoute} />} />
               <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/jobs" element={<Jobs setRoute={() => { }} />} />
+              <Route path="/jobs" element={<Jobs setRoute={handleSetRoute} />} />
               <Route path="/resume" element={<ResumeBuilder />} />
               <Route path="/schedule" element={<Schedule />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />

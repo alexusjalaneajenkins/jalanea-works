@@ -149,7 +149,7 @@ export const Dashboard: React.FC = () => {
     const displayedJobs = showAllJobs ? jobs : jobs.slice(0, 5); // Show up to 5 items
 
     // Logic for Smart Schedule
-    const isBusy = MOCK_PROFILE.isParent || MOCK_PROFILE.employmentStatus === 'Multiple Jobs' || MOCK_PROFILE.employmentStatus === 'Full-time';
+    const isBusy = MOCK_PROFILE.logistics.isParent || MOCK_PROFILE.logistics.employmentStatus === 'Multiple Jobs' || MOCK_PROFILE.logistics.employmentStatus === 'Full-time';
     const scheduleType = isBusy ? 'Micro-Tasks' : 'Deep Work';
 
     return (

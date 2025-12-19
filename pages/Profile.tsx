@@ -31,18 +31,19 @@ export const MOCK_PROFILE: any = { // Typed as any temporarily to allow flexibil
     { name: "Graphics Interactive Design", issuer: "Valencia College" }
   ],
 
-  // Flattened preferences
-  targetRoles: [],
-  workStyles: [],
-  learningStyle: ['Video', 'Reading'],
-  salary: 45000,
-  transportMode: ['Car', 'Uber'],
-
-  // Flattened logistics
-  isParent: false,
-  childCount: 0,
-  employmentStatus: 'Part-time',
-
+  // Nested to match UserProfile
+  preferences: {
+    targetRoles: [],
+    workStyles: [],
+    learningStyle: ['Video', 'Reading'],
+    salary: 45000,
+    transportMode: ['Car', 'Uber'],
+  },
+  logistics: {
+    isParent: false,
+    childCount: 0,
+    employmentStatus: 'Part-time',
+  },
   onboardingCompleted: true,
   updatedAt: new Date().toISOString()
 };

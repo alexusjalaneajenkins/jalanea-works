@@ -161,18 +161,18 @@ export interface UserProfile {
     date?: string;
   }>;
 
-  // Flattened Preferences (moved from nested object)
-  targetRoles: string[];
-  workStyles: WorkStyle[];
-  learningStyle: LearningStyle | string[];
-  salary: number;
-  transportMode: TransportMode | string[];
-
-  // Flattened Logistics (moved from nested object)
-  isParent: boolean;
-  childCount?: number;
-  employmentStatus: EmploymentStatus;
-
+  preferences: {
+    targetRoles: string[];
+    workStyles: WorkStyle[]; // Note: AuthContext uses string[] but here we try to be specific
+    learningStyle: LearningStyle | string[]; // Allow array for Onboarding compatibility
+    salary: number;
+    transportMode: TransportMode | string[]; // Allow array for Onboarding compatibility
+  };
+  logistics: {
+    isParent: boolean;
+    childCount?: number;
+    employmentStatus: EmploymentStatus;
+  };
   onboardingCompleted: boolean;
   updatedAt: string;
 }
@@ -394,8 +394,8 @@ export interface CommuteResponse {
 export interface ChatMessage {
   id: string;
   text: string;
-  sender?: 'user' | 'ai' | 'model'; // Deprecated in favor of role
-  role: 'user' | 'model'; // Required for AIChat.tsx
+  sender: 'user' | 'ai' | 'model'; // 'model' is used in AIChat.tsx
+  role?: 'user' | 'model'; // Added to match AIChat.tsx usage
   timestamp: Date;
   isTyping?: boolean;
 }
