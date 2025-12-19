@@ -92,7 +92,7 @@ const AppLayout: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <BrowserRouter basename="/jalanea-works">
+      <BrowserRouter>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Home setRoute={() => { }} />} />

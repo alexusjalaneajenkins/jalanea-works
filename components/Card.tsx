@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface CardProps {
@@ -9,19 +8,19 @@ interface CardProps {
   noPadding?: boolean;
 }
 
-export const Card: React.FC<CardProps> = ({ 
-  children, 
-  className = '', 
-  variant = 'glass-light', 
+export const Card: React.FC<CardProps> = ({
+  children,
+  className = '',
+  variant = 'glass-light',
   hoverEffect = false,
   noPadding = false
 }) => {
   const baseStyles = "rounded-2xl transition-all duration-300 relative";
-  
+
   const variants = {
     // Standard Dashboard Card: White glass on light slate background
     'glass-light': "glass-panel text-jalanea-900 bg-white/60",
-    
+
     // Dark Glass: For overlays on dark backgrounds
     'glass-dark': "glass-panel-dark text-white",
 
@@ -35,10 +34,10 @@ export const Card: React.FC<CardProps> = ({
     'gold': "bg-gold text-jalanea-950 border border-gold-dark/10 shadow-lg shadow-gold/20",
   };
 
-  const hoverStyles = hoverEffect 
-    ? "hover:shadow-lg hover:-translate-y-1 hover:border-jalanea-300" 
+  const hoverStyles = hoverEffect
+    ? "hover:shadow-lg hover:-translate-y-1 hover:border-jalanea-300"
     : "";
-    
+
   const padding = noPadding ? "" : "p-6 md:p-8";
 
   return (

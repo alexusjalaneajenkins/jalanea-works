@@ -1,454 +1,466 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { UserProfile, Education, Experience, Certification, LearningStyle, TransportMode } from '../types';
-import { GraduationCap, Briefcase, Award, PenTool, Edit3, Heart, Video, MapPin, Car, Bus, Bike, Footprints, Zap, Save, X, Plus, Trash2, Check, BookOpen } from 'lucide-react';
+import {
+  GraduationCap, Briefcase, Award, PenTool, Edit3, MapPin,
+  Save, X, Plus, Trash2, Loader2, User, Link, Camera
+} from 'lucide-react';
 
-// Mock Profile Data matching the screenshot
-export const MOCK_PROFILE: UserProfile = {
-  name: "Alex Doe",
+// Keep MOCK_PROFILE for backwards compatibility with other pages
+export const MOCK_PROFILE: any = { // Typed as any temporarily to allow flexibility or import UserProfile and cast
+  fullName: "Alex Doe",
   email: "alex.doe@valenciacollege.edu",
   location: "Orlando, FL",
-  learningStyle: ['Video', 'Reading'],
-  transportMode: ['Car', 'Uber'],
-  isParent: false,
-  employmentStatus: 'Part-time',
+  photoURL: "",
+
   education: [
-    {
-      degree: "Bachelor of Applied Science: Computing Technology & Software Development",
-      school: "Valencia College",
-      gpa: "3.93",
-      year: "2024"
-    },
-    {
-      degree: "Associate of Science: Graphic and Interactive Design",
-      school: "Valencia College",
-      gpa: "3.89",
-      year: "2022"
-    },
-    {
-      degree: "Associate of Arts: General Studies",
-      school: "Valencia College",
-      gpa: "3.88",
-      year: "2020"
-    }
+    { degree: "B.A.S. Computing Technology", school: "Valencia College", year: "2024", gpa: "3.93" }
   ],
   experience: [
-    {
-      role: "Junior UI/UX Design Intern",
-      company: "PETE Learning",
-      duration: "Jun 2024 - Aug 2024",
-      description: [
-        "Served as Junior UI/UX Designer to enhance PETE Learning's platforms with a fresh perspective.",
-        "Identified navigation challenges and proposed a new tooltip system to reduce user confusion."
-      ]
-    },
-    {
-      role: "Kid Coordinator (Imagination Station)",
-      company: "Mosaic Church",
-      duration: "Jun 2024 - Aug 2024",
-      description: [
-        "Coordinated 9 rotating activity stations for over 120 children.",
-        "Developed hands-on learning activities."
-      ]
-    }
+    { role: "Junior UI/UX Design Intern", company: "PETE Learning", duration: "Jun 2024 - Aug 2024", description: ["Enhanced platforms with fresh perspective."] }
   ],
   skills: {
-    technical: ["Java", "SQL", "Docker", "HTML/CSS/JS", "SDLC", "Database Management", "VS Code", "GitHub"],
-    design: ["Figma", "Adobe Creative Suite (Ps, Ai, Id, Ae)", "User Journey Mapping", "Wireframing"],
-    soft: ["Conflict Resolution", "Adaptability", "Empathy", "Team Leadership", "High-Volume Cash Handling"]
+    technical: ["Java", "SQL", "Docker", "HTML/CSS/JS"],
+    design: ["Figma", "Adobe Creative Suite"],
+    soft: ["Conflict Resolution", "Adaptability"]
   },
   certifications: [
-    { name: "Graphics Interactive Design Production", issuer: "Valencia College" },
-    { name: "Interactive Design Support", issuer: "Valencia College" },
-    { name: "Microsoft Office Specialist", issuer: "Microsoft" }
-  ]
+    { name: "Graphics Interactive Design", issuer: "Valencia College" }
+  ],
+
+  // Flattened preferences
+  targetRoles: [],
+  workStyles: [],
+  learningStyle: ['Video', 'Reading'],
+  salary: 45000,
+  transportMode: ['Car', 'Uber'],
+
+  // Flattened logistics
+  isParent: false,
+  childCount: 0,
+  employmentStatus: 'Part-time',
+
+  onboardingCompleted: true,
+  updatedAt: new Date().toISOString()
 };
 
 export const ProfilePage: React.FC = () => {
+  const { currentUser, userProfile, saveUserProfile, profileLoading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState<UserProfile>(MOCK_PROFILE);
-  const [newSkill, setNewSkill] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = () => setIsEditing(false);
+  // Local state for editing
+  const [fullName, setFullName] = useState('');
+  const [location, setLocation] = useState('');
+  const [linkedinUrl, setLinkedinUrl] = useState('');
+  const [portfolioUrl, setPortfolioUrl] = useState('');
+  const [education, setEducation] = useState<any[]>([]);
+  const [experience, setExperience] = useState<any[]>([]);
+  const [targetRoles, setTargetRoles] = useState<string[]>([]);
+  const [salary, setSalary] = useState(45000);
+  const [transportMode, setTransportMode] = useState('Car');
+  const [learningStyle, setLearningStyle] = useState('Video');
+
+  // Sync state with Firebase profile
+  useEffect(() => {
+    if (userProfile) {
+      setFullName(userProfile.fullName || currentUser?.displayName || '');
+      setLocation(userProfile.location || '');
+      setLinkedinUrl(userProfile.linkedinUrl || '');
+      setPortfolioUrl(userProfile.portfolioUrl || '');
+      setEducation(userProfile.education || []);
+      setExperience(userProfile.experience || []);
+      setTargetRoles(userProfile.preferences?.targetRoles || []);
+      setSalary(userProfile.preferences?.salary || 45000);
+      setTransportMode(userProfile.preferences?.transportMode || 'Car');
+      setLearningStyle(userProfile.preferences?.learningStyle || 'Video');
+    } else if (currentUser) {
+      // Default from Firebase Auth
+      setFullName(currentUser.displayName || '');
+    }
+  }, [userProfile, currentUser]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await saveUserProfile({
+        fullName,
+        location,
+        linkedinUrl,
+        portfolioUrl,
+        education,
+        experience,
+        preferences: {
+          targetRoles,
+          salary,
+          transportMode,
+          learningStyle,
+          workStyles: userProfile?.preferences?.workStyles || []
+        },
+        updatedAt: new Date().toISOString()
+      });
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Failed to save profile:", error);
+      alert("Failed to save profile. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleCancel = () => {
-    setProfile(MOCK_PROFILE);
+    // Reset to original values
+    if (userProfile) {
+      setFullName(userProfile.fullName || '');
+      setLocation(userProfile.location || '');
+      setLinkedinUrl(userProfile.linkedinUrl || '');
+      setPortfolioUrl(userProfile.portfolioUrl || '');
+      setEducation(userProfile.education || []);
+      setExperience(userProfile.experience || []);
+    }
     setIsEditing(false);
   };
 
-  const updateEducation = (index: number, field: keyof Education, value: string) => {
-    const newEdu = [...profile.education];
-    newEdu[index] = { ...newEdu[index], [field]: value };
-    setProfile({ ...profile, education: newEdu });
+  // Education handlers
+  const addEducation = () => {
+    setEducation([...education, { degreeLevel: '', program: '', gradYear: '' }]);
   };
 
-  const addEducation = () => {
-    setProfile({
-        ...profile,
-        education: [...profile.education, { degree: "", school: "", year: "", gpa: "" }]
-    });
+  const updateEducation = (index: number, field: string, value: string) => {
+    const updated = [...education];
+    updated[index] = { ...updated[index], [field]: value };
+    setEducation(updated);
   };
 
   const removeEducation = (index: number) => {
-    const newEdu = [...profile.education];
-    newEdu.splice(index, 1);
-    setProfile({ ...profile, education: newEdu });
+    setEducation(education.filter((_, i) => i !== index));
   };
 
-  const updateExperience = (index: number, field: keyof Experience, value: string) => {
-    const newExp = [...profile.experience];
-    newExp[index] = { ...newExp[index], [field]: value };
-    setProfile({ ...profile, experience: newExp });
-  };
-
+  // Experience handlers
   const addExperience = () => {
-      setProfile({
-          ...profile,
-          experience: [...profile.experience, { role: "", company: "", duration: "", description: [""] }]
-      });
+    setExperience([...experience, { role: '', company: '', duration: '' }]);
+  };
+
+  const updateExperience = (index: number, field: string, value: string) => {
+    const updated = [...experience];
+    updated[index] = { ...updated[index], [field]: value };
+    setExperience(updated);
   };
 
   const removeExperience = (index: number) => {
-      const newExp = [...profile.experience];
-      newExp.splice(index, 1);
-      setProfile({ ...profile, experience: newExp });
+    setExperience(experience.filter((_, i) => i !== index));
   };
 
-  const updateCertification = (index: number, field: keyof Certification, value: string) => {
-      const newCerts = [...profile.certifications];
-      newCerts[index] = { ...newCerts[index], [field]: value };
-      setProfile({ ...profile, certifications: newCerts });
+  // Target roles handlers
+  const addRole = (role: string) => {
+    if (role && !targetRoles.includes(role)) {
+      setTargetRoles([...targetRoles, role]);
+    }
   };
 
-  const addCertification = () => {
-      setProfile({
-          ...profile,
-          certifications: [...profile.certifications, { name: "", issuer: "" }]
-      });
+  const removeRole = (role: string) => {
+    setTargetRoles(targetRoles.filter(r => r !== role));
   };
 
-  const removeCertification = (index: number) => {
-      const newCerts = [...profile.certifications];
-      newCerts.splice(index, 1);
-      setProfile({ ...profile, certifications: newCerts });
-  };
-
-  const removeSkill = (category: keyof typeof profile.skills, skillToRemove: string) => {
-      setProfile({
-          ...profile,
-          skills: {
-              ...profile.skills,
-              [category]: profile.skills[category].filter(s => s !== skillToRemove)
-          }
-      });
-  };
-
-  const addSkill = (category: keyof typeof profile.skills) => {
-      if (!newSkill.trim()) return;
-      if (!profile.skills[category].includes(newSkill.trim())) {
-          setProfile({
-              ...profile,
-              skills: {
-                  ...profile.skills,
-                  [category]: [...profile.skills[category], newSkill.trim()]
-              }
-          });
-      }
-      setNewSkill("");
-  };
-
-  const toggleLearningStyle = (style: LearningStyle) => {
-      const current = profile.learningStyle;
-      if (current.includes(style)) {
-          setProfile({ ...profile, learningStyle: current.filter(s => s !== style) });
-      } else {
-          setProfile({ ...profile, learningStyle: [...current, style] });
-      }
-  };
-
-  const toggleTransportMode = (mode: TransportMode) => {
-      const current = profile.transportMode;
-      if (current.includes(mode)) {
-          setProfile({ ...profile, transportMode: current.filter(m => m !== mode) });
-      } else {
-          setProfile({ ...profile, transportMode: [...current, mode] });
-      }
-  };
+  if (profileLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="animate-spin text-gold w-8 h-8" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500 pb-12">
-      
+
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-jalanea-200 pb-6">
         <div>
           <h1 className="text-3xl font-display font-bold text-jalanea-900">My Profile</h1>
-          <p className="text-jalanea-600 font-medium mt-1">Manage your Experience, Education, and Skills</p>
+          <p className="text-jalanea-600 font-medium mt-1">Manage your career data for better job matching</p>
         </div>
       </div>
 
+      {/* Edit Controls */}
       <div className="flex items-center justify-between sticky top-4 z-30 bg-jalanea-50/90 backdrop-blur-sm p-2 rounded-xl border border-jalanea-200 shadow-sm">
         <h2 className="text-xl font-bold text-jalanea-900 pl-2">Career Data</h2>
         {isEditing ? (
-            <div className="flex gap-2">
-                <Button size="sm" variant="ghost" onClick={handleCancel} icon={<X size={16} />}>Cancel</Button>
-                <Button size="sm" variant="primary" onClick={handleSave} icon={<Save size={16} />}>Save Changes</Button>
-            </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="ghost" onClick={handleCancel} icon={<X size={16} />} disabled={isSaving}>
+              Cancel
+            </Button>
+            <Button size="sm" variant="primary" onClick={handleSave} icon={isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
         ) : (
-            <Button size="sm" onClick={() => setIsEditing(true)} icon={<Edit3 size={16} />}>Edit Profile</Button>
+          <Button size="sm" onClick={() => setIsEditing(true)} icon={<Edit3 size={16} />}>
+            Edit Profile
+          </Button>
         )}
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card variant="solid-white" className="p-6">
-              <h3 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider flex items-center gap-2 mb-4">
-                  <Heart size={14} /> Basic Info
-              </h3>
-              {isEditing ? (
-                  <div className="space-y-4">
-                      <Input label="Full Name" value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} />
-                      <Input label="Email" value={profile.email} onChange={e => setProfile({...profile, email: e.target.value})} />
-                      <Input label="Location" value={profile.location} onChange={e => setProfile({...profile, location: e.target.value})} />
-                  </div>
+
+      {/* Profile Header Card */}
+      <Card variant="solid-white" className="p-6">
+        <div className="flex items-start gap-6">
+          {/* Avatar */}
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full bg-gold/10 border-2 border-gold flex items-center justify-center overflow-hidden">
+              {(userProfile?.photoURL || currentUser?.photoURL) ? (
+                <img
+                  src={userProfile?.photoURL || currentUser?.photoURL || ''}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
               ) : (
-                  <div className="space-y-2">
-                      <div className="text-lg font-bold text-jalanea-900">{profile.name}</div>
-                      <div className="text-sm text-jalanea-600">{profile.email}</div>
-                      <div className="flex items-center gap-1 text-sm text-jalanea-500"><MapPin size={14}/> {profile.location}</div>
-                  </div>
+                <User size={40} className="text-gold" />
               )}
-          </Card>
-          
-          <Card variant="solid-white" className="p-6">
-              <h3 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider flex items-center gap-2 mb-4">
-                  <MapPin size={14} /> Preferences
-              </h3>
-              
-              <div className="space-y-6">
-                  <div>
-                      <span className="text-xs font-bold text-jalanea-400 uppercase block mb-2">Learning Style</span>
-                      <div className="flex flex-wrap gap-2">
-                          {(['Video', 'Reading'] as LearningStyle[]).map(style => (
-                              <button
-                                key={style}
-                                onClick={() => isEditing && toggleLearningStyle(style)}
-                                disabled={!isEditing}
-                                className={`
-                                    px-3 py-1 rounded-full text-xs font-bold border transition-colors
-                                    ${profile.learningStyle.includes(style) 
-                                        ? 'bg-jalanea-900 text-white border-jalanea-900' 
-                                        : 'bg-white text-jalanea-500 border-jalanea-200'}
-                                    ${isEditing ? 'cursor-pointer hover:border-gold' : 'cursor-default'}
-                                `}
-                              >
-                                  {style}
-                              </button>
-                          ))}
-                      </div>
-                  </div>
-
-                  <div>
-                      <span className="text-xs font-bold text-jalanea-400 uppercase block mb-2">Transport</span>
-                      <div className="flex flex-wrap gap-2">
-                          {(['Car', 'Bus', 'Bike', 'Walk', 'Uber'] as TransportMode[]).map(mode => (
-                              <button
-                                key={mode}
-                                onClick={() => isEditing && toggleTransportMode(mode)}
-                                disabled={!isEditing}
-                                className={`
-                                    px-3 py-1 rounded-full text-xs font-bold border transition-colors
-                                    ${profile.transportMode.includes(mode) 
-                                        ? 'bg-jalanea-900 text-white border-jalanea-900' 
-                                        : 'bg-white text-jalanea-500 border-jalanea-200'}
-                                    ${isEditing ? 'cursor-pointer hover:border-gold' : 'cursor-default'}
-                                `}
-                              >
-                                  {mode}
-                              </button>
-                          ))}
-                      </div>
-                  </div>
-              </div>
-          </Card>
-      </div>
-
-      {/* ... Education, Experience, Skills, Certs sections remain unchanged ... */}
-      <div className="space-y-6">
-        
-        {/* Education Section */}
-        <Card variant="solid-white" className="overflow-hidden">
-          <div className="border-b border-jalanea-100 p-6 bg-jalanea-50/50 flex justify-between items-center">
-            <h3 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider flex items-center gap-2">
-              <GraduationCap size={16} /> Education
-            </h3>
-            {isEditing && <Button size="sm" variant="ghost" onClick={addEducation} icon={<Plus size={14}/>}>Add</Button>}
-          </div>
-          <div className="p-6 space-y-6">
-            {profile.education.map((edu, idx) => (
-              <div key={idx} className={`flex flex-col gap-2 relative ${isEditing ? 'p-4 border border-jalanea-200 rounded-xl bg-jalanea-50' : 'md:flex-row md:items-center justify-between p-3 hover:bg-jalanea-50 rounded-lg transition-colors'}`}>
-                {isEditing && (
-                    <button onClick={() => removeEducation(idx)} className="absolute top-2 right-2 text-jalanea-400 hover:text-red-500">
-                        <Trash2 size={16} />
-                    </button>
-                )}
-                {isEditing ? (
-                    <div className="space-y-3 pt-2">
-                        <Input label="Degree" value={edu.degree} onChange={(e) => updateEducation(idx, 'degree', e.target.value)} />
-                        <div className="grid grid-cols-2 gap-4">
-                            <Input label="School" value={edu.school} onChange={(e) => updateEducation(idx, 'school', e.target.value)} />
-                            <Input label="Year" value={edu.year} onChange={(e) => updateEducation(idx, 'year', e.target.value)} />
-                        </div>
-                    </div>
-                ) : (
-                    <>
-                        <div>
-                        <h4 className="text-sm font-bold text-jalanea-900">{edu.degree}</h4>
-                        <p className="text-sm text-jalanea-600">{edu.school}</p>
-                        </div>
-                        {edu.gpa && (
-                        <span className="mt-2 md:mt-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gold/10 text-jalanea-800 border border-gold/20">
-                            {edu.gpa} GPA
-                        </span>
-                        )}
-                    </>
-                )}
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        {/* Experience Section */}
-        <Card variant="solid-white" className="overflow-hidden">
-          <div className="border-b border-jalanea-100 p-6 bg-jalanea-50/50 flex justify-between items-center">
-            <h3 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider flex items-center gap-2">
-              <Briefcase size={16} /> Experience
-            </h3>
-            {isEditing && <Button size="sm" variant="ghost" onClick={addExperience} icon={<Plus size={14}/>}>Add</Button>}
-          </div>
-          <div className="p-6 space-y-8">
-            {profile.experience.map((exp, idx) => (
-              <div key={idx} className={isEditing ? "space-y-3 p-4 border border-jalanea-200 rounded-xl bg-jalanea-50 relative" : "relative pl-6 border-l-2 border-jalanea-200 last:border-0 pb-2"}>
-                
-                {isEditing && (
-                    <button onClick={() => removeExperience(idx)} className="absolute top-2 right-2 text-jalanea-400 hover:text-red-500 z-10">
-                        <Trash2 size={16} />
-                    </button>
-                )}
-
-                {isEditing ? (
-                    <div className="space-y-3 pt-2">
-                        <Input label="Role" value={exp.role} onChange={e => updateExperience(idx, 'role', e.target.value)} />
-                        <div className="grid grid-cols-2 gap-4">
-                            <Input label="Company" value={exp.company} onChange={e => updateExperience(idx, 'company', e.target.value)} />
-                            <Input label="Duration" value={exp.duration} onChange={e => updateExperience(idx, 'duration', e.target.value)} />
-                        </div>
-                        <textarea 
-                            className="w-full border rounded-lg p-2 text-sm" 
-                            placeholder="Description bullet points (one per line)"
-                            rows={3}
-                            value={exp.description.join('\n')}
-                            onChange={e => {
-                                const newExp = [...profile.experience];
-                                newExp[idx].description = e.target.value.split('\n');
-                                setProfile({ ...profile, experience: newExp });
-                            }}
-                        />
-                    </div>
-                ) : (
-                    <>
-                        <div className="absolute -left-[9px] top-0 w-4 h-4 bg-jalanea-50 border-2 border-jalanea-300 rounded-full"></div>
-                        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-2">
-                        <h4 className="text-base font-bold text-jalanea-900">{exp.role} <span className="text-jalanea-400 font-normal">at</span> {exp.company}</h4>
-                        <span className="text-xs font-bold text-jalanea-500 bg-jalanea-100 px-2 py-1 rounded">{exp.duration}</span>
-                        </div>
-                        <ul className="space-y-1.5 mt-3">
-                        {exp.description.map((point, i) => (
-                            <li key={i} className="text-sm text-jalanea-700 leading-relaxed flex items-start gap-2">
-                            <span className="text-jalanea-400 mt-1.5 text-[8px]">•</span>
-                            <span>{point}</span>
-                            </li>
-                        ))}
-                        </ul>
-                    </>
-                )}
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card variant="solid-white" className="h-full">
-            <div className="border-b border-jalanea-100 p-6 bg-jalanea-50/50">
-              <h3 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider flex items-center gap-2">
-                <PenTool size={16} /> Skills
-              </h3>
             </div>
-            <div className="p-6 space-y-6">
-              {(['technical', 'design', 'soft'] as const).map(category => (
-                  <div key={category}>
-                      <h4 className="text-xs font-bold text-jalanea-900 mb-2 capitalize">{category}</h4>
-                      <div className="flex flex-wrap gap-2 mb-2">
-                          {profile.skills[category].map(skill => (
-                              <span key={skill} className="text-xs font-medium px-2 py-1 bg-jalanea-50 text-jalanea-700 rounded border border-jalanea-100 flex items-center gap-1 group">
-                                  {skill}
-                                  {isEditing && (
-                                      <button onClick={() => removeSkill(category, skill)} className="text-jalanea-400 hover:text-red-500"><X size={10} /></button>
-                                  )}
-                              </span>
-                          ))}
-                      </div>
-                      {isEditing && (
-                          <div className="flex gap-2">
-                              <input 
-                                  className="flex-1 text-xs border rounded px-2 py-1" 
-                                  placeholder={`Add ${category} skill...`}
-                                  value={newSkill}
-                                  onChange={e => setNewSkill(e.target.value)}
-                                  onKeyDown={e => {
-                                      if(e.key === 'Enter') addSkill(category);
-                                  }}
-                              />
-                              <Button size="sm" variant="ghost" onClick={() => addSkill(category)} disabled={!newSkill}><Plus size={14}/></Button>
-                          </div>
-                      )}
-                  </div>
-              ))}
-            </div>
-          </Card>
+            {isEditing && (
+              <button className="absolute bottom-0 right-0 p-1.5 bg-jalanea-900 text-white rounded-full">
+                <Camera size={14} />
+              </button>
+            )}
+          </div>
 
-          <Card variant="solid-white" className="h-full">
-            <div className="border-b border-jalanea-100 p-6 bg-jalanea-50/50 flex justify-between items-center">
-              <h3 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider flex items-center gap-2">
-                <Award size={16} /> Licenses & Certs
-              </h3>
-              {isEditing && <Button size="sm" variant="ghost" onClick={addCertification} icon={<Plus size={14}/>}>Add</Button>}
-            </div>
-            <div className="p-6 space-y-4">
-              {profile.certifications.map((cert, idx) => (
-                <div key={idx} className="flex items-start gap-3 group relative">
-                  {isEditing ? (
-                      <div className="flex-1 space-y-2 p-3 bg-jalanea-50 rounded-lg border border-jalanea-100">
-                          <button onClick={() => removeCertification(idx)} className="absolute top-2 right-2 text-jalanea-400 hover:text-red-500"><Trash2 size={14}/></button>
-                          <Input className="text-sm" placeholder="Certificate Name" value={cert.name} onChange={e => updateCertification(idx, 'name', e.target.value)} />
-                          <Input className="text-sm" placeholder="Issuer" value={cert.issuer} onChange={e => updateCertification(idx, 'issuer', e.target.value)} />
-                      </div>
-                  ) : (
-                      <>
-                        <div className="mt-1">
-                            <Award size={16} className="text-gold" />
-                        </div>
-                        <div>
-                            <h4 className="text-sm font-bold text-jalanea-900">{cert.name}</h4>
-                            <p className="text-xs text-jalanea-500">{cert.issuer}</p>
-                        </div>
-                      </>
+          {/* Info */}
+          <div className="flex-1 space-y-4">
+            {isEditing ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Full Name"
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
+                />
+                <Input
+                  label="Location"
+                  value={location}
+                  onChange={e => setLocation(e.target.value)}
+                  icon={<MapPin size={16} />}
+                />
+                <Input
+                  label="LinkedIn URL"
+                  value={linkedinUrl}
+                  onChange={e => setLinkedinUrl(e.target.value)}
+                  icon={<Link size={16} />}
+                />
+                <Input
+                  label="Portfolio URL"
+                  value={portfolioUrl}
+                  onChange={e => setPortfolioUrl(e.target.value)}
+                  icon={<Link size={16} />}
+                />
+              </div>
+            ) : (
+              <>
+                <div>
+                  <h2 className="text-2xl font-bold text-jalanea-900">{fullName || 'No name set'}</h2>
+                  <p className="text-jalanea-600">{currentUser?.email}</p>
+                </div>
+                <div className="flex flex-wrap gap-4 text-sm">
+                  {location && (
+                    <span className="flex items-center gap-1 text-jalanea-500">
+                      <MapPin size={14} /> {location}
+                    </span>
+                  )}
+                  {linkedinUrl && (
+                    <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline">
+                      <Link size={14} /> LinkedIn
+                    </a>
+                  )}
+                  {portfolioUrl && (
+                    <a href={portfolioUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-gold hover:underline">
+                      <Link size={14} /> Portfolio
+                    </a>
                   )}
                 </div>
-              ))}
-            </div>
-          </Card>
+              </>
+            )}
+          </div>
         </div>
+      </Card>
 
+      {/* Education Section */}
+      <Card variant="solid-white" className="overflow-hidden">
+        <div className="border-b border-jalanea-100 p-6 bg-jalanea-50/50 flex justify-between items-center">
+          <h3 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider flex items-center gap-2">
+            <GraduationCap size={16} /> Education
+          </h3>
+          {isEditing && (
+            <Button size="sm" variant="ghost" onClick={addEducation} icon={<Plus size={14} />}>
+              Add
+            </Button>
+          )}
+        </div>
+        <div className="p-6 space-y-4">
+          {education.length === 0 ? (
+            <p className="text-jalanea-400 text-sm italic">No education added yet.</p>
+          ) : (
+            education.map((edu, idx) => (
+              <div key={idx} className={`relative ${isEditing ? 'p-4 border border-jalanea-200 rounded-xl bg-jalanea-50' : 'p-3 hover:bg-jalanea-50 rounded-lg'}`}>
+                {isEditing && (
+                  <button onClick={() => removeEducation(idx)} className="absolute top-2 right-2 text-jalanea-400 hover:text-red-500">
+                    <Trash2 size={16} />
+                  </button>
+                )}
+                {isEditing ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pr-8">
+                    <Input
+                      placeholder="Degree Level (e.g., A.S., B.A.S.)"
+                      value={edu.degreeLevel || ''}
+                      onChange={e => updateEducation(idx, 'degreeLevel', e.target.value)}
+                    />
+                    <Input
+                      placeholder="Program/Major"
+                      value={edu.program || ''}
+                      onChange={e => updateEducation(idx, 'program', e.target.value)}
+                    />
+                    <Input
+                      placeholder="Graduation Year"
+                      value={edu.gradYear || ''}
+                      onChange={e => updateEducation(idx, 'gradYear', e.target.value)}
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <h4 className="text-sm font-bold text-jalanea-900">
+                      {edu.degreeLevel} {edu.program && `in ${edu.program}`}
+                    </h4>
+                    {edu.gradYear && (
+                      <p className="text-sm text-jalanea-500">Class of {edu.gradYear}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </Card>
+
+      {/* Experience Section */}
+      <Card variant="solid-white" className="overflow-hidden">
+        <div className="border-b border-jalanea-100 p-6 bg-jalanea-50/50 flex justify-between items-center">
+          <h3 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider flex items-center gap-2">
+            <Briefcase size={16} /> Experience
+          </h3>
+          {isEditing && (
+            <Button size="sm" variant="ghost" onClick={addExperience} icon={<Plus size={14} />}>
+              Add
+            </Button>
+          )}
+        </div>
+        <div className="p-6 space-y-4">
+          {experience.length === 0 ? (
+            <p className="text-jalanea-400 text-sm italic">No experience added yet. That's okay - we'll help you find your first role!</p>
+          ) : (
+            experience.map((exp, idx) => (
+              <div key={idx} className={`relative ${isEditing ? 'p-4 border border-jalanea-200 rounded-xl bg-jalanea-50' : 'p-3 border-l-2 border-jalanea-200 pl-4'}`}>
+                {isEditing && (
+                  <button onClick={() => removeExperience(idx)} className="absolute top-2 right-2 text-jalanea-400 hover:text-red-500">
+                    <Trash2 size={16} />
+                  </button>
+                )}
+                {isEditing ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pr-8">
+                    <Input
+                      placeholder="Role/Title"
+                      value={exp.role || ''}
+                      onChange={e => updateExperience(idx, 'role', e.target.value)}
+                    />
+                    <Input
+                      placeholder="Company"
+                      value={exp.company || ''}
+                      onChange={e => updateExperience(idx, 'company', e.target.value)}
+                    />
+                    <Input
+                      placeholder="Duration (e.g., Jun 2024 - Present)"
+                      value={exp.duration || ''}
+                      onChange={e => updateExperience(idx, 'duration', e.target.value)}
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <h4 className="text-sm font-bold text-jalanea-900">{exp.role || 'Untitled Role'}</h4>
+                    <p className="text-sm text-jalanea-600">{exp.company}</p>
+                    <p className="text-xs text-jalanea-400">{exp.duration}</p>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </Card>
+
+      {/* Target Roles & Preferences */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card variant="solid-white" className="p-6">
+          <h3 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider flex items-center gap-2 mb-4">
+            <PenTool size={14} /> Target Roles
+          </h3>
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {targetRoles.length === 0 ? (
+                <p className="text-jalanea-400 text-sm italic">No target roles set.</p>
+              ) : (
+                targetRoles.map(role => (
+                  <span key={role} className="inline-flex items-center gap-1 px-3 py-1 bg-gold/10 text-jalanea-800 rounded-full text-sm font-medium border border-gold/20">
+                    {role}
+                    {isEditing && (
+                      <button onClick={() => removeRole(role)} className="text-jalanea-400 hover:text-red-500">
+                        <X size={12} />
+                      </button>
+                    )}
+                  </span>
+                ))
+              )}
+            </div>
+            {isEditing && (
+              <div className="flex gap-2">
+                <input
+                  className="flex-1 text-sm border rounded-lg px-3 py-2"
+                  placeholder="Add target role..."
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      addRole((e.target as HTMLInputElement).value);
+                      (e.target as HTMLInputElement).value = '';
+                    }
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <Card variant="solid-white" className="p-6">
+          <h3 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider flex items-center gap-2 mb-4">
+            <Award size={14} /> Preferences
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-bold text-jalanea-400 block mb-2">Minimum Salary Target</label>
+              {isEditing ? (
+                <Input
+                  type="number"
+                  value={salary}
+                  onChange={e => setSalary(parseInt(e.target.value) || 0)}
+                />
+              ) : (
+                <p className="text-lg font-bold text-jalanea-900">${salary.toLocaleString()}/year</p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs font-bold text-jalanea-400 block mb-2">Transport Mode</label>
+              <p className="text-sm text-jalanea-700">{transportMode}</p>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-jalanea-400 block mb-2">Learning Style</label>
+              <p className="text-sm text-jalanea-700">{learningStyle}</p>
+            </div>
+          </div>
+        </Card>
       </div>
     </div>
   );

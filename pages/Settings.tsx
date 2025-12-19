@@ -7,13 +7,11 @@ import { GraduationCap, Briefcase, Award, PenTool, Edit3 } from 'lucide-react';
 
 // Mock Profile Data matching the screenshot
 export const MOCK_PROFILE: UserProfile = {
+  fullName: "Alex Doe",
   name: "Alex Doe",
   email: "alex.doe@valenciacollege.edu",
   location: "Orlando, FL",
-  learningStyle: ['Both'],
-  transportMode: ['Car'],
-  isParent: false,
-  employmentStatus: 'Part-time',
+  photoURL: "", // Added to match type
   education: [
     {
       degree: "Bachelor of Applied Science: Computing Technology & Software Development",
@@ -69,13 +67,25 @@ export const MOCK_PROFILE: UserProfile = {
     { name: "Interactive Design Support", issuer: "Valencia College" },
     { name: "Microsoft Office Specialist (Word, Excel, PowerPoint)", issuer: "Microsoft" },
     { name: "Entrepreneurship & Small Business", issuer: "Microsoft" }
-  ]
+  ],
+  // Flattened Preferences
+  targetRoles: [],
+  workStyles: [],
+  learningStyle: ['Both'],
+  transportMode: ['Car'],
+  salary: 0,
+
+  // Flattened Logistics
+  isParent: false,
+  employmentStatus: 'Part-time',
+  onboardingCompleted: true,
+  updatedAt: new Date().toISOString()
 };
 
 export const SettingsPage: React.FC = () => {
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500 pb-12">
-      
+
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-jalanea-200 pb-6">
         <div>
@@ -90,7 +100,7 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       <div className="space-y-6">
-        
+
         {/* Education Section */}
         <Card variant="solid-white" className="overflow-hidden">
           <div className="border-b border-jalanea-100 p-6 bg-jalanea-50/50">

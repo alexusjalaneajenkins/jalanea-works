@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { storage, auth } from '../services/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Card } from './Card';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -11,7 +13,7 @@ import {
     Plus, Trash2, Home, Building, Building2, Armchair, Crown, Info, Loader2,
     Camera, BookOpen, Video, Car, Bus, Bike, Footprints, Baby, Clock, Briefcase, DollarSign
 } from 'lucide-react';
-import { LearningStyle, TransportMode, EmploymentStatus } from '../types';
+import { LearningStyle, TransportMode, EmploymentStatus, NavRoute } from '../types';
 
 export type AuthMode = 'signin' | 'signup';
 
@@ -20,6 +22,7 @@ interface AuthModalProps {
     onClose: () => void;
     initialMode: AuthMode;
     onComplete: () => void;
+    setRoute?: (route: any) => void; // Optional for navigation after completion
 }
 
 const VIEWS = {
@@ -69,47 +72,56 @@ const DEGREE_LEVEL_MAP: Record<string, string> = {
 
 const FLORIDA_HOUSING_TIERS = [
     {
-        label: "Economy / Efficiency",
-        rentRange: "$850 - $1,000",
+        label: "Shared Living",
+        rentRange: "$600 - $900",
         minSalary: 30000,
-        maxSalary: 42000,
-        insight: "🏠 Budget-Focused: Affords a private room or efficiency studio.",
+        maxSalary: 36000,
+        insight: "🏠 Roommate in 2BR or shared apartment",
         color: "border-jalanea-400",
         icon: Home
     },
     {
-        label: "Standard 1-Bedroom",
-        rentRange: "$1,000 - $1,300",
-        minSalary: 42000,
-        maxSalary: 52000,
-        insight: "🏢 Independent Living: Affords a standard 1-bedroom apartment.",
+        label: "Studio / Efficiency",
+        rentRange: "$900 - $1,100",
+        minSalary: 36000,
+        maxSalary: 44000,
+        insight: "🏢 Your own studio or efficiency apartment",
         color: "border-blue-400",
         icon: Building
     },
     {
-        label: "The Sweet Spot",
-        rentRange: "$1,300 - $1,500",
-        minSalary: 52000,
-        maxSalary: 60000,
-        insight: "✨ Comfort Zone: Affords a nice 1-bed or entry-level 2-bedroom.",
+        label: "Standard 1-Bedroom",
+        rentRange: "$1,100 - $1,400",
+        minSalary: 44000,
+        maxSalary: 56000,
+        insight: "✨ Comfortable 1BR in decent area",
         color: "border-indigo-400",
         icon: Building2
     },
     {
-        label: "Comfort 2-Bedroom",
-        rentRange: "$1,500 - $1,800",
-        minSalary: 60000,
-        maxSalary: 75000,
-        insight: "🛋️ Room to Grow: Affords a modern 2-bedroom apartment.",
+        label: "Upgraded 1BR / Entry 2BR",
+        rentRange: "$1,400 - $1,700",
+        minSalary: 56000,
+        maxSalary: 68000,
+        insight: "🛋️ Nice 1BR or starter 2-bedroom",
         color: "border-purple-400",
         icon: Armchair
     },
     {
-        label: "Luxury / Family Size",
-        rentRange: "$1,800+",
-        minSalary: 75000,
+        label: "Modern 2-Bedroom",
+        rentRange: "$1,700 - $2,100",
+        minSalary: 68000,
+        maxSalary: 84000,
+        insight: "🌟 Modern 2BR with pool, gym, in-unit laundry",
+        color: "border-gold",
+        icon: Crown
+    },
+    {
+        label: "Luxury / 3-Bedroom",
+        rentRange: "$2,100+",
+        minSalary: 84000,
         maxSalary: 200000,
-        insight: "🌟 Premium Living: Affords luxury amenities or a 3-bedroom unit.",
+        insight: "👑 Luxury 2BR or spacious 3-bedroom home",
         color: "border-gold",
         icon: Crown
     }
@@ -123,9 +135,10 @@ interface WizardLayoutProps {
     prevStep?: () => void;
     isLast?: boolean;
     currentView: string;
+    isLoading?: boolean;
 }
 
-const WizardLayout: React.FC<WizardLayoutProps> = ({ title, children, nextStep, prevStep, isLast = false, currentView }) => (
+const WizardLayout: React.FC<WizardLayoutProps> = ({ title, children, nextStep, prevStep, isLast = false, currentView, isLoading = false }) => (
     <div className="flex flex-col h-full animate-in fade-in slide-in-from-right-8 duration-300 max-w-2xl mx-auto w-full overflow-hidden">
         <div className="mb-6 flex items-center justify-between shrink-0">
             <h2 className="text-xl font-display font-bold text-white">{title}</h2>
@@ -153,9 +166,14 @@ const WizardLayout: React.FC<WizardLayoutProps> = ({ title, children, nextStep, 
                     <Button
                         variant="primary"
                         onClick={nextStep}
-                        className="flex-1 bg-gold text-jalanea-950 hover:bg-gold-light border-none shadow-lg shadow-gold/10"
+                        disabled={isLoading}
+                        className="flex-1 bg-gold text-jalanea-950 hover:bg-gold-light border-none shadow-lg shadow-gold/10 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isLast ? 'Complete Profile' : 'Next'}
+                        {isLoading ? (
+                            <><Loader2 className="animate-spin mr-2" size={18} /> Saving...</>
+                        ) : (
+                            isLast ? 'Complete Profile' : 'Next'
+                        )}
                     </Button>
                 </>
             ) : (
@@ -163,9 +181,14 @@ const WizardLayout: React.FC<WizardLayoutProps> = ({ title, children, nextStep, 
                     fullWidth
                     variant="primary"
                     onClick={nextStep}
-                    className="w-full bg-gold text-jalanea-950 hover:bg-gold-light border-none shadow-lg shadow-gold/10"
+                    disabled={isLoading}
+                    className="w-full bg-gold text-jalanea-950 hover:bg-gold-light border-none shadow-lg shadow-gold/10 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {isLast ? 'Complete Profile' : 'Next'}
+                    {isLoading ? (
+                        <><Loader2 className="animate-spin mr-2" size={18} /> Saving...</>
+                    ) : (
+                        isLast ? 'Complete Profile' : 'Next'
+                    )}
                 </Button>
             )}
         </div>
@@ -179,7 +202,7 @@ interface EducationEntry {
     gradYear: string;
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode, onComplete }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode, onComplete, setRoute }) => {
     const { loginWithGoogle, signup, login, saveUserProfile } = useAuth();
     const [currentView, setCurrentView] = useState(VIEWS.LOGIN);
     const [carouselIndex, setCarouselIndex] = useState(0);
@@ -213,9 +236,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
     const [salary, setSalary] = useState(45000);
     // Removed salaryViewMode as we now show both
 
-    // New: Learning & Transport (Arrays)
-    const [learningStyle, setLearningStyle] = useState<LearningStyle[]>(['Video']);
-    const [transportMode, setTransportMode] = useState<TransportMode[]>(['Car']);
+    // New: Learning & Transport (Single Select)
+    const [learningStyle, setLearningStyle] = useState<LearningStyle>('Video');
+    const [transportMode, setTransportMode] = useState<TransportMode>('Car');
 
     // --- Profile State (New) ---
     const [fullName, setFullName] = useState('');
@@ -223,8 +246,233 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
     const [linkedinUrl, setLinkedinUrl] = useState('');
     const [portfolioUrl, setPortfolioUrl] = useState('');
     const [profilePic, setProfilePic] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isUploadingPic, setIsUploadingPic] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // --- Logic Helpers ---
+
+    // Transport Tier System
+    interface TransportTier {
+        tier: string;
+        example: string;
+        detail: string;
+        speed?: string;
+        warning?: string;
+        savings?: string;
+    }
+
+    const getCarTier = (monthlyBudget: number): TransportTier => {
+        if (monthlyBudget < 200) return {
+            tier: "Used Economy",
+            example: "2012-2016 Honda Civic, Toyota Corolla",
+            detail: `Insurance + gas only, $${monthlyBudget}/mo`
+        };
+        if (monthlyBudget < 350) return {
+            tier: "Reliable Used Sedan",
+            example: "2017-2019 Honda Accord, Mazda3",
+            detail: `Payment + insurance + gas, $${monthlyBudget}/mo`
+        };
+        if (monthlyBudget < 500) return {
+            tier: "Certified Pre-Owned SUV",
+            example: "2019-2021 Toyota RAV4, Honda CR-V",
+            detail: `Full ownership costs, $${monthlyBudget}/mo`
+        };
+        if (monthlyBudget < 700) return {
+            tier: "New Mid-Range",
+            example: "2024 Mazda CX-5, Honda Accord Hybrid",
+            detail: `New car payment + costs, $${monthlyBudget}/mo`
+        };
+        return {
+            tier: "Luxury / Performance",
+            example: "Tesla Model 3, BMW 3-Series, Audi A4",
+            detail: `Premium vehicle, $${monthlyBudget}/mo`
+        };
+    };
+
+    const getScooterTier = (monthlyBudget: number): TransportTier => {
+        const yearlyBudget = monthlyBudget * 12;
+
+        if (yearlyBudget < 300) return {
+            tier: "Budget Scooter",
+            example: "Basic 15mph scooter",
+            speed: "15 mph",
+            detail: "Short range, basic commute"
+        };
+        if (yearlyBudget < 700) return {
+            tier: "Mid-Range Scooter",
+            example: "Segway Ninebot, Xiaomi",
+            speed: "20-25 mph",
+            detail: "Good range, reliable daily commute"
+        };
+        if (yearlyBudget < 1200) return {
+            tier: "Performance Scooter",
+            example: "Apollo City, Vsett 8",
+            speed: "30-35 mph",
+            detail: "Long range, dual motors, suspension"
+        };
+        if (yearlyBudget < 2000) return {
+            tier: "High-Performance",
+            example: "Dualtron Thunder, Kaabo Wolf",
+            speed: "45-50 mph",
+            detail: "Extreme range, off-road capable"
+        };
+        if (yearlyBudget < 3500) return {
+            tier: "Extreme Performance",
+            example: "Dualtron X2, Rion RE90",
+            speed: "60-70 mph",
+            detail: "Street-legal motorcycle alternative"
+        };
+        return {
+            tier: "Ultra Performance",
+            example: "Rion Thrust, Custom builds",
+            speed: "100-120+ mph",
+            detail: "Racing-grade, extreme performance"
+        };
+    };
+
+    const getBikeTier = (monthlyBudget: number): TransportTier => {
+        const yearlyBudget = monthlyBudget * 12;
+
+        if (yearlyBudget < 400) return {
+            tier: "Standard Bike",
+            example: "Hybrid commuter bike + helmet",
+            detail: "Human-powered, great exercise"
+        };
+        if (yearlyBudget < 1200) return {
+            tier: "Entry E-Bike",
+            example: "Rad Power Bikes, Lectric XP",
+            speed: "20 mph",
+            detail: "Pedal-assist, 20-40 mile range"
+        };
+        if (yearlyBudget < 2500) return {
+            tier: "Premium E-Bike",
+            example: "Trek Verve+, Specialized Turbo",
+            speed: "28 mph",
+            detail: "Long range, quality components"
+        };
+        if (yearlyBudget < 4000) return {
+            tier: "High-Performance E-Bike",
+            example: "Stromer ST5, Riese & Müller",
+            speed: "28-35 mph",
+            detail: "Top-tier components, 60+ mile range"
+        };
+        if (yearlyBudget < 6000) return {
+            tier: "Used Moped / Scooter",
+            example: "Honda Ruckus, Vespa Primavera",
+            speed: "30-40 mph",
+            detail: "Gas-powered, street-legal"
+        };
+        if (yearlyBudget < 10000) return {
+            tier: "Electric Moped",
+            example: "NIU NQi GT, Super Soco TC Max",
+            speed: "45-55 mph",
+            detail: "Electric, highway-capable"
+        };
+        return {
+            tier: "Entry Motorcycle",
+            example: "Honda Rebel 300, Yamaha MT-03",
+            speed: "85+ mph",
+            detail: "Full motorcycle, highway-ready"
+        };
+    };
+
+    const getBusTier = (monthlyBudget: number): TransportTier => {
+        const monthlyPass = 50; // Lynx Orlando
+        const remaining = monthlyBudget - monthlyPass;
+        const yearlyBudget = monthlyBudget * 12;
+
+        if (yearlyBudget < 600) return {
+            tier: "Monthly Pass",
+            example: "Lynx unlimited rides",
+            detail: `$${monthlyPass}/mo pass`,
+            savings: `Save $${remaining}/mo vs car`
+        };
+        return {
+            tier: "Premium Transit",
+            example: "Monthly pass + occasional Uber",
+            detail: `$${monthlyPass} pass + $${remaining} for backup rides`,
+            savings: "Still save vs car ownership"
+        };
+    };
+
+    const getUberTier = (monthlyBudget: number): TransportTier => {
+        const avgTripCost = 15; // Orlando average
+        const tripsPerWeek = 10; // 2/day × 5 days
+        const weeklyCost = avgTripCost * tripsPerWeek;
+        const monthlyCost = weeklyCost * 4;
+
+        if (monthlyBudget < 150) return {
+            tier: "Emergency Only",
+            example: "Occasional rides",
+            detail: `Budget: $${monthlyBudget}/mo (2-3 rides/week max)`,
+            warning: "⚠️ Not for daily commute"
+        };
+        if (monthlyBudget < monthlyCost) return {
+            tier: "Supplemental",
+            example: "Part-time rideshare",
+            detail: `Budget: $${monthlyBudget}/mo, full commute needs $${monthlyCost}/mo`,
+            warning: "⚠️ Can't cover daily commute"
+        };
+        return {
+            tier: "Daily Rideshare",
+            example: "Uber/Lyft to work daily",
+            detail: `$${monthlyCost}/mo for daily commute (${tripsPerWeek} rides/week)`,
+            savings: `$${monthlyBudget - monthlyCost} buffer for extra trips`
+        };
+    };
+
+    const getWalkTier = (monthlyBudget: number): TransportTier => {
+        const yearlyBudget = monthlyBudget * 12;
+
+        if (yearlyBudget < 200) return {
+            tier: "Basic Walking",
+            example: "Standard sneakers",
+            detail: "Minimal gear, short distances"
+        };
+        if (yearlyBudget < 500) return {
+            tier: "Comfortable Commuter",
+            example: "Quality walking shoes + backpack",
+            detail: "Comfortable for daily walks"
+        };
+        if (yearlyBudget < 1000) return {
+            tier: "All-Weather Walker",
+            example: "Premium shoes + rain jacket + umbrella",
+            detail: "Prepared for any weather"
+        };
+        return {
+            tier: "Premium Walker",
+            example: "High-end shoes + full rain gear + winter coat",
+            detail: "Top comfort, all-season ready",
+            savings: "Housing premium for walkable location"
+        };
+    };
+
+    const getCommuteTier = (salary: number, mode: TransportMode): TransportTier => {
+        const monthlyBudget = Math.round(salary / 12 * 0.05); // 5% for transport
+
+        switch (mode) {
+            case 'Car':
+                return getCarTier(monthlyBudget);
+            case 'Scooter':
+                return getScooterTier(monthlyBudget);
+            case 'Bike':
+                return getBikeTier(monthlyBudget);
+            case 'Bus':
+                return getBusTier(monthlyBudget);
+            case 'Uber':
+                return getUberTier(monthlyBudget);
+            case 'Walk':
+                return getWalkTier(monthlyBudget);
+            default:
+                return {
+                    tier: "Standard Commute",
+                    example: "Basic transportation",
+                    detail: `$${monthlyBudget}/mo budget`
+                };
+        }
+    };
+
 
     // Housing Tier Logic
     const activeTier = useMemo(() => {
@@ -328,19 +576,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
     };
 
     const toggleLearningStyle = (style: LearningStyle) => {
-        if (learningStyle.includes(style)) {
-            setLearningStyle(learningStyle.filter(s => s !== style));
-        } else {
-            setLearningStyle([...learningStyle, style]);
-        }
+        setLearningStyle(style);
     };
 
     const toggleTransportMode = (mode: TransportMode) => {
-        if (transportMode.includes(mode)) {
-            setTransportMode(transportMode.filter(m => m !== mode));
-        } else {
-            setTransportMode([...transportMode, mode]);
-        }
+        setTransportMode(mode);
     };
 
     const handleGoogleAuth = async () => {
@@ -348,15 +588,62 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
             const result = await loginWithGoogle();
             const user = result.user;
 
+            // Check if user already has a completed profile (returning user)
+            const { getDoc, doc } = await import('firebase/firestore');
+            const { db } = await import('../services/firebase');
+            const profileDoc = await getDoc(doc(db, "users", user.uid));
+
+            if (profileDoc.exists() && profileDoc.data()?.onboardingCompleted) {
+                // Returning user with completed profile → go to dashboard
+                onComplete();
+                return;
+            }
+
+            // New user or incomplete profile → start onboarding wizard
             // Extract Google Profile Data
             if (user.displayName) setFullName(user.displayName);
             if (user.photoURL) setProfilePic(user.photoURL);
 
-            // Move to Wizard instead of closing immediately
-            // This allows the user to confirm/add location, linkedin, etc.
             setCurrentView(VIEWS.WIZARD_BASICS);
         } catch (error) {
             console.error("Google Sign-In failed", error);
+        }
+    };
+
+    const handleProfilePicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !auth.currentUser) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            alert('Please select an image file');
+            return;
+        }
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Image must be less than 5MB');
+            return;
+        }
+
+        setIsUploadingPic(true);
+        try {
+            // Create a reference to the storage location
+            const storageRef = ref(storage, `profile-pictures/${auth.currentUser.uid}/${Date.now()}_${file.name}`);
+
+            // Upload the file
+            await uploadBytes(storageRef, file);
+
+            // Get the download URL
+            const downloadURL = await getDownloadURL(storageRef);
+
+            // Update the profile pic state
+            setProfilePic(downloadURL);
+        } catch (error) {
+            console.error('Error uploading profile picture:', error);
+            alert('Failed to upload image. Please try again.');
+        } finally {
+            setIsUploadingPic(false);
         }
     };
 
@@ -369,6 +656,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
     };
 
     const handleFinalSubmit = async () => {
+        console.log("Complete Profile clicked - starting save...");
+        setIsSaving(true);
         const profileData = {
             fullName,
             photoURL: profilePic,
@@ -381,7 +670,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                 targetRoles,
                 workStyles,
                 learningStyle,
-                salary,
+                salary, // This is now treated as "Minimum Target"
                 transportMode
             },
             logistics: {
@@ -393,48 +682,74 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
             updatedAt: new Date().toISOString()
         };
 
+        console.log("Profile data to save:", profileData);
+
         try {
             await saveUserProfile(profileData);
+            console.log("Profile saved successfully, closing modal...");
             onComplete();
+            // Navigate to Jobs page after successful profile completion
+            if (setRoute) {
+                console.log("Navigating to Jobs page...");
+                setRoute(NavRoute.JOBS); // Navigate to jobs page
+            }
         } catch (error) {
             console.error("Failed to save profile", error);
-            // Optionally show error state to user
+            const errorMessage = error instanceof Error ? error.message : "Failed to save profile. Please try again.";
+            alert(errorMessage);
+        } finally {
+            setIsSaving(false);
         }
     };
 
     // --- Renderers ---
 
     const renderLogin = () => (
-        <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300 max-w-sm mx-auto w-full">
-            <div className="text-center">
-                <h2 className="text-2xl font-display font-bold text-white">Welcome Back</h2>
-                <p className="text-jalanea-400 text-sm mt-1">Sign in to continue your career journey.</p>
+        <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300 max-w-sm mx-auto w-full py-4">
+            {/* Logo & Welcome */}
+            <div className="text-center space-y-4">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-gold/20 to-gold/5 border border-gold/30 flex items-center justify-center text-gold shadow-lg shadow-gold/10">
+                    <Zap size={32} fill="currentColor" />
+                </div>
+                <div>
+                    <h2 className="text-2xl font-display font-bold text-white">Welcome Back</h2>
+                    <p className="text-jalanea-400 text-sm mt-1">Sign in to continue your journey.</p>
+                </div>
             </div>
 
-            <Button fullWidth variant="primary" onClick={handleGoogleAuth} className="bg-gold hover:bg-gold-light text-jalanea-950 font-bold border-none h-12">
-                <Globe size={18} className="mr-2" /> Continue with Google
-            </Button>
-
-            <div className="relative flex items-center py-2">
-                <div className="flex-grow border-t border-white/10"></div>
-                <span className="flex-shrink-0 mx-4 text-xs font-bold text-jalanea-500 uppercase">Or continue with email</span>
-                <div className="flex-grow border-t border-white/10"></div>
-            </div>
-
+            {/* Primary: Google Sign In */}
             <div className="space-y-4">
+                <Button fullWidth variant="primary" onClick={handleGoogleAuth} className="bg-gold hover:bg-gold-light text-jalanea-950 font-bold border-none h-14 text-base shadow-lg shadow-gold/20">
+                    <Globe size={20} className="mr-2" /> Continue with Google
+                </Button>
+
+                <p className="text-center text-xs text-jalanea-500">
+                    Quick, secure, one-click access
+                </p>
+            </div>
+
+            {/* Divider */}
+            <div className="relative flex items-center">
+                <div className="flex-grow border-t border-white/10"></div>
+                <span className="flex-shrink-0 mx-4 text-xs font-medium text-jalanea-500">or use email</span>
+                <div className="flex-grow border-t border-white/10"></div>
+            </div>
+
+            {/* Secondary: Email Login */}
+            <div className="space-y-3 opacity-80 hover:opacity-100 transition-opacity">
                 <Input variant="dark-glass" placeholder="Email Address" type="email" />
                 <Input variant="dark-glass" placeholder="Password" type="password" />
+                <Button fullWidth variant="secondary" onClick={handleEmailAuth} className="bg-white/5 border-white/10 h-11">
+                    Sign In with Email
+                </Button>
             </div>
 
-            <Button fullWidth variant="secondary" onClick={handleEmailAuth} className="bg-jalanea-800 border-white/10 h-12">
-                Sign In
-            </Button>
-
-            <div className="text-center">
+            {/* Switch to Signup */}
+            <div className="text-center pt-2 border-t border-white/5">
                 <p className="text-sm text-jalanea-400">
-                    Don't have an account?{' '}
+                    New here?{' '}
                     <button onClick={() => setCurrentView(VIEWS.INTRO)} className="text-gold font-bold hover:underline">
-                        Get Started
+                        Create your free account →
                     </button>
                 </p>
             </div>
@@ -543,20 +858,38 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
             nextStep={() => setCurrentView(VIEWS.WIZARD_EDU)}
             currentView={currentView}
         >
-            <div className="flex justify-center mb-6">
+            <div className="flex flex-col items-center mb-6">
                 <div className="relative group">
                     <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-jalanea-500 group-hover:border-gold group-hover:text-gold transition-all overflow-hidden cursor-pointer">
-                        {profilePic ? (
+                        {isUploadingPic ? (
+                            <Loader2 className="animate-spin" size={32} />
+                        ) : profilePic ? (
                             <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
                         ) : (
                             <User size={40} />
                         )}
                     </div>
+                    {/* Hidden file input */}
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleProfilePicUpload}
+                        className="hidden"
+                    />
                     {/* Camera Button */}
-                    <button className="absolute bottom-0 right-0 p-2 bg-gold text-jalanea-950 rounded-full shadow-lg hover:bg-gold-light hover:scale-105 transition-all">
+                    <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploadingPic}
+                        className="absolute bottom-0 right-0 p-2 bg-gold text-jalanea-950 rounded-full shadow-lg hover:bg-gold-light hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                         <Camera size={16} />
                     </button>
                 </div>
+                <p className="text-xs text-jalanea-500 text-center mt-3">
+                    Max 5MB
+                </p>
             </div>
             <Input
                 variant="dark-glass"
@@ -811,11 +1144,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                                 key={style.type}
                                 onClick={() => toggleLearningStyle(style.type as LearningStyle)}
                                 className={`
-                             flex-1 py-3 px-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all duration-200
-                             ${learningStyle.includes(style.type as LearningStyle)
+                                 flex-1 py-3 px-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all duration-200
+                                 ${learningStyle === style.type
                                         ? 'bg-white/20 border-gold text-white shadow-[0_0_10px_rgba(255,196,37,0.2)]'
                                         : 'bg-transparent border-white/10 text-jalanea-400 hover:bg-white/5'}
-                          `}
+                              `}
                             >
                                 <style.icon size={18} />
                                 <span className="text-xs font-bold">{style.type}</span>
@@ -904,8 +1237,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
     );
 
     const renderLifestyle = () => {
-        // Dynamic housing calculation
+        // Dynamic housing calculation and Commute Budget
         const monthlyRentBudget = Math.round(salary / 12 * 0.3);
+        const commuteBudget = Math.round(salary / 12 * 0.05); // Estimate 5% for transport
+        const commuteTier = getCommuteTier(salary, transportMode);
 
         return (
             <WizardLayout
@@ -914,6 +1249,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                 nextStep={handleFinalSubmit}
                 isLast
                 currentView={currentView}
+                isLoading={isSaving}
             >
                 <div className="space-y-8">
                     {/* Transportation Mode */}
@@ -933,7 +1269,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                                     onClick={() => toggleTransportMode(t.mode as TransportMode)}
                                     className={`
                              py-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all duration-200
-                             ${transportMode.includes(t.mode as TransportMode)
+                             ${transportMode === t.mode
                                             ? 'bg-white/20 border-white text-white'
                                             : 'bg-transparent border-white/10 text-jalanea-400 hover:bg-white/5'}
                           `}
@@ -952,7 +1288,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                         {/* Simplified Display: Only Annual Salary */}
                         <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-6 text-center animate-in fade-in slide-in-from-bottom-2 duration-300">
                             <p className="text-jalanea-400 text-xs font-bold uppercase tracking-wider mb-2">
-                                Selected Annual Salary
+                                Target Minimum Salary
                             </p>
                             <div className="text-4xl font-display font-bold text-white tracking-tight">
                                 ${salary.toLocaleString()}
@@ -994,6 +1330,38 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                                     <br />
                                     <span className="opacity-70 text-[10px]">Tier Avg: {activeTier.rentRange}</span>
                                 </p>
+                            </div>
+
+                            {/* Commute Budget Card - Enhanced with Tier Details */}
+                            <div className="bg-white/5 border border-white/10 p-4 rounded-xl flex flex-col justify-center animate-in fade-in duration-300">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Car className="w-4 h-4 text-jalanea-400" />
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-jalanea-400">
+                                        Commute Power
+                                    </span>
+                                </div>
+                                <h3 className="text-base font-display font-bold text-white mb-1">
+                                    {commuteTier.tier}
+                                    {commuteTier.speed && (
+                                        <span className="text-xs text-gold ml-2">⚡ {commuteTier.speed}</span>
+                                    )}
+                                </h3>
+                                <p className="text-xs text-jalanea-300 mb-2 leading-snug">
+                                    {commuteTier.example}
+                                </p>
+                                <p className="text-[10px] text-jalanea-500 leading-relaxed">
+                                    {commuteTier.detail}
+                                </p>
+                                {commuteTier.warning && (
+                                    <p className="text-[10px] text-orange-400 mt-2 font-bold">
+                                        {commuteTier.warning}
+                                    </p>
+                                )}
+                                {commuteTier.savings && (
+                                    <p className="text-[10px] text-green-400 mt-2 font-bold">
+                                        💰 {commuteTier.savings}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>

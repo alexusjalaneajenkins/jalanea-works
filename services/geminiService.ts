@@ -1,9 +1,8 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserProfile, JobAnalysis, Job } from "../types";
 
 // Initialize Gemini AI
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+const apiKey = (typeof process !== 'undefined' && process.env && process.env.API_KEY) || '';
 const ai = new GoogleGenAI({ apiKey });
 
 export const getCareerAdvice = async (userQuery: string): Promise<string> => {

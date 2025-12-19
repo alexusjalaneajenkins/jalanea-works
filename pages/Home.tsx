@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { NavRoute } from '../types';
@@ -105,9 +106,12 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
     setIsAuthOpen(true);
   };
 
+  const navigate = useNavigate();
+
   const handleAuthComplete = () => {
     setIsAuthOpen(false);
-    setRoute(NavRoute.DASHBOARD);
+    // Use React Router navigate for actual navigation
+    navigate('/jobs');
   };
 
   // Filter logic for search
@@ -125,6 +129,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
         onClose={() => setIsAuthOpen(false)}
         initialMode={authMode}
         onComplete={handleAuthComplete}
+        setRoute={setRoute}
       />
 
       {/* --- MISSION MODAL --- */}
@@ -185,7 +190,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                     fullWidth
                     onClick={() => {
                       setIsMissionOpen(false);
-                      setRoute(NavRoute.ABOUT);
+                      navigate('/about');
                     }}
                     className="py-4 shadow-xl shadow-gold/20"
                     icon={<ArrowRight size={18} />}

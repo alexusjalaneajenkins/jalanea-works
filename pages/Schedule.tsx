@@ -1,17 +1,17 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { 
-    Calendar, Clock, CheckCircle2, RefreshCw, Zap, 
+import {
+    Calendar, Clock, CheckCircle2, RefreshCw, Zap,
     Briefcase, BookOpen, UserPlus, PenTool, Coffee, ExternalLink,
     Mail, CalendarClock, Plus, Trash2, ListChecks, ArrowRight, X, Edit2, Link as LinkIcon, CalendarPlus,
     Battery, BatteryCharging, Moon, Sun, Activity, Sparkles, Brain, Heart, CheckSquare, Square,
-    ChevronLeft, ChevronRight, Settings, Palette, AlignLeft, Circle
+    ChevronLeft, ChevronRight, Settings, Palette, AlignLeft, Circle, Loader2
 } from 'lucide-react';
 import { generateWellnessInsights, generateScheduleSuggestions, WellnessInsight, ScheduleSuggestion } from '../services/geminiService';
-import { MOCK_PROFILE } from './Profile';
 import { TaskCategory, TimeBlock, ToDoItem } from '../types';
 
 // --- Default Data ---
@@ -70,26 +70,54 @@ const getFullDisplayDate = (dateStr: string) => {
 };
 
 export const Schedule: React.FC = () => {
+    const { userProfile, saveUserProfile } = useAuth();
     const [viewMode, setViewMode] = useState<'calendar' | 'tasks'>('calendar');
     const [calendarView, setCalendarView] = useState<CalendarViewMode>('multi');
-    
+    const [isInitialized, setIsInitialized] = useState(false);
+
     // Calendar View State
     const [currentDate, setCurrentDate] = useState(getTodayString());
     const [daysToShow, setDaysToShow] = useState(3);
-    
+
     // Data State
     const [schedule, setSchedule] = useState<TimeBlock[]>(INITIAL_SCHEDULE);
     const [tasks, setTasks] = useState<ToDoItem[]>(INITIAL_TASKS);
     const [categories, setCategories] = useState<TaskCategory[]>(DEFAULT_CATEGORIES);
 
+    // Load data from Firebase on mount
+    useEffect(() => {
+        if (userProfile && !isInitialized) {
+            if (userProfile.scheduleBlocks && userProfile.scheduleBlocks.length > 0) {
+                setSchedule(userProfile.scheduleBlocks);
+            }
+            if (userProfile.tasks && userProfile.tasks.length > 0) {
+                setTasks(userProfile.tasks);
+            }
+            setIsInitialized(true);
+        }
+    }, [userProfile, isInitialized]);
+
+    // Auto-save schedule to Firebase when changed
+    useEffect(() => {
+        if (isInitialized && userProfile) {
+            const saveTimer = setTimeout(() => {
+                saveUserProfile({
+                    scheduleBlocks: schedule,
+                    tasks: tasks
+                }).catch(err => console.error('Failed to save schedule:', err));
+            }, 1000); // Debounce saves by 1 second
+            return () => clearTimeout(saveTimer);
+        }
+    }, [schedule, tasks, isInitialized]);
+
     // Modal State
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
     const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
-    const [newBlock, setNewBlock] = useState<Partial<TimeBlock>>({ 
-        date: getTodayString(), 
-        startTime: '09:00', 
-        endTime: '10:00', 
+    const [newBlock, setNewBlock] = useState<Partial<TimeBlock>>({
+        date: getTodayString(),
+        startTime: '09:00',
+        endTime: '10:00',
         categoryId: 'work',
         description: ''
     });
@@ -97,7 +125,7 @@ export const Schedule: React.FC = () => {
     // Category Manager State
     const [newCatName, setNewCatName] = useState('');
     const [newCatColor, setNewCatColor] = useState('#000000');
-    
+
     // Task State
     const [newTaskText, setNewTaskText] = useState('');
 
@@ -107,7 +135,7 @@ export const Schedule: React.FC = () => {
     const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
     const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set());
     const [customDurations, setCustomDurations] = useState<Record<string, number>>({});
-    
+
     // Wellness State
     const [wellness, setWellness] = useState<WellnessInsight | null>(null);
     const [isAnalyzingWellness, setIsAnalyzingWellness] = useState(false);
@@ -131,7 +159,7 @@ export const Schedule: React.FC = () => {
         const firstDayOfMonth = new Date(year, month, 1);
         const startDayOfWeek = firstDayOfMonth.getDay();
         const gridStart = new Date(year, month, 1 - startDayOfWeek);
-        
+
         return Array.from({ length: 42 }, (_, i) => {
             const d = new Date(gridStart);
             d.setDate(gridStart.getDate() + i);
@@ -210,11 +238,11 @@ export const Schedule: React.FC = () => {
 
     const openAddModal = (date?: string) => {
         setEditingBlockId(null);
-        setNewBlock({ 
-            date: date || currentDate, 
-            startTime: '09:00', 
-            endTime: '10:00', 
-            categoryId: categories[0].id, 
+        setNewBlock({
+            date: date || currentDate,
+            startTime: '09:00',
+            endTime: '10:00',
+            categoryId: categories[0].id,
             title: '',
             description: ''
         });
@@ -230,7 +258,7 @@ export const Schedule: React.FC = () => {
     // --- CATEGORY MANAGEMENT ---
 
     const addCategory = () => {
-        if(newCatName && newCatColor) {
+        if (newCatName && newCatColor) {
             const id = newCatName.toLowerCase().replace(/\s+/g, '-');
             setCategories([...categories, { id, label: newCatName, color: newCatColor }]);
             setNewCatName('');
@@ -254,7 +282,7 @@ export const Schedule: React.FC = () => {
         setIsLoadingSuggestions(false);
         setIsSuggestionsOpen(true);
     };
-    
+
     const toggleSuggestion = (id: string) => {
         const next = new Set(selectedSuggestions);
         if (next.has(id)) next.delete(id);
@@ -264,38 +292,38 @@ export const Schedule: React.FC = () => {
 
     const addSuggestionsToSchedule = () => {
         let lastTime = "09:00";
-        const todayBlocks = schedule.filter(s => s.date === getTodayString()).sort((a,b) => a.endTime.localeCompare(b.endTime));
+        const todayBlocks = schedule.filter(s => s.date === getTodayString()).sort((a, b) => a.endTime.localeCompare(b.endTime));
         if (todayBlocks.length > 0) lastTime = todayBlocks[todayBlocks.length - 1].endTime;
 
         const newBlocks: TimeBlock[] = [];
         let currentTime = lastTime;
 
         suggestions.filter(s => selectedSuggestions.has(s.id)).forEach(s => {
-             const [hours, mins] = currentTime.split(':').map(Number);
-             const duration = customDurations[s.id] || 30;
-             const dateObj = new Date();
-             dateObj.setHours(hours, mins + duration);
-             
-             const endHours = dateObj.getHours().toString().padStart(2, '0');
-             const endMins = dateObj.getMinutes().toString().padStart(2, '0');
-             const endTime = `${endHours}:${endMins}`;
+            const [hours, mins] = currentTime.split(':').map(Number);
+            const duration = customDurations[s.id] || 30;
+            const dateObj = new Date();
+            dateObj.setHours(hours, mins + duration);
 
-             let catId = 'personal';
-             if (s.category === 'Career') catId = 'work';
-             if (s.category === 'Learning') catId = 'learning';
-             if (s.category === 'Wellness') catId = 'wellness';
+            const endHours = dateObj.getHours().toString().padStart(2, '0');
+            const endMins = dateObj.getMinutes().toString().padStart(2, '0');
+            const endTime = `${endHours}:${endMins}`;
 
-             newBlocks.push({
-                 id: Date.now().toString() + Math.random().toString(),
-                 title: s.title,
-                 categoryId: catId,
-                 startTime: currentTime,
-                 endTime: endTime,
-                 date: getTodayString(),
-                 description: s.reasoning,
-                 isAiSuggested: true
-             });
-             currentTime = endTime;
+            let catId = 'personal';
+            if (s.category === 'Career') catId = 'work';
+            if (s.category === 'Learning') catId = 'learning';
+            if (s.category === 'Wellness') catId = 'wellness';
+
+            newBlocks.push({
+                id: Date.now().toString() + Math.random().toString(),
+                title: s.title,
+                categoryId: catId,
+                startTime: currentTime,
+                endTime: endTime,
+                date: getTodayString(),
+                description: s.reasoning,
+                isAiSuggested: true
+            });
+            currentTime = endTime;
         });
 
         setSchedule(prev => [...prev, ...newBlocks]);
@@ -312,7 +340,7 @@ export const Schedule: React.FC = () => {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500 pb-12 h-full flex flex-col">
-            
+
             {/* Header Controls */}
             <div className="flex flex-col xl:flex-row justify-between xl:items-end gap-4 shrink-0">
                 <div>
@@ -323,7 +351,7 @@ export const Schedule: React.FC = () => {
                             <button onClick={() => setViewMode('calendar')} className={`px-3 py-1 rounded text-sm font-bold transition-all ${viewMode === 'calendar' ? 'bg-jalanea-900 text-gold' : 'text-jalanea-500'}`}>Calendar</button>
                             <button onClick={() => setViewMode('tasks')} className={`px-3 py-1 rounded text-sm font-bold transition-all ${viewMode === 'tasks' ? 'bg-jalanea-900 text-gold' : 'text-jalanea-500'}`}>To-Do</button>
                         </div>
-                        
+
                         {/* Calendar Mode Toggles */}
                         {viewMode === 'calendar' && (
                             <>
@@ -336,9 +364,9 @@ export const Schedule: React.FC = () => {
                                 {calendarView === 'multi' && (
                                     <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-lg border border-jalanea-200 animate-in fade-in zoom-in-95 duration-200">
                                         <span className="text-xs font-bold text-jalanea-500 uppercase whitespace-nowrap">Days: {daysToShow}</span>
-                                        <input 
-                                            type="range" min="2" max="7" step="1" 
-                                            value={daysToShow} 
+                                        <input
+                                            type="range" min="2" max="7" step="1"
+                                            value={daysToShow}
                                             onChange={(e) => setDaysToShow(parseInt(e.target.value))}
                                             className="w-20 accent-gold cursor-pointer"
                                         />
@@ -352,7 +380,7 @@ export const Schedule: React.FC = () => {
                 {viewMode === 'calendar' && (
                     <div className="flex flex-wrap gap-3 items-center">
                         <div className="flex items-center bg-white rounded-xl border border-jalanea-200 shadow-sm p-1">
-                            <button onClick={handlePrevPeriod} className="p-2 hover:bg-jalanea-50 rounded-lg text-jalanea-600"><ChevronLeft size={20}/></button>
+                            <button onClick={handlePrevPeriod} className="p-2 hover:bg-jalanea-50 rounded-lg text-jalanea-600"><ChevronLeft size={20} /></button>
                             <div className="px-4 text-center min-w-[140px] flex-1">
                                 <span className="block text-xs font-bold text-jalanea-400 uppercase">
                                     {calendarView === 'day' ? 'Current Day' : calendarView === 'multi' ? `${daysToShow} Days View` : 'Current Month'}
@@ -361,17 +389,17 @@ export const Schedule: React.FC = () => {
                                     {calendarView === 'day' ? getDisplayDate(currentDate) : currentMonthLabel}
                                 </span>
                             </div>
-                            <button onClick={handleNextPeriod} className="p-2 hover:bg-jalanea-50 rounded-lg text-jalanea-600"><ChevronRight size={20}/></button>
+                            <button onClick={handleNextPeriod} className="p-2 hover:bg-jalanea-50 rounded-lg text-jalanea-600"><ChevronRight size={20} /></button>
                         </div>
-                        
+
                         <div className="flex gap-2">
                             <Button size="sm" variant="outline" onClick={handleToday}>Today</Button>
-                            <Button size="sm" variant="ghost" onClick={() => setIsCategoryModalOpen(true)} icon={<Settings size={16}/>}>Types</Button>
-                            <Button 
-                                size="sm" 
-                                variant="glass-dark" 
+                            <Button size="sm" variant="ghost" onClick={() => setIsCategoryModalOpen(true)} icon={<Settings size={16} />}>Types</Button>
+                            <Button
+                                size="sm"
+                                variant="glass-dark"
                                 className="bg-jalanea-900 text-gold border-jalanea-800 hover:bg-jalanea-800"
-                                icon={isLoadingSuggestions ? <Sparkles className="animate-spin" size={16}/> : <Sparkles size={16}/>}
+                                icon={isLoadingSuggestions ? <Sparkles className="animate-spin" size={16} /> : <Sparkles size={16} />}
                                 onClick={handleGetSuggestions}
                                 disabled={isLoadingSuggestions}
                             >
@@ -396,10 +424,10 @@ export const Schedule: React.FC = () => {
                         {monthGridDays.map((cell, idx) => {
                             const dayBlocks = schedule.filter(b => b.date === cell.dateStr);
                             const isToday = cell.dateStr === getTodayString();
-                            
+
                             return (
-                                <div 
-                                    key={idx} 
+                                <div
+                                    key={idx}
                                     onClick={() => { setCurrentDate(cell.dateStr); setCalendarView('day'); }}
                                     className={`
                                         border-b border-r border-jalanea-100 p-1 md:p-2 min-h-[60px] md:min-h-[100px] transition-colors cursor-pointer hover:bg-jalanea-50
@@ -429,18 +457,18 @@ export const Schedule: React.FC = () => {
             {/* --- DAY / MULTI GRID VIEW --- */}
             {viewMode === 'calendar' && (calendarView === 'multi' || calendarView === 'day') && (
                 <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar bg-white/50 rounded-2xl border border-jalanea-200 relative">
-                    <div 
-                        className="h-full grid divide-x divide-jalanea-200" 
-                        style={{ 
+                    <div
+                        className="h-full grid divide-x divide-jalanea-200"
+                        style={{
                             gridTemplateColumns: `repeat(${visibleDays.length}, minmax(200px, 1fr))`,
-                            minWidth: visibleDays.length > 2 ? '100%' : 'auto' 
+                            minWidth: visibleDays.length > 2 ? '100%' : 'auto'
                         }}
                     >
                         {visibleDays.map((dayDate) => {
                             const isToday = dayDate === getTodayString();
                             const dayBlocks = schedule
                                 .filter(b => b.date === dayDate)
-                                .sort((a,b) => a.startTime.localeCompare(b.startTime));
+                                .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
                             return (
                                 <div key={dayDate} className={`flex flex-col h-full ${isToday ? 'bg-white' : 'bg-jalanea-50/30'}`}>
@@ -455,7 +483,7 @@ export const Schedule: React.FC = () => {
                                         {dayBlocks.map(block => {
                                             const catColor = getCatColor(block.categoryId);
                                             return (
-                                                <div 
+                                                <div
                                                     key={block.id}
                                                     onClick={() => openEditModal(block)}
                                                     className="p-3 rounded-xl border border-black/5 shadow-sm hover:shadow-md transition-all cursor-pointer relative overflow-hidden group"
@@ -473,8 +501,8 @@ export const Schedule: React.FC = () => {
                                                 </div>
                                             );
                                         })}
-                                        
-                                        <button 
+
+                                        <button
                                             onClick={() => openAddModal(dayDate)}
                                             className="w-full py-3 border-2 border-dashed border-jalanea-200 rounded-xl text-jalanea-400 font-bold text-sm hover:border-gold hover:text-gold hover:bg-gold/5 transition-all opacity-0 group-hover/col:opacity-100"
                                         >
@@ -493,19 +521,19 @@ export const Schedule: React.FC = () => {
                 <div className="max-w-3xl mx-auto w-full h-full flex flex-col">
                     <Card variant="solid-white" className="p-0 overflow-hidden flex-1 flex flex-col">
                         <div className="p-6 bg-jalanea-50 border-b border-jalanea-100 flex gap-4">
-                            <input 
+                            <input
                                 className="flex-1 bg-white border border-jalanea-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-gold"
                                 placeholder="Add a new task..."
                                 value={newTaskText}
                                 onChange={(e) => setNewTaskText(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
                             />
-                            <Button onClick={handleAddTask} icon={<Plus size={18}/>}>Add</Button>
+                            <Button onClick={handleAddTask} icon={<Plus size={18} />}>Add</Button>
                         </div>
                         <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-2">
                             {tasks.map(task => (
                                 <div key={task.id} className="group flex items-center gap-3 p-4 bg-white border border-jalanea-100 rounded-xl hover:border-jalanea-300 hover:shadow-sm transition-all">
-                                    <button 
+                                    <button
                                         onClick={() => toggleTask(task.id)}
                                         className={`shrink-0 ${task.completed ? 'text-green-500' : 'text-jalanea-300 hover:text-gold'}`}
                                     >
@@ -539,7 +567,7 @@ export const Schedule: React.FC = () => {
                     <Card variant="solid-white" className="relative w-full max-w-md z-10 shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="font-bold text-xl">{editingBlockId ? 'Edit Block' : 'Add Block'}</h3>
-                            <button onClick={() => setIsAddModalOpen(false)}><X size={20}/></button>
+                            <button onClick={() => setIsAddModalOpen(false)}><X size={20} /></button>
                         </div>
 
                         {/* Date Indicator */}
@@ -558,31 +586,31 @@ export const Schedule: React.FC = () => {
                         )}
 
                         <div className="space-y-4">
-                            <Input label="Title" value={newBlock.title} onChange={e => setNewBlock({...newBlock, title: e.target.value})} />
-                            
+                            <Input label="Title" value={newBlock.title} onChange={e => setNewBlock({ ...newBlock, title: e.target.value })} />
+
                             <div>
                                 <label className="block text-sm font-bold mb-2 text-jalanea-900">Details</label>
-                                <textarea 
+                                <textarea
                                     className="w-full border border-jalanea-200 rounded-xl p-3 bg-white text-sm focus:ring-1 focus:ring-gold focus:border-gold outline-none resize-none"
                                     placeholder="Add description or notes..."
                                     rows={3}
                                     value={newBlock.description || ''}
-                                    onChange={e => setNewBlock({...newBlock, description: e.target.value})}
+                                    onChange={e => setNewBlock({ ...newBlock, description: e.target.value })}
                                 />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
-                                <Input label="Start" type="time" value={newBlock.startTime} onChange={e => setNewBlock({...newBlock, startTime: e.target.value})} />
-                                <Input label="End" type="time" value={newBlock.endTime} onChange={e => setNewBlock({...newBlock, endTime: e.target.value})} />
+                                <Input label="Start" type="time" value={newBlock.startTime} onChange={e => setNewBlock({ ...newBlock, startTime: e.target.value })} />
+                                <Input label="End" type="time" value={newBlock.endTime} onChange={e => setNewBlock({ ...newBlock, endTime: e.target.value })} />
                             </div>
 
                             <div className="pt-2">
                                 <label className="block text-xs font-bold text-jalanea-400 mb-1 uppercase">Change Date</label>
-                                <input 
-                                    type="date" 
+                                <input
+                                    type="date"
                                     className="w-full border border-jalanea-200 rounded-lg p-2 text-sm bg-jalanea-50 text-jalanea-600"
                                     value={newBlock.date}
-                                    onChange={e => setNewBlock({...newBlock, date: e.target.value})}
+                                    onChange={e => setNewBlock({ ...newBlock, date: e.target.value })}
                                 />
                             </div>
 
@@ -592,7 +620,7 @@ export const Schedule: React.FC = () => {
                                     {categories.map(cat => (
                                         <button
                                             key={cat.id}
-                                            onClick={() => setNewBlock({...newBlock, categoryId: cat.id})}
+                                            onClick={() => setNewBlock({ ...newBlock, categoryId: cat.id })}
                                             className={`p-2 rounded-lg text-sm font-bold border transition-all text-left flex items-center gap-2
                                                 ${newBlock.categoryId === cat.id ? 'ring-2 ring-jalanea-900 border-transparent bg-jalanea-50' : 'border-jalanea-200 hover:bg-jalanea-50'}
                                             `}
