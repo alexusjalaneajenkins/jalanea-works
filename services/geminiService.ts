@@ -1,8 +1,8 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserProfile, JobAnalysis, Job } from "../types";
 
-// Initialize Gemini AI
-const apiKey = (typeof process !== 'undefined' && process.env && process.env.API_KEY) || '';
+// Initialize Gemini AI with Vite environment variable
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
 const ai = new GoogleGenAI({ apiKey });
 
 export const getCareerAdvice = async (userQuery: string): Promise<string> => {
@@ -378,8 +378,8 @@ export const generateWellnessInsights = async (schedule: any[], userProfile: Use
             
             USER CONTEXT:
             Schedule Today: ${scheduleSummary}
-            Is Parent: ${userProfile.isParent}
-            Employment: ${userProfile.employmentStatus}
+            Is Parent: ${userProfile.logistics?.isParent || false}
+            Employment: ${userProfile.logistics?.employmentStatus || 'Unknown'}
             
             Generate a precise Wellness & Recovery plan.
             RULES:

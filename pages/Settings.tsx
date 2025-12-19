@@ -68,16 +68,17 @@ export const MOCK_PROFILE: UserProfile = {
     { name: "Microsoft Office Specialist (Word, Excel, PowerPoint)", issuer: "Microsoft" },
     { name: "Entrepreneurship & Small Business", issuer: "Microsoft" }
   ],
-  // Flattened Preferences
-  targetRoles: [],
-  workStyles: [],
-  learningStyle: ['Both'],
-  transportMode: ['Car'],
-  salary: 0,
-
-  // Flattened Logistics
-  isParent: false,
-  employmentStatus: 'Part-time',
+  preferences: {
+    targetRoles: [],
+    workStyles: [],
+    learningStyle: ['Both'],
+    transportMode: ['Car'],
+    salary: 0
+  },
+  logistics: {
+    isParent: false,
+    employmentStatus: 'Part-time'
+  },
   onboardingCompleted: true,
   updatedAt: new Date().toISOString()
 };

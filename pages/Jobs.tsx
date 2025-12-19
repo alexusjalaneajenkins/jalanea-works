@@ -3,13 +3,15 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { generateJobIntel } from '../services/geminiService';
+import { searchJobs } from '../services/jobService';
+import { useAuth } from '../contexts/AuthContext';
 import {
     Search, Filter, MapPin, Sparkles, FileText,
     GraduationCap, Clock, Zap, Heart, X,
     Users, TrendingUp, Wand2, Briefcase, DollarSign, Calendar,
     ArrowRight, CheckCircle2, UserPlus, Target, Microscope, Share2, Linkedin,
     BookOpen, MessageSquare, ExternalLink, Mail, Copy, CalendarPlus,
-    Library, Hammer, RefreshCw, Coffee, Car, Bus, Bike, Footprints, Info, Headphones
+    Library, Hammer, RefreshCw, Coffee, Car, Bus, Bike, Footprints, Info, Headphones, AlertCircle, Loader2
 } from 'lucide-react';
 import { NavRoute, Job, JobAnalysis, TransportMode } from '../types';
 import { MOCK_PROFILE } from './Profile';
@@ -145,14 +147,102 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
     const [activeFilter, setActiveFilter] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'overview' | 'strategy' | 'content'>('overview');
 
+    // Real job data state
+    const [jobs, setJobs] = useState<Job[]>(MOCK_JOBS);
+    const [isLoadingJobs, setIsLoadingJobs] = useState(true);
+    const [jobsError, setJobsError] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchLocation, setSearchLocation] = useState('');
+
+    // Auth context for user profile
+    const { userProfile } = useAuth();
+
     // Loading State Tracking
     const [loadingTime, setLoadingTime] = useState(0);
     const [retryCount, setRetryCount] = useState(0);
     const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+    // Fetch jobs on mount and when search changes
+    const fetchJobs = async (query?: string, location?: string) => {
+        setIsLoadingJobs(true);
+        setJobsError(null);
+
+        try {
+            // Build search query from user profile or custom search
+            const searchTerms = query ||
+                (userProfile?.preferences?.targetRoles?.join(' OR ') || 'entry level designer');
+            const userLocation = location || userProfile?.location || 'Orlando, FL';
+            const transportMode = (MOCK_PROFILE.preferences?.transportMode?.[0] || 'Car') as TransportMode;
+
+            console.log('🔍 Searching jobs:', { searchTerms, userLocation });
+
+            const response = await searchJobs(searchTerms, {
+                location: userLocation,
+                userLocation: userLocation,
+                transportMode: transportMode,
+            });
+
+            if (response.jobs && response.jobs.length > 0) {
+                // Add match scores based on user skills
+                const userSkills = [
+                    ...(MOCK_PROFILE.skills?.technical || []),
+                    ...(MOCK_PROFILE.skills?.design || []),
+                ];
+
+                const jobsWithScores = response.jobs.map(job => ({
+                    ...job,
+                    matchScore: job.matchScore || calculateQuickMatchScore(job, userSkills),
+                    matchReason: job.matchReason || generateMatchReason(job, userSkills),
+                }));
+
+                setJobs(jobsWithScores);
+                console.log(`✅ Loaded ${jobsWithScores.length} real jobs`);
+            } else {
+                console.log('⚠️ No jobs found, using mock data');
+                setJobs(MOCK_JOBS);
+            }
+        } catch (error) {
+            console.error('❌ Job search error:', error);
+            setJobsError('Unable to fetch live jobs. Showing cached results.');
+            setJobs(MOCK_JOBS);
+        } finally {
+            setIsLoadingJobs(false);
+        }
+    };
+
+    // Quick match score calculation
+    const calculateQuickMatchScore = (job: Job, userSkills: string[]): number => {
+        const description = (job.description || '').toLowerCase();
+        const matchingSkills = userSkills.filter(skill =>
+            description.includes(skill.toLowerCase())
+        );
+        const baseScore = 70;
+        const skillBonus = Math.min(matchingSkills.length * 8, 25);
+        return Math.min(baseScore + skillBonus + Math.floor(Math.random() * 5), 99);
+    };
+
+    // Generate match reason
+    const generateMatchReason = (job: Job, userSkills: string[]): string => {
+        const description = (job.description || '').toLowerCase();
+        const matchingSkills = userSkills.filter(skill =>
+            description.includes(skill.toLowerCase())
+        );
+        if (matchingSkills.length > 0) {
+            return `Matches your ${matchingSkills.slice(0, 2).join(' & ')} skills`;
+        }
+        return 'Good fit for your experience level';
+    };
+
+    // Initial fetch on mount
+    useEffect(() => {
+        fetchJobs();
+    }, [userProfile]);
+
     const handleSearch = () => {
         setIsSearching(true);
-        setTimeout(() => setIsSearching(false), 1500);
+        fetchJobs(searchQuery || undefined, searchLocation || undefined).finally(() => {
+            setIsSearching(false);
+        });
     };
 
     // The "Universal Fallback" - Value even when AI fails
@@ -310,9 +400,12 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                     <div className="flex flex-col md:flex-row gap-3">
                         <div className="flex-1 relative">
                             <Input
-                                placeholder="Search by title..."
+                                placeholder="Search by title (e.g. 'Designer', 'Marketing')..."
                                 icon={<Search size={18} />}
                                 className="border-none shadow-sm focus:ring-2 focus:ring-gold bg-white"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                             />
                         </div>
                         <div className="w-full md:w-1/4">
@@ -320,6 +413,9 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                                 placeholder="Location"
                                 icon={<MapPin size={18} />}
                                 className="border-none shadow-sm focus:ring-2 focus:ring-gold bg-white"
+                                value={searchLocation}
+                                onChange={(e) => setSearchLocation(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                             />
                         </div>
                         <div className="flex gap-2">
@@ -354,7 +450,25 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
 
             {/* Job Feed */}
             <div className="space-y-6">
-                {MOCK_JOBS.map((job) => (
+                {/* Loading State */}
+                {isLoadingJobs && (
+                    <Card variant="glass-light" className="p-8 text-center">
+                        <Loader2 className="animate-spin mx-auto text-gold w-10 h-10 mb-4" />
+                        <p className="text-jalanea-600 font-medium">Scanning real-time job listings...</p>
+                        <p className="text-sm text-jalanea-400 mt-1">Powered by SerpAPI &amp; Google Jobs</p>
+                    </Card>
+                )}
+
+                {/* Error State */}
+                {jobsError && (
+                    <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
+                        <AlertCircle size={20} />
+                        <span className="text-sm font-medium">{jobsError}</span>
+                    </div>
+                )}
+
+                {/* Jobs List */}
+                {!isLoadingJobs && jobs.map((job) => (
                     <Card
                         key={job.id}
                         variant="solid-white"

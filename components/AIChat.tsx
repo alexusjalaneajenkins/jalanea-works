@@ -10,7 +10,7 @@ import { ChatMessage } from '../types';
 export const AIChat: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: '1', role: 'model', text: 'Hello! I am your strategic career architect. What is your goal today?', timestamp: new Date() }
+    { id: '1', role: 'model', sender: 'ai', text: 'Hello! I am your strategic career architect. What is your goal today?', timestamp: new Date() }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -25,10 +25,10 @@ export const AIChat: React.FC = () => {
   // Listen for custom event to open chat with context
   useEffect(() => {
     const handleOpenChat = (event: CustomEvent<{ message: string }>) => {
-        setIsOpen(true);
-        if (event.detail?.message) {
-            setInput(event.detail.message);
-        }
+      setIsOpen(true);
+      if (event.detail?.message) {
+        setInput(event.detail.message);
+      }
     };
 
     window.addEventListener('open-ai-chat' as any, handleOpenChat as any);
@@ -41,6 +41,7 @@ export const AIChat: React.FC = () => {
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
+      sender: 'user',
       text: input,
       timestamp: new Date()
     };
@@ -54,6 +55,7 @@ export const AIChat: React.FC = () => {
       const modelMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'model',
+        sender: 'ai',
         text: responseText,
         timestamp: new Date()
       };
@@ -79,15 +81,15 @@ export const AIChat: React.FC = () => {
               <X size={18} />
             </button>
           </div>
-          
+
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white/50" ref={scrollRef}>
             {messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`
                   max-w-[85%] rounded-2xl px-4 py-3 text-sm font-medium shadow-sm
-                  ${msg.role === 'user' 
-                    ? 'bg-jalanea-900 text-white rounded-br-none' 
+                  ${msg.role === 'user'
+                    ? 'bg-jalanea-900 text-white rounded-br-none'
                     : 'bg-white border border-jalanea-200 text-jalanea-900 rounded-bl-none'}
                 `}>
                   {msg.text}
@@ -110,7 +112,7 @@ export const AIChat: React.FC = () => {
           {/* Input */}
           <div className="p-4 bg-white border-t border-jalanea-200">
             <div className="flex gap-2">
-              <input 
+              <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
