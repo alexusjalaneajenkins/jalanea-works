@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Briefcase, ChevronRight, TrendingUp, MapPin, Zap, ArrowUpRight, CheckCircle2, Circle, ExternalLink, GraduationCap, Clock, MoreHorizontal, Sparkles, Loader2, Calendar, Target, Mail, MessageCircle } from 'lucide-react';
-import { Job } from '../types';
+import { Job, TransportMode } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { searchJobs } from '../services/jobService';
+import { useNavigate } from 'react-router-dom';
 import { MOCK_PROFILE } from './Profile';
-import { findRealTimeJobs } from '../services/geminiService';
 
 // Skeleton Component for "Filling in the Blanks" visual
 const SkeletonJobCard = () => (
@@ -33,7 +35,7 @@ const SkeletonJobCard = () => (
     </Card>
 );
 
-// New Component: Active Application Tracker
+// New Component: Active Application Tracker (Mock for now, placeholder for future feature)
 const ActiveTracker = () => {
     const apps = [
         { id: 1, company: "Disney", role: "UX Intern", stage: "Applied", daysAgo: 3, nextAction: "Send Follow Up Email", urgent: true },
@@ -67,7 +69,7 @@ const ActiveTracker = () => {
                     </div>
                 ))}
                 <div className="p-3 text-center">
-                    <button className="text-xs font-bold text-jalanea-400 hover:text-gold transition-colors">View All Applications</button>
+                    <button className="text-xs font-bold text-jalanea-400 hover:text-gold transition-colors">View All Application</button>
                 </div>
             </div>
         </Card>
@@ -75,81 +77,53 @@ const ActiveTracker = () => {
 };
 
 export const Dashboard: React.FC = () => {
-    const [showAllJobs, setShowAllJobs] = useState(false);
-    const [isScanning, setIsScanning] = useState(false);
-    const [foundJobs, setFoundJobs] = useState<Job[]>([]);
+    const { userProfile } = useAuth();
+    const navigate = useNavigate();
 
-    // Initial Mock Data with Reliable Logos
-    const INITIAL_JOBS: Job[] = [
-        {
-            id: '1',
-            title: 'Junior Web Designer',
-            company: 'Universal Creative',
-            location: 'Orlando, FL',
-            type: 'Full-time',
-            salaryRange: '$52k - $65k',
-            postedAt: '2h ago',
-            matchScore: 98,
-            skills: ['Adobe Suite', 'Figma'],
-            experienceLevel: 'Entry Level',
-            description: 'Create immersive digital experiences for theme park attractions.',
-            logo: "https://ui-avatars.com/api/?name=Universal+Creative&background=000000&color=fff&size=128&bold=true"
-        },
-        {
-            id: '2',
-            title: 'Digital Design Intern',
-            company: 'Electronic Arts (EA)',
-            location: 'Orlando, FL',
-            type: 'Internship',
-            salaryRange: '$22/hr',
-            postedAt: '4h ago',
-            matchScore: 96,
-            skills: ['UI Basics', 'Gaming Passion'],
-            experienceLevel: 'Internship',
-            description: 'Support the UI team on Madden NFL titles.',
-            logo: "https://ui-avatars.com/api/?name=EA+Games&background=ff0000&color=fff&size=128&bold=true"
-        },
-        {
-            id: '3',
-            title: 'Marketing Coordinator',
-            company: 'Visit Orlando',
-            location: 'Orlando, FL',
-            type: 'Full-time',
-            salaryRange: '$48k - $55k',
-            postedAt: '6h ago',
-            matchScore: 92,
-            skills: ['Social Media', 'Content'],
-            experienceLevel: 'Entry Level',
-            description: 'Promote Orlando as a premier destination.',
-            logo: "https://ui-avatars.com/api/?name=Visit+Orlando&background=ff9900&color=fff&size=128&bold=true"
-        }
-    ];
+    const [jobs, setJobs] = useState<Job[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const [jobs, setJobs] = useState<Job[]>(INITIAL_JOBS);
+    // Fetch live jobs on mount
+    useEffect(() => {
+        const fetchDashboardJobs = async () => {
+            setIsLoading(true);
+            try {
+                // Use user profile for search terms or fallback
+                const searchTerms = userProfile?.preferences?.targetRoles?.join(' OR ') || 'entry level';
+                const location = userProfile?.location || 'Orlando, FL';
 
-    const handleScan = async () => {
-        setIsScanning(true);
+                // Fetch just a few jobs for the dashboard
+                const response = await searchJobs(searchTerms, {
+                    location: location,
+                    userLocation: location,
+                    transportMode: (userProfile?.preferences?.transportMode?.[0] || 'Car') as TransportMode,
+                });
 
-        try {
-            // Fetch "Real-Time" jobs via AI Service
-            const newRoles = await findRealTimeJobs(MOCK_PROFILE);
-
-            if (newRoles && newRoles.length > 0) {
-                setFoundJobs(newRoles);
-                // Prepend new jobs to current list
-                setJobs(prev => [...newRoles, ...prev]);
+                if (response.jobs && response.jobs.length > 0) {
+                    setJobs(response.jobs.slice(0, 3)); // Only show top 3
+                }
+            } catch (err) {
+                console.error("Dashboard job fetch failed", err);
+                setError("Could not load recommendations.");
+            } finally {
+                setIsLoading(false);
             }
-        } catch (error) {
-            console.error("Scan failed", error);
-        } finally {
-            setIsScanning(false);
-        }
-    };
+        };
 
-    const displayedJobs = showAllJobs ? jobs : jobs.slice(0, 5); // Show up to 5 items
+        fetchDashboardJobs();
+    }, [userProfile]);
+
+    // Derived State - use fullName (from Profile) or displayName (from Google Auth) as fallback
+    const userName = userProfile?.fullName?.split(' ')[0] || userProfile?.displayName?.split(' ')[0] || 'Friend';
+    const userDegree = userProfile?.education?.[0]?.degreeLevel && userProfile?.education?.[0]?.program
+        ? `${userProfile.education[0].degreeLevel} ${userProfile.education[0].program}`
+        : userProfile?.education?.[0]?.degree || 'Credentials';
 
     // Logic for Smart Schedule
-    const isBusy = MOCK_PROFILE.logistics.isParent || MOCK_PROFILE.logistics.employmentStatus === 'Multiple Jobs' || MOCK_PROFILE.logistics.employmentStatus === 'Full-time';
+    // Fallback to MOCK_PROFILE for schedule logic if userProfile is incomplete for now, 
+    // or just assume standard flow.
+    const isBusy = false;
     const scheduleType = isBusy ? 'Micro-Tasks' : 'Deep Work';
 
     return (
@@ -160,20 +134,19 @@ export const Dashboard: React.FC = () => {
                 <div>
                     <h1 className="text-3xl font-display font-bold text-jalanea-900">Dashboard</h1>
                     <p className="text-jalanea-600 mt-2 text-lg">
-                        Welcome back, Alex. Your <span className="font-bold text-jalanea-900">A.S. Interactive Design</span> is in high demand today.
+                        Welcome back, {userName}. Your <span className="font-bold text-jalanea-900">{userDegree}</span> is in high demand today.
                     </p>
                 </div>
                 <div className="flex gap-3">
-                    <Button variant="outline" className="border-jalanea-200 text-jalanea-600 hover:border-jalanea-900 hover:text-jalanea-900">
-                        Update Degree
+                    <Button variant="outline" className="border-jalanea-200 text-jalanea-600 hover:border-jalanea-900 hover:text-jalanea-900" onClick={() => navigate('/profile')}>
+                        Update Profile
                     </Button>
                     <Button
                         variant="secondary"
-                        onClick={handleScan}
-                        disabled={isScanning || foundJobs.length > 0}
-                        icon={isScanning ? <Loader2 size={16} className="animate-spin text-gold" /> : <Zap size={16} className="text-gold" />}
+                        onClick={() => navigate('/jobs')}
+                        icon={<Zap size={16} className="text-gold" />}
                     >
-                        {isScanning ? 'AI Scanning...' : foundJobs.length > 0 ? 'Feed Updated' : 'Scan New Roles'}
+                        Find More Roles
                     </Button>
                 </div>
             </div>
@@ -203,7 +176,7 @@ export const Dashboard: React.FC = () => {
                             <h3 className="text-5xl font-display font-bold text-white">High</h3>
                             <span className="bg-gold/20 text-gold border border-gold/20 px-2 py-1 rounded text-xs font-bold">+12%</span>
                         </div>
-                        <p className="text-sm text-jalanea-400 mt-2 font-medium">Orlando design roles vs last month.</p>
+                        <p className="text-sm text-jalanea-400 mt-2 font-medium">Orlando roles matching your skills.</p>
                     </div>
                 </Card>
 
@@ -218,19 +191,19 @@ export const Dashboard: React.FC = () => {
                         </div>
                         <span className="inline-flex items-center gap-1.5 bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-bold">
                             <div className="w-1.5 h-1.5 rounded-full bg-green-600 animate-pulse"></div>
-                            1 Active
+                            0 Active
                         </span>
                     </div>
 
                     <div>
                         <div className="flex justify-between items-end mb-2">
-                            <h3 className="text-4xl font-display font-bold text-jalanea-900">1<span className="text-2xl text-jalanea-300">/15</span></h3>
+                            <h3 className="text-4xl font-display font-bold text-jalanea-900">0<span className="text-2xl text-jalanea-300">/15</span></h3>
                             <span className="text-xs font-bold text-jalanea-500 uppercase">Weekly Goal</span>
                         </div>
                         <div className="w-full bg-jalanea-100 rounded-full h-2">
-                            <div className="bg-jalanea-900 h-2 rounded-full w-[6.6%]"></div>
+                            <div className="bg-jalanea-900 h-2 rounded-full w-[0%]"></div>
                         </div>
-                        <p className="text-xs text-jalanea-500 font-medium mt-3">Keep applying to hit your target.</p>
+                        <p className="text-xs text-jalanea-500 font-medium mt-3">Start applying to hit your target.</p>
                     </div>
                 </Card>
 
@@ -254,7 +227,7 @@ export const Dashboard: React.FC = () => {
                                 ? "We know you're busy. Use your break to apply to 1 job."
                                 : "You have open blocks. Use this time for certification study."}
                         </p>
-                        <Button size="sm" className="w-full bg-jalanea-950 text-white hover:bg-jalanea-800 border-none shadow-xl justify-between group">
+                        <Button size="sm" className="w-full bg-jalanea-950 text-white hover:bg-jalanea-800 border-none shadow-xl justify-between group" onClick={() => navigate('/schedule')}>
                             Start {scheduleType === 'Micro-Tasks' ? "Quick Apply" : "Study Session"}
                             <ArrowUpRight size={16} className="text-gold group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                         </Button>
@@ -272,35 +245,39 @@ export const Dashboard: React.FC = () => {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <h2 className="text-xl font-bold text-jalanea-900">Today's Top Matches</h2>
-                            {isScanning && (
-                                <span className="flex items-center gap-1.5 text-xs font-bold text-gold bg-jalanea-900 px-3 py-1 rounded-full animate-pulse">
-                                    <Sparkles size={12} fill="currentColor" /> AI Processing...
-                                </span>
-                            )}
                         </div>
-                        <button className="text-sm font-bold text-jalanea-500 hover:text-jalanea-900 transition-colors flex items-center gap-1">
+                        <button
+                            onClick={() => navigate('/jobs')}
+                            className="text-sm font-bold text-jalanea-500 hover:text-jalanea-900 transition-colors flex items-center gap-1"
+                        >
                             View All <ChevronRight size={16} />
                         </button>
                     </div>
 
                     {/* Job Cards */}
                     <div className="space-y-4">
-                        {isScanning && (
+                        {isLoading && (
                             <>
+                                <SkeletonJobCard />
                                 <SkeletonJobCard />
                                 <SkeletonJobCard />
                             </>
                         )}
 
-                        {displayedJobs.map((job, index) => (
+                        {!isLoading && jobs.length === 0 && !error && (
+                            <Card variant="glass-light" className="p-8 text-center text-jalanea-600">
+                                <p>No recommendations yet. Update your profile or check the full job feed.</p>
+                                <Button size="sm" variant="secondary" onClick={() => navigate('/jobs')} className="mt-4">Search Jobs</Button>
+                            </Card>
+                        )}
+
+                        {!isLoading && jobs.map((job) => (
                             <Card
                                 key={job.id}
                                 variant="solid-white"
                                 hoverEffect
-                                className={`
-                        group cursor-pointer border-l-[4px] transition-all duration-300
-                        ${job.matchReason ? 'border-l-gold bg-gold/5 animate-in slide-in-from-top-4 duration-700' : 'border-l-transparent hover:border-l-jalanea-300'}
-                    `}
+                                className="group cursor-pointer border-l-[4px] border-l-transparent hover:border-l-jalanea-300 transition-all duration-300"
+                                onClick={() => navigate('/jobs')} // For now, clicking takes you to jobs page where you can apply
                             >
                                 <div className="flex flex-col sm:flex-row justify-between gap-6">
                                     <div className="flex-1">
@@ -324,19 +301,7 @@ export const Dashboard: React.FC = () => {
                                                     <p className="text-sm font-bold text-jalanea-500 uppercase tracking-wide">{job.company}</p>
                                                 </div>
                                             </div>
-                                            {/* Mobile Match Score */}
-                                            <div className="sm:hidden flex items-center gap-1 bg-jalanea-50 px-2 py-1 rounded">
-                                                <span className="text-xs font-bold text-jalanea-900">{job.matchScore}% Match</span>
-                                            </div>
                                         </div>
-
-                                        {/* AI Reason (If New) */}
-                                        {job.matchReason && (
-                                            <div className="my-3 flex items-start gap-2 text-xs font-medium text-jalanea-800 bg-white p-2 rounded-lg border border-gold/30 shadow-sm">
-                                                <Sparkles size={14} className="text-gold shrink-0 mt-0.5" fill="currentColor" />
-                                                <span>{job.matchReason}</span>
-                                            </div>
-                                        )}
 
                                         {/* Tags Row */}
                                         <div className="flex flex-wrap gap-2 mt-3 mb-4">
@@ -380,10 +345,10 @@ export const Dashboard: React.FC = () => {
                                                     fill="none"
                                                     stroke="currentColor"
                                                     strokeWidth="3"
-                                                    strokeDasharray={`${job.matchScore}, 100`}
+                                                    strokeDasharray="80, 100" // Static since match score needs deep calculation, or pass quick logic
                                                 />
                                             </svg>
-                                            <span className="absolute text-sm font-bold text-jalanea-900">{job.matchScore}%</span>
+                                            <span className="absolute text-sm font-bold text-jalanea-900">80%</span>
                                         </div>
                                         <span className="text-[10px] font-bold text-jalanea-400 mt-1 uppercase tracking-wider">Match</span>
                                     </div>
@@ -393,7 +358,7 @@ export const Dashboard: React.FC = () => {
                     </div>
 
                     <div className="flex justify-center pt-4">
-                        <Button variant="ghost" className="text-jalanea-500 hover:text-jalanea-900" icon={<MoreHorizontal size={20} />}>
+                        <Button variant="ghost" className="text-jalanea-500 hover:text-jalanea-900" icon={<MoreHorizontal size={20} />} onClick={() => navigate('/jobs')}>
                             Load More Roles
                         </Button>
                     </div>
