@@ -35,9 +35,9 @@ export const AuthPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-jalanea-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-jalanea-50 flex flex-col justify-center py-8 px-4 sm:py-12 sm:px-6 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                <h2 className="mt-6 text-center text-3xl font-display font-bold text-jalanea-900">
+                <h2 className="mt-4 sm:mt-6 text-center text-2xl sm:text-3xl font-display font-bold text-jalanea-900">
                     {isLogin ? 'Sign in to your account' : 'Start your journey'}
                 </h2>
                 <p className="mt-2 text-center text-sm text-jalanea-600">
@@ -51,7 +51,7 @@ export const AuthPage: React.FC = () => {
                 </p>
             </div>
 
-            <div className="mt-6">
+            <div className="mt-6 w-full max-w-md mx-auto">
                 <button
                     onClick={async () => {
                         try {
@@ -64,13 +64,13 @@ export const AuthPage: React.FC = () => {
                             setLoading(false);
                         }
                     }}
-                    className="w-full flex justify-center items-center gap-3 py-2 px-4 border border-jalanea-300 rounded-md shadow-sm text-sm font-medium text-jalanea-700 bg-white hover:bg-jalanea-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-jalanea-500"
+                    className="w-full flex justify-center items-center gap-3 py-3 sm:py-2 px-4 border border-jalanea-300 rounded-lg sm:rounded-md shadow-sm text-base sm:text-sm font-medium text-jalanea-700 bg-white hover:bg-jalanea-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-jalanea-500 active:scale-[0.98] transition-transform"
                 >
                     <svg className="h-5 w-5" aria-hidden="true" viewBox="0 0 24 24">
                         <path
                             d="M12.0003 20.45c4.6667 0 7.4286-3.2143 7.4286-7.5536 0-.5893-.0625-1.0446-.1518-1.4285H12.0003v3.0803h4.2232c-.1964 1.259-.9732 2.75-2.616 3.8483l-.0226.1472 2.4542 1.8847.1691.0169c2.4553-2.25 3.875-5.5536 3.875-9.375 0-6.625-5.375-12-12-12-3.3214 0-6.3125 1.2232-8.5268 3.2321l1.866 2.0536C6.7235 2.6875 8.786 1.5 11.2503 1.5c4.7857 0 7.8214 3.7321 7.8214 3.7321s-3.0357 5.7679-7.8214 5.7679c-2.3125 0-4.3393-1.125-5.7143-2.8393l-1.9553 1.5268C5.2324 12.3929 8.3574 15 12.0003 15z"
                             fill="currentColor"
-                            fillOpacity="0" // Only using path structure, relying on multi-color normally but here mono or simple
+                            fillOpacity="0"
                         />
                         <path d="M12 5.25C13.626 5.25 14.9725 5.8 16.0125 6.775L18.425 4.3625C16.7125 2.8 14.5125 1.75 12 1.75C8.0875 1.75 4.675 4 2.8625 7.4375L5.7 9.6125C6.6 7.1125 8.9875 5.25 12 5.25Z" fill="#EA4335" />
                         <path d="M12 19.5C8.9875 19.5 6.6 17.6375 5.7 15.1375L2.8625 17.3125C4.675 20.75 8.0875 23 12 23C14.5125 23 16.7125 22.0625 18.25 20.65L15.65 18.25C14.725 18.9875 13.525 19.5 12 19.5Z" fill="#34A853" />
@@ -81,15 +81,15 @@ export const AuthPage: React.FC = () => {
                 </button>
             </div>
 
-            <div className="mt-6 flex items-center justify-between">
-                <span className="border-b w-1/5 lg:w-1/4"></span>
-                <span className="text-xs text-center text-gray-500 uppercase">or email</span>
-                <span className="border-b w-1/5 lg:w-1/4"></span>
+            <div className="mt-6 flex items-center justify-center w-full max-w-md mx-auto">
+                <span className="border-b border-jalanea-200 w-1/4"></span>
+                <span className="text-xs text-center text-gray-500 uppercase px-4">or email</span>
+                <span className="border-b border-jalanea-200 w-1/4"></span>
             </div>
 
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-jalanea-100">
-                    <form className="space-y-6" onSubmit={handleSubmit}>
+            <div className="mt-6 sm:mt-8 w-full max-w-md mx-auto">
+                <div className="bg-white py-6 sm:py-8 px-4 sm:px-10 shadow-lg sm:rounded-lg border border-jalanea-100 rounded-xl">
+                    <form className="space-y-5 sm:space-y-6" onSubmit={handleSubmit}>
 
                         {!isLogin && (
                             <div>

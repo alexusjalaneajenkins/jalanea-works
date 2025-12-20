@@ -174,7 +174,40 @@ export interface UserProfile {
     employmentStatus: EmploymentStatus;
   };
   onboardingCompleted: boolean;
+  hasSetupSchedule?: boolean;
+  savedJobs?: SavedJob[];
   updatedAt: string;
+}
+
+// Saved Job for tracking applications
+export interface SavedJob {
+  id: string;
+  job: Job;
+  savedAt: string;
+  status: 'saved' | 'applied' | 'interviewing' | 'rejected' | 'offer';
+  notes?: string;
+  nextAction?: string;
+  nextActionDate?: string;
+}
+
+// Market Demand data for degrees
+export interface MarketDemand {
+  demandLevel: 'High' | 'Moderate' | 'Low';
+  percentChange: number;
+  totalOpenings: number;
+  topLocations: string[];
+  averageSalary: string;
+  lastUpdated: string;
+}
+
+// AI-generated industry resources
+export interface IndustryPulseItem {
+  id: string;
+  title: string;
+  source: string;
+  url?: string;
+  type: 'news' | 'course' | 'trend';
+  reason?: string;
 }
 
 // Resume Types

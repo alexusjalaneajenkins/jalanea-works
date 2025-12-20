@@ -758,29 +758,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
 
     const renderIntro = () => {
         const slides = [
-            { icon: <User size={40} />, title: "Build Your Profile", desc: "Tell us your degree once. We match it to live roles." },
-            { icon: <Sparkles size={40} />, title: "AI Matching", desc: "We scan thousands of jobs for your specific skills." },
-            { icon: <Wand2 size={40} />, title: "One-Click Tailoring", desc: "Generate custom resumes instantly." }
+            { icon: <User size={32} className="sm:w-10 sm:h-10" />, title: "Build Your Profile", desc: "Tell us your degree once. We match it to live roles." },
+            { icon: <Sparkles size={32} className="sm:w-10 sm:h-10" />, title: "AI Matching", desc: "We scan thousands of jobs for your specific skills." },
+            { icon: <Wand2 size={32} className="sm:w-10 sm:h-10" />, title: "One-Click Tailoring", desc: "Generate custom resumes instantly." }
         ];
 
         return (
-            <div className="text-center space-y-10 animate-in fade-in slide-in-from-right-8 duration-300 py-4 h-full flex flex-col justify-center">
-                <h2 className="text-3xl font-display font-bold text-white">How it Works</h2>
+            <div className="text-center space-y-6 sm:space-y-10 animate-in fade-in slide-in-from-right-8 duration-300 py-4 h-full flex flex-col justify-center px-2">
+                <h2 className="text-2xl sm:text-3xl font-display font-bold text-white">How it Works</h2>
 
-                <div className="flex justify-center gap-6">
+                {/* Mobile: Show only active slide, Desktop: Show all three */}
+                <div className="flex justify-center gap-3 sm:gap-6">
                     {slides.map((slide, i) => (
-                        <div key={i} className={`
-                    w-1/3 p-6 rounded-2xl border transition-all duration-300 flex flex-col items-center gap-4 text-center
-                    ${i === carouselIndex
-                                ? 'bg-white/10 border-gold/50 text-white shadow-[0_0_25px_rgba(255,196,37,0.15)] scale-105 z-10'
-                                : 'bg-white/5 border-white/5 text-jalanea-500 opacity-60 scale-95'}
-                `}>
+                        <div
+                            key={i}
+                            className={`
+                                ${i === carouselIndex ? 'flex' : 'hidden sm:flex'}
+                                sm:w-1/3 w-full max-w-[280px] p-4 sm:p-6 rounded-2xl border transition-all duration-300 flex-col items-center gap-3 sm:gap-4 text-center
+                                ${i === carouselIndex
+                                    ? 'bg-white/10 border-gold/50 text-white shadow-[0_0_25px_rgba(255,196,37,0.15)] sm:scale-105 z-10'
+                                    : 'bg-white/5 border-white/5 text-jalanea-500 opacity-60 sm:scale-95'}
+                            `}
+                            onClick={() => setCarouselIndex(i)}
+                        >
                             <div className={`${i === carouselIndex ? 'text-gold' : 'text-current'} transform transition-transform duration-300`}>
                                 {slide.icon}
                             </div>
                             <div className="space-y-2 w-full">
-                                <h3 className="text-sm font-bold uppercase tracking-wider">{slide.title}</h3>
-                                <p className={`text-sm leading-relaxed ${i === carouselIndex ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
+                                <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider">{slide.title}</h3>
+                                <p className={`text-xs sm:text-sm leading-relaxed ${i === carouselIndex ? 'opacity-100' : 'sm:opacity-0 sm:h-0 sm:overflow-hidden'}`}>
                                     {slide.desc}
                                 </p>
                             </div>
@@ -788,14 +794,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                     ))}
                 </div>
 
-                <div className="flex flex-col items-center gap-6">
+                <div className="flex flex-col items-center gap-4 sm:gap-6">
+                    {/* Carousel dots - clickable on mobile */}
                     <div className="flex justify-center gap-2">
                         {slides.map((_, i) => (
-                            <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === carouselIndex ? 'w-8 bg-gold' : 'w-2 bg-white/20'}`}></div>
+                            <button
+                                key={i}
+                                onClick={() => setCarouselIndex(i)}
+                                className={`h-2 sm:h-1.5 rounded-full transition-all duration-300 ${i === carouselIndex ? 'w-8 bg-gold' : 'w-2 bg-white/20 hover:bg-white/40'}`}
+                            />
                         ))}
                     </div>
 
-                    <div className="w-full max-w-xs">
+                    <div className="w-full max-w-xs px-4 sm:px-0">
                         <Button
                             fullWidth
                             variant="primary"
@@ -803,7 +814,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                                 if (carouselIndex < 2) setCarouselIndex(p => p + 1);
                                 else setCurrentView(VIEWS.SIGNUP);
                             }}
-                            className="h-12 text-base shadow-xl shadow-gold/20"
+                            className="h-12 sm:h-12 text-base shadow-xl shadow-gold/20"
                         >
                             {carouselIndex === 2 ? "Let's Go" : "Next"}
                         </Button>
@@ -812,6 +823,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
             </div>
         );
     };
+
 
     const renderSignup = () => (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-300 max-w-sm mx-auto w-full">

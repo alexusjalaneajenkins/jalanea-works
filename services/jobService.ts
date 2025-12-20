@@ -24,6 +24,7 @@ export async function searchJobs(
         country?: string;      // 'us', 'uk', etc.
         language?: string;     // 'en', 'es', etc.
         radius?: number;       // Search radius in km
+        chips?: string;        // Google Jobs chips (e.g. date_posted:today)
         filters?: string;      // uds filter string
         nextPageToken?: string; // For pagination
     }
@@ -37,6 +38,7 @@ export async function searchJobs(
         if (options?.country) params.append('gl', options.country);
         if (options?.language) params.append('hl', options.language);
         if (options?.radius) params.append('lrad', options.radius.toString());
+        if (options?.chips) params.append('chips', options.chips);
         if (options?.filters) params.append('uds', options.filters);
         if (options?.nextPageToken) params.append('next_page_token', options.nextPageToken);
 

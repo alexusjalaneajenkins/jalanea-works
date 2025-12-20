@@ -287,10 +287,10 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
 
       {/* Navbar - Glass Effect */}
       <header className="fixed w-full z-40 bg-jalanea-950/90 backdrop-blur-md border-b border-white/10 transition-colors duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-display font-bold text-2xl tracking-tighter text-white">
-            <div className="w-8 h-8 rounded-lg bg-gold-sheen flex items-center justify-center text-jalanea-950">
-              <Zap size={18} fill="currentColor" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
+          <div className="flex items-center gap-2 font-display font-bold text-xl md:text-2xl tracking-tighter text-white">
+            <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-gold-sheen flex items-center justify-center text-jalanea-950">
+              <Zap size={16} fill="currentColor" />
             </div>
             <span>Jalanea<span className="text-gold font-light">Works</span></span>
           </div>
@@ -302,14 +302,15 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
             <button className="text-sm font-bold text-white hover:text-gold transition-colors" onClick={() => openAuth('signin')}>Sign in</button>
             <Button size="sm" variant="primary" onClick={() => openAuth('signup')}>Get Started</Button>
           </div>
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center gap-2">
+            <button className="text-sm font-bold text-white hover:text-gold transition-colors px-2 py-1" onClick={() => openAuth('signin')}>Sign in</button>
             <Button size="sm" variant="primary" onClick={() => openAuth('signup')}>Join</Button>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center pt-32 pb-12 bg-jalanea-900 overflow-hidden">
+      <section className="relative min-h-screen flex items-center pt-20 md:pt-32 pb-8 md:pb-12 bg-jalanea-900 overflow-hidden">
         {/* Background Mesh Gradients - Slate & Gold */}
         <div className="absolute inset-0 bg-premium-gradient"></div>
         <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-jalanea-800/60 rounded-full blur-[100px] mix-blend-overlay"></div>
@@ -320,48 +321,48 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 items-center">
 
             {/* Left Content */}
-            <div className="space-y-6 animate-in slide-in-from-left-4 duration-700">
+            <div className="space-y-4 md:space-y-6 animate-in slide-in-from-left-4 duration-700 text-center md:text-left">
               {/* FIXED: Readable Badge - White text on Solid Red Background */}
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-DEFAULT border border-red-400/50 text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-red-DEFAULT/20">
-                <GraduationCap size={16} />
+              <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 rounded-full bg-red-DEFAULT border border-red-400/50 text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-red-DEFAULT/20">
+                <GraduationCap size={14} className="md:w-4 md:h-4" />
                 For Valencia College Alumni
               </div>
-              <h1 className="text-5xl md:text-7xl font-display font-bold leading-[0.9] tracking-tighter text-white">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-display font-bold leading-[0.95] tracking-tighter text-white">
                 Get a job by the<br />
                 <span className="text-transparent bg-clip-text bg-gold-flow bg-200% animate-text-flow">end of the month.</span>
               </h1>
-              <p className="text-xl md:text-2xl text-jalanea-200 leading-relaxed max-w-lg font-light">
+              <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-jalanea-200 leading-relaxed max-w-lg mx-auto md:mx-0 font-light px-2 md:px-0">
                 Our goal is simple: <span className="text-white font-bold">3 quality applications per day.</span> Let our AI turn your Valencia credentials into a direct pipeline to the life you deserve.
               </p>
 
-              {/* CTA Buttons - ALIGNED IN ONE ROW */}
-              <div className="flex flex-row items-center gap-4 pt-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
+              {/* CTA Buttons - STACK ON MOBILE */}
+              <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-3 sm:gap-4 pt-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 px-4 md:px-0">
                 <Button
                   onClick={() => {
                     const element = document.getElementById('career-map');
                     element?.scrollIntoView({ behavior: 'smooth' });
                   }}
                   variant="primary"
-                  className="bg-gold hover:bg-gold-light text-jalanea-950 font-bold border-none shadow-[0_0_20px_rgba(255,196,37,0.3)] hover:shadow-[0_0_30px_rgba(255,196,37,0.5)] transform hover:-translate-y-1 transition-all whitespace-nowrap"
+                  className="w-full sm:w-auto bg-gold hover:bg-gold-light text-jalanea-950 font-bold border-none shadow-[0_0_20px_rgba(255,196,37,0.3)] hover:shadow-[0_0_30px_rgba(255,196,37,0.5)] transform hover:-translate-y-1 transition-all"
                 >
-                  <Zap className="mr-2 fill-current" size={18} /> Match My Credentials
+                  <Zap className="mr-2 fill-current" size={18} />Match My Credentials
                 </Button>
 
                 <Button
                   onClick={() => setIsMissionOpen(true)}
                   variant="outline"
-                  className="border-white/20 hover:bg-white/10 hover:border-white/40 text-white backdrop-blur-sm whitespace-nowrap"
+                  className="w-full sm:w-auto border-white/20 hover:bg-white/10 hover:border-white/40 text-white backdrop-blur-sm"
                 >
-                  <HomeIcon className="mr-2" size={18} /> Our Mission: Alumni Housing
+                  <HomeIcon className="mr-2" size={18} />Our Mission
                 </Button>
               </div>
             </div>
 
-            {/* Right Content: The "Show and Tell" Calculator */}
-            <div className="relative animate-in slide-in-from-right-4 duration-700 delay-150 hidden md:block">
+            {/* Right Content: The "Show and Tell" Calculator - NOW VISIBLE ON MOBILE */}
+            <div className="relative animate-in slide-in-from-right-4 duration-700 delay-150 mt-8 md:mt-0">
               {/* Glass Card Container */}
-              <Card variant="glass-dark" className="shadow-2xl backdrop-blur-xl border border-white/10 relative z-20" noPadding>
-                <div className="p-6 md:p-8 space-y-6">
+              <Card variant="glass-dark" className="shadow-2xl backdrop-blur-xl border border-white/10 relative z-20 mx-4 md:mx-0" noPadding>
+                <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6">
                   <div className="flex justify-between items-center border-b border-white/10 pb-4">
                     <span className="text-xs font-bold text-jalanea-300 uppercase tracking-widest">Live Career Mapping</span>
                     <div className="flex items-center gap-2">
@@ -457,16 +458,16 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                   </div>
 
                   {/* Results Footer */}
-                  <div className="pt-6 -mx-6 -mb-6 md:-mx-8 md:-mb-8 p-6 md:p-8 rounded-b-2xl bg-black/20 border-t border-white/5">
-                    <div className="flex justify-between items-center mb-6">
+                  <div className="pt-4 sm:pt-6 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 md:-mx-8 md:-mb-8 p-4 sm:p-6 md:p-8 rounded-b-2xl bg-black/20 border-t border-white/5">
+                    <div className="flex justify-between items-center mb-4 sm:mb-6">
                       <div className="flex flex-col">
-                        <span className="text-jalanea-400 text-xs font-bold uppercase tracking-wider">Est. Salary Bump</span>
-                        <span className="font-display font-bold text-2xl text-white">{currentData?.avgBump}<span className="text-white/40 text-lg">/yr</span></span>
+                        <span className="text-jalanea-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Est. Salary Bump</span>
+                        <span className="font-display font-bold text-lg sm:text-2xl text-white">{currentData?.avgBump}<span className="text-white/40 text-sm sm:text-lg">/yr</span></span>
                       </div>
-                      <div className="h-10 w-px bg-white/10"></div>
+                      <div className="h-8 sm:h-10 w-px bg-white/10"></div>
                       <div className="flex flex-col text-right">
-                        <span className="text-jalanea-400 text-xs font-bold uppercase tracking-wider">Open Local Roles</span>
-                        <span className="font-display font-bold text-2xl text-white">{currentData?.openRoles}</span>
+                        <span className="text-jalanea-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Open Local Roles</span>
+                        <span className="font-display font-bold text-lg sm:text-2xl text-white">{currentData?.openRoles}</span>
                       </div>
                     </div>
                     <Button fullWidth onClick={() => openAuth('signup')} variant="primary" className="shadow-gold/10 shadow-xl">

@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Briefcase, ChevronRight, TrendingUp, MapPin, Zap, ArrowUpRight, CheckCircle2, Circle, ExternalLink, GraduationCap, Clock, MoreHorizontal, Sparkles, Loader2, Calendar, Target, Mail, MessageCircle } from 'lucide-react';
-import { Job, TransportMode } from '../types';
+import { Job, TransportMode, MarketDemand, IndustryPulseItem } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { searchJobs } from '../services/jobService';
+import { getMarketDemand } from '../services/marketDemandService';
+import { generateIndustryPulse } from '../services/industryPulseService';
 import { useNavigate } from 'react-router-dom';
-import { MOCK_PROFILE } from './Profile';
 
 // Skeleton Component for "Filling in the Blanks" visual
 const SkeletonJobCard = () => (
@@ -35,13 +36,45 @@ const SkeletonJobCard = () => (
     </Card>
 );
 
-// New Component: Active Application Tracker (Mock for now, placeholder for future feature)
-const ActiveTracker = () => {
-    const apps = [
-        { id: 1, company: "Disney", role: "UX Intern", stage: "Applied", daysAgo: 3, nextAction: "Send Follow Up Email", urgent: true },
-        { id: 2, company: "EA Games", role: "Design Asst", stage: "Interview", daysAgo: 0, nextAction: "Mock Interview Prep", urgent: false },
-    ];
+// Active Application Tracker - Shows real applications or empty state
+const ActiveTracker = ({ navigate }: { navigate: (path: string) => void }) => {
+    const { userProfile } = useAuth();
 
+    // Get applications from saved jobs (jobs with status other than 'saved')
+    const apps = userProfile?.savedJobs?.filter(j => j.status !== 'saved') || [];
+
+    // Empty state when no applications
+    if (apps.length === 0) {
+        return (
+            <Card variant="solid-white" className="border-jalanea-200" noPadding>
+                <div className="p-4 border-b border-jalanea-100 flex items-center gap-2">
+                    <div className="p-1.5 bg-jalanea-900 text-white rounded-md">
+                        <Target size={16} />
+                    </div>
+                    <h3 className="font-bold text-jalanea-900">Active Mission Control</h3>
+                </div>
+                <div className="p-6 text-center">
+                    <div className="w-12 h-12 bg-jalanea-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <Briefcase size={24} className="text-jalanea-400" />
+                    </div>
+                    <h4 className="font-bold text-jalanea-900 mb-1">No Active Applications</h4>
+                    <p className="text-sm text-jalanea-500 mb-4">
+                        Start applying to jobs to track your progress here.
+                    </p>
+                    <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => navigate('/jobs')}
+                        icon={<ArrowUpRight size={14} />}
+                    >
+                        Find Jobs to Apply
+                    </Button>
+                </div>
+            </Card>
+        );
+    }
+
+    // Show real applications
     return (
         <Card variant="solid-white" className="border-jalanea-200" noPadding>
             <div className="p-4 border-b border-jalanea-100 flex items-center gap-2">
@@ -49,28 +82,37 @@ const ActiveTracker = () => {
                     <Target size={16} />
                 </div>
                 <h3 className="font-bold text-jalanea-900">Active Mission Control</h3>
+                <span className="ml-auto text-xs font-bold text-jalanea-500">{apps.length} Active</span>
             </div>
             <div className="divide-y divide-jalanea-100">
-                {apps.map(app => (
+                {apps.slice(0, 3).map(app => (
                     <div key={app.id} className="p-4 hover:bg-jalanea-50 transition-colors">
                         <div className="flex justify-between items-start mb-2">
                             <div>
-                                <h4 className="font-bold text-jalanea-900">{app.company}</h4>
-                                <p className="text-xs text-jalanea-500">{app.role} • {app.stage}</p>
+                                <h4 className="font-bold text-jalanea-900">{app.job.company}</h4>
+                                <p className="text-xs text-jalanea-500">{app.job.title} • {app.status}</p>
                             </div>
-                            {app.urgent && <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>}
+                            {app.nextActionDate && new Date(app.nextActionDate) <= new Date() && (
+                                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                            )}
                         </div>
-                        <div className="bg-gold/10 border border-gold/20 rounded-lg p-2 flex items-center justify-between">
-                            <span className="text-xs font-bold text-jalanea-800 flex items-center gap-2">
-                                <Zap size={12} className="text-gold" /> {app.nextAction}
-                            </span>
-                            <button className="text-[10px] font-bold text-jalanea-500 hover:text-jalanea-900 uppercase">Do It</button>
-                        </div>
+                        {app.nextAction && (
+                            <div className="bg-gold/10 border border-gold/20 rounded-lg p-2 flex items-center justify-between">
+                                <span className="text-xs font-bold text-jalanea-800 flex items-center gap-2">
+                                    <Zap size={12} className="text-gold" /> {app.nextAction}
+                                </span>
+                                <button className="text-[10px] font-bold text-jalanea-500 hover:text-jalanea-900 uppercase">Do It</button>
+                            </div>
+                        )}
                     </div>
                 ))}
-                <div className="p-3 text-center">
-                    <button className="text-xs font-bold text-jalanea-400 hover:text-gold transition-colors">View All Application</button>
-                </div>
+                {apps.length > 3 && (
+                    <div className="p-3 text-center">
+                        <button className="text-xs font-bold text-jalanea-400 hover:text-gold transition-colors">
+                            View All {apps.length} Applications
+                        </button>
+                    </div>
+                )}
             </div>
         </Card>
     );
@@ -83,6 +125,12 @@ export const Dashboard: React.FC = () => {
     const [jobs, setJobs] = useState<Job[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // New state for dynamic data
+    const [marketDemand, setMarketDemand] = useState<MarketDemand | null>(null);
+    const [industryPulse, setIndustryPulse] = useState<IndustryPulseItem[]>([]);
+    const [isLoadingMarket, setIsLoadingMarket] = useState(true);
+    const [isLoadingPulse, setIsLoadingPulse] = useState(true);
 
     // Fetch live jobs on mount
     useEffect(() => {
@@ -112,6 +160,52 @@ export const Dashboard: React.FC = () => {
         };
 
         fetchDashboardJobs();
+    }, [userProfile]);
+
+    // Fetch market demand data
+    useEffect(() => {
+        const fetchMarketDemand = async () => {
+            if (!userProfile?.education?.[0]?.degree) {
+                setIsLoadingMarket(false);
+                return;
+            }
+
+            setIsLoadingMarket(true);
+            try {
+                const degree = userProfile.education[0].degree;
+                const location = userProfile.location || 'Orlando, FL';
+                const demand = await getMarketDemand(degree, location);
+                setMarketDemand(demand);
+            } catch (err) {
+                console.error('Market demand fetch failed', err);
+            } finally {
+                setIsLoadingMarket(false);
+            }
+        };
+
+        fetchMarketDemand();
+    }, [userProfile?.education, userProfile?.location]);
+
+    // Fetch AI-generated Industry Pulse
+    useEffect(() => {
+        const fetchIndustryPulse = async () => {
+            if (!userProfile) {
+                setIsLoadingPulse(false);
+                return;
+            }
+
+            setIsLoadingPulse(true);
+            try {
+                const pulseItems = await generateIndustryPulse(userProfile);
+                setIndustryPulse(pulseItems);
+            } catch (err) {
+                console.error('Industry pulse fetch failed', err);
+            } finally {
+                setIsLoadingPulse(false);
+            }
+        };
+
+        fetchIndustryPulse();
     }, [userProfile]);
 
     // Derived State - use fullName (from Profile) or displayName (from Google Auth) as fallback
@@ -172,11 +266,29 @@ export const Dashboard: React.FC = () => {
                     </div>
 
                     <div className="relative z-10 mt-4">
-                        <div className="flex items-baseline gap-3">
-                            <h3 className="text-5xl font-display font-bold text-white">High</h3>
-                            <span className="bg-gold/20 text-gold border border-gold/20 px-2 py-1 rounded text-xs font-bold">+12%</span>
-                        </div>
-                        <p className="text-sm text-jalanea-400 mt-2 font-medium">Orlando roles matching your skills.</p>
+                        {isLoadingMarket ? (
+                            <div className="animate-pulse">
+                                <div className="h-12 bg-white/10 rounded w-24 mb-2"></div>
+                                <div className="h-4 bg-white/5 rounded w-48"></div>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex items-baseline gap-3">
+                                    <h3 className="text-5xl font-display font-bold text-white">
+                                        {marketDemand?.demandLevel || 'Moderate'}
+                                    </h3>
+                                    <span className={`px-2 py-1 rounded text-xs font-bold border ${(marketDemand?.percentChange || 0) >= 0
+                                        ? 'bg-gold/20 text-gold border-gold/20'
+                                        : 'bg-red-500/20 text-red-400 border-red-500/20'
+                                        }`}>
+                                        {(marketDemand?.percentChange || 0) >= 0 ? '+' : ''}{marketDemand?.percentChange || 0}%
+                                    </span>
+                                </div>
+                                <p className="text-sm text-jalanea-400 mt-2 font-medium">
+                                    {marketDemand?.totalOpenings || 0} {userProfile?.location || 'Orlando'} roles matching your degree.
+                                </p>
+                            </>
+                        )}
                     </div>
                 </Card>
 
@@ -368,33 +480,46 @@ export const Dashboard: React.FC = () => {
                 <div className="lg:col-span-1 space-y-6">
 
                     {/* Active Application Context Widget */}
-                    <ActiveTracker />
+                    <ActiveTracker navigate={navigate} />
 
-                    {/* Industry Pulse Widget */}
+                    {/* Industry Pulse Widget - AI Generated */}
                     <Card variant="solid-white" className="border-jalanea-200">
                         <div className="flex items-center gap-2 mb-4">
                             <div className="p-1.5 bg-jalanea-100 text-jalanea-900 rounded-md">
-                                <TrendingUp size={16} />
+                                <Sparkles size={16} />
                             </div>
                             <h3 className="font-bold text-jalanea-900">Industry Pulse</h3>
+                            <span className="ml-auto text-[10px] font-bold text-jalanea-400 uppercase">AI Curated</span>
                         </div>
 
                         <div className="space-y-0 divide-y divide-jalanea-100">
-                            {[
-                                { title: "Orlando Tech News", source: "TechCrunch", icon: <ExternalLink size={12} /> },
-                                { title: "Figma 2024 Course", source: "Udemy", icon: <ExternalLink size={12} /> },
-                                { title: "Creative Market Trends", source: "Behance", icon: <ExternalLink size={12} /> },
-                            ].map((item, i) => (
-                                <a key={i} href="#" className="flex justify-between items-center py-3 hover:bg-jalanea-50 -mx-2 px-2 rounded-lg transition-colors group">
-                                    <div>
-                                        <p className="text-sm font-bold text-jalanea-900 group-hover:text-gold-dark transition-colors">{item.title}</p>
-                                        <p className="text-xs font-medium text-jalanea-400">{item.source}</p>
+                            {isLoadingPulse ? (
+                                <div className="animate-pulse space-y-3 py-2">
+                                    <div className="h-4 bg-jalanea-100 rounded w-3/4"></div>
+                                    <div className="h-3 bg-jalanea-50 rounded w-1/2"></div>
+                                    <div className="h-4 bg-jalanea-100 rounded w-2/3 mt-3"></div>
+                                    <div className="h-3 bg-jalanea-50 rounded w-1/2"></div>
+                                </div>
+                            ) : industryPulse.length > 0 ? (
+                                industryPulse.map((item, i) => (
+                                    <div key={item.id || i} className="flex justify-between items-center py-3 hover:bg-jalanea-50 -mx-2 px-2 rounded-lg transition-colors group cursor-pointer">
+                                        <div>
+                                            <p className="text-sm font-bold text-jalanea-900 group-hover:text-gold-dark transition-colors">{item.title}</p>
+                                            <p className="text-xs font-medium text-jalanea-400">{item.source}</p>
+                                            {item.reason && (
+                                                <p className="text-[10px] text-jalanea-500 mt-1 italic">{item.reason}</p>
+                                            )}
+                                        </div>
+                                        <div className="text-jalanea-300 group-hover:text-jalanea-900 transition-colors">
+                                            <ExternalLink size={12} />
+                                        </div>
                                     </div>
-                                    <div className="text-jalanea-300 group-hover:text-jalanea-900 transition-colors">
-                                        {item.icon}
-                                    </div>
-                                </a>
-                            ))}
+                                ))
+                            ) : (
+                                <div className="py-4 text-center text-sm text-jalanea-500">
+                                    <p>Complete your profile to get personalized recommendations.</p>
+                                </div>
+                            )}
                         </div>
                     </Card>
 
