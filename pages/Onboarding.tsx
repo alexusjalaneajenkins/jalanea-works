@@ -639,13 +639,23 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
             photoURL: profilePic,
             linkedinUrl,
             portfolioUrl,
+            // Education
+            education: selectedDegree ? {
+                programId: selectedDegree.id,
+                programName: selectedDegree.name,
+                degreeLevel: selectedDegree.level,
+                institution: selectedDegree.institution,
+                field: selectedDegree.field,
+                graduationYear,
+                qualifiedCareers: selectedDegree.entryLevelCareers.map(c => c.title)
+            } : undefined,
             // Status
             onboardingCompleted: true,
             hasSetupSchedule: true,
             // Preferences
             preferences: {
                 ...userProfile?.preferences,
-                // Job search preferences
+                // Job search preferences (auto-populated from degree careers)
                 targetRoles: roleTags,
                 workStyles: [workStyle],
                 salary: targetSalary,
