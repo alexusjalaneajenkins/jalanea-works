@@ -599,12 +599,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                 return;
             }
 
-            // New user or incomplete profile → start onboarding wizard
-            // Extract Google Profile Data
-            if (user.displayName) setFullName(user.displayName);
-            if (user.photoURL) setProfilePic(user.photoURL);
+            // New user → close modal and let the routing handle redirect to /onboarding
+            // Save basic profile info from Google
+            await saveUserProfile({
+                fullName: user.displayName || '',
+                photoURL: user.photoURL || '',
+                email: user.email || '',
+                onboardingCompleted: false, // Mark as NOT completed so they go to onboarding
+                createdAt: new Date().toISOString()
+            });
 
-            setCurrentView(VIEWS.WIZARD_BASICS);
+            onComplete(); // This will navigate to /onboarding since onboardingCompleted is false
         } catch (error) {
             console.error("Google Sign-In failed", error);
         }
@@ -647,12 +652,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
         }
     };
 
-    const handleEmailAuth = () => {
+    const handleEmailAuth = async () => {
+        // For login, just complete and navigate
         if (currentView === VIEWS.LOGIN) {
             onComplete();
-        } else {
-            setCurrentView(VIEWS.WIZARD_BASICS);
+            return;
         }
+
+        // For signup, we should create the account and then redirect to onboarding
+        // The SIGNUP view should handle the actual account creation
+        // After account is created, call onComplete() which will navigate to /onboarding
+        onComplete();
     };
 
     const handleFinalSubmit = async () => {
