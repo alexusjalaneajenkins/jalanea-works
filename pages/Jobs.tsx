@@ -467,32 +467,45 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
             </div>
 
             {/* Degree Context Banner - Shows when user has education saved */}
-            {(userProfile as any)?.education?.programName && (
+            {(userProfile as any)?.education?.length > 0 && (
                 <div className="bg-gradient-to-r from-gold/10 via-gold/5 to-transparent border border-gold/20 rounded-xl p-4 flex items-start gap-4">
                     <div className="w-10 h-10 rounded-lg bg-gold/20 flex items-center justify-center text-gold shrink-0">
                         <GraduationCap size={20} />
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-jalanea-900">
-                            Showing jobs for your {(userProfile as any).education.degreeLevel}
+                            {(userProfile as any).education.length === 1
+                                ? `Showing jobs for your ${(userProfile as any).education[0].degreeLevel}`
+                                : `Showing jobs for ${(userProfile as any).education.length} degrees`}
                         </p>
-                        <p className="text-sm text-jalanea-600 mt-0.5">
-                            {(userProfile as any).education.programName} • {(userProfile as any).education.institution}
-                        </p>
-                        {(userProfile as any).education.qualifiedCareers?.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mt-2">
-                                {(userProfile as any).education.qualifiedCareers.slice(0, 4).map((career: string, idx: number) => (
-                                    <span key={idx} className="text-xs bg-white px-2 py-1 rounded-full text-jalanea-700 border border-jalanea-200">
-                                        {career}
-                                    </span>
-                                ))}
-                                {(userProfile as any).education.qualifiedCareers.length > 4 && (
-                                    <span className="text-xs text-jalanea-400 self-center">
-                                        +{(userProfile as any).education.qualifiedCareers.length - 4} more
-                                    </span>
-                                )}
-                            </div>
-                        )}
+                        <div className="flex flex-wrap gap-2 mt-1">
+                            {(userProfile as any).education.map((edu: any, idx: number) => (
+                                <span key={idx} className="text-xs text-jalanea-600">
+                                    {edu.programName} ({edu.institution})
+                                    {idx < (userProfile as any).education.length - 1 && ' • '}
+                                </span>
+                            ))}
+                        </div>
+                        {/* Collect all unique careers from all degrees */}
+                        {(() => {
+                            const allCareers = (userProfile as any).education
+                                .flatMap((edu: any) => edu.qualifiedCareers || []);
+                            const uniqueCareers = [...new Set(allCareers)].slice(0, 6);
+                            return uniqueCareers.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                    {uniqueCareers.map((career: string, idx: number) => (
+                                        <span key={idx} className="text-xs bg-white px-2 py-1 rounded-full text-jalanea-700 border border-jalanea-200">
+                                            {career}
+                                        </span>
+                                    ))}
+                                    {allCareers.length > 6 && (
+                                        <span className="text-xs text-jalanea-400 self-center">
+                                            +{allCareers.length - 6} more
+                                        </span>
+                                    )}
+                                </div>
+                            );
+                        })()}
                     </div>
                 </div>
             )}
