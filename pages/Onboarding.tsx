@@ -3,7 +3,9 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { CommuteCostCalculator } from '../components/CommuteCostCalculator';
+import { DegreeSearchSelect } from '../components/DegreeSearchSelect';
 import { NavRoute, Job, TransportMode } from '../types';
+import { DegreeProgram } from '../data/degreeDatabase';
 import {
     Zap, ArrowRight, User, Linkedin, GraduationCap,
     Briefcase, Plus, X, Sparkles, CheckCircle2, ChevronRight,
@@ -61,6 +63,10 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
     const [profilePic, setProfilePic] = useState<string | null>(null);
     const [linkedinUrl, setLinkedinUrl] = useState('');
     const [portfolioUrl, setPortfolioUrl] = useState('');
+
+    // Education state
+    const [selectedDegree, setSelectedDegree] = useState<DegreeProgram | null>(null);
+    const [graduationYear, setGraduationYear] = useState('2024');
 
     // Pre-populate form from userProfile (e.g., Google sign-in data)
     useEffect(() => {
@@ -257,39 +263,70 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
     const renderEducation = () => (
         <div className="animate-in slide-in-from-right-8 fade-in duration-300">
             <div className="mb-6">
-                <h2 className="text-2xl font-display font-bold text-jalanea-900">Show off your hard work.</h2>
-                <p className="text-jalanea-600">This helps us find alumni-friendly employers.</p>
+                <h2 className="text-2xl font-display font-bold text-jalanea-900">What did you study?</h2>
+                <p className="text-jalanea-600">Search for your degree or certificate to see matching careers.</p>
             </div>
 
-            <Card variant="solid-white" className="p-6 border-jalanea-200 space-y-4">
-                <Input label="Institution" defaultValue="Valencia College" />
+            <div className="space-y-6">
+                {/* Degree Search */}
+                <div>
+                    <label className="text-sm font-bold text-jalanea-900 mb-2 block">Your Degree or Certificate</label>
+                    <DegreeSearchSelect
+                        selectedProgram={selectedDegree}
+                        onSelect={(program) => {
+                            setSelectedDegree(program);
+                            // Auto-populate target roles from careers
+                            if (program?.entryLevelCareers) {
+                                setRoleTags(program.entryLevelCareers.slice(0, 3).map(c => c.title));
+                            }
+                        }}
+                        placeholder="Search Valencia College programs..."
+                        showCareers={true}
+                    />
+                </div>
 
+                {/* Graduation Year */}
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <label className="text-sm font-bold text-jalanea-900">Degree Level</label>
-                        <select className="w-full rounded-xl border-jalanea-200 py-3 px-4 text-jalanea-900 font-medium focus:ring-1 focus:ring-jalanea-900">
-                            <option>Associate of Science (A.S.)</option>
-                            <option>Bachelor of Science (B.S.)</option>
-                            <option>Certificate</option>
+                        <label className="text-sm font-bold text-jalanea-900">Graduation Year</label>
+                        <select
+                            value={graduationYear}
+                            onChange={(e) => setGraduationYear(e.target.value)}
+                            className="w-full rounded-xl border-2 border-jalanea-200 py-3 px-4 text-jalanea-900 font-medium focus:ring-2 focus:ring-gold/20 focus:border-gold bg-white"
+                        >
+                            <option value="2025">2025 (Expected)</option>
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                            <option value="2022">2022</option>
+                            <option value="2021">2021 or earlier</option>
                         </select>
                     </div>
                     <div className="space-y-2">
-                        <label className="text-sm font-bold text-jalanea-900">Graduation Year</label>
-                        <select className="w-full rounded-xl border-jalanea-200 py-3 px-4 text-jalanea-900 font-medium focus:ring-1 focus:ring-jalanea-900">
-                            <option>2024</option>
-                            <option>2023</option>
-                            <option>2022</option>
-                        </select>
+                        <label className="text-sm font-bold text-jalanea-900">GPA (Optional)</label>
+                        <Input placeholder="e.g. 3.8" />
                     </div>
                 </div>
 
-                <Input label="Major / Program" placeholder="Search programs..." icon={<Search size={16} />} />
-                <Input label="GPA (Optional)" placeholder="e.g. 3.8" />
-            </Card>
-
-            <button className="flex items-center gap-2 text-sm font-bold text-gold hover:text-gold-dark mt-4 transition-colors">
-                <Plus size={16} /> Add Another Degree
-            </button>
+                {/* Career Match Preview */}
+                {selectedDegree && (
+                    <div className="bg-gold/10 border border-gold/20 rounded-xl p-4 animate-in fade-in duration-300">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Sparkles size={16} className="text-gold" />
+                            <span className="text-sm font-bold text-jalanea-900">Career Match Preview</span>
+                        </div>
+                        <p className="text-sm text-jalanea-700">
+                            Based on your <strong>{selectedDegree.name}</strong>, we'll search for jobs like:
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                            {selectedDegree.entryLevelCareers.slice(0, 4).map((career, idx) => (
+                                <span key={idx} className="text-xs bg-white px-2 py-1 rounded-full text-jalanea-700 border border-jalanea-200">
+                                    {career.title}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 
