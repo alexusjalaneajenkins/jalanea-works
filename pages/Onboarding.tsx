@@ -9,7 +9,8 @@ import { DegreeProgram } from '../data/degreeDatabase';
 import {
     Zap, ArrowRight, User, Linkedin, GraduationCap,
     Briefcase, Plus, X, Sparkles, CheckCircle2, ChevronRight,
-    ChevronLeft, MapPin, Globe, Wand2, Star, Search, Heart, Calendar, Clock
+    ChevronLeft, MapPin, Globe, Wand2, Star, Search, Heart, Calendar, Clock,
+    Home, Target
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { searchJobs } from '../services/jobService';
@@ -163,19 +164,46 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
     const renderIntro = () => {
         const slides = [
-            { icon: <User size={48} />, title: "Build Your Profile", desc: "Tell us your degree and skills once. We remember forever." },
-            { icon: <Wand2 size={48} />, title: "AI Matching", desc: "We scan thousands of jobs to find the ones that want your specific degree." },
-            { icon: <Sparkles size={48} />, title: "One-Click Tailoring", desc: "Generate custom resumes for every application in seconds." }
+            {
+                icon: <Heart size={48} fill="currentColor" />,
+                title: "Built for Students Like You",
+                desc: "Jalanea Works is designed for low-income housing students, Valencia College graduates, and anyone fighting to break the cycle of poverty through education."
+            },
+            {
+                icon: <Home size={48} />,
+                title: "From Homelessness to Housing",
+                desc: "Our mission: help students use their Valencia degrees to find entry-level jobs that lead to stable income and permanent housing."
+            },
+            {
+                icon: <Target size={48} />,
+                title: "Your First 12-24 Months",
+                desc: "We connect you to positions that match your degree—so you can work, save, and build the foundation for your future while in transitional housing."
+            },
+            {
+                icon: <Sparkles size={48} />,
+                title: "Seamless & Frictionless",
+                desc: "No complicated applications. AI finds jobs that want YOUR specific degree and skills, then helps you apply in minutes."
+            }
         ];
 
         return (
             <div className="animate-in fade-in zoom-in-95 duration-500 w-full max-w-lg">
-                <Card variant="solid-white" className="p-10 shadow-2xl text-center min-h-[400px] flex flex-col justify-between relative overflow-hidden">
+                <Card variant="solid-white" className="p-10 shadow-2xl text-center min-h-[480px] flex flex-col justify-between relative overflow-hidden">
                     {/* Background Decoration */}
                     <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-jalanea-900 via-gold to-jalanea-900"></div>
 
+                    {/* Mission badge on first slide */}
+                    {carouselIndex === 0 && (
+                        <div className="absolute top-6 right-6">
+                            <span className="text-xs font-bold bg-gold/20 text-gold px-2 py-1 rounded-full">Our Mission</span>
+                        </div>
+                    )}
+
                     <div className="flex-1 flex flex-col items-center justify-center space-y-6">
-                        <div className="w-24 h-24 rounded-full bg-jalanea-50 flex items-center justify-center text-gold shadow-inner mb-4">
+                        <div className={`w-24 h-24 rounded-full flex items-center justify-center shadow-inner mb-4 ${carouselIndex === 0 ? 'bg-red/10 text-red-600' :
+                            carouselIndex === 1 ? 'bg-gold/20 text-gold' :
+                                'bg-jalanea-50 text-gold'
+                            }`}>
                             {slides[carouselIndex].icon}
                         </div>
                         <div>
@@ -193,16 +221,16 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                         </div>
 
                         <div className="flex justify-between items-center">
-                            <button onClick={() => setCurrentStep(STEPS.PROFILE_BASICS)} className="text-sm font-bold text-jalanea-400 hover:text-jalanea-900">Skip</button>
+                            <button onClick={() => setCurrentStep(STEPS.PROFILE_BASICS)} className="text-sm font-bold text-jalanea-400 hover:text-jalanea-900">Skip Intro</button>
                             <Button
                                 onClick={() => {
-                                    if (carouselIndex < 2) setCarouselIndex(p => p + 1);
+                                    if (carouselIndex < slides.length - 1) setCarouselIndex(p => p + 1);
                                     else setCurrentStep(STEPS.PROFILE_BASICS);
                                 }}
                                 variant="primary"
                                 icon={<ArrowRight size={16} />}
                             >
-                                {carouselIndex === 2 ? "Let's Go" : "Next"}
+                                {carouselIndex === slides.length - 1 ? "Start My Journey" : "Next"}
                             </Button>
                         </div>
                     </div>
