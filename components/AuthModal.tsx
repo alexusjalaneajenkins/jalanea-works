@@ -250,6 +250,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
     const [isUploadingPic, setIsUploadingPic] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Signup form state
+    const [showPassword, setShowPassword] = useState(false);
+    const [signupEmail, setSignupEmail] = useState('');
+    const [signupPassword, setSignupPassword] = useState('');
+
     // --- Logic Helpers ---
 
     // Transport Tier System
@@ -834,10 +839,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
         );
     };
 
-
-    const [showPassword, setShowPassword] = useState(false);
-    const [signupEmail, setSignupEmail] = useState('');
-    const [signupPassword, setSignupPassword] = useState('');
 
     const renderSignup = () => (
         <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300 max-w-sm mx-auto w-full py-2">
