@@ -156,116 +156,114 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
 
       {/* --- MISSION MODAL --- */}
       {isMissionOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3">
           <div className="absolute inset-0 bg-jalanea-950/95 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setIsMissionOpen(false)} />
 
-          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 slide-in-from-bottom-8 duration-500">
-            <button onClick={() => setIsMissionOpen(false)} className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors z-50 bg-white/10 rounded-full p-2">
-              <X size={20} />
+          <div className="relative w-full max-w-3xl animate-in zoom-in-95 slide-in-from-bottom-8 duration-500">
+            <button onClick={() => setIsMissionOpen(false)} className="absolute -top-2 -right-2 text-white/50 hover:text-white transition-colors z-50 bg-jalanea-800 rounded-full p-1.5 border border-white/20">
+              <X size={16} />
             </button>
 
-            <Card variant="glass-dark" className="p-8 md:p-12 border-gold/20 bg-gradient-to-br from-jalanea-900/90 via-jalanea-950/95 to-jalanea-900/90 backdrop-blur-xl">
-              <div className="text-center space-y-6">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-bold uppercase tracking-widest">
-                  <Heart size={12} fill="currentColor" /> Our Purpose
-                </div>
-
-                <h2 className="text-2xl md:text-4xl font-display font-bold text-white leading-tight max-w-3xl mx-auto">
-                  Helping Students Go From <span className="text-gold">Homelessness to Housing</span> Through Education & Employment
-                </h2>
-
-                <p className="text-base md:text-lg text-jalanea-200 leading-relaxed max-w-3xl mx-auto">
-                  Jalanea Works is built for <span className="text-white font-bold">low-income housing students</span> and Valencia College graduates. We connect your degree to entry-level positions—so you can work, earn, and build a stable foundation.
-                </p>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 text-left">
-                  <div className="bg-white/5 p-5 rounded-xl border border-white/10">
-                    <div className="w-10 h-10 bg-gold/20 rounded-lg flex items-center justify-center text-gold mb-3">
-                      <GraduationCap size={20} />
-                    </div>
-                    <h4 className="font-bold text-white mb-1 text-sm">Your Degree, Your Power</h4>
-                    <p className="text-xs text-jalanea-300">
-                      We link Valencia & UCF programs directly to careers that want YOUR specific skills.
-                    </p>
+            <Card variant="glass-dark" className="p-5 md:p-6 border-gold/20 bg-gradient-to-br from-jalanea-900/95 via-jalanea-950 to-jalanea-900/95 backdrop-blur-xl">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Left: Mission Statement */}
+                <div className="text-center md:text-left space-y-3">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 text-[10px] font-bold uppercase tracking-widest">
+                    <Heart size={10} fill="currentColor" /> Our Purpose
                   </div>
-                  <div className="bg-white/5 p-5 rounded-xl border border-white/10">
-                    <div className="w-10 h-10 bg-gold/20 rounded-lg flex items-center justify-center text-gold mb-3">
-                      <TrendingUp size={20} />
-                    </div>
-                    <h4 className="font-bold text-white mb-1 text-sm">12-24 Month Runway</h4>
-                    <p className="text-xs text-jalanea-300">
-                      Find entry-level jobs while in transitional housing. Build savings. Build stability.
-                    </p>
-                  </div>
-                  <div className="bg-white/5 p-5 rounded-xl border border-white/10">
-                    <div className="w-10 h-10 bg-gold/20 rounded-lg flex items-center justify-center text-gold mb-3">
-                      <MapPin size={20} />
-                    </div>
-                    <h4 className="font-bold text-white mb-1 text-sm">Alumni Housing Advocacy</h4>
-                    <p className="text-xs text-jalanea-300">
-                      We're fighting for income-restricted housing so graduates can transition sustainably.
-                    </p>
-                  </div>
-                </div>
 
-                <div className="pt-4 border-t border-white/10 mt-6">
-                  <p className="text-sm text-jalanea-400 italic mb-6">
-                    "Every person deserves a pathway from education to stable housing. That's why we exist."
+                  <h2 className="text-xl md:text-2xl font-display font-bold text-white leading-tight">
+                    Helping Students Go From <span className="text-gold">Homelessness to Housing</span>
+                  </h2>
+
+                  <p className="text-sm text-jalanea-300 leading-relaxed">
+                    Built for <span className="text-white font-bold">low-income housing students</span> and Valencia grads. We connect your degree to entry-level jobs—so you can work, earn, and build stability.
                   </p>
 
-                  {/* About Alexus Button */}
                   <Button
                     variant="primary"
+                    size="sm"
                     onClick={() => {
                       setIsMissionOpen(false);
                       navigate('/about');
                     }}
-                    icon={<ArrowRight size={16} />}
-                    className="shadow-xl shadow-gold/20 mb-6"
+                    icon={<ArrowRight size={14} />}
+                    className="shadow-lg shadow-gold/20 mt-2"
                   >
                     Learn More About Alexus
                   </Button>
+                </div>
 
-                  {/* Contact Section */}
-                  <div className="border-t border-white/10 pt-6 mt-2">
-                    <p className="text-xs text-jalanea-500 uppercase tracking-widest font-bold mb-4">Want to Help or Work Together?</p>
-                    <div className="flex flex-wrap justify-center gap-3">
-                      <a
-                        href="https://www.linkedin.com/in/alexusjalaneajenkins/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-4 py-2 bg-[#0077B5]/10 border border-[#0077B5]/30 rounded-lg text-[#0077B5] hover:bg-[#0077B5]/20 transition-colors text-sm font-bold"
-                      >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
-                        LinkedIn
-                      </a>
-                      <a
-                        href="https://www.instagram.com/JalaneaJ_/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-4 py-2 bg-[#E4405F]/10 border border-[#E4405F]/30 rounded-lg text-[#E4405F] hover:bg-[#E4405F]/20 transition-colors text-sm font-bold"
-                      >
-                        <Instagram size={16} />
-                        Instagram
-                      </a>
-                      <a
-                        href="mailto:alexusjenkins@uiuxdesign.us"
-                        className="flex items-center gap-2 px-4 py-2 bg-gold/10 border border-gold/30 rounded-lg text-gold hover:bg-gold/20 transition-colors text-sm font-bold"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                        Email
-                      </a>
-                      <button
-                        disabled
-                        className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-jalanea-500 cursor-not-allowed text-sm font-bold"
-                        title="Portfolio coming soon!"
-                      >
-                        <Globe size={16} />
-                        Portfolio
-                        <span className="text-[10px] bg-jalanea-700 text-jalanea-300 px-1.5 py-0.5 rounded uppercase">Soon</span>
-                      </button>
+                {/* Right: Founder Photo & Quote */}
+                <div className="space-y-4">
+                  <blockquote className="text-base md:text-lg font-display font-medium text-white leading-relaxed">
+                    "I want to design systems that transform communities. <span className="text-gold font-bold">It's time to invest in our own.</span>"
+                  </blockquote>
+
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="w-16 h-16 rounded-full border-2 border-gold p-0.5 shadow-xl">
+                        <img
+                          src="https://i.ibb.co/Zzn2BXVQ/VC-Grad-Edited.jpg"
+                          alt="Alexus Jalanea Jenkins"
+                          className="w-full h-full rounded-full object-cover bg-jalanea-800"
+                        />
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 bg-gold text-jalanea-950 p-1 rounded-full border border-white">
+                        <GraduationCap size={10} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-white font-bold text-base">Alexus Jalanea Jenkins</div>
+                      <div className="text-jalanea-400 text-xs">Founder & Orlando Native</div>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        <span className="text-[10px] text-jalanea-400 bg-white/5 px-2 py-0.5 rounded border border-white/10">B.A.S. Computing</span>
+                        <span className="text-[10px] text-jalanea-400 bg-white/5 px-2 py-0.5 rounded border border-white/10">A.S. Design</span>
+                      </div>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Contact Section - Compact */}
+              <div className="pt-4 border-t border-white/10 mt-4 text-center">
+                <p className="text-[10px] text-jalanea-500 uppercase tracking-widest font-bold mb-2">Want to Help or Work Together?</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <a
+                    href="https://www.linkedin.com/in/alexusjalaneajenkins/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0077B5]/10 border border-[#0077B5]/30 rounded-md text-[#0077B5] hover:bg-[#0077B5]/20 transition-colors text-xs font-bold"
+                  >
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
+                    LinkedIn
+                  </a>
+                  <a
+                    href="https://www.instagram.com/JalaneaJ_/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#E4405F]/10 border border-[#E4405F]/30 rounded-md text-[#E4405F] hover:bg-[#E4405F]/20 transition-colors text-xs font-bold"
+                  >
+                    <Instagram size={12} />
+                    Instagram
+                  </a>
+                  <a
+                    href="mailto:alexusjenkins@uiuxdesign.us"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gold/10 border border-gold/30 rounded-md text-gold hover:bg-gold/20 transition-colors text-xs font-bold"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                    Email
+                  </a>
+                  <button
+                    disabled
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-md text-jalanea-500 cursor-not-allowed text-xs font-bold"
+                    title="Portfolio coming soon!"
+                  >
+                    <Globe size={12} />
+                    Portfolio
+                    <span className="text-[8px] bg-jalanea-700 text-jalanea-300 px-1 py-0.5 rounded uppercase">Soon</span>
+                  </button>
                 </div>
               </div>
             </Card>
