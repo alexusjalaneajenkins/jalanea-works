@@ -6,14 +6,14 @@ const marketDemandCache: Map<string, { data: MarketDemand; timestamp: number }> 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 /**
- * Get market demand data for a specific degree and location.
- * Uses live job search data with 24-hour caching.
+ * Get market demand data for a specific degree.
+ * Uses US-wide job search data with 24-hour caching.
  */
 export async function getMarketDemand(
     degree: string,
-    location: string = 'Orlando, FL'
+    _location: string = 'Orlando, FL' // Kept for future local comparison feature
 ): Promise<MarketDemand> {
-    const cacheKey = `${degree.toLowerCase()}-${location.toLowerCase()}`;
+    const cacheKey = `${degree.toLowerCase()}-us`;
 
     // Check cache first
     const cached = marketDemandCache.get(cacheKey);
@@ -25,9 +25,9 @@ export async function getMarketDemand(
         // Map degree to search terms
         const searchTerms = mapDegreeToSearchTerms(degree);
 
-        // Fetch job count from SerpAPI
+        // Fetch job count from SerpAPI - US-wide search
         const response = await searchJobs(searchTerms, {
-            location: location,
+            location: 'United States',
         });
 
         const totalOpenings = response.totalResults || response.jobs.length;
@@ -69,7 +69,7 @@ export async function getMarketDemand(
             demandLevel,
             percentChange,
             totalOpenings,
-            topLocations: topLocations.length > 0 ? topLocations : [location],
+            topLocations: topLocations.length > 0 ? topLocations : ['United States'],
             averageSalary,
             lastUpdated: new Date().toISOString(),
         };
@@ -86,7 +86,7 @@ export async function getMarketDemand(
             demandLevel: 'Moderate',
             percentChange: 0,
             totalOpenings: 0,
-            topLocations: [location],
+            topLocations: ['United States'],
             averageSalary: 'Varies',
             lastUpdated: new Date().toISOString(),
         };

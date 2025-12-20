@@ -11,8 +11,9 @@ import {
     AuthError,
     UserCredential
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc, getDoc, onSnapshot, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
+import { Job, SavedJob } from '../types';
 
 // User profile type matching what we save during onboarding
 interface UserProfileData {
@@ -40,6 +41,10 @@ interface UserProfileData {
     // Schedule and tasks (for persistence)
     scheduleBlocks?: any[];
     tasks?: any[];
+    // Saved jobs for tracking applications
+    savedJobs?: SavedJob[];
+    // Enhanced onboarding flags
+    hasSetupSchedule?: boolean;
 }
 
 interface AuthContextType {
@@ -53,6 +58,10 @@ interface AuthContextType {
     logout: () => Promise<void>;
     saveUserProfile: (data: Partial<UserProfileData>) => Promise<void>;
     refreshProfile: () => Promise<void>;
+    // Job saving functions
+    saveJob: (job: Job) => Promise<void>;
+    removeJob: (jobId: string) => Promise<void>;
+    isJobSaved: (jobId: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -171,6 +180,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    // Save a job to user's saved jobs list
+    const saveJob = async (job: Job) => {
+        if (!auth.currentUser) {
+            throw new Error("You must be signed in to save jobs.");
+        }
+
+        const savedJob: SavedJob = {
+            id: `saved-${job.id}-${Date.now()}`,
+            job: job,
+            savedAt: new Date().toISOString(),
+            status: 'saved',
+        };
+
+        try {
+            const userRef = doc(db, "users", auth.currentUser.uid);
+            await updateDoc(userRef, {
+                savedJobs: arrayUnion(savedJob)
+            });
+            console.log("Job saved:", job.title);
+        } catch (error) {
+            console.error("Error saving job:", error);
+            throw error;
+        }
+    };
+
+    // Remove a job from user's saved jobs list
+    const removeJob = async (jobId: string) => {
+        if (!auth.currentUser || !userProfile?.savedJobs) {
+            return;
+        }
+
+        const jobToRemove = userProfile.savedJobs.find(sj => sj.job.id === jobId);
+        if (!jobToRemove) return;
+
+        try {
+            const userRef = doc(db, "users", auth.currentUser.uid);
+            await updateDoc(userRef, {
+                savedJobs: arrayRemove(jobToRemove)
+            });
+            console.log("Job removed:", jobId);
+        } catch (error) {
+            console.error("Error removing job:", error);
+            throw error;
+        }
+    };
+
+    // Check if a job is saved
+    const isJobSaved = (jobId: string): boolean => {
+        return userProfile?.savedJobs?.some(sj => sj.job.id === jobId) || false;
+    };
+
     const value = {
         currentUser,
         userProfile,
@@ -181,7 +241,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginWithGoogle,
         logout,
         saveUserProfile,
-        refreshProfile
+        refreshProfile,
+        saveJob,
+        removeJob,
+        isJobSaved
     };
 
     return (

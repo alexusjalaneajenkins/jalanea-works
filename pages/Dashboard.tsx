@@ -285,7 +285,7 @@ export const Dashboard: React.FC = () => {
                                     </span>
                                 </div>
                                 <p className="text-sm text-jalanea-400 mt-2 font-medium">
-                                    {marketDemand?.totalOpenings || 0} {userProfile?.location || 'Orlando'} roles matching your degree.
+                                    {(marketDemand?.totalOpenings || 0).toLocaleString()} US roles matching your degree.
                                 </p>
                             </>
                         )}
@@ -485,39 +485,62 @@ export const Dashboard: React.FC = () => {
                     {/* Industry Pulse Widget - AI Generated */}
                     <Card variant="solid-white" className="border-jalanea-200">
                         <div className="flex items-center gap-2 mb-4">
-                            <div className="p-1.5 bg-jalanea-100 text-jalanea-900 rounded-md">
+                            <div className="p-1.5 bg-gradient-to-br from-purple-100 to-blue-100 text-purple-600 rounded-md">
                                 <Sparkles size={16} />
                             </div>
                             <h3 className="font-bold text-jalanea-900">Industry Pulse</h3>
-                            <span className="ml-auto text-[10px] font-bold text-jalanea-400 uppercase">AI Curated</span>
+                            <span className="ml-auto text-[10px] font-bold text-purple-500 bg-purple-50 px-2 py-0.5 rounded-full uppercase">AI Curated</span>
                         </div>
 
-                        <div className="space-y-0 divide-y divide-jalanea-100">
+                        <div className="space-y-3">
                             {isLoadingPulse ? (
-                                <div className="animate-pulse space-y-3 py-2">
-                                    <div className="h-4 bg-jalanea-100 rounded w-3/4"></div>
-                                    <div className="h-3 bg-jalanea-50 rounded w-1/2"></div>
-                                    <div className="h-4 bg-jalanea-100 rounded w-2/3 mt-3"></div>
-                                    <div className="h-3 bg-jalanea-50 rounded w-1/2"></div>
+                                <div className="animate-pulse space-y-3">
+                                    {[1, 2, 3].map(i => (
+                                        <div key={i} className="bg-jalanea-50 rounded-xl p-3">
+                                            <div className="h-4 bg-jalanea-100 rounded w-3/4 mb-2"></div>
+                                            <div className="h-3 bg-jalanea-100 rounded w-1/2"></div>
+                                        </div>
+                                    ))}
                                 </div>
                             ) : industryPulse.length > 0 ? (
-                                industryPulse.map((item, i) => (
-                                    <div key={item.id || i} className="flex justify-between items-center py-3 hover:bg-jalanea-50 -mx-2 px-2 rounded-lg transition-colors group cursor-pointer">
-                                        <div>
-                                            <p className="text-sm font-bold text-jalanea-900 group-hover:text-gold-dark transition-colors">{item.title}</p>
-                                            <p className="text-xs font-medium text-jalanea-400">{item.source}</p>
-                                            {item.reason && (
-                                                <p className="text-[10px] text-jalanea-500 mt-1 italic">{item.reason}</p>
-                                            )}
+                                industryPulse.map((item, i) => {
+                                    // Get icon and color based on type
+                                    const typeConfig = {
+                                        news: { icon: '📰', bg: 'bg-blue-50', text: 'text-blue-600', label: 'News' },
+                                        course: { icon: '📚', bg: 'bg-green-50', text: 'text-green-600', label: 'Course' },
+                                        trend: { icon: '📊', bg: 'bg-orange-50', text: 'text-orange-600', label: 'Trend' },
+                                    };
+                                    const config = typeConfig[item.type as keyof typeof typeConfig] || typeConfig.news;
+
+                                    return (
+                                        <div
+                                            key={item.id || i}
+                                            className="group bg-jalanea-50/50 hover:bg-jalanea-50 rounded-xl p-3 cursor-pointer transition-all hover:shadow-sm border border-transparent hover:border-jalanea-100"
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <span className="text-lg">{config.icon}</span>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${config.bg} ${config.text}`}>
+                                                            {config.label}
+                                                        </span>
+                                                        <span className="text-[10px] text-jalanea-400 font-medium truncate">{item.source}</span>
+                                                    </div>
+                                                    <p className="text-sm font-bold text-jalanea-900 group-hover:text-gold-dark transition-colors line-clamp-2">
+                                                        {item.title}
+                                                    </p>
+                                                </div>
+                                                <ExternalLink size={14} className="text-jalanea-300 group-hover:text-jalanea-600 shrink-0 mt-1 transition-colors" />
+                                            </div>
                                         </div>
-                                        <div className="text-jalanea-300 group-hover:text-jalanea-900 transition-colors">
-                                            <ExternalLink size={12} />
-                                        </div>
-                                    </div>
-                                ))
+                                    );
+                                })
                             ) : (
-                                <div className="py-4 text-center text-sm text-jalanea-500">
-                                    <p>Complete your profile to get personalized recommendations.</p>
+                                <div className="py-6 text-center">
+                                    <div className="w-10 h-10 bg-jalanea-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                                        <Sparkles size={18} className="text-jalanea-400" />
+                                    </div>
+                                    <p className="text-sm text-jalanea-500">Complete your profile for personalized recommendations.</p>
                                 </div>
                             )}
                         </div>

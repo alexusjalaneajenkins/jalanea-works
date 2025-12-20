@@ -155,8 +155,8 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchLocation, setSearchLocation] = useState('');
 
-    // Auth context for user profile
-    const { userProfile } = useAuth();
+    // Auth context for user profile and job saving
+    const { userProfile, saveJob, removeJob, isJobSaved, currentUser } = useAuth();
 
     // Loading State Tracking
     const [loadingTime, setLoadingTime] = useState(0);
@@ -684,8 +684,26 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                                         <span className="text-[10px] font-bold text-jalanea-400 mt-2 uppercase tracking-wider">Match Score</span>
                                     </div>
                                     <div className="flex gap-2">
-                                        <button onClick={(e) => { e.stopPropagation(); }} className="p-2 text-jalanea-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
-                                            <Heart size={20} />
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (!currentUser) {
+                                                    alert('Please sign in to save jobs');
+                                                    return;
+                                                }
+                                                if (isJobSaved(job.id)) {
+                                                    removeJob(job.id);
+                                                } else {
+                                                    saveJob(job);
+                                                }
+                                            }}
+                                            className={`p-2 rounded-full transition-all ${isJobSaved(job.id)
+                                                    ? 'text-red-500 bg-red-50 hover:bg-red-100'
+                                                    : 'text-jalanea-300 hover:text-red-500 hover:bg-red-50'
+                                                }`}
+                                            title={isJobSaved(job.id) ? 'Remove from saved' : 'Save job'}
+                                        >
+                                            <Heart size={20} fill={isJobSaved(job.id) ? 'currentColor' : 'none'} />
                                         </button>
                                     </div>
                                 </div>

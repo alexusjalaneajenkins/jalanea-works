@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { NavRoute } from '../types';
+import { NavRoute, Job } from '../types';
 import {
     Zap, ArrowRight, User, Linkedin, GraduationCap,
     Briefcase, Plus, X, Sparkles, CheckCircle2, ChevronRight,
-    ChevronLeft, MapPin, Globe, Wand2, Star, Search
+    ChevronLeft, MapPin, Globe, Wand2, Star, Search, Heart, Calendar, Clock
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { searchJobs } from '../services/jobService';
 
 interface OnboardingProps {
     setRoute: (route: NavRoute) => void;
@@ -20,13 +21,19 @@ const STEPS = {
     PROFILE_BASICS: 2,
     PROFILE_EDUCATION: 3,
     PROFILE_EXPERIENCE: 4,
-    PROFILE_PREFS: 5
+    PROFILE_PREFS: 5,
+    FAVORITE_JOBS: 6,
+    SETUP_SCHEDULE: 7
 };
 
 export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
     const [currentStep, setCurrentStep] = useState(STEPS.LOGIN);
     const [carouselIndex, setCarouselIndex] = useState(0);
-    const { currentUser } = useAuth();
+    const { currentUser, userProfile, saveJob, isJobSaved, saveUserProfile } = useAuth();
+
+    // Jobs for favoriting step
+    const [jobsToFavorite, setJobsToFavorite] = useState<Job[]>([]);
+    const [isLoadingJobs, setIsLoadingJobs] = useState(false);
 
     useEffect(() => {
         if (currentUser && currentStep === STEPS.LOGIN) {
@@ -64,7 +71,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
     const renderProgressBar = () => {
         if (currentStep < STEPS.PROFILE_BASICS) return null;
-        const progress = ((currentStep - 2) / 3) * 100;
+        // 5 profile steps now (BASICS through SETUP_SCHEDULE = steps 2-7, so 6 steps total)
+        const totalSteps = 6;
+        const progress = ((currentStep - 2) / (totalSteps - 1)) * 100;
 
         return (
             <div className="w-full h-1.5 bg-jalanea-100 rounded-full mb-8 overflow-hidden">
@@ -356,6 +365,171 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
         </div>
     );
 
+    // Fetch jobs when reaching the favorite step
+    useEffect(() => {
+        if (currentStep === STEPS.FAVORITE_JOBS && jobsToFavorite.length === 0) {
+            setIsLoadingJobs(true);
+            searchJobs('entry level', { location: 'United States' })
+                .then(response => {
+                    if (response.jobs) {
+                        setJobsToFavorite(response.jobs.slice(0, 6));
+                    }
+                })
+                .finally(() => setIsLoadingJobs(false));
+        }
+    }, [currentStep]);
+
+    const savedJobsCount = userProfile?.savedJobs?.length || 0;
+
+    const renderFavoriteJobs = () => (
+        <div className="animate-in slide-in-from-right-8 fade-in duration-300">
+            <div className="mb-6">
+                <h2 className="text-2xl font-display font-bold text-jalanea-900">Find your first targets.</h2>
+                <p className="text-jalanea-600">Save at least 3 jobs you'd like to pursue. We'll help you apply strategically.</p>
+            </div>
+
+            {/* Progress indicator */}
+            <div className="mb-6 flex items-center gap-3">
+                <div className="flex-1 h-2 bg-jalanea-100 rounded-full overflow-hidden">
+                    <div
+                        className="h-full bg-gold transition-all duration-300"
+                        style={{ width: `${Math.min((savedJobsCount / 3) * 100, 100)}%` }}
+                    />
+                </div>
+                <span className={`text-sm font-bold ${savedJobsCount >= 3 ? 'text-green-600' : 'text-jalanea-600'}`}>
+                    {savedJobsCount} / 3 saved
+                </span>
+                {savedJobsCount >= 3 && <CheckCircle2 size={18} className="text-green-600" />}
+            </div>
+
+            {/* Jobs grid */}
+            <div className="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar">
+                {isLoadingJobs ? (
+                    <div className="text-center py-8">
+                        <div className="animate-spin w-8 h-8 border-2 border-gold border-t-transparent rounded-full mx-auto mb-2" />
+                        <p className="text-sm text-jalanea-500">Loading job opportunities...</p>
+                    </div>
+                ) : jobsToFavorite.map(job => (
+                    <div
+                        key={job.id}
+                        className={`p-4 rounded-xl border transition-all cursor-pointer ${isJobSaved(job.id)
+                            ? 'bg-red-50 border-red-200'
+                            : 'bg-white border-jalanea-200 hover:border-gold'
+                            }`}
+                        onClick={() => {
+                            if (isJobSaved(job.id)) {
+                                // Can't unsave in this flow for simplicity
+                            } else {
+                                saveJob(job);
+                            }
+                        }}
+                    >
+                        <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                                <h4 className="font-bold text-jalanea-900">{job.title}</h4>
+                                <p className="text-sm text-jalanea-600">{job.company}</p>
+                                <p className="text-xs text-jalanea-400 mt-1">{job.location}</p>
+                            </div>
+                            <div className={`p-2 rounded-full ${isJobSaved(job.id) ? 'bg-red-100 text-red-500' : 'bg-jalanea-100 text-jalanea-400'}`}>
+                                <Heart size={18} fill={isJobSaved(job.id) ? 'currentColor' : 'none'} />
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+
+    const [weeklyHours, setWeeklyHours] = useState<number>(10);
+    const [preferredTimes, setPreferredTimes] = useState<string[]>(['morning']);
+
+    const renderScheduleSetup = () => (
+        <div className="animate-in slide-in-from-right-8 fade-in duration-300">
+            <div className="mb-6">
+                <h2 className="text-2xl font-display font-bold text-jalanea-900">Set your job search rhythm.</h2>
+                <p className="text-jalanea-600">Tell us when you're available and we'll build a smart schedule for you.</p>
+            </div>
+
+            <div className="space-y-8">
+                {/* Weekly hours commitment */}
+                <div>
+                    <label className="text-sm font-bold text-jalanea-900 mb-3 block">
+                        How many hours per week can you dedicate to job searching?
+                    </label>
+                    <div className="flex items-center gap-4">
+                        <input
+                            type="range"
+                            min="5"
+                            max="40"
+                            value={weeklyHours}
+                            onChange={(e) => setWeeklyHours(Number(e.target.value))}
+                            className="flex-1 accent-gold h-2 bg-jalanea-200 rounded-lg appearance-none cursor-pointer"
+                        />
+                        <span className="text-lg font-bold text-gold min-w-[60px] text-right">{weeklyHours} hrs</span>
+                    </div>
+                </div>
+
+                {/* Preferred times */}
+                <div>
+                    <label className="text-sm font-bold text-jalanea-900 mb-3 block">
+                        When do you prefer to focus on job searching?
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                        {[
+                            { id: 'morning', label: '☀️ Morning', time: '6am - 12pm' },
+                            { id: 'afternoon', label: '🌤️ Afternoon', time: '12pm - 5pm' },
+                            { id: 'evening', label: '🌙 Evening', time: '5pm - 9pm' },
+                            { id: 'weekend', label: '📅 Weekends', time: 'Sat & Sun' }
+                        ].map(time => (
+                            <button
+                                key={time.id}
+                                onClick={() => {
+                                    setPreferredTimes(prev =>
+                                        prev.includes(time.id)
+                                            ? prev.filter(t => t !== time.id)
+                                            : [...prev, time.id]
+                                    );
+                                }}
+                                className={`p-4 rounded-xl border text-left transition-all ${preferredTimes.includes(time.id)
+                                    ? 'bg-jalanea-900 text-white border-jalanea-900'
+                                    : 'bg-white text-jalanea-700 border-jalanea-200 hover:border-gold'
+                                    }`}
+                            >
+                                <span className="text-lg font-bold block">{time.label}</span>
+                                <span className={`text-xs ${preferredTimes.includes(time.id) ? 'text-jalanea-300' : 'text-jalanea-400'}`}>{time.time}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Summary */}
+                <div className="bg-gold/10 border border-gold/20 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Calendar size={16} className="text-gold" />
+                        <span className="text-sm font-bold text-jalanea-900">Your Job Search Plan</span>
+                    </div>
+                    <p className="text-sm text-jalanea-700">
+                        We'll schedule {weeklyHours} hours of focused job search time during your preferred {preferredTimes.length > 1 ? 'time slots' : 'time slot'}.
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+
+    const handleCompleteOnboarding = async () => {
+        // Save schedule preferences and mark onboarding complete
+        await saveUserProfile({
+            onboardingCompleted: true,
+            hasSetupSchedule: true,
+            preferences: {
+                ...userProfile?.preferences,
+                weeklyJobSearchHours: weeklyHours,
+                preferredSearchTimes: preferredTimes
+            }
+        });
+        setRoute(NavRoute.DASHBOARD);
+    };
+
 
     // Main Render Structure
     return (
@@ -396,6 +570,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                                 {currentStep === STEPS.PROFILE_EDUCATION && renderEducation()}
                                 {currentStep === STEPS.PROFILE_EXPERIENCE && renderExperience()}
                                 {currentStep === STEPS.PROFILE_PREFS && renderPrefs()}
+                                {currentStep === STEPS.FAVORITE_JOBS && renderFavoriteJobs()}
+                                {currentStep === STEPS.SETUP_SCHEDULE && renderScheduleSetup()}
                             </div>
 
                             {/* Wizard Footer / Navigation */}
@@ -409,14 +585,24 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                                     Back
                                 </Button>
 
-                                {currentStep === STEPS.PROFILE_PREFS ? (
+                                {currentStep === STEPS.SETUP_SCHEDULE ? (
                                     <Button
                                         variant="primary"
-                                        onClick={() => setRoute(NavRoute.DASHBOARD)}
+                                        onClick={handleCompleteOnboarding}
                                         className="shadow-xl shadow-gold/20 animate-pulse"
                                         icon={<CheckCircle2 size={18} />}
                                     >
                                         Complete Profile
+                                    </Button>
+                                ) : currentStep === STEPS.FAVORITE_JOBS ? (
+                                    <Button
+                                        variant="primary"
+                                        onClick={nextStep}
+                                        icon={<ChevronRight size={18} />}
+                                        disabled={savedJobsCount < 3}
+                                        className={savedJobsCount < 3 ? 'opacity-50 cursor-not-allowed' : ''}
+                                    >
+                                        {savedJobsCount < 3 ? `Save ${3 - savedJobsCount} more` : 'Continue'}
                                     </Button>
                                 ) : (
                                     <Button
