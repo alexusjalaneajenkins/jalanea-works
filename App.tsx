@@ -34,6 +34,20 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return children;
 };
 
+// Gate that ensures users complete onboarding before accessing protected routes
+// Returns true if user should go to onboarding, false if they can access the app
+const useNeedsOnboarding = (): boolean | null => {
+  const { userProfile, profileLoading } = useAuth();
+
+  // Still loading - return null to indicate loading state
+  if (profileLoading) {
+    return null;
+  }
+
+  // Check if onboarding is completed
+  return !userProfile?.onboardingCompleted;
+};
+
 const AppLayout: React.FC = () => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
@@ -100,7 +114,6 @@ const AppLayout: React.FC = () => {
           <div className="max-w-7xl mx-auto">
             <Routes>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/onboarding" element={<Onboarding setRoute={handleSetRoute} />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/jobs" element={<Jobs setRoute={handleSetRoute} />} />
               <Route path="/resume" element={<ResumeBuilder />} />
@@ -126,15 +139,68 @@ const App: React.FC = () => {
           <Route path="/about" element={<About setRoute={() => { }} />} />
           <Route path="/auth" element={<AuthPage />} />
 
-          {/* Protected Routes */}
+          {/* Onboarding - Protected but OUTSIDE AppLayout (full-screen, no sidebar) */}
+          <Route path="/onboarding" element={
+            <ProtectedRoute>
+              <OnboardingPage />
+            </ProtectedRoute>
+          } />
+
+          {/* Protected Routes - Only accessible after onboarding is complete */}
           <Route path="/*" element={
             <ProtectedRoute>
-              <AppLayout />
+              <AppLayoutWithOnboardingCheck />
             </ProtectedRoute>
           } />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+  );
+};
+
+// Wrapper that checks if onboarding is needed before showing AppLayout
+const AppLayoutWithOnboardingCheck: React.FC = () => {
+  const needsOnboarding = useNeedsOnboarding();
+
+  // Still loading
+  if (needsOnboarding === null) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-jalanea-50">
+        <Loader className="animate-spin text-jalanea-600 w-12 h-12" />
+      </div>
+    );
+  }
+
+  // Redirect to onboarding if not completed
+  if (needsOnboarding) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  return <AppLayout />;
+};
+
+// Full-screen onboarding page (no sidebar)
+const OnboardingPage: React.FC = () => {
+  const navigate = useNavigate();
+  const needsOnboarding = useNeedsOnboarding();
+
+  // If onboarding is already completed, redirect to dashboard
+  if (needsOnboarding === false) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  const handleSetRoute = (route: NavRoute) => {
+    if (route === NavRoute.DASHBOARD) {
+      navigate('/dashboard');
+    } else {
+      navigate(`/${route}`);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-jalanea-50">
+      <Onboarding setRoute={handleSetRoute} />
+    </div>
   );
 };
 

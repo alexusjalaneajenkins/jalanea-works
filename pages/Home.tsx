@@ -110,8 +110,8 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
 
   const handleAuthComplete = () => {
     setIsAuthOpen(false);
-    // Use React Router navigate for actual navigation
-    navigate('/jobs');
+    // Navigate to onboarding for new users (will redirect to dashboard if already completed)
+    navigate('/onboarding');
   };
 
   // Filter logic for search

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { NavRoute, Job } from '../types';
+import { CommuteCostCalculator } from '../components/CommuteCostCalculator';
+import { NavRoute, Job, TransportMode } from '../types';
 import {
     Zap, ArrowRight, User, Linkedin, GraduationCap,
     Briefcase, Plus, X, Sparkles, CheckCircle2, ChevronRight,
@@ -48,6 +49,11 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
     // Tag Inputs
     const [roleInput, setRoleInput] = useState('');
     const [roleTags, setRoleTags] = useState<string[]>(['Entry Level Designer']);
+
+    // Preferences state
+    const [targetSalary, setTargetSalary] = useState(50000);
+    const [transportMode, setTransportMode] = useState<TransportMode | undefined>(undefined);
+    const [workStyle, setWorkStyle] = useState<string>('Hybrid');
 
     const nextStep = () => setCurrentStep(prev => prev + 1);
     const prevStep = () => setCurrentStep(prev => prev - 1);
@@ -317,6 +323,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
             </div>
 
             <div className="space-y-8">
+                {/* Target Job Titles */}
                 <div>
                     <label className="text-sm font-bold text-jalanea-900 mb-2 block">Target Job Titles</label>
                     <div className="bg-white p-3 border border-jalanea-200 rounded-xl flex flex-wrap gap-2 focus-within:ring-1 focus-within:ring-jalanea-900 transition-all">
@@ -337,29 +344,56 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                     <p className="text-xs text-jalanea-400 mt-2 ml-1">AI Suggestion: Based on "A.S. Graphic Design"</p>
                 </div>
 
+                {/* Work Style */}
                 <div>
                     <label className="text-sm font-bold text-jalanea-900 mb-3 block">Work Style</label>
                     <div className="flex gap-3">
                         {['Remote', 'Hybrid', 'On-site'].map(style => (
-                            <button key={style} className={`flex-1 py-3 rounded-xl text-sm font-bold border transition-all
-                        ${style === 'Hybrid' ? 'bg-jalanea-900 text-white border-jalanea-900' : 'bg-white text-jalanea-600 border-jalanea-200 hover:border-gold'}
-                    `}>
+                            <button
+                                key={style}
+                                onClick={() => setWorkStyle(style)}
+                                className={`flex-1 py-3 rounded-xl text-sm font-bold border transition-all
+                                    ${workStyle === style
+                                        ? 'bg-jalanea-900 text-white border-jalanea-900'
+                                        : 'bg-white text-jalanea-600 border-jalanea-200 hover:border-gold'
+                                    }
+                                `}
+                            >
                                 {style}
                             </button>
                         ))}
                     </div>
                 </div>
 
+                {/* Salary Expectation */}
                 <div>
                     <div className="flex justify-between mb-2">
                         <label className="text-sm font-bold text-jalanea-900">Salary Expectation</label>
-                        <span className="text-sm font-bold text-gold">$50k+</span>
+                        <span className="text-sm font-bold text-gold">${(targetSalary / 1000).toFixed(0)}k+</span>
                     </div>
-                    <input type="range" className="w-full accent-gold h-2 bg-jalanea-200 rounded-lg appearance-none cursor-pointer" />
-                    <div className="flex items-center gap-2 mt-3">
-                        <input type="checkbox" className="rounded text-gold focus:ring-gold" id="flex" />
-                        <label htmlFor="flex" className="text-sm font-medium text-jalanea-600 cursor-pointer">I'm flexible for the right opportunity</label>
+                    <input
+                        type="range"
+                        min="30000"
+                        max="150000"
+                        step="5000"
+                        value={targetSalary}
+                        onChange={(e) => setTargetSalary(Number(e.target.value))}
+                        className="w-full accent-gold h-2 bg-jalanea-200 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <div className="flex justify-between text-xs text-jalanea-400 mt-1">
+                        <span>$30k</span>
+                        <span>$150k+</span>
                     </div>
+                </div>
+
+                {/* Commute Cost Awareness - Transport Mode Selection */}
+                <div>
+                    <label className="text-sm font-bold text-jalanea-900 mb-3 block">How will you commute?</label>
+                    <CommuteCostCalculator
+                        salary={targetSalary}
+                        selectedMode={transportMode}
+                        onSelect={setTransportMode}
+                    />
                 </div>
             </div>
         </div>
@@ -517,12 +551,18 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
     );
 
     const handleCompleteOnboarding = async () => {
-        // Save schedule preferences and mark onboarding complete
+        // Save all preferences and mark onboarding complete
         await saveUserProfile({
             onboardingCompleted: true,
             hasSetupSchedule: true,
             preferences: {
                 ...userProfile?.preferences,
+                // Job search preferences
+                targetRoles: roleTags,
+                workStyles: [workStyle],
+                salary: targetSalary,
+                transportMode: transportMode,
+                // Schedule preferences
                 weeklyJobSearchHours: weeklyHours,
                 preferredSearchTimes: preferredTimes
             }

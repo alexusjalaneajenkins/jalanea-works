@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../services/firebase';
 import { AlertCircle, ArrowRight, Loader } from 'lucide-react';
 
 export const AuthPage: React.FC = () => {
@@ -56,8 +58,19 @@ export const AuthPage: React.FC = () => {
                     onClick={async () => {
                         try {
                             setLoading(true);
-                            await loginWithGoogle();
-                            navigate('/dashboard');
+                            const result = await loginWithGoogle();
+
+                            // Check if user has completed onboarding
+                            const userDocRef = doc(db, "users", result.user.uid);
+                            const userDocSnap = await getDoc(userDocRef);
+
+                            if (userDocSnap.exists() && userDocSnap.data()?.onboardingCompleted) {
+                                // Returning user with completed onboarding
+                                navigate('/dashboard');
+                            } else {
+                                // New user or incomplete onboarding
+                                navigate('/onboarding');
+                            }
                         } catch (err: any) {
                             setError(err.message.replace('Firebase: ', ''));
                         } finally {

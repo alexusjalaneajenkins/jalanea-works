@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { NavRoute, Job, JobAnalysis, TransportMode } from '../types';
 import { MOCK_PROFILE } from './Profile';
+import { CommuteCostBadge } from '../components/CommuteCostBadge';
 
 interface JobsProps {
     setRoute?: (route: NavRoute) => void;
@@ -648,6 +649,14 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                                             {job.experienceYears}
                                         </span>
                                     )}
+
+                                    {/* Commute Cost Badge - uses user's salary and transport preference */}
+                                    {userProfile?.preferences?.salary && userProfile?.preferences?.transportMode && (
+                                        <CommuteCostBadge
+                                            transportMode={userProfile.preferences.transportMode as TransportMode}
+                                            salary={userProfile.preferences.salary}
+                                        />
+                                    )}
                                 </div>
 
                                 {/* Description Summary */}
@@ -698,8 +707,8 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                                                 }
                                             }}
                                             className={`p-2 rounded-full transition-all ${isJobSaved(job.id)
-                                                    ? 'text-red-500 bg-red-50 hover:bg-red-100'
-                                                    : 'text-jalanea-300 hover:text-red-500 hover:bg-red-50'
+                                                ? 'text-red-500 bg-red-50 hover:bg-red-100'
+                                                : 'text-jalanea-300 hover:text-red-500 hover:bg-red-50'
                                                 }`}
                                             title={isJobSaved(job.id) ? 'Remove from saved' : 'Save job'}
                                         >
