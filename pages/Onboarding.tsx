@@ -207,9 +207,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
             </div>
 
             <div className="space-y-6">
-                <Button fullWidth variant="outline" icon={<Linkedin size={18} className="text-[#0077b5]" />} className="border-dashed border-2 bg-blue-50/50 text-jalanea-700 hover:bg-blue-50 hover:border-blue-200">
-                    Import from LinkedIn
-                </Button>
 
                 <div className="flex items-center gap-4">
                     {/* Profile Picture - shows Google photo if available */}
