@@ -55,6 +55,24 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
     const [transportMode, setTransportMode] = useState<TransportMode | undefined>(undefined);
     const [workStyle, setWorkStyle] = useState<string>('Hybrid');
 
+    // Profile basics state (pre-populated from Google login)
+    const [fullName, setFullName] = useState('');
+    const [location, setLocation] = useState('');
+    const [profilePic, setProfilePic] = useState<string | null>(null);
+    const [linkedinUrl, setLinkedinUrl] = useState('');
+    const [portfolioUrl, setPortfolioUrl] = useState('');
+
+    // Pre-populate form from userProfile (e.g., Google sign-in data)
+    useEffect(() => {
+        if (userProfile) {
+            if (userProfile.fullName && !fullName) setFullName(userProfile.fullName);
+            if (userProfile.photoURL && !profilePic) setProfilePic(userProfile.photoURL);
+            if (userProfile.location && !location) setLocation(userProfile.location);
+            if (userProfile.linkedinUrl) setLinkedinUrl(userProfile.linkedinUrl);
+            if (userProfile.portfolioUrl) setPortfolioUrl(userProfile.portfolioUrl);
+        }
+    }, [userProfile]);
+
     const nextStep = () => setCurrentStep(prev => prev + 1);
     const prevStep = () => setCurrentStep(prev => prev - 1);
 
@@ -194,18 +212,46 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                 </Button>
 
                 <div className="flex items-center gap-4">
-                    <div className="w-20 h-20 rounded-full bg-jalanea-100 flex items-center justify-center border-2 border-dashed border-jalanea-300 text-jalanea-400 cursor-pointer hover:border-gold hover:text-gold transition-colors">
-                        <Plus size={24} />
-                    </div>
+                    {/* Profile Picture - shows Google photo if available */}
+                    {profilePic ? (
+                        <img
+                            src={profilePic}
+                            alt={fullName || 'Profile'}
+                            className="w-20 h-20 rounded-full object-cover border-2 border-gold shadow-lg"
+                        />
+                    ) : (
+                        <div className="w-20 h-20 rounded-full bg-jalanea-100 flex items-center justify-center border-2 border-dashed border-jalanea-300 text-jalanea-400 cursor-pointer hover:border-gold hover:text-gold transition-colors">
+                            <Plus size={24} />
+                        </div>
+                    )}
                     <div className="flex-1 space-y-3">
-                        <Input placeholder="Full Name" />
-                        <Input placeholder="Location (e.g. Orlando, FL)" icon={<MapPin size={16} />} />
+                        <Input
+                            placeholder="Full Name"
+                            value={fullName}
+                            onChange={(e) => setFullName(e.target.value)}
+                        />
+                        <Input
+                            placeholder="Location (e.g. Orlando, FL)"
+                            icon={<MapPin size={16} />}
+                            value={location}
+                            onChange={(e) => setLocation(e.target.value)}
+                        />
                     </div>
                 </div>
 
                 <div className="space-y-3">
-                    <Input placeholder="LinkedIn URL" icon={<Linkedin size={16} />} />
-                    <Input placeholder="Portfolio / GitHub URL (Optional)" icon={<Globe size={16} />} />
+                    <Input
+                        placeholder="LinkedIn URL"
+                        icon={<Linkedin size={16} />}
+                        value={linkedinUrl}
+                        onChange={(e) => setLinkedinUrl(e.target.value)}
+                    />
+                    <Input
+                        placeholder="Portfolio / GitHub URL (Optional)"
+                        icon={<Globe size={16} />}
+                        value={portfolioUrl}
+                        onChange={(e) => setPortfolioUrl(e.target.value)}
+                    />
                 </div>
             </div>
         </div>
@@ -551,10 +597,18 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
     );
 
     const handleCompleteOnboarding = async () => {
-        // Save all preferences and mark onboarding complete
+        // Save all profile data and preferences, mark onboarding complete
         await saveUserProfile({
+            // Profile basics
+            fullName,
+            location,
+            photoURL: profilePic,
+            linkedinUrl,
+            portfolioUrl,
+            // Status
             onboardingCompleted: true,
             hasSetupSchedule: true,
+            // Preferences
             preferences: {
                 ...userProfile?.preferences,
                 // Job search preferences
