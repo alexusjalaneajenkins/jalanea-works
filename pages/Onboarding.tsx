@@ -280,7 +280,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                                 setRoleTags(program.entryLevelCareers.slice(0, 3).map(c => c.title));
                             }
                         }}
-                        placeholder="Search Valencia College programs..."
+                        placeholder="Search Valencia or UCF programs..."
                         showCareers={true}
                     />
                 </div>

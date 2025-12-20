@@ -586,13 +586,298 @@ export const VALENCIA_BAS_DEGREES: DegreeProgram[] = [
 ];
 
 // ============================================================================
+// UCF: BACHELOR OF SCIENCE (B.S.) AND BACHELOR OF ARTS (B.A.) DEGREES
+// ============================================================================
+
+export const UCF_BACHELOR_DEGREES: DegreeProgram[] = [
+    // ===== TECHNOLOGY / ENGINEERING =====
+    {
+        id: 'ucf-bs-cs',
+        name: 'Computer Science',
+        level: 'Bachelor of Science (B.S.)',
+        institution: 'UCF',
+        field: 'Technology',
+        description: 'UCF\'s top-ranked program in computing, software development, and AI.',
+        keywords: ['computer science', 'programming', 'software', 'coding', 'algorithms', 'CS', 'developer'],
+        entryLevelCareers: [
+            { title: 'Software Engineer', averageSalary: '$65,000 - $85,000', description: 'Design and develop software applications' },
+            { title: 'Full Stack Developer', averageSalary: '$60,000 - $80,000', description: 'Build frontend and backend systems' },
+            { title: 'Junior Data Scientist', averageSalary: '$62,000 - $78,000', description: 'Analyze data and build ML models' },
+            { title: 'Application Developer', averageSalary: '$58,000 - $75,000', description: 'Create mobile and web applications' }
+        ]
+    },
+    {
+        id: 'ucf-bs-it',
+        name: 'Information Technology',
+        level: 'Bachelor of Science (B.S.)',
+        institution: 'UCF',
+        field: 'Technology',
+        description: 'Comprehensive IT program covering systems, networks, and cybersecurity.',
+        keywords: ['IT', 'information technology', 'networks', 'systems', 'cybersecurity', 'cloud'],
+        entryLevelCareers: [
+            { title: 'IT Analyst', averageSalary: '$55,000 - $70,000', description: 'Analyze IT systems and recommend solutions' },
+            { title: 'Systems Administrator', averageSalary: '$58,000 - $75,000', description: 'Manage enterprise systems and servers' },
+            { title: 'Network Administrator', averageSalary: '$55,000 - $72,000', description: 'Maintain and secure network infrastructure' },
+            { title: 'Cloud Support Engineer', averageSalary: '$60,000 - $78,000', description: 'Support cloud-based applications' }
+        ]
+    },
+    {
+        id: 'ucf-bs-mech-eng',
+        name: 'Mechanical Engineering',
+        level: 'Bachelor of Science (B.S.)',
+        institution: 'UCF',
+        field: 'Engineering',
+        description: 'Design and build mechanical systems from robotics to aerospace.',
+        keywords: ['mechanical engineering', 'engineering', 'design', 'manufacturing', 'CAD', 'robotics'],
+        entryLevelCareers: [
+            { title: 'Mechanical Engineer', averageSalary: '$62,000 - $78,000', description: 'Design mechanical systems and components' },
+            { title: 'Design Engineer', averageSalary: '$58,000 - $75,000', description: 'Create product designs using CAD' },
+            { title: 'Manufacturing Engineer', averageSalary: '$60,000 - $76,000', description: 'Optimize manufacturing processes' },
+            { title: 'Project Engineer', averageSalary: '$55,000 - $72,000', description: 'Manage engineering projects' }
+        ]
+    },
+    {
+        id: 'ucf-bs-electrical-eng',
+        name: 'Electrical Engineering',
+        level: 'Bachelor of Science (B.S.)',
+        institution: 'UCF',
+        field: 'Engineering',
+        description: 'Design electrical systems, circuits, and electronic devices.',
+        keywords: ['electrical engineering', 'electronics', 'circuits', 'power', 'signals', 'embedded'],
+        entryLevelCareers: [
+            { title: 'Electrical Engineer', averageSalary: '$62,000 - $80,000', description: 'Design electrical systems and circuits' },
+            { title: 'Hardware Engineer', averageSalary: '$65,000 - $82,000', description: 'Design electronic hardware components' },
+            { title: 'Controls Engineer', averageSalary: '$60,000 - $78,000', description: 'Develop control systems for automation' },
+            { title: 'Test Engineer', averageSalary: '$55,000 - $72,000', description: 'Test electrical systems and components' }
+        ]
+    },
+    {
+        id: 'ucf-bs-aerospace-eng',
+        name: 'Aerospace Engineering',
+        level: 'Bachelor of Science (B.S.)',
+        institution: 'UCF',
+        field: 'Engineering',
+        description: 'Design aircraft, spacecraft, and propulsion systems.',
+        keywords: ['aerospace', 'aviation', 'space', 'aircraft', 'rockets', 'NASA', 'SpaceX'],
+        entryLevelCareers: [
+            { title: 'Aerospace Engineer', averageSalary: '$65,000 - $85,000', description: 'Design aircraft and spacecraft' },
+            { title: 'Propulsion Engineer', averageSalary: '$68,000 - $88,000', description: 'Design rocket and jet engines' },
+            { title: 'Systems Engineer', averageSalary: '$62,000 - $80,000', description: 'Integrate complex aerospace systems' },
+            { title: 'Flight Test Engineer', averageSalary: '$60,000 - $78,000', description: 'Test aircraft performance' }
+        ]
+    },
+    {
+        id: 'ucf-bs-civil-eng',
+        name: 'Civil Engineering',
+        level: 'Bachelor of Science (B.S.)',
+        institution: 'UCF',
+        field: 'Engineering',
+        description: 'Design infrastructure including bridges, roads, and buildings.',
+        keywords: ['civil engineering', 'construction', 'infrastructure', 'bridges', 'roads', 'structural'],
+        entryLevelCareers: [
+            { title: 'Civil Engineer', averageSalary: '$58,000 - $75,000', description: 'Design infrastructure projects' },
+            { title: 'Structural Engineer', averageSalary: '$60,000 - $78,000', description: 'Analyze and design structures' },
+            { title: 'Construction Engineer', averageSalary: '$55,000 - $72,000', description: 'Oversee construction projects' },
+            { title: 'Transportation Engineer', averageSalary: '$58,000 - $75,000', description: 'Design roads and transit systems' }
+        ]
+    },
+    {
+        id: 'ucf-bs-computer-eng',
+        name: 'Computer Engineering',
+        level: 'Bachelor of Science (B.S.)',
+        institution: 'UCF',
+        field: 'Engineering',
+        description: 'Bridge hardware and software with embedded systems and computer architecture.',
+        keywords: ['computer engineering', 'embedded', 'hardware', 'software', 'microprocessors', 'FPGA'],
+        entryLevelCareers: [
+            { title: 'Embedded Systems Engineer', averageSalary: '$65,000 - $85,000', description: 'Develop embedded software and hardware' },
+            { title: 'Hardware Engineer', averageSalary: '$65,000 - $82,000', description: 'Design computer hardware components' },
+            { title: 'Firmware Developer', averageSalary: '$62,000 - $80,000', description: 'Write low-level software for devices' },
+            { title: 'FPGA Engineer', averageSalary: '$68,000 - $88,000', description: 'Design programmable logic circuits' }
+        ]
+    },
+    // ===== BUSINESS =====
+    {
+        id: 'ucf-bs-finance',
+        name: 'Finance',
+        level: 'Bachelor of Science (B.S.)',
+        institution: 'UCF',
+        field: 'Business',
+        description: 'Prepare for careers in financial analysis, banking, and investments.',
+        keywords: ['finance', 'banking', 'investments', 'financial analyst', 'accounting', 'money'],
+        entryLevelCareers: [
+            { title: 'Financial Analyst', averageSalary: '$55,000 - $70,000', description: 'Analyze financial data and investments' },
+            { title: 'Investment Banking Analyst', averageSalary: '$65,000 - $85,000', description: 'Support M&A and capital markets deals' },
+            { title: 'Credit Analyst', averageSalary: '$50,000 - $65,000', description: 'Assess creditworthiness of borrowers' },
+            { title: 'Corporate Finance Analyst', averageSalary: '$52,000 - $68,000', description: 'Support corporate financial planning' }
+        ]
+    },
+    {
+        id: 'ucf-bs-accounting',
+        name: 'Accounting',
+        level: 'Bachelor of Science (B.S.)',
+        institution: 'UCF',
+        field: 'Business',
+        description: 'Prepare for CPA track and careers in public and corporate accounting.',
+        keywords: ['accounting', 'CPA', 'audit', 'tax', 'bookkeeping', 'financial reporting'],
+        entryLevelCareers: [
+            { title: 'Staff Accountant', averageSalary: '$50,000 - $62,000', description: 'Prepare financial statements and reports' },
+            { title: 'Tax Associate', averageSalary: '$52,000 - $65,000', description: 'Prepare tax returns for individuals and businesses' },
+            { title: 'Audit Associate', averageSalary: '$55,000 - $68,000', description: 'Conduct financial audits for clients' },
+            { title: 'Accounts Payable Specialist', averageSalary: '$42,000 - $52,000', description: 'Manage vendor payments and invoices' }
+        ]
+    },
+    {
+        id: 'ucf-bs-marketing',
+        name: 'Marketing',
+        level: 'Bachelor of Science (B.S.)',
+        institution: 'UCF',
+        field: 'Business',
+        description: 'Learn digital marketing, brand strategy, and consumer behavior.',
+        keywords: ['marketing', 'digital marketing', 'advertising', 'brand', 'social media', 'SEO'],
+        entryLevelCareers: [
+            { title: 'Marketing Coordinator', averageSalary: '$42,000 - $55,000', description: 'Support marketing campaigns and events' },
+            { title: 'Digital Marketing Specialist', averageSalary: '$45,000 - $60,000', description: 'Run digital advertising campaigns' },
+            { title: 'Social Media Manager', averageSalary: '$40,000 - $55,000', description: 'Manage brand social media presence' },
+            { title: 'Marketing Analyst', averageSalary: '$48,000 - $62,000', description: 'Analyze marketing data and ROI' }
+        ]
+    },
+    {
+        id: 'ucf-bs-management',
+        name: 'Management',
+        level: 'Bachelor of Science (B.S.)',
+        institution: 'UCF',
+        field: 'Business',
+        description: 'Develop leadership skills for managing teams and organizations.',
+        keywords: ['management', 'leadership', 'business management', 'operations', 'strategy'],
+        entryLevelCareers: [
+            { title: 'Management Trainee', averageSalary: '$45,000 - $58,000', description: 'Learn to manage teams and operations' },
+            { title: 'Operations Coordinator', averageSalary: '$42,000 - $55,000', description: 'Coordinate daily business operations' },
+            { title: 'Project Coordinator', averageSalary: '$45,000 - $58,000', description: 'Support project management activities' },
+            { title: 'HR Coordinator', averageSalary: '$40,000 - $52,000', description: 'Support human resources functions' }
+        ]
+    },
+    // ===== HEALTHCARE =====
+    {
+        id: 'ucf-bsn-nursing',
+        name: 'Nursing (BSN)',
+        level: 'Bachelor of Science (B.S.)',
+        institution: 'UCF',
+        field: 'Healthcare',
+        description: 'UCF\'s highly-ranked nursing program with clinical placements throughout Central Florida.',
+        keywords: ['nursing', 'BSN', 'RN', 'registered nurse', 'healthcare', 'hospital', 'patient care'],
+        entryLevelCareers: [
+            { title: 'Registered Nurse (RN)', averageSalary: '$58,000 - $75,000', description: 'Provide direct patient care in hospitals' },
+            { title: 'ICU Nurse', averageSalary: '$62,000 - $80,000', description: 'Care for critically ill patients' },
+            { title: 'ER Nurse', averageSalary: '$60,000 - $78,000', description: 'Provide emergency care' },
+            { title: 'Pediatric Nurse', averageSalary: '$58,000 - $74,000', description: 'Care for children and infants' }
+        ]
+    },
+    {
+        id: 'ucf-bs-health-sciences',
+        name: 'Health Sciences (Pre-Clinical)',
+        level: 'Bachelor of Science (B.S.)',
+        institution: 'UCF',
+        field: 'Healthcare',
+        description: 'Pre-med and pre-health track for graduate healthcare programs.',
+        keywords: ['health sciences', 'pre-med', 'pre-dental', 'pre-PA', 'healthcare', 'medical school'],
+        entryLevelCareers: [
+            { title: 'Clinical Research Coordinator', averageSalary: '$48,000 - $62,000', description: 'Coordinate clinical trials and research' },
+            { title: 'Medical Scribe', averageSalary: '$32,000 - $42,000', description: 'Document patient encounters for physicians' },
+            { title: 'Patient Care Technician', averageSalary: '$35,000 - $45,000', description: 'Assist nurses with patient care' },
+            { title: 'Public Health Educator', averageSalary: '$42,000 - $55,000', description: 'Educate communities on health topics' }
+        ]
+    },
+    // ===== HOSPITALITY =====
+    {
+        id: 'ucf-bs-hospitality',
+        name: 'Hospitality Management',
+        level: 'Bachelor of Science (B.S.)',
+        institution: 'UCF',
+        field: 'Hospitality',
+        description: 'UCF Rosen College\'s world-renowned hospitality program.',
+        keywords: ['hospitality', 'hotel', 'tourism', 'resort', 'Rosen', 'Disney', 'Universal'],
+        entryLevelCareers: [
+            { title: 'Hotel Operations Manager Trainee', averageSalary: '$42,000 - $55,000', description: 'Learn hotel management operations' },
+            { title: 'Event Coordinator', averageSalary: '$40,000 - $52,000', description: 'Plan and execute events' },
+            { title: 'Guest Experience Manager', averageSalary: '$45,000 - $58,000', description: 'Ensure guest satisfaction at resorts' },
+            { title: 'Revenue Analyst', averageSalary: '$48,000 - $62,000', description: 'Optimize hotel pricing and revenue' }
+        ]
+    },
+    {
+        id: 'ucf-bs-entertainment-mgmt',
+        name: 'Entertainment Management',
+        level: 'Bachelor of Science (B.S.)',
+        institution: 'UCF',
+        field: 'Hospitality',
+        description: 'Manage theme parks, attractions, and entertainment venues.',
+        keywords: ['entertainment', 'theme parks', 'attractions', 'Disney', 'Universal', 'events'],
+        entryLevelCareers: [
+            { title: 'Attractions Supervisor', averageSalary: '$42,000 - $55,000', description: 'Manage ride operations at theme parks' },
+            { title: 'Entertainment Coordinator', averageSalary: '$38,000 - $50,000', description: 'Coordinate shows and entertainment' },
+            { title: 'Guest Relations Specialist', averageSalary: '$36,000 - $48,000', description: 'Handle VIP guests and special requests' },
+            { title: 'Operations Analyst', averageSalary: '$45,000 - $58,000', description: 'Analyze attraction performance data' }
+        ]
+    },
+    // ===== PSYCHOLOGY / SOCIAL SCIENCES =====
+    {
+        id: 'ucf-bs-psychology',
+        name: 'Psychology',
+        level: 'Bachelor of Science (B.S.)',
+        institution: 'UCF',
+        field: 'Healthcare',
+        description: 'Study human behavior with tracks in clinical, I/O, and neuroscience.',
+        keywords: ['psychology', 'mental health', 'counseling', 'behavior', 'research', 'therapy'],
+        entryLevelCareers: [
+            { title: 'Case Manager', averageSalary: '$38,000 - $50,000', description: 'Coordinate care for mental health clients' },
+            { title: 'Behavioral Health Technician', averageSalary: '$32,000 - $42,000', description: 'Support mental health treatment programs' },
+            { title: 'Research Assistant', averageSalary: '$35,000 - $45,000', description: 'Assist with psychology research studies' },
+            { title: 'HR Specialist', averageSalary: '$42,000 - $55,000', description: 'Apply psychology to workplace issues' }
+        ]
+    },
+    // ===== CRIMINAL JUSTICE =====
+    {
+        id: 'ucf-bs-criminal-justice',
+        name: 'Criminal Justice',
+        level: 'Bachelor of Science (B.S.)',
+        institution: 'UCF',
+        field: 'Criminal Justice',
+        description: 'Top-ranked online criminal justice program with law enforcement certification track.',
+        keywords: ['criminal justice', 'law enforcement', 'police', 'FBI', 'forensics', 'corrections'],
+        entryLevelCareers: [
+            { title: 'Police Officer', averageSalary: '$48,000 - $62,000', description: 'Patrol communities and enforce laws' },
+            { title: 'Federal Agent Trainee', averageSalary: '$52,000 - $68,000', description: 'Entry into FBI, DEA, or ICE careers' },
+            { title: 'Probation Officer', averageSalary: '$45,000 - $58,000', description: 'Supervise offenders on probation' },
+            { title: 'Crime Analyst', averageSalary: '$48,000 - $62,000', description: 'Analyze crime data and patterns' }
+        ]
+    },
+    // ===== COMMUNICATION / MEDIA =====
+    {
+        id: 'ucf-ba-communication',
+        name: 'Communication',
+        level: 'Bachelor of Science (B.S.)',
+        institution: 'UCF',
+        field: 'Creative/Design',
+        description: 'Study media, public relations, and strategic communication.',
+        keywords: ['communication', 'PR', 'public relations', 'media', 'journalism', 'broadcasting'],
+        entryLevelCareers: [
+            { title: 'PR Coordinator', averageSalary: '$40,000 - $52,000', description: 'Manage public relations campaigns' },
+            { title: 'Communications Specialist', averageSalary: '$42,000 - $55,000', description: 'Create internal and external communications' },
+            { title: 'Content Writer', averageSalary: '$38,000 - $50,000', description: 'Write articles and marketing content' },
+            { title: 'Social Media Specialist', averageSalary: '$38,000 - $52,000', description: 'Manage brand social media' }
+        ]
+    }
+];
+
+// ============================================================================
 // COMBINED DATABASE
 // ============================================================================
 
 export const ALL_DEGREE_PROGRAMS: DegreeProgram[] = [
     ...VALENCIA_AS_DEGREES,
     ...VALENCIA_TECHNICAL_CERTS,
-    ...VALENCIA_BAS_DEGREES
+    ...VALENCIA_BAS_DEGREES,
+    ...UCF_BACHELOR_DEGREES
 ];
 
 // ============================================================================
