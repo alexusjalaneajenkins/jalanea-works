@@ -5,6 +5,7 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { NavRoute } from '../types';
 import { AuthModal, AuthMode } from '../components/AuthModal';
+import { WelcomeTransition } from '../components/WelcomeTransition';
 import { ArrowRight, Star, Globe, ShieldCheck, Zap, TrendingUp, GraduationCap, ChevronDown, MapPin, Search, X, Heart, Home as HomeIcon, Instagram, CheckCircle2, Users } from 'lucide-react';
 
 interface HomeProps {
@@ -98,6 +99,11 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('signin');
 
+  // Welcome Transition State
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [welcomeUserName, setWelcomeUserName] = useState<string>('');
+  const [welcomeUserPhoto, setWelcomeUserPhoto] = useState<string>('');
+
   // Mission Modal State
   const [isMissionOpen, setIsMissionOpen] = useState(false);
 
@@ -108,9 +114,16 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
 
   const navigate = useNavigate();
 
-  const handleAuthComplete = () => {
+  const handleAuthComplete = (userName?: string, userPhoto?: string) => {
     setIsAuthOpen(false);
-    // Navigate to onboarding for new users (will redirect to dashboard if already completed)
+    // Show welcome transition before navigating
+    setWelcomeUserName(userName || '');
+    setWelcomeUserPhoto(userPhoto || '');
+    setShowWelcome(true);
+  };
+
+  const handleWelcomeComplete = () => {
+    setShowWelcome(false);
     navigate('/onboarding');
   };
 
@@ -124,6 +137,15 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
 
   return (
     <div className="min-h-screen flex flex-col bg-jalanea-50">
+      {/* Welcome Transition */}
+      {showWelcome && (
+        <WelcomeTransition
+          userName={welcomeUserName}
+          userPhoto={welcomeUserPhoto}
+          onComplete={handleWelcomeComplete}
+        />
+      )}
+
       <AuthModal
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}

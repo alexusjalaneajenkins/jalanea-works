@@ -21,7 +21,7 @@ interface AuthModalProps {
     isOpen: boolean;
     onClose: () => void;
     initialMode: AuthMode;
-    onComplete: () => void;
+    onComplete: (userName?: string, userPhoto?: string) => void;
     setRoute?: (route: any) => void; // Optional for navigation after completion
 }
 
@@ -600,7 +600,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
 
             if (profileDoc.exists() && profileDoc.data()?.onboardingCompleted) {
                 // Returning user with completed profile → go to dashboard
-                onComplete();
+                onComplete(user.displayName || '', user.photoURL || '');
                 return;
             }
 
@@ -614,7 +614,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                 createdAt: new Date().toISOString()
             });
 
-            onComplete(); // This will navigate to /onboarding since onboardingCompleted is false
+            onComplete(user.displayName || '', user.photoURL || ''); // Pass user data for welcome transition
         } catch (error) {
             console.error("Google Sign-In failed", error);
         }

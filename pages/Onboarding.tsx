@@ -783,7 +783,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
                 {/* Wizard Steps */}
                 {currentStep >= STEPS.PROFILE_BASICS && (
-                    <div className="w-full max-w-2xl flex flex-col h-[calc(100vh-140px)] md:h-auto">
+                    <div className="w-full max-w-3xl flex flex-col h-[calc(100vh-140px)] md:h-auto">
 
                         {/* Wizard Content Card */}
                         <Card variant="glass-light" className="flex-1 p-6 md:p-10 shadow-xl border-white/60 relative flex flex-col">
