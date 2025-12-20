@@ -466,6 +466,37 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                 </div>
             </div>
 
+            {/* Degree Context Banner - Shows when user has education saved */}
+            {(userProfile as any)?.education?.programName && (
+                <div className="bg-gradient-to-r from-gold/10 via-gold/5 to-transparent border border-gold/20 rounded-xl p-4 flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-gold/20 flex items-center justify-center text-gold shrink-0">
+                        <GraduationCap size={20} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-jalanea-900">
+                            Showing jobs for your {(userProfile as any).education.degreeLevel}
+                        </p>
+                        <p className="text-sm text-jalanea-600 mt-0.5">
+                            {(userProfile as any).education.programName} • {(userProfile as any).education.institution}
+                        </p>
+                        {(userProfile as any).education.qualifiedCareers?.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mt-2">
+                                {(userProfile as any).education.qualifiedCareers.slice(0, 4).map((career: string, idx: number) => (
+                                    <span key={idx} className="text-xs bg-white px-2 py-1 rounded-full text-jalanea-700 border border-jalanea-200">
+                                        {career}
+                                    </span>
+                                ))}
+                                {(userProfile as any).education.qualifiedCareers.length > 4 && (
+                                    <span className="text-xs text-jalanea-400 self-center">
+                                        +{(userProfile as any).education.qualifiedCareers.length - 4} more
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* Sticky Search & Filter Bar */}
             <div className="sticky top-0 z-20 -mx-4 px-4 md:-mx-8 md:px-8 py-4 bg-jalanea-50/95 backdrop-blur-md border-b border-white/10 transition-all shadow-sm">
                 <div className="max-w-7xl mx-auto space-y-4">
