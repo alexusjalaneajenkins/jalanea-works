@@ -211,22 +211,23 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
 
                 {/* Quote with Photo */}
                 <div className="pt-6 border-t border-white/10 mt-6">
-                  <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-6">
-                    {/* Graduation Photo */}
+                  <div className="flex flex-col items-center justify-center gap-4 mb-6">
+                    {/* Graduation Photo - Now on top */}
                     <div className="relative shrink-0">
-                      <div className="w-16 h-16 rounded-full border-2 border-gold p-0.5 shadow-xl">
+                      <div className="w-20 h-20 rounded-full border-2 border-gold p-0.5 shadow-xl">
                         <img
                           src="https://i.ibb.co/Zzn2BXVQ/VC-Grad-Edited.jpg"
                           alt="Alexus Jalanea Jenkins"
                           className="w-full h-full rounded-full object-cover bg-jalanea-800"
                         />
                       </div>
-                      <div className="absolute -bottom-1 -right-1 bg-gold text-jalanea-950 p-1 rounded-full border border-white">
-                        <GraduationCap size={10} />
+                      <div className="absolute -bottom-1 -right-1 bg-gold text-jalanea-950 p-1.5 rounded-full border border-white">
+                        <GraduationCap size={12} />
                       </div>
                     </div>
-                    <p className="text-sm text-jalanea-400 italic">
-                      "Every person deserves a pathway from education to stable housing. That's why we exist."
+                    {/* Quote with white text and gold animated emphasis */}
+                    <p className="text-lg md:text-xl text-white font-medium leading-relaxed text-center max-w-2xl">
+                      "I want to create products that <span className="text-transparent bg-clip-text bg-gold-flow bg-200% animate-text-flow font-bold">move us forward</span> and <span className="text-transparent bg-clip-text bg-gold-flow bg-200% animate-text-flow font-bold">build bridges</span> for our communities. My mission is to <span className="text-transparent bg-clip-text bg-gold-flow bg-200% animate-text-flow font-bold">strengthen and empower people</span>—because when we invest in each other, we all rise."
                     </p>
                   </div>
 
