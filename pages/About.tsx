@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { NavRoute } from '../types';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
-import { ArrowLeft, ArrowRight, Star, Heart, GraduationCap, Briefcase, Zap, Quote, MapPin, Palette, Award, CheckCircle2, Instagram, Calendar } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Star, Heart, GraduationCap, Briefcase, Zap, Quote, MapPin, Palette, Award, CheckCircle2, Instagram, Calendar, Globe } from 'lucide-react';
 
 interface AboutProps {
     setRoute: (route: NavRoute) => void;
@@ -366,12 +366,6 @@ export const About: React.FC<AboutProps> = ({ setRoute }) => {
                                             "When he died, despite all that, I still cared. I still had empathy."
                                         </p>
                                     </div>
-                                    <p>
-                                        I believe that people are not their mistakes. People are not their crimes. <span className="text-white font-bold">Every single person on this earth is worthy of love, compassion, support, and nurturing respect.</span>
-                                    </p>
-                                    <p>
-                                        I know I might be in the minority for saying that, but I'm choosing to be who I am anyway because it's coming from a place of honesty and truth.
-                                    </p>
                                 </div>
                             </div>
 
@@ -390,6 +384,16 @@ export const About: React.FC<AboutProps> = ({ setRoute }) => {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Last two paragraphs - Full width single column */}
+                        <div className="mt-12 space-y-6 text-lg text-jalanea-200 leading-relaxed font-light max-w-3xl">
+                            <p>
+                                I believe that people are not their mistakes. People are not their crimes. <span className="text-white font-bold">Every single person on this earth is worthy of love, compassion, support, and nurturing respect.</span>
+                            </p>
+                            <p>
+                                I know I might be in the minority for saying that, but I'm choosing to be who I am anyway because it's coming from a place of honesty and truth.
+                            </p>
                         </div>
                     </section>
 
@@ -429,10 +433,45 @@ export const About: React.FC<AboutProps> = ({ setRoute }) => {
                                     "Even if the world disagrees, I'm going to be the first person in line to allow something to be created from a place of <span className="font-bold">radical empathy</span>."
                                 </div>
 
-                                <div className="pt-8">
-                                    <Button size="lg" variant="primary" onClick={() => navigate('/')} className="shadow-2xl shadow-gold/20 animate-pulse">
-                                        Join The Mission <ArrowRight size={18} className="ml-2" />
-                                    </Button>
+                                {/* Contact CTA */}
+                                <div className="pt-8 w-full max-w-xl">
+                                    <p className="text-xs text-jalanea-500 uppercase tracking-widest font-bold mb-4">Want to Connect or Help?</p>
+                                    <div className="flex flex-wrap justify-center gap-3">
+                                        <a
+                                            href="https://www.linkedin.com/in/alexusjalaneajenkins/"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 px-4 py-2.5 bg-[#0077B5]/10 border border-[#0077B5]/30 rounded-lg text-[#0077B5] hover:bg-[#0077B5]/20 transition-colors text-sm font-bold"
+                                        >
+                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
+                                            LinkedIn
+                                        </a>
+                                        <a
+                                            href="https://www.instagram.com/JalaneaJ_/"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 px-4 py-2.5 bg-[#E4405F]/10 border border-[#E4405F]/30 rounded-lg text-[#E4405F] hover:bg-[#E4405F]/20 transition-colors text-sm font-bold"
+                                        >
+                                            <Instagram size={16} />
+                                            Instagram
+                                        </a>
+                                        <a
+                                            href="mailto:alexusjenkins@uiuxdesign.us"
+                                            className="flex items-center gap-2 px-4 py-2.5 bg-gold/10 border border-gold/30 rounded-lg text-gold hover:bg-gold/20 transition-colors text-sm font-bold"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                            Email
+                                        </a>
+                                        <button
+                                            disabled
+                                            className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-jalanea-500 cursor-not-allowed text-sm font-bold"
+                                            title="Portfolio coming soon!"
+                                        >
+                                            <Globe size={16} />
+                                            Portfolio
+                                            <span className="text-[10px] bg-jalanea-700 text-jalanea-300 px-1.5 py-0.5 rounded uppercase">Soon</span>
+                                        </button>
+                                    </div>
                                 </div>
 
                             </div>
