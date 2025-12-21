@@ -190,7 +190,9 @@ const OnboardingPage: React.FC = () => {
   }
 
   const handleSetRoute = (route: NavRoute) => {
-    if (route === NavRoute.DASHBOARD) {
+    if (route === NavRoute.HOME) {
+      navigate('/');
+    } else if (route === NavRoute.DASHBOARD) {
       navigate('/dashboard');
     } else {
       navigate(`/${route}`);
