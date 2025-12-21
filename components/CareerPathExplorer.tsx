@@ -9,6 +9,7 @@ interface CareerPathExplorerProps {
     onBookmarksChange?: (bookmarkedIds: string[]) => void;
     onRefresh?: () => void;
     minSelections?: number;
+    isLoading?: boolean;
     degreeInfo?: {
         name: string;
         field: string;
@@ -23,6 +24,7 @@ export const CareerPathExplorer: React.FC<CareerPathExplorerProps> = ({
     onBookmarksChange,
     onRefresh,
     minSelections = 1,
+    isLoading = false,
     degreeInfo
 }) => {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -189,7 +191,28 @@ export const CareerPathExplorer: React.FC<CareerPathExplorerProps> = ({
 
             {/* Career Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 pt-2">
-                {visibleCareers.map(career => (
+                {isLoading ? (
+                    // Loading skeleton
+                    <>
+                        {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="p-4 sm:p-6 rounded-2xl border border-jalanea-200 bg-white animate-pulse">
+                                <div className="flex items-start gap-3 mb-4">
+                                    <div className="w-12 h-12 rounded-xl bg-jalanea-100" />
+                                    <div className="flex-1">
+                                        <div className="h-5 bg-jalanea-100 rounded w-3/4 mb-2" />
+                                        <div className="h-4 bg-jalanea-100 rounded w-1/2" />
+                                    </div>
+                                </div>
+                                <div className="h-4 bg-jalanea-100 rounded w-full mb-2" />
+                                <div className="h-4 bg-jalanea-100 rounded w-2/3" />
+                                <div className="flex gap-2 mt-4">
+                                    <div className="h-6 bg-jalanea-100 rounded-full w-16" />
+                                    <div className="h-6 bg-jalanea-100 rounded-full w-20" />
+                                </div>
+                            </div>
+                        ))}
+                    </>
+                ) : visibleCareers.map(career => (
                     <CareerPathCard
                         key={career.id}
                         career={career}

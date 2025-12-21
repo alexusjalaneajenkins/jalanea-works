@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { searchJobs } from '../services/jobService';
+import { searchCareersEnriched, getRelatedCareers, mapToCareerPath, getCareerOutlook } from '../services/onetService';
 
 interface OnboardingProps {
     setRoute: (route: NavRoute) => void;
@@ -115,13 +116,138 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
         setRoleTags(roleTags.filter(t => t !== tag));
     };
 
-    // Generate career paths when education changes
+    // Generate career paths when education changes - use O*NET API
+    const [isLoadingCareers, setIsLoadingCareers] = useState(false);
+
     useEffect(() => {
-        if (selectedDegrees.length > 0) {
-            // Always regenerate when degrees change
-            const suggestions = generateCareerPathsFromDegrees(selectedDegrees, new Set());
-            // Load more careers (up to 8) to show variety from multiple degrees
-            const paths: CareerPath[] = suggestions.slice(0, 8).map(s => ({
+        const fetchCareersFromONet = async () => {
+            if (selectedDegrees.length === 0) return;
+
+            setIsLoadingCareers(true);
+
+            try {
+                // Search O*NET with each degree title
+                const allCareers: CareerPath[] = [];
+                const seenIds = new Set<string>();
+
+                for (const { degree } of selectedDegrees) {
+                    // Use degree title as search keyword
+                    const onetResults = await searchCareersEnriched(degree.title, 6);
+
+                    for (const career of onetResults) {
+                        if (!seenIds.has(career.id)) {
+                            seenIds.add(career.id);
+                            allCareers.push({
+                                id: career.id,
+                                title: career.title,
+                                field: career.field,
+                                salaryRange: career.salaryRange,
+                                matchScore: career.matchScore,
+                                growth: career.growth,
+                                skills: career.skills,
+                                description: career.description,
+                            });
+                        }
+                    }
+                }
+
+                if (allCareers.length > 0) {
+                    console.log(`✅ Loaded ${allCareers.length} careers from O*NET`);
+                    setCareerPaths(allCareers.slice(0, 8));
+                    setAllSeenCareerIds(new Set(allCareers.map(c => c.id)));
+                } else {
+                    // Fallback to static database
+                    console.log('⚠️ O*NET returned no results, using static database');
+                    const suggestions = generateCareerPathsFromDegrees(selectedDegrees, new Set());
+                    const paths: CareerPath[] = suggestions.slice(0, 8).map(s => ({
+                        id: s.id,
+                        title: s.title,
+                        field: s.field,
+                        salaryRange: s.salaryRange,
+                        matchScore: s.matchScore,
+                        growth: s.growth,
+                        skills: s.skills,
+                        description: s.description
+                    }));
+                    setCareerPaths(paths);
+                    const newSeen = new Set<string>();
+                    paths.forEach(p => newSeen.add(p.id));
+                    setAllSeenCareerIds(newSeen);
+                }
+            } catch (error) {
+                console.error('Error fetching O*NET careers:', error);
+                // Fallback to static database
+                const suggestions = generateCareerPathsFromDegrees(selectedDegrees, new Set());
+                const paths: CareerPath[] = suggestions.slice(0, 8).map(s => ({
+                    id: s.id,
+                    title: s.title,
+                    field: s.field,
+                    salaryRange: s.salaryRange,
+                    matchScore: s.matchScore,
+                    growth: s.growth,
+                    skills: s.skills,
+                    description: s.description
+                }));
+                setCareerPaths(paths);
+            } finally {
+                setIsLoadingCareers(false);
+            }
+        };
+
+        fetchCareersFromONet();
+    }, [selectedDegrees.length]); // React to degree count changes
+
+    const handleRefreshCareers = async () => {
+        setIsLoadingCareers(true);
+
+        try {
+            // Try to get related careers from O*NET based on selected careers
+            const selectedOnetCodes = careerPaths
+                .filter(p => selectedCareerIds.includes(p.id) && p.id.startsWith('onet-'))
+                .map(p => p.id.replace('onet-', ''));
+
+            if (selectedOnetCodes.length > 0) {
+                // Get related careers from the first selected career
+                const relatedData = await getRelatedCareers(selectedOnetCodes[0]);
+
+                if (relatedData?.career?.length) {
+                    const newCareers: CareerPath[] = [];
+
+                    for (const career of relatedData.career.slice(0, 6)) {
+                        if (!allSeenCareerIds.has(`onet-${career.code}`)) {
+                            const outlook = await getCareerOutlook(career.code);
+                            const mapped = mapToCareerPath(career, outlook, null);
+                            newCareers.push({
+                                id: mapped.id,
+                                title: mapped.title,
+                                field: mapped.field,
+                                salaryRange: mapped.salaryRange,
+                                matchScore: mapped.matchScore,
+                                growth: mapped.growth,
+                                skills: mapped.skills,
+                                description: mapped.description,
+                            });
+                        }
+                    }
+
+                    if (newCareers.length > 0) {
+                        const newSeen = new Set(allSeenCareerIds);
+                        newCareers.forEach(p => newSeen.add(p.id));
+                        setAllSeenCareerIds(newSeen);
+                        setCareerPaths(prev => [...prev, ...newCareers]);
+                        setIsLoadingCareers(false);
+                        return;
+                    }
+                }
+            }
+
+            // Fallback to static database
+            let moreSuggestions = generateCareerPathsFromDegrees(selectedDegrees, allSeenCareerIds);
+            if (moreSuggestions.length === 0) {
+                moreSuggestions = getMoreCareerSuggestions(allSeenCareerIds, 6) as any;
+            }
+
+            const newPaths: CareerPath[] = moreSuggestions.slice(0, 6).map(s => ({
                 id: s.id,
                 title: s.title,
                 field: s.field,
@@ -131,41 +257,17 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                 skills: s.skills,
                 description: s.description
             }));
-            setCareerPaths(paths);
-            // Track seen careers
-            const newSeen = new Set<string>();
-            paths.forEach(p => newSeen.add(p.id));
-            setAllSeenCareerIds(newSeen);
-        }
-    }, [selectedDegrees.length]); // React to degree count changes
 
-    const handleRefreshCareers = () => {
-        // First try to get more from degree-related careers
-        let moreSuggestions = generateCareerPathsFromDegrees(selectedDegrees, allSeenCareerIds);
-
-        // If no degree-specific careers left, get random ones
-        if (moreSuggestions.length === 0) {
-            moreSuggestions = getMoreCareerSuggestions(allSeenCareerIds, 6) as any;
-        }
-
-        const newPaths: CareerPath[] = moreSuggestions.slice(0, 6).map(s => ({
-            id: s.id,
-            title: s.title,
-            field: s.field,
-            salaryRange: s.salaryRange,
-            matchScore: s.matchScore,
-            growth: s.growth,
-            skills: s.skills,
-            description: s.description
-        }));
-
-        if (newPaths.length > 0) {
-            // Track new seen careers
-            const newSeen = new Set(allSeenCareerIds);
-            newPaths.forEach(p => newSeen.add(p.id));
-            setAllSeenCareerIds(newSeen);
-            // Append to existing
-            setCareerPaths(prev => [...prev, ...newPaths]);
+            if (newPaths.length > 0) {
+                const newSeen = new Set(allSeenCareerIds);
+                newPaths.forEach(p => newSeen.add(p.id));
+                setAllSeenCareerIds(newSeen);
+                setCareerPaths(prev => [...prev, ...newPaths]);
+            }
+        } catch (error) {
+            console.error('Error refreshing careers:', error);
+        } finally {
+            setIsLoadingCareers(false);
         }
     };
 
@@ -620,6 +722,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                 onBookmarksChange={setBookmarkedCareerIds}
                 onRefresh={handleRefreshCareers}
                 minSelections={1}
+                isLoading={isLoadingCareers}
                 degreeInfo={selectedDegrees.length > 0 ? {
                     name: selectedDegrees[0].degree.name,
                     field: selectedDegrees[0].degree.field
