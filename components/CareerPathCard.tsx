@@ -104,8 +104,8 @@ export const CareerPathCard: React.FC<CareerPathCardProps> = ({
 
             {/* Selected Checkmark */}
             {isSelected && (
-                <div className="absolute -top-2 -left-2 w-8 h-8 rounded-full bg-gold text-jalanea-950 flex items-center justify-center shadow-lg animate-in zoom-in duration-200">
-                    <Check size={16} strokeWidth={3} />
+                <div className="absolute top-2 left-2 sm:-top-2 sm:-left-2 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gold text-jalanea-950 flex items-center justify-center shadow-lg animate-in zoom-in duration-200">
+                    <Check size={12} className="sm:w-4 sm:h-4" strokeWidth={3} />
                 </div>
             )}
 
