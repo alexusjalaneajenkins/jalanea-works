@@ -80,7 +80,7 @@ export const CareerPathCard: React.FC<CareerPathCardProps> = ({
     return (
         <div
             className={`
-                relative bg-white rounded-2xl border-2 p-4 sm:p-5 transition-all duration-300 group
+                relative bg-white rounded-xl sm:rounded-2xl border-2 p-3 sm:p-5 transition-all duration-300 group
                 hover:shadow-xl hover:shadow-gold/10 hover:-translate-y-1
                 ${isSelected
                     ? 'border-gold bg-gold/5 shadow-lg shadow-gold/20'
@@ -90,8 +90,8 @@ export const CareerPathCard: React.FC<CareerPathCardProps> = ({
         >
             {/* Match Score Badge */}
             <div className={`
-                absolute -top-2 -right-2 sm:-top-3 sm:-right-3 w-11 h-11 sm:w-14 sm:h-14 rounded-full flex items-center justify-center
-                font-bold text-xs sm:text-sm shadow-lg transition-transform group-hover:scale-110
+                absolute -top-1.5 -right-1.5 sm:-top-3 sm:-right-3 w-9 h-9 sm:w-14 sm:h-14 rounded-full flex items-center justify-center
+                font-bold text-[10px] sm:text-sm shadow-lg transition-transform group-hover:scale-110
                 ${career.matchScore >= 80
                     ? 'bg-gradient-to-br from-gold to-amber-500 text-jalanea-950'
                     : career.matchScore >= 60
