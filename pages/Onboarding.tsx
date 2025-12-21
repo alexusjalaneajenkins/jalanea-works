@@ -698,19 +698,46 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
         try {
             // Build search query from selected career paths
             const careerTitles = selectedCareerIds.length > 0
-                ? careerPaths.filter(c => selectedCareerIds.includes(c.id)).map(c => c.title).slice(0, 3).join(' OR ')
+                ? careerPaths.filter(c => selectedCareerIds.includes(c.id)).map(c => c.title).slice(0, 2).join(' ')
                 : 'entry level';
 
-            // Add work style to query
-            const workStyleQuery = jobWorkStyleFilter !== 'all' ? ` ${jobWorkStyleFilter.toLowerCase()}` : '';
+            // For remote, add to query. For on-site/hybrid, we rely on location filtering
+            const workStyleQuery = jobWorkStyleFilter === 'Remote' ? ' remote work from home' : '';
             const fullQuery = careerTitles + workStyleQuery;
 
-            // Use user's location or default to their entered location
-            const searchLocation = location || 'United States';
+            // Use user's location or default
+            const searchLocation = location?.trim() || 'United States';
 
-            const response = await searchJobs(fullQuery, { location: searchLocation });
+            // Add radius for on-site jobs to be stricter with location
+            const radius = jobWorkStyleFilter === 'On-site' ? 50 :
+                jobWorkStyleFilter === 'Hybrid' ? 75 :
+                    undefined;
+
+            console.log(`🔍 Searching: "${fullQuery}" in "${searchLocation}" (radius: ${radius || 'default'})`);
+
+            const response = await searchJobs(fullQuery, {
+                location: searchLocation,
+                radius: radius
+            });
+
             if (response.jobs) {
-                setJobsToFavorite(response.jobs.slice(0, 6));
+                // For on-site filter, also filter results client-side to match location
+                let filteredJobs = response.jobs;
+                if (jobWorkStyleFilter === 'On-site' && location) {
+                    const locationLower = location.toLowerCase();
+                    const locationParts = locationLower.split(',').map(p => p.trim());
+                    filteredJobs = response.jobs.filter(job => {
+                        const jobLocation = job.location?.toLowerCase() || '';
+                        // Check if job location contains the city or state
+                        return locationParts.some(part => jobLocation.includes(part)) ||
+                            jobLocation.includes(locationLower);
+                    });
+                    // If no local jobs found, show all but indicate
+                    if (filteredJobs.length === 0) {
+                        filteredJobs = response.jobs;
+                    }
+                }
+                setJobsToFavorite(filteredJobs.slice(0, 6));
             }
         } catch (error) {
             console.error('Error fetching jobs:', error);
