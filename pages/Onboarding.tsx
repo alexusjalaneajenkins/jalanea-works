@@ -882,16 +882,26 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                 ) : jobsToFavorite.length === 0 ? (
                     <div className="text-center py-8 bg-jalanea-50 rounded-xl">
                         <MapPin size={32} className="mx-auto text-jalanea-300 mb-2" />
-                        <p className="text-sm font-bold text-jalanea-600">No local jobs found</p>
-                        <p className="text-xs text-jalanea-400 mt-1">
-                            No {jobWorkStyleFilter === 'On-site' ? 'on-site' : 'hybrid'} positions found near {location || 'your location'}
+                        <p className="text-sm font-bold text-jalanea-600">
+                            {jobWorkStyleFilter === 'Remote' || jobWorkStyleFilter === 'all'
+                                ? 'No jobs found'
+                                : 'No local jobs found'}
                         </p>
-                        <button
-                            onClick={() => setJobWorkStyleFilter('Remote')}
-                            className="mt-3 text-xs text-gold font-bold hover:underline"
-                        >
-                            Try Remote jobs →
-                        </button>
+                        <p className="text-xs text-jalanea-400 mt-1">
+                            {jobWorkStyleFilter === 'Remote'
+                                ? 'No remote positions found for your selected careers'
+                                : jobWorkStyleFilter === 'all'
+                                    ? 'No entry-level positions found for your selected careers'
+                                    : `No ${jobWorkStyleFilter.toLowerCase()} positions found near ${location || 'your location'}`}
+                        </p>
+                        {jobWorkStyleFilter !== 'Remote' && (
+                            <button
+                                onClick={() => setJobWorkStyleFilter('Remote')}
+                                className="mt-3 text-xs text-gold font-bold hover:underline"
+                            >
+                                Try Remote jobs →
+                            </button>
+                        )}
                     </div>
                 ) : jobsToFavorite.map(job => (
                     <div
