@@ -80,7 +80,7 @@ export const CareerPathCard: React.FC<CareerPathCardProps> = ({
     return (
         <div
             className={`
-                relative bg-white rounded-2xl border-2 p-5 transition-all duration-300 group
+                relative bg-white rounded-2xl border-2 p-4 sm:p-5 transition-all duration-300 group
                 hover:shadow-xl hover:shadow-gold/10 hover:-translate-y-1
                 ${isSelected
                     ? 'border-gold bg-gold/5 shadow-lg shadow-gold/20'
@@ -90,8 +90,8 @@ export const CareerPathCard: React.FC<CareerPathCardProps> = ({
         >
             {/* Match Score Badge */}
             <div className={`
-                absolute -top-3 -right-3 w-14 h-14 rounded-full flex items-center justify-center
-                font-bold text-sm shadow-lg transition-transform group-hover:scale-110
+                absolute -top-2 -right-2 sm:-top-3 sm:-right-3 w-11 h-11 sm:w-14 sm:h-14 rounded-full flex items-center justify-center
+                font-bold text-xs sm:text-sm shadow-lg transition-transform group-hover:scale-110
                 ${career.matchScore >= 80
                     ? 'bg-gradient-to-br from-gold to-amber-500 text-jalanea-950'
                     : career.matchScore >= 60
@@ -110,54 +110,54 @@ export const CareerPathCard: React.FC<CareerPathCardProps> = ({
             )}
 
             {/* Header */}
-            <div className="flex items-start gap-3 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-jalanea-100 flex items-center justify-center text-2xl shrink-0">
+            <div className="flex items-start gap-2 sm:gap-3 mb-3 sm:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-jalanea-100 flex items-center justify-center text-xl sm:text-2xl shrink-0">
                     {fieldIcon}
                 </div>
                 <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-jalanea-900 text-lg leading-tight truncate">
+                    <h3 className="font-bold text-jalanea-900 text-base sm:text-lg leading-tight truncate">
                         {career.title}
                     </h3>
-                    <p className="text-sm text-jalanea-500">{career.field}</p>
+                    <p className="text-xs sm:text-sm text-jalanea-500">{career.field}</p>
                 </div>
             </div>
 
             {/* Salary & Growth */}
-            <div className="flex items-center justify-between mb-4">
-                <span className="text-sm font-medium text-jalanea-700">{career.salaryRange}</span>
-                <span className={`text-xs font-bold px-2 py-1 rounded-full ${growth.color}`}>
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <span className="text-xs sm:text-sm font-medium text-jalanea-700">{career.salaryRange}</span>
+                <span className={`text-[10px] sm:text-xs font-bold px-2 py-1 rounded-full ${growth.color}`}>
                     {growth.label}
                 </span>
             </div>
 
             {/* Skills Tags */}
-            <div className="flex flex-wrap gap-1.5 mb-4">
-                {career.skills.slice(0, 4).map((skill, idx) => (
+            <div className="flex flex-wrap gap-1 sm:gap-1.5 mb-3 sm:mb-4">
+                {career.skills.slice(0, 3).map((skill, idx) => (
                     <span
                         key={idx}
-                        className="text-xs bg-jalanea-100 text-jalanea-700 px-2 py-1 rounded-md font-medium"
+                        className="text-[10px] sm:text-xs bg-jalanea-100 text-jalanea-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md font-medium"
                     >
                         {skill}
                     </span>
                 ))}
-                {career.skills.length > 4 && (
-                    <span className="text-xs text-jalanea-400 px-2 py-1">
-                        +{career.skills.length - 4} more
+                {career.skills.length > 3 && (
+                    <span className="text-[10px] sm:text-xs text-jalanea-400 px-1.5 py-0.5">
+                        +{career.skills.length - 3} more
                     </span>
                 )}
             </div>
 
             {/* Description Preview */}
-            <p className="text-sm text-jalanea-600 line-clamp-2 mb-4">
+            <p className="text-xs sm:text-sm text-jalanea-600 line-clamp-2 mb-3 sm:mb-4">
                 {career.description}
             </p>
 
             {/* Action Buttons */}
-            <div className="flex gap-2 pt-2 border-t border-jalanea-100">
+            <div className="flex gap-1.5 sm:gap-2 pt-2 border-t border-jalanea-100">
                 <button
                     onClick={onSelect}
                     className={`
-                        flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all
+                        flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all
                         ${isSelected
                             ? 'bg-gold text-jalanea-950 shadow-md'
                             : 'bg-jalanea-900 text-white hover:bg-jalanea-800'
@@ -166,27 +166,27 @@ export const CareerPathCard: React.FC<CareerPathCardProps> = ({
                 >
                     {isSelected ? (
                         <>
-                            <Check size={16} /> Selected
+                            <Check size={14} className="sm:w-4 sm:h-4" /> Selected
                         </>
                     ) : (
                         <>
-                            <TrendingUp size={16} /> Interested
+                            <TrendingUp size={14} className="sm:w-4 sm:h-4" /> Interested
                         </>
                     )}
                 </button>
 
                 <button
                     onClick={onDismiss}
-                    className="p-2.5 rounded-xl border border-jalanea-200 text-jalanea-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all"
+                    className="p-2 sm:p-2.5 rounded-xl border border-jalanea-200 text-jalanea-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all"
                     title="Not for me"
                 >
-                    <X size={18} />
+                    <X size={16} className="sm:w-[18px] sm:h-[18px]" />
                 </button>
 
                 <button
                     onClick={onBookmark}
                     className={`
-                        p-2.5 rounded-xl border transition-all
+                        p-2 sm:p-2.5 rounded-xl border transition-all
                         ${isBookmarked
                             ? 'border-gold bg-gold/10 text-gold'
                             : 'border-jalanea-200 text-jalanea-400 hover:text-gold hover:border-gold/50'
@@ -194,7 +194,7 @@ export const CareerPathCard: React.FC<CareerPathCardProps> = ({
                     `}
                     title={isBookmarked ? 'Saved' : 'Save for later'}
                 >
-                    {isBookmarked ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
+                    {isBookmarked ? <BookmarkCheck size={16} className="sm:w-[18px] sm:h-[18px]" /> : <Bookmark size={16} className="sm:w-[18px] sm:h-[18px]" />}
                 </button>
             </div>
 

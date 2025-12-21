@@ -91,16 +91,16 @@ export const CareerPathExplorer: React.FC<CareerPathExplorerProps> = ({
     const categories: FilterCategory[] = ['all', 'Technology', 'Healthcare', 'Business', 'Creative/Design', 'Manufacturing', 'Hospitality'];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
             {/* Header */}
             <div className="text-center">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gold/10 text-gold border border-gold/20 text-xs font-bold uppercase tracking-widest mb-4">
-                    <Sparkles size={14} /> Choose Your Path
+                <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-gold/10 text-gold border border-gold/20 text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-3 sm:mb-4">
+                    <Sparkles size={12} className="sm:w-3.5 sm:h-3.5" /> Choose Your Path
                 </div>
-                <h2 className="text-2xl font-display font-bold text-jalanea-900">
+                <h2 className="text-xl sm:text-2xl font-display font-bold text-jalanea-900">
                     Explore Career Paths
                 </h2>
-                <p className="text-jalanea-600 mt-1">
+                <p className="text-sm sm:text-base text-jalanea-600 mt-1 px-2">
                     {degreeInfo
                         ? `Based on your ${degreeInfo.name}, here are careers that match your skills.`
                         : 'Select the careers that interest you. You can always change your mind later.'
@@ -109,38 +109,38 @@ export const CareerPathExplorer: React.FC<CareerPathExplorerProps> = ({
             </div>
 
             {/* Controls Bar */}
-            <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
                 {/* Filter Toggle */}
                 <button
                     onClick={() => setShowFilters(!showFilters)}
                     className={`
-                        flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all
+                        flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl border text-xs sm:text-sm font-medium transition-all
                         ${showFilters
                             ? 'bg-jalanea-900 text-white border-jalanea-900'
                             : 'bg-white text-jalanea-700 border-jalanea-200 hover:border-jalanea-300'
                         }
                     `}
                 >
-                    <Filter size={16} />
+                    <Filter size={14} className="sm:w-4 sm:h-4" />
                     Filter
-                    <ChevronDown size={14} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+                    <ChevronDown size={12} className={`sm:w-3.5 sm:h-3.5 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
                 </button>
 
-                {/* Selection Counter */}
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 text-sm">
+                {/* Selection Counter & Refresh */}
+                <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
                         <span className={`font-bold ${selectedIds.size >= minSelections ? 'text-green-600' : 'text-jalanea-500'}`}>
                             {selectedIds.size} selected
                         </span>
                         {selectedIds.size < minSelections && (
-                            <span className="text-jalanea-400">(min {minSelections})</span>
+                            <span className="text-jalanea-400 hidden sm:inline">(min {minSelections})</span>
                         )}
                     </div>
 
                     {bookmarkedIds.size > 0 && (
-                        <div className="flex items-center gap-1 text-sm text-gold">
-                            <Bookmark size={14} />
-                            <span className="font-medium">{bookmarkedIds.size} saved</span>
+                        <div className="flex items-center gap-1 text-xs sm:text-sm text-gold">
+                            <Bookmark size={12} className="sm:w-3.5 sm:h-3.5" />
+                            <span className="font-medium">{bookmarkedIds.size}</span>
                         </div>
                     )}
 
@@ -150,31 +150,35 @@ export const CareerPathExplorer: React.FC<CareerPathExplorerProps> = ({
                         size="sm"
                         onClick={handleRefresh}
                         disabled={isRefreshing}
-                        icon={<RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />}
+                        icon={<RefreshCw size={12} className={`sm:w-3.5 sm:h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />}
+                        className="text-xs sm:text-sm px-2 sm:px-3"
                     >
-                        {isRefreshing ? 'Loading...' : 'More Options'}
+                        <span className="hidden sm:inline">{isRefreshing ? 'Loading...' : 'More Options'}</span>
+                        <span className="sm:hidden">{isRefreshing ? '...' : 'More'}</span>
                     </Button>
                 </div>
             </div>
 
-            {/* Filter Pills */}
+            {/* Filter Pills - Horizontal scroll on mobile */}
             {showFilters && (
-                <div className="flex flex-wrap gap-2 p-4 bg-jalanea-50 rounded-xl animate-in slide-in-from-top-2 duration-200">
-                    {categories.map(cat => (
-                        <button
-                            key={cat}
-                            onClick={() => setFilterCategory(cat)}
-                            className={`
-                                px-4 py-2 rounded-full text-sm font-medium transition-all
-                                ${filterCategory === cat
-                                    ? 'bg-jalanea-900 text-white'
-                                    : 'bg-white text-jalanea-600 hover:bg-jalanea-100 border border-jalanea-200'
-                                }
-                            `}
-                        >
-                            {cat === 'all' ? 'All Fields' : cat}
-                        </button>
-                    ))}
+                <div className="overflow-x-auto -mx-2 px-2 pb-2">
+                    <div className="flex gap-2 p-3 sm:p-4 bg-jalanea-50 rounded-xl animate-in slide-in-from-top-2 duration-200 min-w-max sm:min-w-0 sm:flex-wrap">
+                        {categories.map(cat => (
+                            <button
+                                key={cat}
+                                onClick={() => setFilterCategory(cat)}
+                                className={`
+                                    px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap
+                                    ${filterCategory === cat
+                                        ? 'bg-jalanea-900 text-white'
+                                        : 'bg-white text-jalanea-600 hover:bg-jalanea-100 border border-jalanea-200'
+                                    }
+                                `}
+                            >
+                                {cat === 'all' ? 'All' : cat}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             )}
 
