@@ -27,9 +27,10 @@ const STEPS = {
     PROFILE_BASICS: 2,
     PROFILE_EDUCATION: 3,
     PROFILE_EXPERIENCE: 4,
-    PROFILE_PREFS: 5,
-    FAVORITE_JOBS: 6,
-    SETUP_SCHEDULE: 7
+    PROFILE_CAREER_PATHS: 5,
+    PROFILE_PREFS: 6,
+    FAVORITE_JOBS: 7,
+    SETUP_SCHEDULE: 8
 };
 
 export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
@@ -178,7 +179,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
     const renderProgressBar = () => {
         if (currentStep < STEPS.PROFILE_BASICS) return null;
         // 5 profile steps now (BASICS through SETUP_SCHEDULE = steps 2-7, so 6 steps total)
-        const totalSteps = 6;
+        const totalSteps = 7;
         const progress = ((currentStep - 2) / (totalSteps - 1)) * 100;
 
         return (
@@ -598,9 +599,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
         </div>
     );
 
-    const renderPrefs = () => (
+    // Career Path Explorer - its own immersive step
+    const renderCareerPaths = () => (
         <div className="animate-in slide-in-from-right-8 fade-in duration-300">
-            {/* Career Path Explorer */}
             <CareerPathExplorer
                 suggestedCareers={careerPaths}
                 onSelectionChange={setSelectedCareerIds}
@@ -612,11 +613,18 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                     field: selectedDegrees[0].degree.field
                 } : undefined}
             />
+        </div>
+    );
 
-            {/* Additional Preferences */}
-            <div className="mt-8 pt-8 border-t border-jalanea-200 space-y-6">
-                <h3 className="text-lg font-bold text-jalanea-900">Additional Preferences</h3>
+    // Preferences step - salary, work style, commute
+    const renderPrefs = () => (
+        <div className="animate-in slide-in-from-right-8 fade-in duration-300">
+            <div className="mb-6">
+                <h2 className="text-2xl font-display font-bold text-jalanea-900">Job Preferences</h2>
+                <p className="text-jalanea-600">Help us find opportunities that fit your lifestyle.</p>
+            </div>
 
+            <div className="space-y-8">
                 {/* Work Style */}
                 <div>
                     <label className="text-sm font-bold text-jalanea-900 mb-3 block">Work Style</label>
@@ -900,6 +908,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                                 {currentStep === STEPS.PROFILE_BASICS && renderBasics()}
                                 {currentStep === STEPS.PROFILE_EDUCATION && renderEducation()}
                                 {currentStep === STEPS.PROFILE_EXPERIENCE && renderExperience()}
+                                {currentStep === STEPS.PROFILE_CAREER_PATHS && renderCareerPaths()}
                                 {currentStep === STEPS.PROFILE_PREFS && renderPrefs()}
                                 {currentStep === STEPS.FAVORITE_JOBS && renderFavoriteJobs()}
                                 {currentStep === STEPS.SETUP_SCHEDULE && renderScheduleSetup()}
