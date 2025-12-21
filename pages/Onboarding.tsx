@@ -117,9 +117,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
     // Generate career paths when education changes
     useEffect(() => {
-        if (selectedDegrees.length > 0) {
-            const suggestions = generateCareerPathsFromDegrees(selectedDegrees, allSeenCareerIds);
-            const paths: CareerPath[] = suggestions.map(s => ({
+        if (selectedDegrees.length > 0 && careerPaths.length === 0) {
+            const suggestions = generateCareerPathsFromDegrees(selectedDegrees, new Set());
+            const paths: CareerPath[] = suggestions.slice(0, 6).map(s => ({
                 id: s.id,
                 title: s.title,
                 field: s.field,
@@ -131,15 +131,22 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
             }));
             setCareerPaths(paths);
             // Track seen careers
-            const newSeen = new Set(allSeenCareerIds);
+            const newSeen = new Set<string>();
             paths.forEach(p => newSeen.add(p.id));
             setAllSeenCareerIds(newSeen);
         }
     }, [selectedDegrees]);
 
     const handleRefreshCareers = () => {
-        const moreSuggestions = getMoreCareerSuggestions(allSeenCareerIds, 6);
-        const newPaths: CareerPath[] = moreSuggestions.map(s => ({
+        // First try to get more from degree-related careers
+        let moreSuggestions = generateCareerPathsFromDegrees(selectedDegrees, allSeenCareerIds);
+
+        // If no degree-specific careers left, get random ones
+        if (moreSuggestions.length === 0) {
+            moreSuggestions = getMoreCareerSuggestions(allSeenCareerIds, 6) as any;
+        }
+
+        const newPaths: CareerPath[] = moreSuggestions.slice(0, 6).map(s => ({
             id: s.id,
             title: s.title,
             field: s.field,
@@ -149,12 +156,15 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
             skills: s.skills,
             description: s.description
         }));
-        // Track new seen careers
-        const newSeen = new Set(allSeenCareerIds);
-        newPaths.forEach(p => newSeen.add(p.id));
-        setAllSeenCareerIds(newSeen);
-        // Append to existing
-        setCareerPaths(prev => [...prev, ...newPaths]);
+
+        if (newPaths.length > 0) {
+            // Track new seen careers
+            const newSeen = new Set(allSeenCareerIds);
+            newPaths.forEach(p => newSeen.add(p.id));
+            setAllSeenCareerIds(newSeen);
+            // Append to existing
+            setCareerPaths(prev => [...prev, ...newPaths]);
+        }
     };
 
     const addExperience = () => {

@@ -1505,7 +1505,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-jalanea-950/80 backdrop-blur-sm animate-in fade-in duration-300"
@@ -1513,8 +1513,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
             />
 
             {/* Modal Container */}
-            <div className="relative w-full max-w-3xl mx-auto z-10 flex flex-col max-h-[90vh]">
-                <Card variant="glass-dark" className="shadow-2xl border-white/10 bg-jalanea-900/95 backdrop-blur-2xl flex-1 flex flex-col overflow-hidden min-h-[500px]">
+            <div className="relative w-full max-w-3xl mx-auto z-10 flex flex-col max-h-[85vh] sm:max-h-[90vh]">
+                <Card variant="glass-dark" className="shadow-2xl border-white/10 bg-jalanea-900/95 backdrop-blur-2xl flex-1 flex flex-col overflow-hidden min-h-[400px] sm:min-h-[500px]">
                     {/* Close Button */}
                     <button
                         onClick={onClose}
@@ -1524,7 +1524,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                     </button>
 
                     {/* Content Area */}
-                    <div className="p-4 w-full h-full flex flex-col justify-center overflow-hidden">
+                    <div className="p-3 sm:p-4 w-full h-full flex flex-col justify-center overflow-hidden">
                         {currentView === VIEWS.LOGIN && renderLogin()}
                         {currentView === VIEWS.INTRO && renderIntro()}
                         {currentView === VIEWS.SIGNUP && renderSignup()}
