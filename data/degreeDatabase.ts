@@ -1062,3 +1062,175 @@ export function getAutocompleteSuggestions(query: string, limit: number = 10): D
     if (!query || query.length < 2) return [];
     return searchDegreePrograms(query).slice(0, limit);
 }
+
+/**
+ * Career Path interface for the CareerPathExplorer
+ */
+export interface CareerPathSuggestion {
+    id: string;
+    title: string;
+    field: string;
+    salaryRange: string;
+    matchScore: number;
+    growth: 'hot' | 'growing' | 'stable' | 'emerging';
+    skills: string[];
+    description: string;
+}
+
+/**
+ * Generate career path suggestions from selected degrees
+ */
+export function generateCareerPathsFromDegrees(
+    selectedDegrees: { degree: DegreeProgram; graduationYear: string }[],
+    existingCareerIds: Set<string> = new Set()
+): CareerPathSuggestion[] {
+    const careerPaths: CareerPathSuggestion[] = [];
+    const seenCareers = new Set<string>();
+
+    // Growth assignments based on field
+    const fieldGrowth: Record<string, 'hot' | 'growing' | 'stable' | 'emerging'> = {
+        'Technology': 'hot',
+        'Healthcare': 'hot',
+        'Business': 'growing',
+        'Creative/Design': 'growing',
+        'Engineering': 'hot',
+        'Manufacturing': 'growing',
+        'Hospitality': 'stable',
+        'Criminal Justice': 'stable',
+        'Education': 'stable',
+        'Public Safety': 'stable'
+    };
+
+    // Skills by field
+    const fieldSkills: Record<string, string[]> = {
+        'Technology': ['Problem Solving', 'Coding', 'Teamwork', 'Communication', 'Analytical'],
+        'Healthcare': ['Patient Care', 'Attention to Detail', 'Empathy', 'Medical Knowledge', 'Communication'],
+        'Business': ['Leadership', 'Communication', 'Excel', 'Analysis', 'Organization'],
+        'Creative/Design': ['Creativity', 'Design Tools', 'Communication', 'Attention to Detail', 'Collaboration'],
+        'Engineering': ['Math', 'Technical Skills', 'CAD', 'Problem Solving', 'Teamwork'],
+        'Manufacturing': ['Technical Skills', 'Safety', 'Quality Control', 'Machinery', 'Teamwork'],
+        'Hospitality': ['Customer Service', 'Communication', 'Multitasking', 'Flexibility', 'Teamwork'],
+        'Criminal Justice': ['Critical Thinking', 'Communication', 'Ethics', 'Physical Fitness', 'Attention to Detail'],
+        'Education': ['Communication', 'Patience', 'Creativity', 'Organization', 'Empathy'],
+        'Public Safety': ['Leadership', 'Crisis Management', 'Communication', 'Physical Fitness', 'Decision Making']
+    };
+
+    // Get careers from selected degrees (higher match score)
+    for (const { degree } of selectedDegrees) {
+        for (const career of degree.entryLevelCareers) {
+            const careerId = `${degree.field}-${career.title}`.toLowerCase().replace(/\s+/g, '-');
+
+            if (seenCareers.has(careerId) || existingCareerIds.has(careerId)) continue;
+            seenCareers.add(careerId);
+
+            careerPaths.push({
+                id: careerId,
+                title: career.title,
+                field: degree.field,
+                salaryRange: career.averageSalary,
+                matchScore: Math.floor(Math.random() * 15) + 85, // 85-100 for direct matches
+                growth: fieldGrowth[degree.field] || 'stable',
+                skills: fieldSkills[degree.field] || ['Communication', 'Teamwork'],
+                description: career.description
+            });
+        }
+    }
+
+    // Add related careers from same field (medium match score)
+    const selectedFields = new Set(selectedDegrees.map(d => d.degree.field));
+    for (const field of selectedFields) {
+        const relatedPrograms = ALL_DEGREE_PROGRAMS.filter(p =>
+            p.field === field &&
+            !selectedDegrees.some(d => d.degree.id === p.id)
+        ).slice(0, 3);
+
+        for (const program of relatedPrograms) {
+            for (const career of program.entryLevelCareers.slice(0, 2)) {
+                const careerId = `${program.field}-${career.title}`.toLowerCase().replace(/\s+/g, '-');
+
+                if (seenCareers.has(careerId) || existingCareerIds.has(careerId)) continue;
+                seenCareers.add(careerId);
+
+                careerPaths.push({
+                    id: careerId,
+                    title: career.title,
+                    field: program.field,
+                    salaryRange: career.averageSalary,
+                    matchScore: Math.floor(Math.random() * 20) + 65, // 65-84 for related
+                    growth: fieldGrowth[program.field] || 'stable',
+                    skills: fieldSkills[program.field] || ['Communication', 'Teamwork'],
+                    description: career.description
+                });
+            }
+        }
+    }
+
+    // Sort by match score descending
+    return careerPaths.sort((a, b) => b.matchScore - a.matchScore);
+}
+
+/**
+ * Get additional career suggestions (for refresh)
+ */
+export function getMoreCareerSuggestions(
+    excludeIds: Set<string>,
+    limit: number = 8
+): CareerPathSuggestion[] {
+    const fieldGrowth: Record<string, 'hot' | 'growing' | 'stable' | 'emerging'> = {
+        'Technology': 'hot',
+        'Healthcare': 'hot',
+        'Business': 'growing',
+        'Creative/Design': 'growing',
+        'Engineering': 'hot',
+        'Manufacturing': 'growing',
+        'Hospitality': 'stable',
+        'Criminal Justice': 'stable',
+        'Education': 'stable',
+        'Public Safety': 'stable'
+    };
+
+    const fieldSkills: Record<string, string[]> = {
+        'Technology': ['Problem Solving', 'Coding', 'Teamwork', 'Communication', 'Analytical'],
+        'Healthcare': ['Patient Care', 'Attention to Detail', 'Empathy', 'Medical Knowledge', 'Communication'],
+        'Business': ['Leadership', 'Communication', 'Excel', 'Analysis', 'Organization'],
+        'Creative/Design': ['Creativity', 'Design Tools', 'Communication', 'Attention to Detail', 'Collaboration'],
+        'Engineering': ['Math', 'Technical Skills', 'CAD', 'Problem Solving', 'Teamwork'],
+        'Manufacturing': ['Technical Skills', 'Safety', 'Quality Control', 'Machinery', 'Teamwork'],
+        'Hospitality': ['Customer Service', 'Communication', 'Multitasking', 'Flexibility', 'Teamwork'],
+        'Criminal Justice': ['Critical Thinking', 'Communication', 'Ethics', 'Physical Fitness', 'Attention to Detail'],
+        'Education': ['Communication', 'Patience', 'Creativity', 'Organization', 'Empathy'],
+        'Public Safety': ['Leadership', 'Crisis Management', 'Communication', 'Physical Fitness', 'Decision Making']
+    };
+
+    const suggestions: CareerPathSuggestion[] = [];
+    const seenCareers = new Set<string>();
+
+    // Shuffle programs
+    const shuffled = [...ALL_DEGREE_PROGRAMS].sort(() => Math.random() - 0.5);
+
+    for (const program of shuffled) {
+        if (suggestions.length >= limit) break;
+
+        for (const career of program.entryLevelCareers) {
+            if (suggestions.length >= limit) break;
+
+            const careerId = `${program.field}-${career.title}`.toLowerCase().replace(/\s+/g, '-');
+
+            if (seenCareers.has(careerId) || excludeIds.has(careerId)) continue;
+            seenCareers.add(careerId);
+
+            suggestions.push({
+                id: careerId,
+                title: career.title,
+                field: program.field,
+                salaryRange: career.averageSalary,
+                matchScore: Math.floor(Math.random() * 40) + 50, // 50-89 for additional
+                growth: fieldGrowth[program.field] || 'emerging',
+                skills: fieldSkills[program.field] || ['Communication', 'Teamwork'],
+                description: career.description
+            });
+        }
+    }
+
+    return suggestions.sort((a, b) => b.matchScore - a.matchScore);
+}

@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { CommuteCostCalculator } from '../components/CommuteCostCalculator';
 import { DegreeSearchSelect } from '../components/DegreeSearchSelect';
+import { CareerPathExplorer } from '../components/CareerPathExplorer';
+import { CareerPath } from '../components/CareerPathCard';
 import { NavRoute, Job, TransportMode } from '../types';
-import { DegreeProgram } from '../data/degreeDatabase';
+import { DegreeProgram, generateCareerPathsFromDegrees, getMoreCareerSuggestions, CareerPathSuggestion } from '../data/degreeDatabase';
 import {
     Zap, ArrowRight, User, Linkedin, GraduationCap,
     Briefcase, Plus, X, Sparkles, CheckCircle2, ChevronRight,
@@ -64,6 +66,12 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
     const [transportMode, setTransportMode] = useState<TransportMode | undefined>(undefined);
     const [workStyle, setWorkStyle] = useState<string>('Hybrid');
 
+    // Career path explorer state
+    const [careerPaths, setCareerPaths] = useState<CareerPath[]>([]);
+    const [selectedCareerIds, setSelectedCareerIds] = useState<string[]>([]);
+    const [bookmarkedCareerIds, setBookmarkedCareerIds] = useState<string[]>([]);
+    const [allSeenCareerIds, setAllSeenCareerIds] = useState<Set<string>>(new Set());
+
     // Profile basics state (pre-populated from Google login)
     const [fullName, setFullName] = useState('');
     const [location, setLocation] = useState('');
@@ -104,6 +112,48 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
     const removeTag = (tag: string) => {
         setRoleTags(roleTags.filter(t => t !== tag));
+    };
+
+    // Generate career paths when education changes
+    useEffect(() => {
+        if (selectedDegrees.length > 0) {
+            const suggestions = generateCareerPathsFromDegrees(selectedDegrees, allSeenCareerIds);
+            const paths: CareerPath[] = suggestions.map(s => ({
+                id: s.id,
+                title: s.title,
+                field: s.field,
+                salaryRange: s.salaryRange,
+                matchScore: s.matchScore,
+                growth: s.growth,
+                skills: s.skills,
+                description: s.description
+            }));
+            setCareerPaths(paths);
+            // Track seen careers
+            const newSeen = new Set(allSeenCareerIds);
+            paths.forEach(p => newSeen.add(p.id));
+            setAllSeenCareerIds(newSeen);
+        }
+    }, [selectedDegrees]);
+
+    const handleRefreshCareers = () => {
+        const moreSuggestions = getMoreCareerSuggestions(allSeenCareerIds, 6);
+        const newPaths: CareerPath[] = moreSuggestions.map(s => ({
+            id: s.id,
+            title: s.title,
+            field: s.field,
+            salaryRange: s.salaryRange,
+            matchScore: s.matchScore,
+            growth: s.growth,
+            skills: s.skills,
+            description: s.description
+        }));
+        // Track new seen careers
+        const newSeen = new Set(allSeenCareerIds);
+        newPaths.forEach(p => newSeen.add(p.id));
+        setAllSeenCareerIds(newSeen);
+        // Append to existing
+        setCareerPaths(prev => [...prev, ...newPaths]);
     };
 
     const addExperience = () => {
@@ -550,32 +600,22 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
     const renderPrefs = () => (
         <div className="animate-in slide-in-from-right-8 fade-in duration-300">
-            <div className="mb-6">
-                <h2 className="text-2xl font-display font-bold text-jalanea-900">What are you looking for?</h2>
-                <p className="text-jalanea-600">Help our AI find the perfect match.</p>
-            </div>
+            {/* Career Path Explorer */}
+            <CareerPathExplorer
+                suggestedCareers={careerPaths}
+                onSelectionChange={setSelectedCareerIds}
+                onBookmarksChange={setBookmarkedCareerIds}
+                onRefresh={handleRefreshCareers}
+                minSelections={1}
+                degreeInfo={selectedDegrees.length > 0 ? {
+                    name: selectedDegrees[0].degree.name,
+                    field: selectedDegrees[0].degree.field
+                } : undefined}
+            />
 
-            <div className="space-y-8">
-                {/* Target Job Titles */}
-                <div>
-                    <label className="text-sm font-bold text-jalanea-900 mb-2 block">Target Job Titles</label>
-                    <div className="bg-white p-3 border border-jalanea-200 rounded-xl flex flex-wrap gap-2 focus-within:ring-1 focus-within:ring-jalanea-900 transition-all">
-                        {roleTags.map(tag => (
-                            <span key={tag} className="bg-jalanea-100 text-jalanea-800 text-xs font-bold px-2 py-1.5 rounded flex items-center gap-1">
-                                {tag}
-                                <button onClick={() => removeTag(tag)} className="hover:text-red-500"><X size={12} /></button>
-                            </span>
-                        ))}
-                        <input
-                            className="flex-1 bg-transparent border-none outline-none text-sm min-w-[120px]"
-                            placeholder="Type & Enter..."
-                            value={roleInput}
-                            onChange={(e) => setRoleInput(e.target.value)}
-                            onKeyDown={handleAddTag}
-                        />
-                    </div>
-                    <p className="text-xs text-jalanea-400 mt-2 ml-1">AI Suggestion: Based on "A.S. Graphic Design"</p>
-                </div>
+            {/* Additional Preferences */}
+            <div className="mt-8 pt-8 border-t border-jalanea-200 space-y-6">
+                <h3 className="text-lg font-bold text-jalanea-900">Additional Preferences</h3>
 
                 {/* Work Style */}
                 <div>
