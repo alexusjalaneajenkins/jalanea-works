@@ -750,41 +750,54 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                     return true;
                 });
 
-                // For on-site filter, also filter by location
-                if (jobWorkStyleFilter === 'On-site' && location) {
-                    const locationLower = location.toLowerCase();
+                // For on-site and hybrid, filter by location strictly
+                if ((jobWorkStyleFilter === 'On-site' || jobWorkStyleFilter === 'Hybrid') && location) {
+                    const locationLower = location.toLowerCase().trim();
                     // Extract city and state from user's location
                     const parts = locationLower.split(',').map(p => p.trim());
                     const city = parts[0] || '';
-                    const state = parts[1] || '';
+                    const state = parts[1]?.trim() || '';
 
-                    // Also check for state variations (FL = Florida, etc)
+                    console.log(`📍 Location filter: city="${city}", state="${state}"`);
+
+                    // State abbreviations and full names mapping
                     const stateAbbreviations: Record<string, string[]> = {
-                        'fl': ['florida', 'fl'],
-                        'florida': ['florida', 'fl'],
-                        'ca': ['california', 'ca'],
-                        'california': ['california', 'ca'],
-                        'tx': ['texas', 'tx'],
-                        'texas': ['texas', 'tx'],
-                        'ny': ['new york', 'ny'],
+                        'fl': ['florida', 'fl', ', fl'],
+                        'florida': ['florida', 'fl', ', fl'],
+                        'ca': ['california', 'ca', ', ca'],
+                        'california': ['california', 'ca', ', ca'],
+                        'tx': ['texas', 'tx', ', tx'],
+                        'texas': ['texas', 'tx', ', tx'],
+                        'ny': ['new york', 'ny', ', ny'],
+                        'new york': ['new york', 'ny', ', ny'],
+                        'pa': ['pennsylvania', 'pa', ', pa'],
+                        'va': ['virginia', 'va', ', va'],
+                        'ma': ['massachusetts', 'ma', ', ma'],
                     };
 
-                    const stateMatches = stateAbbreviations[state] || [state];
+                    const stateMatches = stateAbbreviations[state] || [state, `, ${state}`];
 
+                    const beforeCount = filteredJobs.length;
                     filteredJobs = filteredJobs.filter(job => {
                         const jobLocation = job.location?.toLowerCase() || '';
+                        const jobTitle = job.title?.toLowerCase() || '';
 
-                        // Exclude remote jobs from on-site results
-                        if (jobLocation.includes('remote') || job.title?.toLowerCase().includes('remote')) {
+                        // Exclude remote jobs from on-site/hybrid results
+                        if (jobLocation.includes('remote') || jobTitle.includes('remote')) {
                             return false;
                         }
 
-                        // Check if job location matches city OR state
-                        const matchesCity = city && jobLocation.includes(city);
+                        // Check if job location matches city OR state (Florida, FL, etc.)
+                        const matchesCity = city.length >= 3 && jobLocation.includes(city);
                         const matchesState = stateMatches.some(s => jobLocation.includes(s));
 
-                        return matchesCity || matchesState;
+                        const matches = matchesCity || matchesState;
+                        if (!matches) {
+                            console.log(`❌ Filtered out: "${job.title}" at "${job.location}" (looking for ${city} or ${stateMatches.join('/')})`);
+                        }
+                        return matches;
                     });
+                    console.log(`📍 Location filter: ${beforeCount} → ${filteredJobs.length} jobs`);
 
                     // Don't fall back - keep empty to show "no local jobs" message
                 }
