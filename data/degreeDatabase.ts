@@ -535,6 +535,134 @@ export const VALENCIA_TECHNICAL_CERTS: DegreeProgram[] = [
 ];
 
 // ============================================================================
+// VALENCIA COLLEGE: ADVANCED TECHNICAL CERTIFICATES (ATC)
+// ============================================================================
+
+export const VALENCIA_ADVANCED_TECH_CERTS: DegreeProgram[] = [
+    // ===== HEALTHCARE IMAGING ATCs =====
+    {
+        id: 'vc-atc-ct',
+        name: 'Computed Tomography (CT)',
+        level: 'Advanced Technical Certificate',
+        institution: 'Valencia College',
+        field: 'Healthcare',
+        description: 'Advanced certification for CT scan technologists.',
+        keywords: ['CT', 'computed tomography', 'CAT scan', 'imaging', 'radiology'],
+        entryLevelCareers: [
+            { title: 'CT Technologist', averageSalary: '$58,000 - $72,000', description: 'Operate CT scanning equipment' },
+            { title: 'Diagnostic Imaging Specialist', averageSalary: '$55,000 - $68,000', description: 'Perform specialized diagnostic imaging' }
+        ]
+    },
+    {
+        id: 'vc-atc-mri',
+        name: 'Magnetic Resonance Imaging (MRI)',
+        level: 'Advanced Technical Certificate',
+        institution: 'Valencia College',
+        field: 'Healthcare',
+        description: 'Advanced certification for MRI technologists.',
+        keywords: ['MRI', 'magnetic resonance', 'imaging', 'radiology', 'magnet'],
+        entryLevelCareers: [
+            { title: 'MRI Technologist', averageSalary: '$62,000 - $78,000', description: 'Operate MRI scanning equipment' },
+            { title: 'MRI Specialist', averageSalary: '$60,000 - $75,000', description: 'Perform specialized MRI procedures' }
+        ]
+    },
+    {
+        id: 'vc-atc-echo',
+        name: 'Echocardiography',
+        level: 'Advanced Technical Certificate',
+        institution: 'Valencia College',
+        field: 'Healthcare',
+        description: 'Advanced certification for cardiac ultrasound technologists.',
+        keywords: ['echocardiography', 'echo', 'cardiac', 'ultrasound', 'heart', 'sonography'],
+        entryLevelCareers: [
+            { title: 'Cardiac Sonographer', averageSalary: '$65,000 - $80,000', description: 'Perform heart ultrasound examinations' },
+            { title: 'Echocardiographer', averageSalary: '$62,000 - $78,000', description: 'Specialize in cardiac imaging' }
+        ]
+    },
+    {
+        id: 'vc-atc-mammo',
+        name: 'Mammography',
+        level: 'Advanced Technical Certificate',
+        institution: 'Valencia College',
+        field: 'Healthcare',
+        description: 'Advanced certification for mammography technologists.',
+        keywords: ['mammography', 'breast imaging', 'radiology', 'screening'],
+        entryLevelCareers: [
+            { title: 'Mammography Technologist', averageSalary: '$55,000 - $68,000', description: 'Perform mammogram screenings' },
+            { title: 'Breast Imaging Specialist', averageSalary: '$58,000 - $72,000', description: 'Specialize in breast imaging' }
+        ]
+    },
+    {
+        id: 'vc-atc-vascular',
+        name: 'Vascular Sonography',
+        level: 'Advanced Technical Certificate',
+        institution: 'Valencia College',
+        field: 'Healthcare',
+        description: 'Advanced certification for vascular ultrasound technologists.',
+        keywords: ['vascular', 'sonography', 'ultrasound', 'veins', 'arteries', 'vascular tech'],
+        entryLevelCareers: [
+            { title: 'Vascular Sonographer', averageSalary: '$62,000 - $78,000', description: 'Perform vascular ultrasound exams' },
+            { title: 'Vascular Technologist', averageSalary: '$60,000 - $75,000', description: 'Specialize in vascular imaging' }
+        ]
+    },
+    // ===== CULINARY ARTS ATCs =====
+    {
+        id: 'vc-atc-bread',
+        name: 'Bread Baking',
+        level: 'Advanced Technical Certificate',
+        institution: 'Valencia College',
+        field: 'Hospitality',
+        description: 'Advanced certification in artisan bread baking techniques.',
+        keywords: ['bread', 'baking', 'artisan', 'bakery', 'yeast', 'sourdough'],
+        entryLevelCareers: [
+            { title: 'Artisan Baker', averageSalary: '$35,000 - $48,000', description: 'Create specialty breads' },
+            { title: 'Head Baker', averageSalary: '$40,000 - $52,000', description: 'Lead bakery bread production' }
+        ]
+    },
+    {
+        id: 'vc-atc-cake',
+        name: 'Cake Artistry',
+        level: 'Advanced Technical Certificate',
+        institution: 'Valencia College',
+        field: 'Hospitality',
+        description: 'Advanced certification in cake decorating and design.',
+        keywords: ['cake', 'decorating', 'wedding cake', 'pastry', 'fondant', 'artistry'],
+        entryLevelCareers: [
+            { title: 'Cake Decorator', averageSalary: '$32,000 - $45,000', description: 'Design and decorate specialty cakes' },
+            { title: 'Cake Artist', averageSalary: '$38,000 - $52,000', description: 'Create custom cake designs' }
+        ]
+    },
+    {
+        id: 'vc-atc-chocolate',
+        name: 'Chocolate and Confectionery Arts',
+        level: 'Advanced Technical Certificate',
+        institution: 'Valencia College',
+        field: 'Hospitality',
+        description: 'Advanced certification in chocolate and candy making.',
+        keywords: ['chocolate', 'confection', 'candy', 'sweets', 'truffles', 'chocolatier'],
+        entryLevelCareers: [
+            { title: 'Chocolatier', averageSalary: '$35,000 - $50,000', description: 'Create artisan chocolates' },
+            { title: 'Confectionery Specialist', averageSalary: '$32,000 - $45,000', description: 'Make specialty candies and sweets' }
+        ]
+    },
+    // ===== BUSINESS ATC =====
+    {
+        id: 'vc-atc-hr',
+        name: 'Human Resource Management',
+        level: 'Advanced Technical Certificate',
+        institution: 'Valencia College',
+        field: 'Business',
+        description: 'Advanced certification in human resources management.',
+        keywords: ['HR', 'human resources', 'personnel', 'recruiting', 'benefits', 'employee relations'],
+        entryLevelCareers: [
+            { title: 'HR Coordinator', averageSalary: '$42,000 - $55,000', description: 'Coordinate HR functions' },
+            { title: 'HR Specialist', averageSalary: '$45,000 - $58,000', description: 'Handle specialized HR tasks' },
+            { title: 'Recruiter', averageSalary: '$40,000 - $55,000', description: 'Source and recruit candidates' }
+        ]
+    }
+];
+
+// ============================================================================
 // VALENCIA COLLEGE: BACHELOR OF APPLIED SCIENCE (B.A.S.)
 // ============================================================================
 
@@ -876,6 +1004,7 @@ export const UCF_BACHELOR_DEGREES: DegreeProgram[] = [
 export const ALL_DEGREE_PROGRAMS: DegreeProgram[] = [
     ...VALENCIA_AS_DEGREES,
     ...VALENCIA_TECHNICAL_CERTS,
+    ...VALENCIA_ADVANCED_TECH_CERTS,
     ...VALENCIA_BAS_DEGREES,
     ...UCF_BACHELOR_DEGREES
 ];
