@@ -88,7 +88,12 @@ export const CareerPathExplorer: React.FC<CareerPathExplorerProps> = ({
         setTimeout(() => setIsRefreshing(false), 500);
     };
 
-    const categories: FilterCategory[] = ['all', 'Technology', 'Healthcare', 'Business', 'Creative/Design', 'Manufacturing', 'Hospitality'];
+    // Dynamic categories based on available careers
+    const availableFields = useMemo(() => {
+        const fields = new Set<string>();
+        suggestedCareers.forEach(career => fields.add(career.field));
+        return ['all', ...Array.from(fields)] as FilterCategory[];
+    }, [suggestedCareers]);
 
     return (
         <div className="space-y-4 sm:space-y-6 overflow-x-hidden">
@@ -163,7 +168,7 @@ export const CareerPathExplorer: React.FC<CareerPathExplorerProps> = ({
             {showFilters && (
                 <div className="overflow-x-auto -mx-2 px-2 pb-2">
                     <div className="flex gap-2 p-3 sm:p-4 bg-jalanea-50 rounded-xl animate-in slide-in-from-top-2 duration-200 min-w-max sm:min-w-0 sm:flex-wrap">
-                        {categories.map(cat => (
+                        {availableFields.map(cat => (
                             <button
                                 key={cat}
                                 onClick={() => setFilterCategory(cat)}
