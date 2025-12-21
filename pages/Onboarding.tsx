@@ -701,11 +701,14 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
             // Build search query from selected career paths
             const careerTitles = selectedCareerIds.length > 0
                 ? careerPaths.filter(c => selectedCareerIds.includes(c.id)).map(c => c.title).slice(0, 2).join(' ')
-                : 'entry level';
+                : '';
+
+            // Always include entry level / internship keywords
+            const entryLevelKeywords = 'entry level OR internship OR junior';
 
             // For remote, add to query. For on-site/hybrid, we rely on location filtering
             const workStyleQuery = jobWorkStyleFilter === 'Remote' ? ' remote work from home' : '';
-            const fullQuery = careerTitles + workStyleQuery;
+            const fullQuery = `${careerTitles} ${entryLevelKeywords}${workStyleQuery}`.trim();
 
             // Use user's location or default
             const searchLocation = location?.trim() || 'United States';
@@ -723,8 +726,31 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
             });
 
             if (response.jobs) {
-                // For on-site filter, strictly filter results client-side to match location
-                let filteredJobs = response.jobs;
+                // Filter out senior/lead/manager roles - only entry level
+                const entryLevelExcludeTerms = ['senior', 'lead', 'manager', 'director', 'principal', 'staff', 'architect', 'vp', 'head of'];
+                const experienceExcludePatterns = [/(\d+)\+?\s*years?/i]; // Match "3+ years", "5 years", etc.
+
+                let filteredJobs = response.jobs.filter(job => {
+                    const titleLower = job.title?.toLowerCase() || '';
+                    const descLower = job.description?.toLowerCase() || '';
+
+                    // Exclude senior-level titles
+                    if (entryLevelExcludeTerms.some(term => titleLower.includes(term))) {
+                        return false;
+                    }
+
+                    // Check for high experience requirements in description
+                    for (const pattern of experienceExcludePatterns) {
+                        const match = descLower.match(pattern);
+                        if (match && parseInt(match[1]) >= 3) {
+                            return false; // Exclude if requires 3+ years
+                        }
+                    }
+
+                    return true;
+                });
+
+                // For on-site filter, also filter by location
                 if (jobWorkStyleFilter === 'On-site' && location) {
                     const locationLower = location.toLowerCase();
                     // Extract city and state from user's location
@@ -745,7 +771,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
                     const stateMatches = stateAbbreviations[state] || [state];
 
-                    filteredJobs = response.jobs.filter(job => {
+                    filteredJobs = filteredJobs.filter(job => {
                         const jobLocation = job.location?.toLowerCase() || '';
 
                         // Exclude remote jobs from on-site results

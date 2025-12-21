@@ -195,9 +195,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         try {
             const userRef = doc(db, "users", auth.currentUser.uid);
-            await updateDoc(userRef, {
-                savedJobs: arrayUnion(savedJob)
-            });
+
+            // Get current saved jobs and add new one
+            const currentSavedJobs = userProfile?.savedJobs || [];
+            await setDoc(userRef, {
+                savedJobs: [...currentSavedJobs, savedJob]
+            }, { merge: true });
+
             console.log("Job saved:", job.title);
         } catch (error) {
             console.error("Error saving job:", error);
