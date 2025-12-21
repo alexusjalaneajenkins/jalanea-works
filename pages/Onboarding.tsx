@@ -828,7 +828,10 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                 : `${entryLevelModifier} jobs${workStyleQuery}`.trim();
 
             // Use user's location or default
-            const searchLocation = location?.trim() || 'United States';
+            // For Remote jobs, search broadly (USA) instead of restricting to user's city
+            const searchLocation = jobWorkStyleFilter === 'Remote' 
+                ? 'United States' 
+                : (location?.trim() || 'United States');
 
             // Add radius for on-site jobs to be stricter with location
             const radius = jobWorkStyleFilter === 'On-site' ? 50 :
