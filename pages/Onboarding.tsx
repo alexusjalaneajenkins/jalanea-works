@@ -802,16 +802,30 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
         setIsLoadingJobs(true);
         try {
             // Build search query from selected career paths
-            const careerTitles = selectedCareerIds.length > 0
-                ? careerPaths.filter(c => selectedCareerIds.includes(c.id)).map(c => c.title).slice(0, 2).join(' ')
-                : '';
+            const selectedCareers = careerPaths.filter(c => selectedCareerIds.includes(c.id));
+            console.log('📋 Selected careers:', selectedCareers.map(c => c.title));
+            console.log('📋 Selected career IDs:', selectedCareerIds);
 
-            // Always include entry level / internship keywords
-            const entryLevelKeywords = 'entry level OR internship OR junior';
+            let careerTitles = '';
+            if (selectedCareers.length > 0) {
+                // Use up to 2 career titles for the search
+                careerTitles = selectedCareers.slice(0, 2).map(c => c.title).join(' OR ');
+            } else if (careerPaths.length > 0) {
+                // Fallback: use first 2 careers from path suggestions
+                careerTitles = careerPaths.slice(0, 2).map(c => c.title).join(' OR ');
+                console.log('⚠️ No selected careers, using suggestions:', careerTitles);
+            }
+
+            // Build query - prefer career titles, add entry-level qualifier
+            const entryLevelModifier = 'entry level';
 
             // For remote, add to query. For on-site/hybrid, we rely on location filtering
-            const workStyleQuery = jobWorkStyleFilter === 'Remote' ? ' remote work from home' : '';
-            const fullQuery = `${careerTitles} ${entryLevelKeywords}${workStyleQuery}`.trim();
+            const workStyleQuery = jobWorkStyleFilter === 'Remote' ? ' remote' : '';
+
+            // Build final query - if we have career titles, use them with entry level
+            const fullQuery = careerTitles
+                ? `${careerTitles} ${entryLevelModifier}${workStyleQuery}`.trim()
+                : `${entryLevelModifier} jobs${workStyleQuery}`.trim();
 
             // Use user's location or default
             const searchLocation = location?.trim() || 'United States';
@@ -829,6 +843,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
             });
 
             if (response.jobs) {
+                console.log(`📦 API returned ${response.jobs.length} jobs`);
+
                 // Filter out senior/lead/manager roles - only entry level
                 const entryLevelExcludeTerms = ['senior', 'lead', 'manager', 'director', 'principal', 'staff', 'architect', 'vp', 'head of'];
                 const experienceExcludePatterns = [/(\d+)\+?\s*years?/i]; // Match "3+ years", "5 years", etc.
@@ -839,6 +855,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
                     // Exclude senior-level titles
                     if (entryLevelExcludeTerms.some(term => titleLower.includes(term))) {
+                        console.log(`❌ Excluded (senior title): ${job.title}`);
                         return false;
                     }
 
@@ -846,12 +863,15 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                     for (const pattern of experienceExcludePatterns) {
                         const match = descLower.match(pattern);
                         if (match && parseInt(match[1]) >= 3) {
+                            console.log(`❌ Excluded (3+ years): ${job.title}`);
                             return false; // Exclude if requires 3+ years
                         }
                     }
 
                     return true;
                 });
+
+                console.log(`✅ After entry-level filter: ${filteredJobs.length} jobs`);
 
                 // For on-site and hybrid, filter by location strictly
                 if ((jobWorkStyleFilter === 'On-site' || jobWorkStyleFilter === 'Hybrid') && location) {
