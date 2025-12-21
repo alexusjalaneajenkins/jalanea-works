@@ -1115,15 +1115,23 @@ export function generateCareerPathsFromDegrees(
         'Public Safety': ['Leadership', 'Crisis Management', 'Communication', 'Physical Fitness', 'Decision Making']
     };
 
+    // Collect careers from each degree separately, then interleave
+    const careersByDegree: Map<string, CareerPathSuggestion[]> = new Map();
+
     // Get careers from selected degrees (higher match score)
     for (const { degree } of selectedDegrees) {
+        const degreeId = degree.id;
+        if (!careersByDegree.has(degreeId)) {
+            careersByDegree.set(degreeId, []);
+        }
+
         for (const career of degree.entryLevelCareers) {
             const careerId = `${degree.field}-${career.title}`.toLowerCase().replace(/\s+/g, '-');
 
             if (seenCareers.has(careerId) || existingCareerIds.has(careerId)) continue;
             seenCareers.add(careerId);
 
-            careerPaths.push({
+            careersByDegree.get(degreeId)!.push({
                 id: careerId,
                 title: career.title,
                 field: degree.field,
@@ -1134,6 +1142,18 @@ export function generateCareerPathsFromDegrees(
                 description: career.description
             });
         }
+    }
+
+    // Interleave careers from all degrees for balanced representation
+    const degreeArrays = Array.from(careersByDegree.values());
+    let i = 0;
+    while (degreeArrays.some(arr => arr.length > i)) {
+        for (const arr of degreeArrays) {
+            if (i < arr.length) {
+                careerPaths.push(arr[i]);
+            }
+        }
+        i++;
     }
 
     // Add related careers from same field (medium match score)

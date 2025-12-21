@@ -117,9 +117,11 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
     // Generate career paths when education changes
     useEffect(() => {
-        if (selectedDegrees.length > 0 && careerPaths.length === 0) {
+        if (selectedDegrees.length > 0) {
+            // Always regenerate when degrees change
             const suggestions = generateCareerPathsFromDegrees(selectedDegrees, new Set());
-            const paths: CareerPath[] = suggestions.slice(0, 6).map(s => ({
+            // Load more careers (up to 8) to show variety from multiple degrees
+            const paths: CareerPath[] = suggestions.slice(0, 8).map(s => ({
                 id: s.id,
                 title: s.title,
                 field: s.field,
@@ -135,7 +137,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
             paths.forEach(p => newSeen.add(p.id));
             setAllSeenCareerIds(newSeen);
         }
-    }, [selectedDegrees]);
+    }, [selectedDegrees.length]); // React to degree count changes
 
     const handleRefreshCareers = () => {
         // First try to get more from degree-related careers
