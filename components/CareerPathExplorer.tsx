@@ -91,7 +91,7 @@ export const CareerPathExplorer: React.FC<CareerPathExplorerProps> = ({
     const categories: FilterCategory[] = ['all', 'Technology', 'Healthcare', 'Business', 'Creative/Design', 'Manufacturing', 'Hospitality'];
 
     return (
-        <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-4 sm:space-y-6 overflow-x-hidden">
             {/* Header */}
             <div className="text-center">
                 <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-gold/10 text-gold border border-gold/20 text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-3 sm:mb-4">
@@ -183,7 +183,7 @@ export const CareerPathExplorer: React.FC<CareerPathExplorerProps> = ({
             )}
 
             {/* Career Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 pt-2">
                 {visibleCareers.map(career => (
                     <CareerPathCard
                         key={career.id}
