@@ -81,61 +81,6 @@ export const About: React.FC<AboutProps> = ({ setRoute }) => {
 
             <div className="max-w-5xl mx-auto px-4 md:px-6 pt-24 md:pt-32 pb-24 relative z-10">
 
-                {/* --- MISSION STATEMENT BANNER --- */}
-                <section className="mb-16 md:mb-24 animate-in fade-in slide-in-from-bottom-6 duration-700">
-                    <Card variant="glass-dark" className="p-8 md:p-12 border-gold/20 bg-gradient-to-br from-jalanea-900/80 via-jalanea-950/90 to-jalanea-900/80 backdrop-blur-xl">
-                        <div className="text-center space-y-6">
-                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-bold uppercase tracking-widest">
-                                <Heart size={12} fill="currentColor" /> Our Purpose
-                            </div>
-
-                            <h2 className="text-2xl md:text-4xl font-display font-bold text-white leading-tight max-w-3xl mx-auto">
-                                Helping Students Go From <span className="text-gold">Homelessness to Housing</span> Through Education & Employment
-                            </h2>
-
-                            <p className="text-lg text-jalanea-200 leading-relaxed max-w-3xl mx-auto">
-                                Jalanea Works is built for <span className="text-white font-bold">low-income housing students</span> and Valencia College graduates. We connect your degree to entry-level positions so you can work, earn, and build a stable foundation.
-                            </p>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 text-left">
-                                <div className="bg-white/5 p-6 rounded-xl border border-white/10">
-                                    <div className="w-10 h-10 bg-gold/20 rounded-lg flex items-center justify-center text-gold mb-4">
-                                        <GraduationCap size={20} />
-                                    </div>
-                                    <h4 className="font-bold text-white mb-2">Your Degree, Your Power</h4>
-                                    <p className="text-sm text-jalanea-300">
-                                        We link Valencia & UCF programs directly to careers that want YOUR specific skills.
-                                    </p>
-                                </div>
-                                <div className="bg-white/5 p-6 rounded-xl border border-white/10">
-                                    <div className="w-10 h-10 bg-gold/20 rounded-lg flex items-center justify-center text-gold mb-4">
-                                        <Briefcase size={20} />
-                                    </div>
-                                    <h4 className="font-bold text-white mb-2">12-24 Month Runway</h4>
-                                    <p className="text-sm text-jalanea-300">
-                                        Find entry-level jobs while in transitional housing. Build savings. Build stability.
-                                    </p>
-                                </div>
-                                <div className="bg-white/5 p-6 rounded-xl border border-white/10">
-                                    <div className="w-10 h-10 bg-gold/20 rounded-lg flex items-center justify-center text-gold mb-4">
-                                        <MapPin size={20} />
-                                    </div>
-                                    <h4 className="font-bold text-white mb-2">Alumni Housing Advocacy</h4>
-                                    <p className="text-sm text-jalanea-300">
-                                        We're fighting for income-restricted housing so graduates can transition sustainably.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="pt-4 border-t border-white/10 mt-8">
-                                <p className="text-sm text-jalanea-400 italic">
-                                    "Every person deserves a pathway from education to stable housing. That's why we exist."
-                                </p>
-                            </div>
-                        </div>
-                    </Card>
-                </section>
-
                 {/* --- HERO SECTION --- */}
                 <header className="flex flex-col md:flex-row items-center gap-8 md:gap-12 mb-20 md:mb-32">
                     <div className="flex-1 text-center md:text-left space-y-6 w-full">
@@ -496,6 +441,6 @@ export const About: React.FC<AboutProps> = ({ setRoute }) => {
 
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
