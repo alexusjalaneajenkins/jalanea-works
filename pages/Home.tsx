@@ -156,77 +156,77 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
 
       {/* --- MISSION MODAL --- */}
       {isMissionOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
           <div className="absolute inset-0 bg-jalanea-950/95 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setIsMissionOpen(false)} />
 
-          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 slide-in-from-bottom-8 duration-500">
-            <button onClick={() => setIsMissionOpen(false)} className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors z-50 bg-white/10 rounded-full p-2">
-              <X size={20} />
+          <div className="relative w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto animate-in zoom-in-95 slide-in-from-bottom-8 duration-500">
+            <button onClick={() => setIsMissionOpen(false)} className="absolute top-2 right-2 sm:top-4 sm:right-4 text-white/50 hover:text-white transition-colors z-50 bg-white/10 rounded-full p-1.5 sm:p-2">
+              <X size={18} className="sm:w-5 sm:h-5" />
             </button>
 
-            <Card variant="glass-dark" className="p-8 md:p-10 border-gold/20 bg-gradient-to-br from-jalanea-900/95 via-jalanea-950 to-jalanea-900/95 backdrop-blur-xl">
-              <div className="text-center space-y-6">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-bold uppercase tracking-widest">
-                  <Heart size={12} fill="currentColor" /> Our Purpose
+            <Card variant="glass-dark" className="p-4 sm:p-6 md:p-10 border-gold/20 bg-gradient-to-br from-jalanea-900/95 via-jalanea-950 to-jalanea-900/95 backdrop-blur-xl">
+              <div className="text-center space-y-4 sm:space-y-6">
+                <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 text-[10px] sm:text-xs font-bold uppercase tracking-widest">
+                  <Heart size={10} className="sm:w-3 sm:h-3" fill="currentColor" /> Our Purpose
                 </div>
 
-                <h2 className="text-2xl md:text-4xl font-display font-bold text-white leading-tight max-w-3xl mx-auto">
+                <h2 className="text-xl sm:text-2xl md:text-4xl font-display font-bold text-white leading-tight max-w-3xl mx-auto px-2">
                   Helping Students Go From <span className="text-gold">Homelessness to Housing</span> Through Education & Employment
                 </h2>
 
-                <p className="text-base md:text-lg text-jalanea-200 leading-relaxed max-w-3xl mx-auto">
+                <p className="text-sm sm:text-base md:text-lg text-jalanea-200 leading-relaxed max-w-3xl mx-auto px-2">
                   Jalanea Works is built for <span className="text-white font-bold">low-income housing students</span> and Valencia College graduates. We connect your degree to entry-level positions so you can work, earn, and build a stable foundation.
                 </p>
 
-                {/* 3 Pillars */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 text-left">
-                  <div className="bg-white/5 p-5 rounded-xl border border-white/10">
-                    <div className="w-10 h-10 bg-gold/20 rounded-lg flex items-center justify-center text-gold mb-3">
-                      <GraduationCap size={20} />
+                {/* 3 Pillars - Stack on mobile, 3 cols on tablet+ */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mt-4 sm:mt-6 text-left">
+                  <div className="bg-white/5 p-4 sm:p-5 rounded-xl border border-white/10">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gold/20 rounded-lg flex items-center justify-center text-gold mb-2 sm:mb-3">
+                      <GraduationCap size={16} className="sm:w-5 sm:h-5" />
                     </div>
-                    <h4 className="font-bold text-white mb-1 text-sm">Your Degree, Your Power</h4>
-                    <p className="text-xs text-jalanea-300">
+                    <h4 className="font-bold text-white mb-1 text-xs sm:text-sm">Your Degree, Your Power</h4>
+                    <p className="text-[11px] sm:text-xs text-jalanea-300">
                       We link Valencia & UCF programs directly to careers that want YOUR specific skills.
                     </p>
                   </div>
-                  <div className="bg-white/5 p-5 rounded-xl border border-white/10">
-                    <div className="w-10 h-10 bg-gold/20 rounded-lg flex items-center justify-center text-gold mb-3">
-                      <TrendingUp size={20} />
+                  <div className="bg-white/5 p-4 sm:p-5 rounded-xl border border-white/10">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gold/20 rounded-lg flex items-center justify-center text-gold mb-2 sm:mb-3">
+                      <TrendingUp size={16} className="sm:w-5 sm:h-5" />
                     </div>
-                    <h4 className="font-bold text-white mb-1 text-sm">12-24 Month Runway</h4>
-                    <p className="text-xs text-jalanea-300">
+                    <h4 className="font-bold text-white mb-1 text-xs sm:text-sm">12-24 Month Runway</h4>
+                    <p className="text-[11px] sm:text-xs text-jalanea-300">
                       Find entry-level jobs while in transitional housing. Build savings. Build stability.
                     </p>
                   </div>
-                  <div className="bg-white/5 p-5 rounded-xl border border-white/10">
-                    <div className="w-10 h-10 bg-gold/20 rounded-lg flex items-center justify-center text-gold mb-3">
-                      <MapPin size={20} />
+                  <div className="bg-white/5 p-4 sm:p-5 rounded-xl border border-white/10">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gold/20 rounded-lg flex items-center justify-center text-gold mb-2 sm:mb-3">
+                      <MapPin size={16} className="sm:w-5 sm:h-5" />
                     </div>
-                    <h4 className="font-bold text-white mb-1 text-sm">Alumni Housing Advocacy</h4>
-                    <p className="text-xs text-jalanea-300">
+                    <h4 className="font-bold text-white mb-1 text-xs sm:text-sm">Alumni Housing Advocacy</h4>
+                    <p className="text-[11px] sm:text-xs text-jalanea-300">
                       We're fighting for income-restricted housing so graduates can transition sustainably.
                     </p>
                   </div>
                 </div>
 
                 {/* Quote with Photo */}
-                <div className="pt-6 border-t border-white/10 mt-6">
-                  <div className="flex flex-col items-center justify-center gap-4 mb-6">
-                    {/* Graduation Photo - Now on top */}
+                <div className="pt-4 sm:pt-6 border-t border-white/10 mt-4 sm:mt-6">
+                  <div className="flex flex-col items-center justify-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                    {/* Graduation Photo */}
                     <div className="relative shrink-0">
-                      <div className="w-20 h-20 rounded-full border-2 border-gold p-0.5 shadow-xl">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-gold p-0.5 shadow-xl">
                         <img
                           src="https://i.ibb.co/Zzn2BXVQ/VC-Grad-Edited.jpg"
                           alt="Alexus Jalanea Jenkins"
                           className="w-full h-full rounded-full object-cover bg-jalanea-800"
                         />
                       </div>
-                      <div className="absolute -bottom-1 -right-1 bg-gold text-jalanea-950 p-1.5 rounded-full border border-white">
-                        <GraduationCap size={12} />
+                      <div className="absolute -bottom-1 -right-1 bg-gold text-jalanea-950 p-1 sm:p-1.5 rounded-full border border-white">
+                        <GraduationCap size={10} className="sm:w-3 sm:h-3" />
                       </div>
                     </div>
-                    {/* Quote with white text and gold animated emphasis */}
-                    <p className="text-lg md:text-xl text-white font-medium leading-relaxed text-center max-w-2xl">
+                    {/* Quote */}
+                    <p className="text-base sm:text-lg md:text-xl text-white font-medium leading-relaxed text-center max-w-2xl px-2">
                       "I want to create products that <span className="text-transparent bg-clip-text bg-gold-flow bg-200% animate-text-flow font-bold">move us forward</span> and <span className="text-transparent bg-clip-text bg-gold-flow bg-200% animate-text-flow font-bold">build bridges</span> for our communities. My mission is to <span className="text-transparent bg-clip-text bg-gold-flow bg-200% animate-text-flow font-bold">strengthen and empower people</span>. Because when we invest in each other, we all rise."
                     </p>
                   </div>
@@ -245,42 +245,42 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                 </div>
 
                 {/* Contact Section */}
-                <div className="pt-6 border-t border-white/10 mt-4">
-                  <p className="text-xs text-jalanea-500 uppercase tracking-widest font-bold mb-4">Want to Help or Work Together?</p>
-                  <div className="flex flex-wrap justify-center gap-3">
+                <div className="pt-4 sm:pt-6 border-t border-white/10 mt-3 sm:mt-4">
+                  <p className="text-[10px] sm:text-xs text-jalanea-500 uppercase tracking-widest font-bold mb-3 sm:mb-4">Want to Help or Work Together?</p>
+                  <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
                     <a
                       href="https://www.linkedin.com/in/alexusjalaneajenkins/"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-4 py-2 bg-[#0077B5]/10 border border-[#0077B5]/30 rounded-lg text-[#0077B5] hover:bg-[#0077B5]/20 transition-colors text-sm font-bold"
+                      className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-[#0077B5]/10 border border-[#0077B5]/30 rounded-lg text-[#0077B5] hover:bg-[#0077B5]/20 transition-colors text-xs sm:text-sm font-bold"
                     >
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
                       LinkedIn
                     </a>
                     <a
                       href="https://www.instagram.com/JalaneaJ_/"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-4 py-2 bg-[#E4405F]/10 border border-[#E4405F]/30 rounded-lg text-[#E4405F] hover:bg-[#E4405F]/20 transition-colors text-sm font-bold"
+                      className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-[#E4405F]/10 border border-[#E4405F]/30 rounded-lg text-[#E4405F] hover:bg-[#E4405F]/20 transition-colors text-xs sm:text-sm font-bold"
                     >
-                      <Instagram size={16} />
+                      <Instagram size={14} className="sm:w-4 sm:h-4" />
                       Instagram
                     </a>
                     <a
                       href="mailto:alexusjenkins@uiuxdesign.us"
-                      className="flex items-center gap-2 px-4 py-2 bg-gold/10 border border-gold/30 rounded-lg text-gold hover:bg-gold/20 transition-colors text-sm font-bold"
+                      className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-gold/10 border border-gold/30 rounded-lg text-gold hover:bg-gold/20 transition-colors text-xs sm:text-sm font-bold"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                       Email
                     </a>
                     <button
                       disabled
-                      className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-jalanea-500 cursor-not-allowed text-sm font-bold"
+                      className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-jalanea-500 cursor-not-allowed text-xs sm:text-sm font-bold"
                       title="Portfolio coming soon!"
                     >
-                      <Globe size={16} />
+                      <Globe size={14} className="sm:w-4 sm:h-4" />
                       Portfolio
-                      <span className="text-[10px] bg-jalanea-700 text-jalanea-300 px-1.5 py-0.5 rounded uppercase">Soon</span>
+                      <span className="text-[8px] sm:text-[10px] bg-jalanea-700 text-jalanea-300 px-1 sm:px-1.5 py-0.5 rounded uppercase">Soon</span>
                     </button>
                   </div>
                 </div>
