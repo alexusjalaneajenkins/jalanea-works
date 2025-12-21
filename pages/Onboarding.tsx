@@ -723,21 +723,44 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
             });
 
             if (response.jobs) {
-                // For on-site filter, also filter results client-side to match location
+                // For on-site filter, strictly filter results client-side to match location
                 let filteredJobs = response.jobs;
                 if (jobWorkStyleFilter === 'On-site' && location) {
                     const locationLower = location.toLowerCase();
-                    const locationParts = locationLower.split(',').map(p => p.trim());
+                    // Extract city and state from user's location
+                    const parts = locationLower.split(',').map(p => p.trim());
+                    const city = parts[0] || '';
+                    const state = parts[1] || '';
+
+                    // Also check for state variations (FL = Florida, etc)
+                    const stateAbbreviations: Record<string, string[]> = {
+                        'fl': ['florida', 'fl'],
+                        'florida': ['florida', 'fl'],
+                        'ca': ['california', 'ca'],
+                        'california': ['california', 'ca'],
+                        'tx': ['texas', 'tx'],
+                        'texas': ['texas', 'tx'],
+                        'ny': ['new york', 'ny'],
+                    };
+
+                    const stateMatches = stateAbbreviations[state] || [state];
+
                     filteredJobs = response.jobs.filter(job => {
                         const jobLocation = job.location?.toLowerCase() || '';
-                        // Check if job location contains the city or state
-                        return locationParts.some(part => jobLocation.includes(part)) ||
-                            jobLocation.includes(locationLower);
+
+                        // Exclude remote jobs from on-site results
+                        if (jobLocation.includes('remote') || job.title?.toLowerCase().includes('remote')) {
+                            return false;
+                        }
+
+                        // Check if job location matches city OR state
+                        const matchesCity = city && jobLocation.includes(city);
+                        const matchesState = stateMatches.some(s => jobLocation.includes(s));
+
+                        return matchesCity || matchesState;
                     });
-                    // If no local jobs found, show all but indicate
-                    if (filteredJobs.length === 0) {
-                        filteredJobs = response.jobs;
-                    }
+
+                    // Don't fall back - keep empty to show "no local jobs" message
                 }
                 setJobsToFavorite(filteredJobs.slice(0, 6));
             }
@@ -816,6 +839,20 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                     <div className="text-center py-8">
                         <div className="animate-spin w-8 h-8 border-2 border-gold border-t-transparent rounded-full mx-auto mb-2" />
                         <p className="text-sm text-jalanea-500">Loading job opportunities...</p>
+                    </div>
+                ) : jobsToFavorite.length === 0 ? (
+                    <div className="text-center py-8 bg-jalanea-50 rounded-xl">
+                        <MapPin size={32} className="mx-auto text-jalanea-300 mb-2" />
+                        <p className="text-sm font-bold text-jalanea-600">No local jobs found</p>
+                        <p className="text-xs text-jalanea-400 mt-1">
+                            No {jobWorkStyleFilter === 'On-site' ? 'on-site' : 'hybrid'} positions found near {location || 'your location'}
+                        </p>
+                        <button
+                            onClick={() => setJobWorkStyleFilter('Remote')}
+                            className="mt-3 text-xs text-gold font-bold hover:underline"
+                        >
+                            Try Remote jobs →
+                        </button>
                     </div>
                 ) : jobsToFavorite.map(job => (
                     <div
