@@ -94,7 +94,7 @@ export const About: React.FC<AboutProps> = ({ setRoute }) => {
                             </h2>
 
                             <p className="text-lg text-jalanea-200 leading-relaxed max-w-3xl mx-auto">
-                                Jalanea Works is built for <span className="text-white font-bold">low-income housing students</span> and Valencia College graduates. We connect your degree to entry-level positions—so you can work, earn, and build a stable foundation.
+                                Jalanea Works is built for <span className="text-white font-bold">low-income housing students</span> and Valencia College graduates. We connect your degree to entry-level positions so you can work, earn, and build a stable foundation.
                             </p>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 text-left">
@@ -471,7 +471,7 @@ export const About: React.FC<AboutProps> = ({ setRoute }) => {
                                         I created Jalanea Works because I believe that <span className="text-white font-medium border-b border-gold/30">everybody deserves a second chance</span>, including him.
                                     </p>
                                     <p>
-                                        This website is a way to honor him. It is a way to honor those who believe they are not deserving. It is built to take people like my father from homelessness to an opportunity—to give them housing, a job, and a career where they can take care of themselves.
+                                        This website is a way to honor him. It is a way to honor those who believe they are not deserving. It is built to take people like my father from homelessness to an opportunity. To give them housing, a job, and a career where they can take care of themselves.
                                     </p>
                                     <p>
                                         Because these people are somebody's daughters, fathers, mothers, and nieces. We are all linked together somehow.

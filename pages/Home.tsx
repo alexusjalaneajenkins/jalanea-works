@@ -175,7 +175,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                 </h2>
 
                 <p className="text-base md:text-lg text-jalanea-200 leading-relaxed max-w-3xl mx-auto">
-                  Jalanea Works is built for <span className="text-white font-bold">low-income housing students</span> and Valencia College graduates. We connect your degree to entry-level positions—so you can work, earn, and build a stable foundation.
+                  Jalanea Works is built for <span className="text-white font-bold">low-income housing students</span> and Valencia College graduates. We connect your degree to entry-level positions so you can work, earn, and build a stable foundation.
                 </p>
 
                 {/* 3 Pillars */}
@@ -227,7 +227,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                     </div>
                     {/* Quote with white text and gold animated emphasis */}
                     <p className="text-lg md:text-xl text-white font-medium leading-relaxed text-center max-w-2xl">
-                      "I want to create products that <span className="text-transparent bg-clip-text bg-gold-flow bg-200% animate-text-flow font-bold">move us forward</span> and <span className="text-transparent bg-clip-text bg-gold-flow bg-200% animate-text-flow font-bold">build bridges</span> for our communities. My mission is to <span className="text-transparent bg-clip-text bg-gold-flow bg-200% animate-text-flow font-bold">strengthen and empower people</span>—because when we invest in each other, we all rise."
+                      "I want to create products that <span className="text-transparent bg-clip-text bg-gold-flow bg-200% animate-text-flow font-bold">move us forward</span> and <span className="text-transparent bg-clip-text bg-gold-flow bg-200% animate-text-flow font-bold">build bridges</span> for our communities. My mission is to <span className="text-transparent bg-clip-text bg-gold-flow bg-200% animate-text-flow font-bold">strengthen and empower people</span>. Because when we invest in each other, we all rise."
                     </p>
                   </div>
 
@@ -497,7 +497,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-5xl font-display font-bold text-jalanea-900 mb-6 tracking-tight">From Graduation to <span className="text-transparent bg-clip-text bg-premium-gradient">Stability.</span></h2>
             <p className="text-xl text-jalanea-700/80 leading-relaxed">
-              For many, financial aid covers the degree, but not the transition. We are building a tool to ensure that students who fight their way to graduation don't return to the struggle—providing the guidance needed to secure a stable future.
+              For many, financial aid covers the degree, but not the transition. We are building a tool to ensure that students who fight their way to graduation don't return to the struggle. We provide the guidance needed to secure a stable future.
             </p>
           </div>
 
