@@ -52,7 +52,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
     const [experienceList, setExperienceList] = useState<any[]>([]);
     const [isAddingExperience, setIsAddingExperience] = useState(false);
     // Experience form state
-    const [expType, setExpType] = useState<'Work' | 'Internship' | 'Project'>('Work');
+    const [expType, setExpType] = useState<'Work' | 'Internship'>('Work');
     const [expRole, setExpRole] = useState('');
     const [expCompany, setExpCompany] = useState('');
     const [expDates, setExpDates] = useState('');
@@ -565,7 +565,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                 <div className="mt-4 bg-white p-6 rounded-2xl shadow-lg border border-jalanea-100 animate-in zoom-in-95 duration-200">
                     <div className="space-y-4">
                         <div className="flex gap-4 mb-2">
-                            {(['Work', 'Internship', 'Project'] as const).map(type => (
+                            {(['Work', 'Internship'] as const).map(type => (
                                 <label key={type} className="flex items-center gap-2 text-sm font-bold text-jalanea-700 cursor-pointer">
                                     <input
                                         type="radio"
