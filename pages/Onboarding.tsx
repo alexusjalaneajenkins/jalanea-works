@@ -690,19 +690,47 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
         </div>
     );
 
-    // Fetch jobs when reaching the favorite step
+    // Fetch jobs when reaching the favorite step - use user's location and work style
+    const [jobWorkStyleFilter, setJobWorkStyleFilter] = useState<'all' | 'Remote' | 'Hybrid' | 'On-site'>('all');
+
+    const fetchJobsForFavorites = async () => {
+        setIsLoadingJobs(true);
+        try {
+            // Build search query from selected career paths
+            const careerTitles = selectedCareerIds.length > 0
+                ? careerPaths.filter(c => selectedCareerIds.includes(c.id)).map(c => c.title).slice(0, 3).join(' OR ')
+                : 'entry level';
+
+            // Add work style to query
+            const workStyleQuery = jobWorkStyleFilter !== 'all' ? ` ${jobWorkStyleFilter.toLowerCase()}` : '';
+            const fullQuery = careerTitles + workStyleQuery;
+
+            // Use user's location or default to their entered location
+            const searchLocation = location || 'United States';
+
+            const response = await searchJobs(fullQuery, { location: searchLocation });
+            if (response.jobs) {
+                setJobsToFavorite(response.jobs.slice(0, 6));
+            }
+        } catch (error) {
+            console.error('Error fetching jobs:', error);
+        } finally {
+            setIsLoadingJobs(false);
+        }
+    };
+
     useEffect(() => {
         if (currentStep === STEPS.FAVORITE_JOBS && jobsToFavorite.length === 0) {
-            setIsLoadingJobs(true);
-            searchJobs('entry level', { location: 'United States' })
-                .then(response => {
-                    if (response.jobs) {
-                        setJobsToFavorite(response.jobs.slice(0, 6));
-                    }
-                })
-                .finally(() => setIsLoadingJobs(false));
+            fetchJobsForFavorites();
         }
     }, [currentStep]);
+
+    // Refetch when work style filter changes
+    useEffect(() => {
+        if (currentStep === STEPS.FAVORITE_JOBS) {
+            fetchJobsForFavorites();
+        }
+    }, [jobWorkStyleFilter]);
 
     const savedJobsCount = userProfile?.savedJobs?.length || 0;
 
@@ -713,8 +741,34 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                 <p className="text-jalanea-600">Save at least 3 jobs you'd like to pursue. We'll help you apply strategically.</p>
             </div>
 
+            {/* Work Style Filter */}
+            <div className="mb-4">
+                <label className="text-xs font-bold text-jalanea-600 mb-2 block">Filter by Work Style</label>
+                <div className="flex gap-2 flex-wrap">
+                    {(['all', 'Remote', 'Hybrid', 'On-site'] as const).map(style => (
+                        <button
+                            key={style}
+                            onClick={() => setJobWorkStyleFilter(style)}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all
+                                ${jobWorkStyleFilter === style
+                                    ? 'bg-jalanea-900 text-white'
+                                    : 'bg-white text-jalanea-600 border border-jalanea-200 hover:border-gold'
+                                }
+                            `}
+                        >
+                            {style === 'all' ? 'All' : style}
+                        </button>
+                    ))}
+                </div>
+                {location && (
+                    <p className="text-xs text-jalanea-400 mt-2 flex items-center gap-1">
+                        <MapPin size={12} /> Showing jobs near {location}
+                    </p>
+                )}
+            </div>
+
             {/* Progress indicator */}
-            <div className="mb-6 flex items-center gap-3">
+            <div className="mb-4 flex items-center gap-3">
                 <div className="flex-1 h-2 bg-jalanea-100 rounded-full overflow-hidden">
                     <div
                         className="h-full bg-gold transition-all duration-300"
