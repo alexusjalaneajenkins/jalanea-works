@@ -48,6 +48,12 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
     // Form State Handlers (Mock)
     const [experienceList, setExperienceList] = useState<any[]>([]);
     const [isAddingExperience, setIsAddingExperience] = useState(false);
+    // Experience form state
+    const [expType, setExpType] = useState<'Work' | 'Internship' | 'Project'>('Work');
+    const [expRole, setExpRole] = useState('');
+    const [expCompany, setExpCompany] = useState('');
+    const [expDates, setExpDates] = useState('');
+    const [expDescription, setExpDescription] = useState('');
 
     // Tag Inputs
     const [roleInput, setRoleInput] = useState('');
@@ -101,9 +107,22 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
     };
 
     const addExperience = () => {
-        // Mock adding experience
-        setExperienceList([...experienceList, { role: "Design Intern", company: "Local Studio", dates: "Summer 2024" }]);
-        setIsAddingExperience(false);
+        if (expRole.trim() && expCompany.trim()) {
+            setExperienceList([...experienceList, {
+                type: expType,
+                role: expRole.trim(),
+                company: expCompany.trim(),
+                dates: expDates.trim() || 'Present',
+                description: expDescription.trim()
+            }]);
+            // Reset form
+            setExpRole('');
+            setExpCompany('');
+            setExpDates('');
+            setExpDescription('');
+            setExpType('Work');
+            setIsAddingExperience(false);
+        }
     };
 
     const renderProgressBar = () => {
@@ -485,23 +504,43 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                 <div className="mt-4 bg-white p-6 rounded-2xl shadow-lg border border-jalanea-100 animate-in zoom-in-95 duration-200">
                     <div className="space-y-4">
                         <div className="flex gap-4 mb-2">
-                            {['Work', 'Internship', 'Project'].map(type => (
+                            {(['Work', 'Internship', 'Project'] as const).map(type => (
                                 <label key={type} className="flex items-center gap-2 text-sm font-bold text-jalanea-700 cursor-pointer">
-                                    <input type="radio" name="expType" className="text-gold focus:ring-gold" defaultChecked={type === 'Work'} />
+                                    <input
+                                        type="radio"
+                                        name="expType"
+                                        className="text-gold focus:ring-gold"
+                                        checked={expType === type}
+                                        onChange={() => setExpType(type)}
+                                    />
                                     {type}
                                 </label>
                             ))}
                         </div>
-                        <Input placeholder="Role Title" />
-                        <Input placeholder="Company / Organization" />
-                        <Input placeholder="Dates (e.g. Summer 2024)" />
+                        <Input
+                            placeholder="Role Title"
+                            value={expRole}
+                            onChange={(e) => setExpRole(e.target.value)}
+                        />
+                        <Input
+                            placeholder="Company / Organization"
+                            value={expCompany}
+                            onChange={(e) => setExpCompany(e.target.value)}
+                        />
+                        <Input
+                            placeholder="Dates (e.g. Summer 2024)"
+                            value={expDates}
+                            onChange={(e) => setExpDates(e.target.value)}
+                        />
                         <textarea
-                            className="w-full rounded-xl border-jalanea-200 py-3 px-4 text-jalanea-900 text-sm focus:ring-1 focus:ring-jalanea-900 min-h-[100px]"
+                            className="w-full rounded-xl border border-jalanea-200 py-3 px-4 text-jalanea-900 text-sm focus:ring-1 focus:ring-jalanea-900 min-h-[100px]"
                             placeholder="Describe what you did... (Bullet points recommended)"
+                            value={expDescription}
+                            onChange={(e) => setExpDescription(e.target.value)}
                         ></textarea>
                         <div className="flex gap-3 pt-2">
                             <Button fullWidth variant="secondary" onClick={() => setIsAddingExperience(false)}>Cancel</Button>
-                            <Button fullWidth variant="primary" onClick={addExperience}>Save Position</Button>
+                            <Button fullWidth variant="primary" onClick={addExperience} disabled={!expRole.trim() || !expCompany.trim()}>Save Position</Button>
                         </div>
                     </div>
                 </div>
