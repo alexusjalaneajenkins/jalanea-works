@@ -6,7 +6,7 @@ import { generateJobIntel } from '../services/geminiService';
 import { searchJobs } from '../services/jobService';
 import { useAuth } from '../contexts/AuthContext';
 import {
-    Search, Filter, MapPin, Sparkles, FileText,
+    Search, MapPin, Sparkles, FileText,
     GraduationCap, Clock, Zap, Heart, X,
     Users, TrendingUp, Wand2, Briefcase, DollarSign, Calendar,
     ArrowRight, CheckCircle2, UserPlus, Target, Microscope, Share2, Linkedin,
@@ -176,13 +176,14 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
             const transportMode = (MOCK_PROFILE.preferences?.transportMode?.[0] || 'Car') as TransportMode;
 
             // Determine effective location and filters
-            let effectiveLocation = location || searchLocation || userProfile?.location || 'Orlando, FL';
+            const inputLocation = location || searchLocation;
+            let effectiveLocation = inputLocation || userProfile?.location || 'Orlando, FL';
             let chips = '';
+            const isRemoteSearch = activeFilter === 'remote' || isRemote;
 
             // Handle Remote Filter
-            if (activeFilter === 'remote' || isRemote) {
+            if (isRemoteSearch) {
                 effectiveLocation = 'Remote';
-                // Also add chip for good measure if available, but "Remote" location is usually strong enough for Google Jobs
                 chips = 'work_at_home:true';
             }
 
@@ -191,11 +192,11 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                 chips = 'date_posted:today';
             }
 
-            console.log('🔍 Searching jobs:', { searchTerms, effectiveLocation, chips });
+            console.log('🔍 Searching jobs:', { searchTerms, effectiveLocation, chips, inputLocation });
 
             const response = await searchJobs(searchTerms, {
                 location: effectiveLocation,
-                userLocation: userProfile?.location || 'Orlando, FL', // Keep user location for commute calc
+                userLocation: userProfile?.location || 'Orlando, FL',
                 transportMode: transportMode,
                 chips: chips || undefined
             });
@@ -207,14 +208,71 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                     ...(MOCK_PROFILE.skills?.design || []),
                 ];
 
-                const jobsWithScores = response.jobs.map(job => ({
+                let filteredJobs = response.jobs;
+
+                // CLIENT-SIDE LOCATION FILTERING - Only if not remote and user specified a location
+                if (!isRemoteSearch && inputLocation && inputLocation.trim()) {
+                    const locationLower = inputLocation.toLowerCase().trim();
+                    const parts = locationLower.split(',').map(p => p.trim());
+                    const city = parts[0] || '';
+                    const stateInput = parts[1]?.trim() || '';
+
+                    // State abbreviation mapping
+                    const stateAbbreviations: Record<string, string[]> = {
+                        'fl': ['florida', 'fl'],
+                        'florida': ['florida', 'fl'],
+                        'ca': ['california', 'ca'],
+                        'california': ['california', 'ca'],
+                        'tx': ['texas', 'tx'],
+                        'texas': ['texas', 'tx'],
+                        'ny': ['new york', 'ny'],
+                        'new york': ['new york', 'ny'],
+                        'pa': ['pennsylvania', 'pa'],
+                        'pennsylvania': ['pennsylvania', 'pa'],
+                        'va': ['virginia', 'va'],
+                        'virginia': ['virginia', 'va'],
+                        'ma': ['massachusetts', 'ma'],
+                        'massachusetts': ['massachusetts', 'ma'],
+                        'nj': ['new jersey', 'nj'],
+                        'new jersey': ['new jersey', 'nj'],
+                        'ga': ['georgia', 'ga'],
+                        'georgia': ['georgia', 'ga'],
+                        'nc': ['north carolina', 'nc'],
+                        'north carolina': ['north carolina', 'nc'],
+                    };
+
+                    const stateMatches = stateAbbreviations[stateInput] || [stateInput];
+
+                    console.log('📍 Filtering by location:', { city, stateInput, stateMatches });
+
+                    filteredJobs = response.jobs.filter(job => {
+                        const jobLocation = job.location?.toLowerCase() || '';
+                        
+                        // Allow remote jobs to pass through if they're in the results
+                        if (jobLocation.includes('remote')) {
+                            return true;
+                        }
+
+                        // Check if job matches city or state
+                        const matchesCity = city.length >= 3 && jobLocation.includes(city);
+                        const matchesState = stateMatches.some(s => 
+                            jobLocation.includes(s) || jobLocation.includes(`, ${s}`)
+                        );
+                        
+                        return matchesCity || matchesState;
+                    });
+
+                    console.log(`📍 Location filter: ${response.jobs.length} -> ${filteredJobs.length} jobs`);
+                }
+
+                const jobsWithScores = filteredJobs.map(job => ({
                     ...job,
                     matchScore: job.matchScore || calculateQuickMatchScore(job, userSkills),
                     matchReason: job.matchReason || generateMatchReason(job, userSkills),
                 }));
 
                 setJobs(jobsWithScores);
-                console.log(`✅ Loaded ${jobsWithScores.length} real jobs`);
+                console.log(`✅ Loaded ${jobsWithScores.length} jobs after filtering`);
             } else {
                 console.log('⚠️ No jobs found');
                 setJobs([]);
@@ -446,12 +504,7 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
         return `${baseUrl}${text}${desc}${dates}`;
     };
 
-    const aiFilters = [
-        { label: "💰 Salary $50k+", id: "salary" },
-        { label: "🏠 Remote / Hybrid", id: "remote" },
-        { label: "📅 New Today", id: "today" }, // Replaces "Easy Apply" for better utility
-        { label: "📝 No Cover Letter", id: "nocover" }
-    ];
+
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500 pb-12 relative">
@@ -511,8 +564,8 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
             )}
 
             {/* Sticky Search & Filter Bar */}
-            <div className="sticky top-0 z-20 -mx-4 px-4 md:-mx-8 md:px-8 py-4 bg-jalanea-50/95 backdrop-blur-md border-b border-white/10 transition-all shadow-sm">
-                <div className="max-w-7xl mx-auto space-y-4">
+            <div className="sticky top-0 z-20 -mx-4 px-4 md:-mx-8 md:px-8 pt-6 pb-4 bg-jalanea-50 border-b border-jalanea-200 shadow-md">
+                <div className="max-w-7xl mx-auto space-y-3">
                     <div className="flex flex-col md:flex-row gap-3">
                         <div className="flex-1 relative">
                             <Input
@@ -535,47 +588,67 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                             />
                         </div>
                         <div className="flex gap-2">
-                            <Button variant="secondary" icon={<Filter size={18} />} className="bg-jalanea-900 text-white border-jalanea-800 hover:bg-jalanea-800">
-                                Filters
-                            </Button>
                             <Button variant="primary" icon={<Sparkles size={16} />} onClick={handleSearch} isLoading={isSearching} className="whitespace-nowrap">
-                                AI Search
+                                Search
                             </Button>
                         </div>
                     </div>
-                    {/* AI Suggested Filters */}
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-                        <span className="text-xs font-bold text-jalanea-400 uppercase tracking-wider mr-2 shrink-0">AI Suggestions:</span>
-                        {aiFilters.map(filter => (
+                    
+                    {/* Filter Toggles */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold text-jalanea-500 uppercase tracking-wider mr-1">Filters:</span>
+                        
+                        {/* Remote Toggle */}
+                        <button
+                            onClick={() => {
+                                setIsRemote(!isRemote);
+                                setActiveFilter(isRemote ? null : 'remote');
+                            }}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all
+                                ${isRemote || activeFilter === 'remote'
+                                    ? 'bg-blue-600 text-white border-blue-600'
+                                    : 'bg-white text-jalanea-600 border-jalanea-200 hover:border-blue-400 hover:text-blue-600'
+                                }`}
+                        >
+                            🏠 Remote
+                        </button>
+                        
+                        {/* New Today */}
+                        <button
+                            onClick={() => setActiveFilter(activeFilter === 'today' ? null : 'today')}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all
+                                ${activeFilter === 'today'
+                                    ? 'bg-green-600 text-white border-green-600'
+                                    : 'bg-white text-jalanea-600 border-jalanea-200 hover:border-green-400 hover:text-green-600'
+                                }`}
+                        >
+                            📅 New Today
+                        </button>
+                        
+                        {/* Salary Filter */}
+                        <button
+                            onClick={() => setActiveFilter(activeFilter === 'salary' ? null : 'salary')}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all
+                                ${activeFilter === 'salary'
+                                    ? 'bg-gold text-jalanea-900 border-gold'
+                                    : 'bg-white text-jalanea-600 border-jalanea-200 hover:border-gold hover:text-jalanea-900'
+                                }`}
+                        >
+                            💰 $50k+
+                        </button>
+
+                        {/* Clear all filters */}
+                        {(isRemote || activeFilter) && (
                             <button
-                                key={filter.id}
                                 onClick={() => {
-                                    const nextFilter = activeFilter === filter.id ? null : filter.id;
-                                    setActiveFilter(nextFilter);
-                                    // Trigger search with the NEW filter state explicitly
-                                    setIsSearching(true);
-
-                                    // We need to construct the call carefully to avoid stale state
-                                    // We'll pass the *current* inputs and the *next* filter
-                                    // But fetchJobs doesn't take filter arg yet. 
-                                    // I'll update fetchJobs signature in the previous block... 
-                                    // Wait, I can't look back easily. 
-                                    // I will rely on the fact that I'll fix fetchJobs signature in the *next* step if missed, 
-                                    // or better: I will update fetchJobs right now in the first block to accept filterOverride.
-
-                                    // Actually, I'll just rely on a `useEffect` on `activeFilter` to trigger search?
-                                    // That is the cleanest React way.
+                                    setIsRemote(false);
+                                    setActiveFilter(null);
                                 }}
-                                className={`
-                            whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-bold border transition-all
-                            ${activeFilter === filter.id
-                                        ? 'bg-jalanea-900 text-white border-jalanea-900'
-                                        : 'bg-white text-jalanea-600 border-jalanea-200 hover:border-gold hover:text-jalanea-900'}
-                        `}
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-jalanea-500 hover:text-red-500 transition-colors"
                             >
-                                {filter.label}
+                                ✕ Clear
                             </button>
-                        ))}
+                        )}
                     </div>
                 </div>
             </div>
