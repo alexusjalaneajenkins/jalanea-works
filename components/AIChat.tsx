@@ -7,6 +7,18 @@ import { Input } from './Input';
 import { getCareerAdvice } from '../services/geminiService';
 import { ChatMessage } from '../types';
 
+// Simple markdown parser for chat messages
+const formatMessage = (text: string): string => {
+  return text
+    // Bold: **text** or __text__
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-jalanea-900">$1</strong>')
+    .replace(/__(.*?)__/g, '<strong class="font-bold text-jalanea-900">$1</strong>')
+    // Numbered lists: 1. text -> styled line break and number
+    .replace(/(\d+)\.\s+/g, '<br/><span class="inline-flex items-center gap-1"><span class="text-gold font-bold">$1.</span></span> ')
+    // Line breaks for better readability
+    .replace(/\n/g, '<br/>');
+};
+
 export const AIChat: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -96,12 +108,19 @@ export const AIChat: React.FC = () => {
             {messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`
-                  max-w-[85%] rounded-2xl px-4 py-3 text-sm font-medium shadow-sm
+                  max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm
                   ${msg.role === 'user'
-                    ? 'bg-jalanea-900 text-white rounded-br-none'
-                    : 'bg-white border border-jalanea-200 text-jalanea-900 rounded-bl-none'}
-                `}>
-                  {msg.text}
+                    ? 'bg-jalanea-900 text-white rounded-br-none font-medium'
+                    : 'bg-white border border-jalanea-200 text-jalanea-700 rounded-bl-none'}`}
+                >
+                  {msg.role === 'user' ? (
+                    msg.text
+                  ) : (
+                    <div 
+                      className="leading-relaxed [&>br:first-child]:hidden"
+                      dangerouslySetInnerHTML={{ __html: formatMessage(msg.text) }} 
+                    />
+                  )}
                 </div>
               </div>
             ))}
