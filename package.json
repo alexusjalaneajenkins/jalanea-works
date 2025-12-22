@@ -12,7 +12,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ai-sdk/google": "^2.0.51",
     "@google/genai": "^1.31.0",
+    "ai": "^5.0.116",
     "firebase": "^12.7.0",
     "lucide-react": "^0.556.0",
     "react": "^19.2.1",

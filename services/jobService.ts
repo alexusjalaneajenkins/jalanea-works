@@ -155,6 +155,67 @@ export async function searchJobs(
 }
 
 /**
+ * Search for jobs using multiple sources (aggregate endpoint)
+ * Queries: SerpAPI, Remotive, RemoteOK, Arbeitnow, The Muse, JSearch, Adzuna
+ * @param query - Search query (e.g., "Developer")
+ * @param options - Search options
+ * @returns Combined, deduplicated job results from all sources
+ */
+export async function searchJobsAggregate(
+    query: string,
+    options?: {
+        location?: string;
+        remote?: boolean;
+        sources?: string[]; // Filter to specific sources
+    }
+): Promise<{ jobs: Job[]; totalResults: number; sources: string[] }> {
+    try {
+        const params = new URLSearchParams({ q: query });
+        
+        if (options?.location) params.append('location', options.location);
+        if (options?.remote) params.append('remote', 'true');
+        if (options?.sources?.length) params.append('sources', options.sources.join(','));
+
+        const response = await fetch(`${API_BASE_URL}/api/jobs-aggregate?${params.toString()}`);
+
+        if (!response.ok) {
+            console.error('Aggregate API error, falling back to SerpAPI only');
+            // Fallback to original SerpAPI search
+            const fallback = await searchJobs(query, { location: options?.location });
+            return {
+                jobs: fallback.jobs,
+                totalResults: fallback.totalResults,
+                sources: ['Google Jobs']
+            };
+        }
+
+        const data = await response.json();
+        
+        console.log(`✅ Aggregate search returned ${data.totalResults} jobs from sources:`, data.sources);
+        
+        return {
+            jobs: data.jobs || [],
+            totalResults: data.totalResults || 0,
+            sources: data.sources || []
+        };
+
+    } catch (error) {
+        console.error('Error in aggregate job search:', error);
+        // Fallback to original search
+        try {
+            const fallback = await searchJobs(query, { location: options?.location });
+            return {
+                jobs: fallback.jobs,
+                totalResults: fallback.totalResults,
+                sources: ['Google Jobs']
+            };
+        } catch (e) {
+            return { jobs: [], totalResults: 0, sources: [] };
+        }
+    }
+}
+
+/**
  * Get job details and generate AI analysis
  * This will be used for the "Deep Dive" feature
  * @param job - The job to analyze

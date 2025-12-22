@@ -1,22 +1,27 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserProfile, JobAnalysis, Job } from "../types";
+import { generateWithRouting } from "./aiModelRouter";
 
-// Initialize Gemini AI with Vite environment variable
+// Initialize Gemini AI with Vite environment variable (kept for structured output functions)
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
 const ai = new GoogleGenAI({ apiKey });
 
+/**
+ * Get career advice using AI SDK with model routing
+ * Uses Pro model for complex conversational advice
+ */
 export const getCareerAdvice = async (userQuery: string): Promise<string> => {
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: userQuery,
-            config: {
-                systemInstruction: "You are an expert career coach for Jalanea Works. Your goal is to help entry-level and transitioning professionals. Be empowering, concise, and strategic. Focus on actionable advice.",
-            },
+        const systemPrompt = "You are an expert career coach for Jalanea Works. Your goal is to help entry-level and transitioning professionals. Be empowering, concise, and strategic. Focus on actionable advice.";
+        
+        const response = await generateWithRouting('careerAdvice', userQuery, {
+            system: systemPrompt,
+            temperature: 0.7,
         });
-        return response.text || "I couldn't generate a response at this time.";
+        
+        return response || "I couldn't generate a response at this time.";
     } catch (error) {
-        console.error("Gemini API Error:", error);
+        console.error("AI SDK Career Advice Error:", error);
         return "I'm having trouble connecting to the career intelligence network right now. Please try again later.";
     }
 };

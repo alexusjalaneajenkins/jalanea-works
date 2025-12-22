@@ -11,7 +11,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
  * - /api/onet?action=outlook&code=15-1252.00
  */
 
-const ONET_API_BASE = 'https://services.onetcenter.org/ws';
+const ONET_API_BASE = 'https://api-v2.onetcenter.org';
 
 interface ONetSearchResult {
     code: string;
@@ -69,6 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const apiKey = process.env.ONET_API_KEY;
+
     if (!apiKey) {
         console.error('ONET_API_KEY not configured');
         return res.status(500).json({ error: 'O*NET API not configured' });
@@ -84,6 +85,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 if (!keyword) {
                     return res.status(400).json({ error: 'keyword parameter required' });
                 }
+                // V2 Search: /mnm/search (matches V1 namespace but on V2 host)
+                // Verified in docs: https://services.onetcenter.org/ws/online/search vs /mnm/search
+                // Screenshot showed /about working on api-v2. 
+                // Let's assume /mnm/search is also available or /online/search.
+                // Standard mapping: api-v2/mnm/search?keyword=...
                 endpoint = `/mnm/search?keyword=${encodeURIComponent(String(keyword))}`;
                 if (start) endpoint += `&start=${start}`;
                 break;
@@ -124,10 +130,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             headers: {
                 'X-API-Key': apiKey,
                 'Accept': 'application/json',
+                'User-Agent': 'JalaneaWorks/1.0'
             },
         });
 
         if (!response.ok) {
+            // ... (rest of error handling is fine)
             const errorText = await response.text();
             console.error(`O*NET API error: ${response.status}`, errorText);
 

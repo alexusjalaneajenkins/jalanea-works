@@ -764,6 +764,18 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                                 {/* Bottom: Buttons */}
                                 <div className="space-y-3 mt-6">
                                     <Button fullWidth variant="primary" onClick={() => initiateJobClick(job)}>Choose Strategy</Button>
+                                    {job.applyUrl && job.applyUrl !== '#' && (
+                                        <a
+                                            href={job.applyUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl font-bold text-sm border-2 border-jalanea-200 text-jalanea-700 hover:border-gold hover:text-jalanea-900 transition-all bg-white"
+                                        >
+                                            <ExternalLink size={16} />
+                                            Apply Now
+                                        </a>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -832,7 +844,21 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                                 </button>
                             </div>
 
-                            <button onClick={closeJobModal} className="mt-8 text-jalanea-400 text-sm font-bold hover:text-white transition-colors w-full text-center">
+                            {/* Apply Now - Direct link to job application */}
+                            {selectedJob.applyUrl && selectedJob.applyUrl !== '#' && (
+                                <a
+                                    href={selectedJob.applyUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="mt-4 flex items-center justify-center gap-2 px-6 py-3 bg-gold text-jalanea-950 font-bold rounded-xl hover:bg-gold/90 transition-all shadow-lg shadow-gold/20"
+                                    onClick={() => closeJobModal()}
+                                >
+                                    <ExternalLink size={18} />
+                                    Apply Now on {selectedJob.source || 'Company Site'}
+                                </a>
+                            )}
+
+                            <button onClick={closeJobModal} className="mt-4 text-jalanea-400 text-sm font-bold hover:text-white transition-colors w-full text-center">
                                 Cancel
                             </button>
                         </div>

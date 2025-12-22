@@ -15,7 +15,7 @@ import {
     Home, Target
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { searchJobs } from '../services/jobService';
+import { searchJobs, searchJobsAggregate } from '../services/jobService';
 import { searchCareersEnriched, getRelatedCareers, mapToCareerPath, getCareerOutlook } from '../services/onetService';
 
 interface OnboardingProps {
@@ -42,6 +42,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
     // Jobs for favoriting step
     const [jobsToFavorite, setJobsToFavorite] = useState<Job[]>([]);
     const [isLoadingJobs, setIsLoadingJobs] = useState(false);
+    // Local state for immediate visual feedback (Firebase can be slow)
+    const [localSavedJobIds, setLocalSavedJobIds] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         if (currentUser && currentStep === STEPS.LOGIN) {
@@ -797,6 +799,10 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
     // Fetch jobs when reaching the favorite step - use user's location and work style
     const [jobWorkStyleFilter, setJobWorkStyleFilter] = useState<'all' | 'Remote' | 'Hybrid' | 'On-site'>('all');
+    const [careerFilter, setCareerFilter] = useState<string | null>(null); // null = all careers
+    
+    // Store all jobs with their source career tag for client-side filtering
+    const [allJobsWithCareers, setAllJobsWithCareers] = useState<Array<{ job: typeof jobsToFavorite[0], careerId: string, careerTitle: string }>>([]);
 
     const fetchJobsForFavorites = async () => {
         setIsLoadingJobs(true);
@@ -806,14 +812,11 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
             console.log('📋 Selected careers:', selectedCareers.map(c => c.title));
             console.log('📋 Selected career IDs:', selectedCareerIds);
 
-            let careerTitles = '';
-            if (selectedCareers.length > 0) {
-                // Use up to 2 career titles for the search
-                careerTitles = selectedCareers.slice(0, 2).map(c => c.title).join(' OR ');
-            } else if (careerPaths.length > 0) {
-                // Fallback: use first 2 careers from path suggestions
-                careerTitles = careerPaths.slice(0, 2).map(c => c.title).join(' OR ');
-                console.log('⚠️ No selected careers, using suggestions:', careerTitles);
+            if (selectedCareers.length === 0) {
+                console.log('⚠️ No careers selected');
+                setJobsToFavorite([]);
+                setAllJobsWithCareers([]);
+                return;
             }
 
             // Build query - prefer career titles, add entry-level qualifier
@@ -822,113 +825,117 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
             // For remote, add to query. For on-site/hybrid, we rely on location filtering
             const workStyleQuery = jobWorkStyleFilter === 'Remote' ? ' remote' : '';
 
-            // Build final query - if we have career titles, use them with entry level
-            const fullQuery = careerTitles
-                ? `${careerTitles} ${entryLevelModifier}${workStyleQuery}`.trim()
-                : `${entryLevelModifier} jobs${workStyleQuery}`.trim();
-
             // Use user's location or default
-            // For Remote jobs, search broadly (USA) instead of restricting to user's city
-            const searchLocation = jobWorkStyleFilter === 'Remote' 
+            // For "All" and "Remote", search broadly (USA) to get more results
+            // Only restrict to user's location for On-site and Hybrid
+            const searchLocation = (jobWorkStyleFilter === 'Remote' || jobWorkStyleFilter === 'all')
                 ? 'United States' 
                 : (location?.trim() || 'United States');
 
-            // Add radius for on-site jobs to be stricter with location
-            const radius = jobWorkStyleFilter === 'On-site' ? 50 :
-                jobWorkStyleFilter === 'Hybrid' ? 75 :
-                    undefined;
+            // Fetch jobs for EACH selected career separately and tag them
+            const allTaggedJobs: Array<{ job: typeof jobsToFavorite[0], careerId: string, careerTitle: string }> = [];
 
-            console.log(`🔍 Searching: "${fullQuery}" in "${searchLocation}" (radius: ${radius || 'default'})`);
+            for (const career of selectedCareers) {
+                const fullQuery = `${career.title} ${entryLevelModifier}${workStyleQuery}`.trim();
+                console.log(`🔍 Searching for career: "${career.title}" with query: "${fullQuery}"`);
 
-            const response = await searchJobs(fullQuery, {
-                location: searchLocation,
-                radius: radius
-            });
+                try {
+                    const response = await searchJobsAggregate(fullQuery, {
+                        location: searchLocation,
+                        remote: jobWorkStyleFilter === 'Remote'
+                    });
 
-            if (response.jobs) {
-                console.log(`📦 API returned ${response.jobs.length} jobs`);
+                    if (response.jobs && response.jobs.length > 0) {
+                        console.log(`📦 Found ${response.jobs.length} jobs for ${career.title}`);
+                        
+                        // Filter and tag jobs with this career
+                        const entryLevelExcludeTerms = ['senior', 'lead', 'manager', 'director', 'principal', 'staff', 'architect', 'vp', 'head of'];
+                        const experienceExcludePatterns = [/(\d+)\+?\s*years?/i];
 
-                // Filter out senior/lead/manager roles - only entry level
-                const entryLevelExcludeTerms = ['senior', 'lead', 'manager', 'director', 'principal', 'staff', 'architect', 'vp', 'head of'];
-                const experienceExcludePatterns = [/(\d+)\+?\s*years?/i]; // Match "3+ years", "5 years", etc.
+                        const filteredJobs = response.jobs.filter(job => {
+                            const titleLower = job.title?.toLowerCase() || '';
+                            const descLower = job.description?.toLowerCase() || '';
 
-                let filteredJobs = response.jobs.filter(job => {
-                    const titleLower = job.title?.toLowerCase() || '';
-                    const descLower = job.description?.toLowerCase() || '';
+                            // Exclude senior-level titles
+                            if (entryLevelExcludeTerms.some(term => titleLower.includes(term))) {
+                                return false;
+                            }
 
-                    // Exclude senior-level titles
-                    if (entryLevelExcludeTerms.some(term => titleLower.includes(term))) {
-                        console.log(`❌ Excluded (senior title): ${job.title}`);
+                            // Check for high experience requirements (5+ years)
+                            for (const pattern of experienceExcludePatterns) {
+                                const match = descLower.match(pattern);
+                                if (match && parseInt(match[1]) >= 5) {
+                                    return false;
+                                }
+                            }
+
+                            return true;
+                        });
+
+                        // Tag each job with this career
+                        filteredJobs.slice(0, 4).forEach(job => {
+                            // Avoid duplicates by checking if job already exists
+                            const exists = allTaggedJobs.some(tj => tj.job.id === job.id);
+                            if (!exists) {
+                                allTaggedJobs.push({
+                                    job: job,
+                                    careerId: career.id,
+                                    careerTitle: career.title
+                                });
+                            }
+                        });
+                    }
+                } catch (careerError) {
+                    console.error(`⚠️ Error fetching jobs for ${career.title}:`, careerError);
+                }
+            }
+
+            console.log(`✅ Total jobs collected: ${allTaggedJobs.length} across ${selectedCareers.length} careers`);
+
+            // For on-site and hybrid, filter by location
+            let processedJobs = allTaggedJobs;
+            if ((jobWorkStyleFilter === 'On-site' || jobWorkStyleFilter === 'Hybrid') && location) {
+                const locationLower = location.toLowerCase().trim();
+                const parts = locationLower.split(',').map(p => p.trim());
+                const city = parts[0] || '';
+                const state = parts[1]?.trim() || '';
+
+                const stateAbbreviations: Record<string, string[]> = {
+                    'fl': ['florida', 'fl', ', fl'],
+                    'florida': ['florida', 'fl', ', fl'],
+                    'ca': ['california', 'ca', ', ca'],
+                    'california': ['california', 'ca', ', ca'],
+                    'tx': ['texas', 'tx', ', tx'],
+                    'texas': ['texas', 'tx', ', tx'],
+                    'ny': ['new york', 'ny', ', ny'],
+                    'new york': ['new york', 'ny', ', ny'],
+                    'pa': ['pennsylvania', 'pa', ', pa'],
+                    'va': ['virginia', 'va', ', va'],
+                    'ma': ['massachusetts', 'ma', ', ma'],
+                };
+
+                const stateMatches = stateAbbreviations[state] || [state, `, ${state}`];
+
+                processedJobs = allTaggedJobs.filter(tagged => {
+                    const jobLocation = tagged.job.location?.toLowerCase() || '';
+                    const jobTitle = tagged.job.title?.toLowerCase() || '';
+
+                    if (jobLocation.includes('remote') || jobTitle.includes('remote')) {
                         return false;
                     }
 
-                    // Check for high experience requirements in description
-                    for (const pattern of experienceExcludePatterns) {
-                        const match = descLower.match(pattern);
-                        if (match && parseInt(match[1]) >= 3) {
-                            console.log(`❌ Excluded (3+ years): ${job.title}`);
-                            return false; // Exclude if requires 3+ years
-                        }
-                    }
-
-                    return true;
+                    const matchesCity = city.length >= 3 && jobLocation.includes(city);
+                    const matchesState = stateMatches.some(s => jobLocation.includes(s));
+                    return matchesCity || matchesState;
                 });
-
-                console.log(`✅ After entry-level filter: ${filteredJobs.length} jobs`);
-
-                // For on-site and hybrid, filter by location strictly
-                if ((jobWorkStyleFilter === 'On-site' || jobWorkStyleFilter === 'Hybrid') && location) {
-                    const locationLower = location.toLowerCase().trim();
-                    // Extract city and state from user's location
-                    const parts = locationLower.split(',').map(p => p.trim());
-                    const city = parts[0] || '';
-                    const state = parts[1]?.trim() || '';
-
-                    console.log(`📍 Location filter: city="${city}", state="${state}"`);
-
-                    // State abbreviations and full names mapping
-                    const stateAbbreviations: Record<string, string[]> = {
-                        'fl': ['florida', 'fl', ', fl'],
-                        'florida': ['florida', 'fl', ', fl'],
-                        'ca': ['california', 'ca', ', ca'],
-                        'california': ['california', 'ca', ', ca'],
-                        'tx': ['texas', 'tx', ', tx'],
-                        'texas': ['texas', 'tx', ', tx'],
-                        'ny': ['new york', 'ny', ', ny'],
-                        'new york': ['new york', 'ny', ', ny'],
-                        'pa': ['pennsylvania', 'pa', ', pa'],
-                        'va': ['virginia', 'va', ', va'],
-                        'ma': ['massachusetts', 'ma', ', ma'],
-                    };
-
-                    const stateMatches = stateAbbreviations[state] || [state, `, ${state}`];
-
-                    const beforeCount = filteredJobs.length;
-                    filteredJobs = filteredJobs.filter(job => {
-                        const jobLocation = job.location?.toLowerCase() || '';
-                        const jobTitle = job.title?.toLowerCase() || '';
-
-                        // Exclude remote jobs from on-site/hybrid results
-                        if (jobLocation.includes('remote') || jobTitle.includes('remote')) {
-                            return false;
-                        }
-
-                        // Check if job location matches city OR state (Florida, FL, etc.)
-                        const matchesCity = city.length >= 3 && jobLocation.includes(city);
-                        const matchesState = stateMatches.some(s => jobLocation.includes(s));
-
-                        const matches = matchesCity || matchesState;
-                        if (!matches) {
-                            console.log(`❌ Filtered out: "${job.title}" at "${job.location}" (looking for ${city} or ${stateMatches.join('/')})`);
-                        }
-                        return matches;
-                    });
-                    console.log(`📍 Location filter: ${beforeCount} → ${filteredJobs.length} jobs`);
-
-                    // Don't fall back - keep empty to show "no local jobs" message
-                }
-                setJobsToFavorite(filteredJobs.slice(0, 6));
             }
+
+            // Store all jobs with career tags for client-side filtering
+            setAllJobsWithCareers(processedJobs);
+            
+            // Initially show all jobs
+            setJobsToFavorite(processedJobs.map(tj => tj.job));
+
         } catch (error) {
             console.error('Error fetching jobs:', error);
         } finally {
@@ -937,26 +944,88 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
     };
 
     useEffect(() => {
-        if (currentStep === STEPS.FAVORITE_JOBS && jobsToFavorite.length === 0) {
+        if (currentStep === STEPS.FAVORITE_JOBS && allJobsWithCareers.length === 0) {
             fetchJobsForFavorites();
         }
     }, [currentStep]);
 
-    // Refetch when work style filter changes
+    // Refetch only when work style filter changes (career filter is now client-side)
     useEffect(() => {
         if (currentStep === STEPS.FAVORITE_JOBS) {
             fetchJobsForFavorites();
         }
     }, [jobWorkStyleFilter]);
 
-    const savedJobsCount = userProfile?.savedJobs?.length || 0;
+    // Client-side filtering when career filter changes
+    useEffect(() => {
+        if (careerFilter) {
+            // Filter to show only jobs for the selected career
+            const filtered = allJobsWithCareers.filter(tj => tj.careerId === careerFilter);
+            setJobsToFavorite(filtered.map(tj => tj.job));
+            console.log(`🎯 Filtered to ${filtered.length} jobs for career: ${careerFilter}`);
+        } else {
+            // Show all jobs
+            setJobsToFavorite(allJobsWithCareers.map(tj => tj.job));
+            console.log(`📋 Showing all ${allJobsWithCareers.length} jobs`);
+        }
+    }, [careerFilter, allJobsWithCareers]);
 
-    const renderFavoriteJobs = () => (
+    // Just count locally selected jobs
+    const savedJobsCount = localSavedJobIds.size;
+
+    const renderFavoriteJobs = () => {
+        // Get selected careers for display
+        const selectedCareers = careerPaths.filter(c => selectedCareerIds.includes(c.id));
+        
+        return (
         <div className="animate-in slide-in-from-right-8 fade-in duration-300">
             <div className="mb-6">
                 <h2 className="text-2xl font-display font-bold text-jalanea-900">Find your first targets.</h2>
                 <p className="text-jalanea-600">Save at least 3 jobs you'd like to pursue. We'll help you apply strategically.</p>
             </div>
+
+            {/* Selected Career Paths - Clickable filter - Mobile friendly */}
+            {selectedCareers.length > 0 && (
+                <div className="mb-4 p-3 sm:p-4 bg-gradient-to-r from-gold/10 via-gold/5 to-transparent rounded-xl border border-gold/20">
+                    <div className="flex items-center gap-1.5 sm:gap-2 mb-2">
+                        <Sparkles size={14} className="text-gold sm:w-4 sm:h-4" />
+                        <span className="text-[10px] sm:text-xs font-bold text-jalanea-700 uppercase tracking-wider">
+                            Filter by career path
+                        </span>
+                    </div>
+                    {/* Horizontal scroll on mobile, wrap on larger screens */}
+                    <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-hide">
+                        {/* All Careers option */}
+                        <button
+                            onClick={() => setCareerFilter(null)}
+                            className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 sm:shrink
+                                ${careerFilter === null
+                                    ? 'bg-jalanea-900 text-white border border-jalanea-900 shadow-md'
+                                    : 'bg-white text-jalanea-600 border border-jalanea-200 hover:border-gold hover:text-jalanea-800'
+                                }
+                            `}
+                        >
+                            All Careers
+                        </button>
+                        {/* Individual career filters */}
+                        {selectedCareers.map(career => (
+                            <button
+                                key={career.id}
+                                onClick={() => setCareerFilter(careerFilter === career.id ? null : career.id)}
+                                className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 sm:shrink
+                                    ${careerFilter === career.id
+                                        ? 'bg-gold text-jalanea-900 border border-gold shadow-md'
+                                        : 'bg-white text-jalanea-800 border border-gold/30 hover:border-gold hover:shadow-sm'
+                                    }
+                                `}
+                            >
+                                <Target size={10} className={`sm:w-3 sm:h-3 ${careerFilter === career.id ? 'text-jalanea-900' : 'text-gold'}`} />
+                                {career.title}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Work Style Filter */}
             <div className="mb-4">
@@ -1029,36 +1098,66 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                             </button>
                         )}
                     </div>
-                ) : jobsToFavorite.map(job => (
-                    <div
+                ) : (
+                    // Jobs are now tagged with their source career for filtering
+                    jobsToFavorite.map(job => {
+                    // Just check local state - simple selection
+                    const isSelected = localSavedJobIds.has(job.id);
+                    // Find the career tag for this job
+                    const jobCareer = allJobsWithCareers.find(tj => tj.job.id === job.id);
+                    return (
+                    <button
                         key={job.id}
-                        className={`p-4 rounded-xl border transition-all cursor-pointer ${isJobSaved(job.id)
-                            ? 'bg-red-50 border-red-200'
-                            : 'bg-white border-jalanea-200 hover:border-gold'
+                        type="button"
+                        className={`w-full text-left p-3 sm:p-4 rounded-xl border-2 transition-all active:scale-[0.98] ${isSelected
+                            ? 'bg-gold/10 border-gold shadow-md'
+                            : 'bg-white border-jalanea-200 hover:border-gold/50 active:border-gold'
                             }`}
                         onClick={() => {
-                            if (isJobSaved(job.id)) {
-                                // Can't unsave in this flow for simplicity
-                            } else {
-                                saveJob(job);
-                            }
+                            // Simple toggle - just update local state
+                            setLocalSavedJobIds(prev => {
+                                const next = new Set(prev);
+                                if (next.has(job.id)) {
+                                    next.delete(job.id); // Unselect
+                                } else {
+                                    next.add(job.id); // Select
+                                }
+                                return next;
+                            });
                         }}
                     >
-                        <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                                <h4 className="font-bold text-jalanea-900">{job.title}</h4>
-                                <p className="text-sm text-jalanea-600">{job.company}</p>
-                                <p className="text-xs text-jalanea-400 mt-1">{job.location}</p>
+                        {/* Career Tag Badge */}
+                        {jobCareer && !careerFilter && (
+                            <div className="mb-2">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-gold/20 text-gold-dark border border-gold/30">
+                                    <Target size={10} className="text-gold" />
+                                    {jobCareer.careerTitle}
+                                </span>
                             </div>
-                            <div className={`p-2 rounded-full ${isJobSaved(job.id) ? 'bg-red-100 text-red-500' : 'bg-jalanea-100 text-jalanea-400'}`}>
-                                <Heart size={18} fill={isJobSaved(job.id) ? 'currentColor' : 'none'} />
+                        )}
+                        <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-jalanea-900 text-sm sm:text-base truncate">{job.title}</h4>
+                                <p className="text-xs sm:text-sm text-jalanea-600">{job.company}</p>
+                                <p className="text-[10px] sm:text-xs text-jalanea-400 mt-1">{job.location}</p>
+                            </div>
+                            <div className={`p-1.5 sm:p-2 rounded-full shrink-0 ${isSelected ? 'bg-gold text-jalanea-900' : 'bg-jalanea-100 text-jalanea-400'}`}>
+                                <Heart size={16} className="sm:w-[18px] sm:h-[18px]" fill={isSelected ? 'currentColor' : 'none'} />
                             </div>
                         </div>
-                    </div>
-                ))}
+                        {isSelected && (
+                            <div className="mt-2 flex items-center gap-1 text-[10px] sm:text-xs text-gold font-bold">
+                                <CheckCircle2 size={12} /> Selected
+                            </div>
+                        )}
+                    </button>
+                    );
+                })
+                )}
             </div>
         </div>
-    );
+        );
+    };
 
     const [weeklyHours, setWeeklyHours] = useState<number>(10);
     const [preferredTimes, setPreferredTimes] = useState<string[]>(['morning']);
@@ -1137,41 +1236,75 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
     );
 
     const handleCompleteOnboarding = async () => {
-        // Save all profile data and preferences, mark onboarding complete
-        await saveUserProfile({
-            // Profile basics
-            fullName,
-            location,
-            photoURL: profilePic,
-            linkedinUrl,
-            portfolioUrl,
-            // Education - save all degrees
-            education: selectedDegrees.length > 0 ? selectedDegrees.map(edu => ({
-                programId: edu.degree.id,
-                programName: edu.degree.name,
-                degreeLevel: edu.degree.level,
-                institution: edu.degree.institution,
-                field: edu.degree.field,
-                graduationYear: edu.graduationYear,
-                qualifiedCareers: edu.degree.entryLevelCareers.map(c => c.title)
-            })) : undefined,
-            // Status
-            onboardingCompleted: true,
-            hasSetupSchedule: true,
-            // Preferences
-            preferences: {
-                ...userProfile?.preferences,
-                // Job search preferences (auto-populated from degree careers)
-                targetRoles: roleTags,
-                workStyles: [workStyle],
-                salary: targetSalary,
-                transportMode: transportMode,
-                // Schedule preferences
-                weeklyJobSearchHours: weeklyHours,
-                preferredSearchTimes: preferredTimes
+        console.log('🚀 Starting onboarding completion...');
+        try {
+            // First, save all the locally selected jobs to Firebase
+            const jobsToSave = jobsToFavorite.filter(job => localSavedJobIds.has(job.id));
+            console.log(`💾 Saving ${jobsToSave.length} selected jobs...`);
+            
+            for (const job of jobsToSave) {
+                try {
+                    // Clean the job object - remove undefined values
+                    const cleanJob = {
+                        id: job.id || '',
+                        title: job.title || '',
+                        company: job.company || '',
+                        location: job.location || '',
+                        salary: job.salary || null,
+                        type: job.type || '',
+                        url: job.url || '',
+                        description: job.description || '',
+                        postedDate: job.postedDate || null,
+                        source: job.source || 'onboarding'
+                    };
+                    await saveJob(cleanJob);
+                    console.log('✅ Saved job:', cleanJob.title);
+                } catch (jobError) {
+                    console.error('⚠️ Failed to save job, continuing...', jobError);
+                }
             }
-        });
-        setRoute(NavRoute.DASHBOARD);
+
+            // Save all profile data and preferences, mark onboarding complete
+            console.log('📝 Saving profile data...');
+            await saveUserProfile({
+                // Profile basics
+                fullName,
+                location,
+                photoURL: profilePic,
+                linkedinUrl,
+                portfolioUrl,
+                // Education - save all degrees
+                education: selectedDegrees.length > 0 ? selectedDegrees.map(edu => ({
+                    programId: edu.degree.id,
+                    programName: edu.degree.name,
+                    degreeLevel: edu.degree.level,
+                    institution: edu.degree.institution,
+                    field: edu.degree.field,
+                    graduationYear: edu.graduationYear,
+                    qualifiedCareers: edu.degree.entryLevelCareers.map(c => c.title)
+                })) : undefined,
+                // Status
+                onboardingCompleted: true,
+                hasSetupSchedule: true,
+                // Preferences
+                preferences: {
+                    ...userProfile?.preferences,
+                    // Job search preferences (auto-populated from degree careers)
+                    targetRoles: roleTags,
+                    workStyles: [workStyle],
+                    salary: targetSalary,
+                    transportMode: transportMode,
+                    // Schedule preferences
+                    weeklyJobSearchHours: weeklyHours,
+                    preferredSearchTimes: preferredTimes
+                }
+            });
+            console.log('✅ Profile saved! Navigating to dashboard...');
+            setRoute(NavRoute.DASHBOARD);
+        } catch (error) {
+            console.error('❌ Failed to complete onboarding:', error);
+            alert('Failed to complete profile. Please try again.');
+        }
     };
 
 
@@ -1203,7 +1336,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
                 {/* Wizard Steps */}
                 {currentStep >= STEPS.PROFILE_BASICS && (
-                    <div className="w-full max-w-2xl flex flex-col">
+                    <div className="w-full max-w-4xl flex flex-col">
 
                         {/* Wizard Content Card - Increased min-height for more vertical space */}
                         <Card variant="glass-light" className="p-6 md:p-10 shadow-xl border-white/60 relative flex flex-col min-h-[500px] md:min-h-[600px]">
