@@ -170,9 +170,10 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
         setJobsError(null);
 
         try {
-            // Build search query from user profile or custom search
-            const searchTerms = query ||
-                (userProfile?.preferences?.targetRoles?.join(' OR ') || 'entry level designer');
+            // Build search query - always include "entry level" to get career-starter positions
+            const baseQuery = query ||
+                (userProfile?.preferences?.targetRoles?.join(' OR ') || 'designer');
+            const searchTerms = query ? `entry level ${query}` : `entry level ${baseQuery}`;
             const transportMode = (MOCK_PROFILE.preferences?.transportMode?.[0] || 'Car') as TransportMode;
 
             // Determine effective location and filters
@@ -264,6 +265,45 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
 
                     console.log(`📍 Location filter: ${response.jobs.length} -> ${filteredJobs.length} jobs`);
                 }
+
+                // ENTRY-LEVEL FILTERING - Only show jobs for career starters (0-2 years)
+                const experienceExcludeTerms = [
+                    'senior', 'sr.', 'sr ', 'lead', 'principal', 'staff', 'director',
+                    'manager', 'head of', 'vp ', 'vice president', 'chief', 'architect'
+                ];
+                const experiencePatterns = [
+                    /(\d+)\+?\s*(?:to\s*\d+)?\s*years?/gi,  // "3+ years", "5-7 years"
+                    /(\d+)\s*-\s*(\d+)\s*years?/gi,          // "3-5 years"
+                    /minimum\s*(\d+)\s*years?/gi,            // "minimum 5 years"
+                    /at\s*least\s*(\d+)\s*years?/gi          // "at least 3 years"
+                ];
+
+                const beforeEntryFilter = filteredJobs.length;
+                filteredJobs = filteredJobs.filter(job => {
+                    const title = (job.title || '').toLowerCase();
+                    const description = (job.description || '').toLowerCase();
+                    const combined = `${title} ${description}`;
+
+                    // Exclude if title contains senior-level terms
+                    if (experienceExcludeTerms.some(term => title.includes(term))) {
+                        return false;
+                    }
+
+                    // Check for experience requirements in description
+                    for (const pattern of experiencePatterns) {
+                        const matches = combined.matchAll(pattern);
+                        for (const match of matches) {
+                            const years = parseInt(match[1] || match[2] || '0');
+                            if (years >= 3) {
+                                return false; // Exclude if requires 3+ years
+                            }
+                        }
+                    }
+
+                    return true;
+                });
+
+                console.log(`🎓 Entry-level filter: ${beforeEntryFilter} -> ${filteredJobs.length} jobs`);
 
                 const jobsWithScores = filteredJobs.map(job => ({
                     ...job,
