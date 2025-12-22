@@ -182,10 +182,12 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
             let chips = '';
             const isRemoteSearch = activeFilter === 'remote' || isRemote;
 
-            // Handle Remote Filter
+            // Handle Remote Filter - add 'remote' to search query instead of using chips
+            // The chips parameter 'work_at_home:true' causes 500 errors
+            let effectiveQuery = searchTerms;
             if (isRemoteSearch) {
-                effectiveLocation = 'Remote';
-                chips = 'work_at_home:true';
+                effectiveLocation = 'United States'; // Search nationwide for remote
+                effectiveQuery = `${searchTerms} remote`; // Add remote to query
             }
 
             // Handle Date Filter
@@ -193,9 +195,9 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                 chips = 'date_posted:today';
             }
 
-            console.log('🔍 Searching jobs:', { searchTerms, effectiveLocation, chips, inputLocation });
+            console.log('🔍 Searching jobs:', { effectiveQuery, effectiveLocation, chips, inputLocation, isRemoteSearch });
 
-            const response = await searchJobs(searchTerms, {
+            const response = await searchJobs(effectiveQuery, {
                 location: effectiveLocation,
                 userLocation: userProfile?.location || 'Orlando, FL',
                 transportMode: transportMode,
@@ -248,20 +250,36 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
 
                     filteredJobs = response.jobs.filter(job => {
                         const jobLocation = job.location?.toLowerCase() || '';
+                        const jobTitle = job.title?.toLowerCase() || '';
                         
-                        // Allow remote jobs to pass through if they're in the results
-                        if (jobLocation.includes('remote')) {
+                        // Allow remote jobs to pass through
+                        if (jobLocation.includes('remote') || jobTitle.includes('remote')) {
                             return true;
                         }
 
-                        // Check if job matches city or state
+                        // Flexible location matching - match city OR state
                         const matchesCity = city.length >= 3 && jobLocation.includes(city);
                         const matchesState = stateMatches.some(s => 
                             jobLocation.includes(s) || jobLocation.includes(`, ${s}`)
                         );
                         
-                        return matchesCity || matchesState;
+                        // Also match if the job is in any city within the specified state
+                        const stateInLocation = stateMatches.some(s => 
+                            jobLocation.split(',').some(part => part.trim().toLowerCase() === s)
+                        );
+                        
+                        return matchesCity || matchesState || stateInLocation;
                     });
+
+                    // If the filter was too strict, relax it and just show state matches
+                    if (filteredJobs.length === 0 && stateInput) {
+                        console.log('📍 Location filter too strict, relaxing to state-level...');
+                        filteredJobs = response.jobs.filter(job => {
+                            const jobLocation = job.location?.toLowerCase() || '';
+                            return stateMatches.some(s => jobLocation.includes(s)) ||
+                                   jobLocation.includes('remote');
+                        });
+                    }
 
                     console.log(`📍 Location filter: ${response.jobs.length} -> ${filteredJobs.length} jobs`);
                 }
