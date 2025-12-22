@@ -1,23 +1,24 @@
 /**
  * Vercel Serverless Function: AI Chat
  * 
- * Handles career advice chat requests using Gemini AI.
- * This runs server-side so it can access GOOGLE_GENERATIVE_AI_API_KEY.
+ * Handles career advice chat requests using Google Gemini AI.
+ * Uses @google/genai directly for simplicity and reliability.
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { google } from '@ai-sdk/google';
-import { generateText } from 'ai';
+import { GoogleGenAI } from '@google/genai';
 
 // System prompt for career coaching
-const SYSTEM_PROMPT = `You are an expert career coach for Jalanea Works. Your goal is to help entry-level and transitioning professionals. Be empowering, concise, and strategic. Focus on actionable advice.
+const SYSTEM_PROMPT = `You are an expert career coach for Jalanea Works, a platform helping entry-level and transitioning professionals. 
 
-Key principles:
-- Be encouraging but realistic
+Your personality:
+- Encouraging but realistic
 - Provide specific, actionable steps
 - Focus on entry-level and early-career professionals
 - Reference modern job search strategies (LinkedIn, networking, portfolio building)
-- Keep responses focused and under 200 words unless asked for more detail`;
+- Keep responses focused and under 150 words
+
+Always be supportive and empowering!`;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Handle CORS
@@ -40,9 +41,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    // Check for API key
-    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-      console.error('GOOGLE_GENERATIVE_AI_API_KEY is not configured');
+    // Check for API key - try both possible env var names
+    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || 
+                   process.env.GEMINI_API_KEY ||
+                   process.env.VITE_GEMINI_API_KEY;
+
+    if (!apiKey) {
+      console.error('[AI Chat] No API key found. Checked: GOOGLE_GENERATIVE_AI_API_KEY, GEMINI_API_KEY, VITE_GEMINI_API_KEY');
       return res.status(500).json({ 
         error: 'AI service not configured',
         response: "I'm currently being configured. Please check back soon!" 
@@ -51,36 +56,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log('[AI Chat] Processing message:', message.substring(0, 50) + '...');
 
-    // Use Gemini Pro for complex conversational advice
-    const model = google('gemini-1.5-pro');
+    // Initialize Gemini AI
+    const ai = new GoogleGenAI({ apiKey });
 
-    const result = await generateText({
-      model,
-      prompt: message,
-      system: SYSTEM_PROMPT,
-      temperature: 0.7,
-      maxTokens: 500,
+    // Create the prompt with system context
+    const fullPrompt = `${SYSTEM_PROMPT}
+
+User question: ${message}
+
+Provide a helpful, encouraging response:`;
+
+    // Generate response using Gemini Flash (fast and cheap)
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: fullPrompt,
     });
+
+    const responseText = response.text;
+
+    if (!responseText) {
+      console.error('[AI Chat] Empty response from Gemini');
+      return res.status(500).json({
+        error: 'Empty response',
+        response: "I couldn't generate a response. Please try again!"
+      });
+    }
 
     console.log('[AI Chat] Response generated successfully');
 
     return res.status(200).json({
-      response: result.text,
+      response: responseText,
       success: true
     });
 
   } catch (error: any) {
-    console.error('[AI Chat] Error:', error);
+    console.error('[AI Chat] Error:', error.message || error);
     
     // Check for specific error types
-    if (error.message?.includes('API key')) {
+    if (error.message?.includes('API key') || error.message?.includes('API_KEY')) {
       return res.status(500).json({
         error: 'API key issue',
-        response: "There's a configuration issue with my AI brain. The team has been notified!"
+        response: "There's a configuration issue. Please try again later!"
       });
     }
 
-    if (error.message?.includes('quota') || error.message?.includes('rate limit')) {
+    if (error.message?.includes('quota') || error.message?.includes('rate limit') || error.message?.includes('429')) {
       return res.status(429).json({
         error: 'Rate limited',
         response: "I'm getting a lot of requests right now. Please try again in a moment!"
@@ -89,7 +109,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(500).json({
       error: 'AI generation failed',
-      response: "I encountered an issue processing your request. Please try again!"
+      response: "I encountered an issue processing your request. Please try again!",
+      details: error.message || 'Unknown error'
     });
   }
 }
