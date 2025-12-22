@@ -47,11 +47,12 @@ export const AIChat: React.FC = () => {
     };
 
     setMessages(prev => [...prev, userMsg]);
+    const userQuestion = input; // Save for retry
     setInput('');
     setIsLoading(true);
 
     try {
-      const responseText = await getCareerAdvice(userMsg.text);
+      const responseText = await getCareerAdvice(userQuestion);
       const modelMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'model',
@@ -61,7 +62,15 @@ export const AIChat: React.FC = () => {
       };
       setMessages(prev => [...prev, modelMsg]);
     } catch (err) {
-      console.error(err);
+      console.error('AI Chat Error:', err);
+      const errorMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'model',
+        sender: 'ai',
+        text: "I'm having trouble connecting right now. This might be a temporary issue - please try again in a moment!",
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMsg]);
     } finally {
       setIsLoading(false);
     }

@@ -11,7 +11,7 @@ import {
     Users, TrendingUp, Wand2, Briefcase, DollarSign, Calendar,
     ArrowRight, CheckCircle2, UserPlus, Target, Microscope, Share2, Linkedin,
     BookOpen, MessageSquare, ExternalLink, Mail, Copy, CalendarPlus,
-    Library, Hammer, RefreshCw, Coffee, Car, Bus, Bike, Footprints, Info, Headphones, AlertCircle, Loader2
+    Library, Hammer, RefreshCw, Coffee, Car, Bus, Bike, Footprints, Info, Headphones, AlertCircle, Loader2, Building2, Home
 } from 'lucide-react';
 import { NavRoute, Job, JobAnalysis, TransportMode } from '../types';
 import { MOCK_PROFILE } from './Profile';
@@ -147,6 +147,7 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [activeFilter, setActiveFilter] = useState<string | null>(null);
     const [isRemote, setIsRemote] = useState(false); // Explicit remote toggle
+    const [isOnsite, setIsOnsite] = useState(false); // Explicit on-site toggle
     const [activeTab, setActiveTab] = useState<'overview' | 'strategy' | 'content'>('overview');
 
     // Real job data state
@@ -163,6 +164,9 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
     const [loadingTime, setLoadingTime] = useState(0);
     const [retryCount, setRetryCount] = useState(0);
     const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    // NotebookLM prompt copied state
+    const [promptCopied, setPromptCopied] = useState(false);
 
     // Fetch jobs on mount and when search changes
     const fetchJobs = async (query?: string, location?: string) => {
@@ -181,6 +185,7 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
             let effectiveLocation = inputLocation || userProfile?.location || 'Orlando, FL';
             let chips = '';
             const isRemoteSearch = activeFilter === 'remote' || isRemote;
+            const isOnsiteSearch = activeFilter === 'onsite' || isOnsite;
 
             // Handle Remote Filter - add 'remote' to search query instead of using chips
             // The chips parameter 'work_at_home:true' causes 500 errors
@@ -188,6 +193,9 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
             if (isRemoteSearch) {
                 effectiveLocation = 'United States'; // Search nationwide for remote
                 effectiveQuery = `${searchTerms} remote`; // Add remote to query
+            } else if (isOnsiteSearch && inputLocation) {
+                // For on-site jobs, explicitly exclude remote from query
+                effectiveQuery = `${searchTerms} -remote`;
             }
 
             // Handle Date Filter
@@ -251,9 +259,22 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                     filteredJobs = response.jobs.filter(job => {
                         const jobLocation = job.location?.toLowerCase() || '';
                         const jobTitle = job.title?.toLowerCase() || '';
+                        const jobDescription = job.description?.toLowerCase() || '';
                         
-                        // Allow remote jobs to pass through
-                        if (jobLocation.includes('remote') || jobTitle.includes('remote')) {
+                        // Helper to check if job is remote
+                        const isRemoteJob = jobLocation.includes('remote') || 
+                                           jobTitle.includes('remote') ||
+                                           jobDescription.includes('100% remote') ||
+                                           jobDescription.includes('fully remote') ||
+                                           job.locationType?.toLowerCase() === 'remote';
+                        
+                        // If on-site filter is active, exclude remote jobs
+                        if (isOnsiteSearch && isRemoteJob) {
+                            return false;
+                        }
+                        
+                        // Allow remote jobs to pass through (unless on-site filter is active)
+                        if (isRemoteJob && !isOnsiteSearch) {
                             return true;
                         }
 
@@ -562,6 +583,69 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
         return `${baseUrl}${text}${desc}${dates}`;
     };
 
+    // Generate NotebookLM prompt and copy to clipboard
+    const handleNotebookLMClick = async (job: Job) => {
+        const analysis = job.analysis;
+        if (!analysis) return;
+
+        const prompt = `Create an engaging audio briefing for my job interview preparation. Here is the research:
+
+**ROLE:** ${job.title} at ${job.company}
+**LOCATION:** ${job.location}
+
+**EXECUTIVE SUMMARY:**
+${analysis.summary}
+
+**WHO THEY WANT (IDEAL CANDIDATE):**
+${analysis.idealCandidateProfile}
+
+**WHAT TO EXPECT DAILY:**
+${analysis.candidateExpectations}
+
+**INTERVIEW PROCESS:**
+${analysis.interviewProcess?.join(' → ') || 'Standard process'}
+
+**KEY PEOPLE TO RESEARCH:**
+${analysis.hiringTeamTargets?.map(t => `• ${t.role}: ${t.reason}`).join('\n') || 'Research the hiring manager and team leads'}
+
+**ACTION PLAN:**
+• Research: ${analysis.actionPlan?.research || ''}
+• Resume Tailoring: ${analysis.actionPlan?.tailoring || ''}
+• Outreach: ${analysis.actionPlan?.outreach || ''}
+• Community: ${analysis.actionPlan?.community || ''}
+
+**RECOMMENDED COURSES:**
+${analysis.recommendedCourses?.map(c => `• ${c.title} (${c.provider}) - ${c.reason}`).join('\n') || ''}
+
+Please generate a conversational podcast-style audio brief that:
+1. Opens with an energetic intro about the ${job.title} opportunity at ${job.company}
+2. Explains who they're looking for and what makes an ideal candidate
+3. Covers the interview process step-by-step
+4. Gives actionable tips I can implement today
+5. Ends with motivational closing remarks
+
+Make it engaging and easy to absorb while commuting!`;
+
+        try {
+            await navigator.clipboard.writeText(prompt);
+            setPromptCopied(true);
+            
+            // Open NotebookLM after a brief delay
+            setTimeout(() => {
+                window.open(NOTEBOOK_LM_LINK, '_blank');
+            }, 500);
+
+            // Reset copied state after 3 seconds
+            setTimeout(() => {
+                setPromptCopied(false);
+            }, 3000);
+        } catch (err) {
+            console.error('Failed to copy prompt:', err);
+            // Fallback: still open NotebookLM
+            window.open(NOTEBOOK_LM_LINK, '_blank');
+        }
+    };
+
 
 
     return (
@@ -660,6 +744,7 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                         <button
                             onClick={() => {
                                 setIsRemote(!isRemote);
+                                setIsOnsite(false); // Mutually exclusive with on-site
                                 setActiveFilter(isRemote ? null : 'remote');
                             }}
                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all
@@ -668,7 +753,7 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                                     : 'bg-white text-jalanea-600 border-jalanea-200 hover:border-blue-400 hover:text-blue-600'
                                 }`}
                         >
-                            🏠 Remote
+                            <Home size={14} /> Remote
                         </button>
                         
                         {/* New Today */}
@@ -692,14 +777,31 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                                     : 'bg-white text-jalanea-600 border-jalanea-200 hover:border-gold hover:text-jalanea-900'
                                 }`}
                         >
-                            💰 $50k+
+                            <DollarSign size={14} /> $50k+
+                        </button>
+
+                        {/* On-site Toggle */}
+                        <button
+                            onClick={() => {
+                                setIsOnsite(!isOnsite);
+                                setIsRemote(false); // Mutually exclusive with remote
+                                setActiveFilter(isOnsite ? null : 'onsite');
+                            }}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all
+                                ${isOnsite || activeFilter === 'onsite'
+                                    ? 'bg-orange-600 text-white border-orange-600'
+                                    : 'bg-white text-jalanea-600 border-jalanea-200 hover:border-orange-400 hover:text-orange-600'
+                                }`}
+                        >
+                            <Building2 size={14} /> On-site
                         </button>
 
                         {/* Clear all filters */}
-                        {(isRemote || activeFilter) && (
+                        {(isRemote || isOnsite || activeFilter) && (
                             <button
                                 onClick={() => {
                                     setIsRemote(false);
+                                    setIsOnsite(false);
                                     setActiveFilter(null);
                                 }}
                                 className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-jalanea-500 hover:text-red-500 transition-colors"
@@ -809,13 +911,33 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                                         {job.salaryRange}
                                     </span>
 
-                                    {/* Location Type */}
-                                    {job.locationType && (
-                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-100">
-                                            <MapPin size={12} className="text-blue-500" />
-                                            {job.locationType}
-                                        </span>
-                                    )}
+                                    {/* Location Type - Remote vs On-site visual differentiation */}
+                                    {(() => {
+                                        const jobLocation = job.location?.toLowerCase() || '';
+                                        const jobTitle = job.title?.toLowerCase() || '';
+                                        const jobDesc = job.description?.toLowerCase() || '';
+                                        const isRemoteJob = jobLocation.includes('remote') || 
+                                                          jobTitle.includes('remote') ||
+                                                          jobDesc.includes('100% remote') ||
+                                                          jobDesc.includes('fully remote') ||
+                                                          job.locationType?.toLowerCase() === 'remote';
+                                        
+                                        if (isRemoteJob) {
+                                            return (
+                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                                    <Home size={12} className="text-emerald-600" />
+                                                    Remote
+                                                </span>
+                                            );
+                                        } else {
+                                            return (
+                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-100">
+                                                    <Building2 size={12} className="text-orange-500" />
+                                                    On-site
+                                                </span>
+                                            );
+                                        }
+                                    })()}
 
                                     {/* Experience Required */}
                                     {job.experienceYears && (
@@ -1095,26 +1217,36 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                                                 </div>
 
                                                 {/* NotebookLM Banner */}
-                                                <div className="bg-gradient-to-r from-jalanea-900 to-jalanea-800 rounded-2xl p-6 text-white flex flex-col sm:flex-row justify-between items-center gap-6 shadow-lg">
-                                                    <div className="flex items-start gap-4">
-                                                        <div className="p-3 bg-white/10 rounded-xl">
-                                                            <Headphones size={24} className="text-gold" />
+                                                <div className="bg-gradient-to-r from-jalanea-900 to-jalanea-800 rounded-2xl p-6 text-white shadow-lg">
+                                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+                                                        <div className="flex items-start gap-4">
+                                                            <div className="p-3 bg-white/10 rounded-xl">
+                                                                <Headphones size={24} className="text-gold" />
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="font-bold text-lg mb-1">🎧 Listen to your Research Brief</h4>
+                                                                <p className="text-jalanea-300 text-sm max-w-md">
+                                                                    Generate an AI podcast about this role using Google NotebookLM. 
+                                                                    Absorb the strategy while you commute!
+                                                                </p>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <h4 className="font-bold text-lg mb-1">Listen to your Research Brief</h4>
-                                                            <p className="text-jalanea-300 text-sm max-w-md">
-                                                                Don't just read. Generate an AI podcast about this company using Google NotebookLM to absorb the culture while you commute.
-                                                            </p>
-                                                        </div>
+                                                        <Button
+                                                            variant="primary"
+                                                            onClick={() => handleNotebookLMClick(selectedJob)}
+                                                            icon={promptCopied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
+                                                            className={`whitespace-nowrap shadow-xl shadow-gold/20 transition-all ${promptCopied ? 'bg-green-600 hover:bg-green-600' : ''}`}
+                                                        >
+                                                            {promptCopied ? 'Copied! Opening...' : 'Copy Prompt & Open'}
+                                                        </Button>
                                                     </div>
-                                                    <Button
-                                                        variant="primary"
-                                                        onClick={() => window.open(NOTEBOOK_LM_LINK, '_blank')}
-                                                        icon={<ExternalLink size={16} />}
-                                                        className="whitespace-nowrap shadow-xl shadow-gold/20"
-                                                    >
-                                                        Generate Audio Brief
-                                                    </Button>
+                                                    
+                                                    {/* Instructions */}
+                                                    <div className="mt-4 pt-4 border-t border-white/10">
+                                                        <p className="text-xs text-jalanea-400 font-medium">
+                                                            <span className="text-gold font-bold">How it works:</span> Click the button → Prompt is copied → Paste in NotebookLM → Click "Generate" → Get your audio brief!
+                                                        </p>
+                                                    </div>
                                                 </div>
 
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

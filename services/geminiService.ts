@@ -1,27 +1,34 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserProfile, JobAnalysis, Job } from "../types";
-import { generateWithRouting } from "./aiModelRouter";
 
 // Initialize Gemini AI with Vite environment variable (kept for structured output functions)
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
 const ai = new GoogleGenAI({ apiKey });
 
 /**
- * Get career advice using AI SDK with model routing
- * Uses Pro model for complex conversational advice
+ * Get career advice using the serverless API endpoint
+ * This calls /api/chat which runs server-side with proper API key access
  */
 export const getCareerAdvice = async (userQuery: string): Promise<string> => {
     try {
-        const systemPrompt = "You are an expert career coach for Jalanea Works. Your goal is to help entry-level and transitioning professionals. Be empowering, concise, and strategic. Focus on actionable advice.";
-        
-        const response = await generateWithRouting('careerAdvice', userQuery, {
-            system: systemPrompt,
-            temperature: 0.7,
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ message: userQuery }),
         });
-        
-        return response || "I couldn't generate a response at this time.";
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error('Chat API error:', data.error);
+            return data.response || "I'm having trouble connecting right now. Please try again!";
+        }
+
+        return data.response || "I couldn't generate a response at this time.";
     } catch (error) {
-        console.error("AI SDK Career Advice Error:", error);
+        console.error("Career Advice API Error:", error);
         return "I'm having trouble connecting to the career intelligence network right now. Please try again later.";
     }
 };
