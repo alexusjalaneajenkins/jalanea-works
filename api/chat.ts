@@ -66,9 +66,9 @@ User question: ${message}
 
 Provide a helpful, encouraging response:`;
 
-    // Generate response using Gemini 1.5 Flash (has separate quota from 2.0)
+    // Generate response using Gemini 2.5 Flash (used by other functions in the codebase)
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       contents: fullPrompt,
     });
 
