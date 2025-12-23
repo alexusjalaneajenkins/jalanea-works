@@ -4,10 +4,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { getSeedData } from '../utils/seedProfileData';
 import {
   GraduationCap, Briefcase, Award, PenTool, Edit3, MapPin,
-  Save, X, Plus, Trash2, Loader2, User, Link, Camera, Sparkles
+  Save, X, Plus, Trash2, Loader2, User, Link, Camera
 } from 'lucide-react';
 
 // Keep MOCK_PROFILE for backwards compatibility with other pages
@@ -53,30 +52,6 @@ export const ProfilePage: React.FC = () => {
   const { currentUser, userProfile, saveUserProfile, profileLoading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isSeeding, setIsSeeding] = useState(false);
-
-  // Handler to populate profile with seed data
-  const handleSeedProfile = async () => {
-    if (!window.confirm('This will replace your current profile with complete career data. Continue?')) return;
-    setIsSeeding(true);
-    try {
-      const data = getSeedData();
-      await saveUserProfile(data);
-      // Refresh local state
-      setFullName(data.fullName);
-      setLocation(data.location);
-      setEducation(data.education);
-      setExperience(data.experience);
-      setTargetRoles(data.preferences.targetRoles);
-      setSalary(data.preferences.salary);
-      alert('✅ Profile populated successfully! You can now generate resumes.');
-    } catch (error) {
-      console.error('Failed to seed profile:', error);
-      alert('Failed to populate profile.');
-    } finally {
-      setIsSeeding(false);
-    }
-  };
 
   // Local state for editing
   const [fullName, setFullName] = useState('');
@@ -223,21 +198,9 @@ export const ProfilePage: React.FC = () => {
             </Button>
           </div>
         ) : (
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleSeedProfile}
-              icon={isSeeding ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-              disabled={isSeeding}
-              className="text-gold border-gold/30 hover:bg-gold/10"
-            >
-              {isSeeding ? 'Loading...' : 'Populate Career Data'}
-            </Button>
-            <Button size="sm" onClick={() => setIsEditing(true)} icon={<Edit3 size={16} />}>
-              Edit Profile
-            </Button>
-          </div>
+          <Button size="sm" onClick={() => setIsEditing(true)} icon={<Edit3 size={16} />}>
+            Edit Profile
+          </Button>
         )}
       </div>
 
