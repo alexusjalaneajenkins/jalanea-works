@@ -1,0 +1,13 @@
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://jalanea-works.vercel.app/sitemap.xml
+
+# Disallow protected routes
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /resume
+Disallow: /schedule
+Disallow: /onboarding
