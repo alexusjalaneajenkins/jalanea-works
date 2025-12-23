@@ -165,16 +165,19 @@ export const Dashboard: React.FC = () => {
     // Fetch market demand data
     useEffect(() => {
         const fetchMarketDemand = async () => {
-            if (!userProfile?.education?.[0]?.degree) {
+            // Check for programName (new format) or degree (legacy format)
+            const firstEdu = userProfile?.education?.[0];
+            const degreeStr = firstEdu?.programName || firstEdu?.degree;
+
+            if (!degreeStr) {
                 setIsLoadingMarket(false);
                 return;
             }
 
             setIsLoadingMarket(true);
             try {
-                const degree = userProfile.education[0].degree;
-                const location = userProfile.location || 'Orlando, FL';
-                const demand = await getMarketDemand(degree, location);
+                const location = userProfile?.location || 'Orlando, FL';
+                const demand = await getMarketDemand(degreeStr, location);
                 setMarketDemand(demand);
             } catch (err) {
                 console.error('Market demand fetch failed', err);
@@ -210,9 +213,11 @@ export const Dashboard: React.FC = () => {
 
     // Derived State - use fullName (from Profile) or displayName (from Google Auth) as fallback
     const userName = userProfile?.fullName?.split(' ')[0] || userProfile?.displayName?.split(' ')[0] || 'Friend';
-    const userDegree = userProfile?.education?.[0]?.degreeLevel && userProfile?.education?.[0]?.program
-        ? `${userProfile.education[0].degreeLevel} ${userProfile.education[0].program}`
-        : userProfile?.education?.[0]?.degree || 'Credentials';
+    // Build user degree display - support both new format (programName) and legacy (degree)
+    const firstEdu = userProfile?.education?.[0];
+    const userDegree = firstEdu?.degreeLevel && firstEdu?.programName
+        ? `${firstEdu.degreeLevel} in ${firstEdu.programName}`
+        : firstEdu?.programName || firstEdu?.degree || 'Credentials';
 
     // Logic for Smart Schedule
     // Fallback to MOCK_PROFILE for schedule logic if userProfile is incomplete for now, 

@@ -168,6 +168,9 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
     // NotebookLM prompt copied state
     const [promptCopied, setPromptCopied] = useState(false);
 
+    // Career path filter - when set, searches for jobs matching this career title
+    const [careerFilter, setCareerFilter] = useState<string | null>(null);
+
     // Fetch jobs on mount and when search changes
     const fetchJobs = async (query?: string, location?: string) => {
         setIsLoadingJobs(true);
@@ -260,19 +263,19 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                         const jobLocation = job.location?.toLowerCase() || '';
                         const jobTitle = job.title?.toLowerCase() || '';
                         const jobDescription = job.description?.toLowerCase() || '';
-                        
+
                         // Helper to check if job is remote
-                        const isRemoteJob = jobLocation.includes('remote') || 
-                                           jobTitle.includes('remote') ||
-                                           jobDescription.includes('100% remote') ||
-                                           jobDescription.includes('fully remote') ||
-                                           job.locationType?.toLowerCase() === 'remote';
-                        
+                        const isRemoteJob = jobLocation.includes('remote') ||
+                            jobTitle.includes('remote') ||
+                            jobDescription.includes('100% remote') ||
+                            jobDescription.includes('fully remote') ||
+                            job.locationType?.toLowerCase() === 'remote';
+
                         // If on-site filter is active, exclude remote jobs
                         if (isOnsiteSearch && isRemoteJob) {
                             return false;
                         }
-                        
+
                         // Allow remote jobs to pass through (unless on-site filter is active)
                         if (isRemoteJob && !isOnsiteSearch) {
                             return true;
@@ -280,15 +283,15 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
 
                         // Flexible location matching - match city OR state
                         const matchesCity = city.length >= 3 && jobLocation.includes(city);
-                        const matchesState = stateMatches.some(s => 
+                        const matchesState = stateMatches.some(s =>
                             jobLocation.includes(s) || jobLocation.includes(`, ${s}`)
                         );
-                        
+
                         // Also match if the job is in any city within the specified state
-                        const stateInLocation = stateMatches.some(s => 
+                        const stateInLocation = stateMatches.some(s =>
                             jobLocation.split(',').some(part => part.trim().toLowerCase() === s)
                         );
-                        
+
                         return matchesCity || matchesState || stateInLocation;
                     });
 
@@ -298,7 +301,7 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                         filteredJobs = response.jobs.filter(job => {
                             const jobLocation = job.location?.toLowerCase() || '';
                             return stateMatches.some(s => jobLocation.includes(s)) ||
-                                   jobLocation.includes('remote');
+                                jobLocation.includes('remote');
                         });
                     }
 
@@ -629,7 +632,7 @@ Make it engaging and easy to absorb while commuting!`;
         try {
             await navigator.clipboard.writeText(prompt);
             setPromptCopied(true);
-            
+
             // Open NotebookLM after a brief delay
             setTimeout(() => {
                 window.open(NOTEBOOK_LM_LINK, '_blank');
@@ -681,21 +684,56 @@ Make it engaging and easy to absorb while commuting!`;
                                 </span>
                             ))}
                         </div>
-                        {/* Collect all unique careers from all degrees */}
+                        {/* Collect all unique careers from all degrees - now CLICKABLE filters */}
                         {(() => {
                             const allCareers = (userProfile as any).education
                                 .flatMap((edu: any) => edu.qualifiedCareers || []);
-                            const uniqueCareers = [...new Set(allCareers)].slice(0, 6);
+                            const uniqueCareers: string[] = [...new Set(allCareers)].slice(0, 8) as string[];
                             return uniqueCareers.length > 0 && (
                                 <div className="flex flex-wrap gap-1.5 mt-2">
+                                    {/* All Careers / Clear filter */}
+                                    <button
+                                        onClick={() => {
+                                            setCareerFilter(null);
+                                            setSearchQuery('');
+                                            fetchJobs();
+                                        }}
+                                        className={`text-xs px-2.5 py-1 rounded-full font-medium transition-all cursor-pointer border
+                                            ${!careerFilter
+                                                ? 'bg-jalanea-900 text-white border-jalanea-900'
+                                                : 'bg-white text-jalanea-600 border-jalanea-200 hover:border-gold hover:text-jalanea-800'
+                                            }`}
+                                    >
+                                        All Careers
+                                    </button>
                                     {uniqueCareers.map((career: string, idx: number) => (
-                                        <span key={idx} className="text-xs bg-white px-2 py-1 rounded-full text-jalanea-700 border border-jalanea-200">
+                                        <button
+                                            key={idx}
+                                            onClick={() => {
+                                                if (careerFilter === career) {
+                                                    // Clear filter
+                                                    setCareerFilter(null);
+                                                    setSearchQuery('');
+                                                    fetchJobs();
+                                                } else {
+                                                    // Apply filter
+                                                    setCareerFilter(career);
+                                                    setSearchQuery(career);
+                                                    fetchJobs(career, searchLocation);
+                                                }
+                                            }}
+                                            className={`text-xs px-2.5 py-1 rounded-full font-medium transition-all cursor-pointer border
+                                                ${careerFilter === career
+                                                    ? 'bg-gold text-jalanea-900 border-gold shadow-md'
+                                                    : 'bg-white text-jalanea-700 border-jalanea-200 hover:border-gold hover:shadow-sm'
+                                                }`}
+                                        >
                                             {career}
-                                        </span>
+                                        </button>
                                     ))}
-                                    {allCareers.length > 6 && (
+                                    {allCareers.length > 8 && (
                                         <span className="text-xs text-jalanea-400 self-center">
-                                            +{allCareers.length - 6} more
+                                            +{allCareers.length - 8} more
                                         </span>
                                     )}
                                 </div>
@@ -735,11 +773,11 @@ Make it engaging and easy to absorb while commuting!`;
                             </Button>
                         </div>
                     </div>
-                    
+
                     {/* Filter Toggles */}
                     <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-bold text-jalanea-500 uppercase tracking-wider mr-1">Filters:</span>
-                        
+
                         {/* Remote Toggle */}
                         <button
                             onClick={() => {
@@ -755,7 +793,7 @@ Make it engaging and easy to absorb while commuting!`;
                         >
                             <Home size={14} /> Remote
                         </button>
-                        
+
                         {/* New Today */}
                         <button
                             onClick={() => setActiveFilter(activeFilter === 'today' ? null : 'today')}
@@ -767,7 +805,7 @@ Make it engaging and easy to absorb while commuting!`;
                         >
                             📅 New Today
                         </button>
-                        
+
                         {/* Salary Filter */}
                         <button
                             onClick={() => setActiveFilter(activeFilter === 'salary' ? null : 'salary')}
@@ -916,12 +954,12 @@ Make it engaging and easy to absorb while commuting!`;
                                         const jobLocation = job.location?.toLowerCase() || '';
                                         const jobTitle = job.title?.toLowerCase() || '';
                                         const jobDesc = job.description?.toLowerCase() || '';
-                                        const isRemoteJob = jobLocation.includes('remote') || 
-                                                          jobTitle.includes('remote') ||
-                                                          jobDesc.includes('100% remote') ||
-                                                          jobDesc.includes('fully remote') ||
-                                                          job.locationType?.toLowerCase() === 'remote';
-                                        
+                                        const isRemoteJob = jobLocation.includes('remote') ||
+                                            jobTitle.includes('remote') ||
+                                            jobDesc.includes('100% remote') ||
+                                            jobDesc.includes('fully remote') ||
+                                            job.locationType?.toLowerCase() === 'remote';
+
                                         if (isRemoteJob) {
                                             return (
                                                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
@@ -1226,7 +1264,7 @@ Make it engaging and easy to absorb while commuting!`;
                                                             <div>
                                                                 <h4 className="font-bold text-lg mb-1">🎧 Listen to your Research Brief</h4>
                                                                 <p className="text-jalanea-300 text-sm max-w-md">
-                                                                    Generate an AI podcast about this role using Google NotebookLM. 
+                                                                    Generate an AI podcast about this role using Google NotebookLM.
                                                                     Absorb the strategy while you commute!
                                                                 </p>
                                                             </div>
@@ -1240,7 +1278,7 @@ Make it engaging and easy to absorb while commuting!`;
                                                             {promptCopied ? 'Copied! Opening...' : 'Copy Prompt & Open'}
                                                         </Button>
                                                     </div>
-                                                    
+
                                                     {/* Instructions */}
                                                     <div className="mt-4 pt-4 border-t border-white/10">
                                                         <p className="text-xs text-jalanea-400 font-medium">
