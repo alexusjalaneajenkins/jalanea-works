@@ -10,9 +10,11 @@ import { ChatMessage } from '../types';
 // Simple markdown parser for chat messages
 const formatMessage = (text: string): string => {
   return text
-    // Bold: **text** or __text__
+    // Bold: **text** or __text__ (process first)
     .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-jalanea-900">$1</strong>')
     .replace(/__(.*?)__/g, '<strong class="font-bold text-jalanea-900">$1</strong>')
+    // Italic: *text* (single asterisk, after bold is handled)
+    .replace(/\*([^*]+)\*/g, '<em class="italic">$1</em>')
     // Numbered lists: 1. text -> styled line break and number
     .replace(/(\d+)\.\s+/g, '<br/><span class="inline-flex items-center gap-1"><span class="text-gold font-bold">$1.</span></span> ')
     // Line breaks for better readability
@@ -116,9 +118,9 @@ export const AIChat: React.FC = () => {
                   {msg.role === 'user' ? (
                     msg.text
                   ) : (
-                    <div 
+                    <div
                       className="leading-relaxed [&>br:first-child]:hidden"
-                      dangerouslySetInnerHTML={{ __html: formatMessage(msg.text) }} 
+                      dangerouslySetInnerHTML={{ __html: formatMessage(msg.text) }}
                     />
                   )}
                 </div>
