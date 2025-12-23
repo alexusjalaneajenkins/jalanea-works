@@ -6,6 +6,8 @@ import { Card } from './Card';
 import { Input } from './Input';
 import { getCareerAdvice } from '../services/geminiService';
 import { ChatMessage } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { UpgradeModal } from './UpgradeModal';
 
 // Simple markdown parser for chat messages
 const formatMessage = (text: string): string => {
@@ -22,7 +24,10 @@ const formatMessage = (text: string): string => {
 };
 
 export const AIChat: React.FC = () => {
+  const { useCredit, canUseCredits, isTrialActive } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState<'no_credits' | 'trial_expired'>('no_credits');
   const [messages, setMessages] = useState<ChatMessage[]>([
     { id: '1', role: 'model', sender: 'ai', text: 'Hello! I am your strategic career architect. What is your goal today?', timestamp: new Date() }
   ]);
@@ -52,6 +57,20 @@ export const AIChat: React.FC = () => {
   const handleSend = async () => {
     if (!input.trim()) return;
 
+    // Check trial status
+    if (!isTrialActive()) {
+      setUpgradeReason('trial_expired');
+      setShowUpgradeModal(true);
+      return;
+    }
+
+    // Check credits
+    if (!canUseCredits('aiChatMessage')) {
+      setUpgradeReason('no_credits');
+      setShowUpgradeModal(true);
+      return;
+    }
+
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
@@ -66,6 +85,15 @@ export const AIChat: React.FC = () => {
     setIsLoading(true);
 
     try {
+      // Deduct credit first
+      const creditResult = await useCredit('aiChatMessage');
+      if (!creditResult.success) {
+        setUpgradeReason('no_credits');
+        setShowUpgradeModal(true);
+        setIsLoading(false);
+        return;
+      }
+
       const responseText = await getCareerAdvice(userQuestion);
       const modelMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -167,6 +195,14 @@ export const AIChat: React.FC = () => {
       >
         <MessageSquare size={24} strokeWidth={2.5} />
       </button>
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason={upgradeReason}
+        action="aiChatMessage"
+      />
     </div>
   );
 };
