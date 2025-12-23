@@ -8,6 +8,7 @@ import { searchJobs } from '../services/jobService';
 import { getMarketDemand } from '../services/marketDemandService';
 import { generateIndustryPulse } from '../services/industryPulseService';
 import { useNavigate } from 'react-router-dom';
+import { CreditsWidget } from '../components/CreditsWidget';
 
 // Skeleton Component for "Filling in the Blanks" visual
 const SkeletonJobCard = () => (
@@ -586,6 +587,9 @@ export const Dashboard: React.FC = () => {
 
                 {/* RIGHT COLUMN: Widgets */}
                 <div className="lg:col-span-1 space-y-6">
+
+                    {/* Credits Widget */}
+                    <CreditsWidget />
 
                     {/* Active Application Context Widget */}
                     <ActiveTracker navigate={navigate} />

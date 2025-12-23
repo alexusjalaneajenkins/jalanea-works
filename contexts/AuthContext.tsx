@@ -14,6 +14,16 @@ import {
 import { doc, setDoc, getDoc, onSnapshot, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { Job, SavedJob } from '../types';
+import { 
+    UserCredits, 
+    getUserCredits, 
+    initializeUserCredits, 
+    deductCredits, 
+    hasEnoughCredits, 
+    isTrialExpired,
+    CreditAction,
+    getDefaultCredits 
+} from '../services/creditsService';
 
 // User profile type matching what we save during onboarding
 interface UserProfileData {
@@ -45,11 +55,19 @@ interface UserProfileData {
     savedJobs?: SavedJob[];
     // Enhanced onboarding flags
     hasSetupSchedule?: boolean;
+    // Credits fields (merged from UserCredits)
+    tier?: string;
+    credits?: number;
+    creditsUsedThisMonth?: number;
+    monthlyCreditsLimit?: number;
+    trialEndsAt?: Date | null;
+    subscriptionStatus?: string | null;
 }
 
 interface AuthContextType {
     currentUser: User | null;
     userProfile: UserProfileData | null;
+    userCredits: UserCredits | null;
     loading: boolean;
     profileLoading: boolean;
     signup: (email: string, password: string, name: string) => Promise<void>;
@@ -62,6 +80,11 @@ interface AuthContextType {
     saveJob: (job: Job) => Promise<void>;
     removeJob: (jobId: string) => Promise<void>;
     isJobSaved: (jobId: string) => boolean;
+    // Credits functions
+    useCredit: (action: CreditAction) => Promise<{ success: boolean; error?: string }>;
+    canUseCredits: (action: CreditAction) => boolean;
+    isTrialActive: () => boolean;
+    refreshCredits: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -77,9 +100,30 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
+    const [userCredits, setUserCredits] = useState<UserCredits | null>(null);
     const [loading, setLoading] = useState(true);
     const [profileLoading, setProfileLoading] = useState(false);
 
+    // Fetch user credits from Firestore
+    const fetchUserCredits = async (uid: string) => {
+        try {
+            let credits = await getUserCredits(uid);
+            if (!credits) {
+                // Initialize credits for new user
+                credits = await initializeUserCredits(uid);
+            }
+            setUserCredits(credits);
+        } catch (error) {
+            console.error("Error fetching user credits:", error);
+        }
+    };
+
+    // Refresh credits manually
+    const refreshCredits = async () => {
+        if (auth.currentUser) {
+            await fetchUserCredits(auth.currentUser.uid);
+        }
+    };
     // Fetch user profile from Firestore
     const fetchUserProfile = async (uid: string) => {
         try {
@@ -111,8 +155,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setCurrentUser(user);
             if (user) {
                 await fetchUserProfile(user.uid);
+                await fetchUserCredits(user.uid);
             } else {
                 setUserProfile(null);
+                setUserCredits(null);
             }
             setLoading(false);
         });
@@ -235,9 +281,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return userProfile?.savedJobs?.some(sj => sj.job.id === jobId) || false;
     };
 
+    // Use credits for an action
+    const useCredit = async (action: CreditAction): Promise<{ success: boolean; error?: string }> => {
+        if (!auth.currentUser) {
+            return { success: false, error: 'Not logged in' };
+        }
+        
+        const result = await deductCredits(auth.currentUser.uid, action);
+        
+        if (result.success) {
+            // Update local state
+            await refreshCredits();
+        }
+        
+        return { success: result.success, error: result.error };
+    };
+
+    // Check if user can use credits for an action
+    const canUseCredits = (action: CreditAction): boolean => {
+        if (!userCredits) return false;
+        return hasEnoughCredits(userCredits, action);
+    };
+
+    // Check if trial is still active
+    const isTrialActive = (): boolean => {
+        if (!userCredits) return false;
+        if (userCredits.subscriptionStatus === 'active') return true;
+        return !isTrialExpired(userCredits);
+    };
+
     const value = {
         currentUser,
         userProfile,
+        userCredits,
         loading,
         profileLoading,
         signup,
@@ -248,7 +324,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         refreshProfile,
         saveJob,
         removeJob,
-        isJobSaved
+        isJobSaved,
+        useCredit,
+        canUseCredits,
+        isTrialActive,
+        refreshCredits
     };
 
     return (
