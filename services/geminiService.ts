@@ -75,6 +75,8 @@ export const generateResume = async (type: string, userProfile: UserProfile, job
             .map(c => `${c.name} (${c.issuer})`)
             .join(', ');
 
+        const isGenericRole = jobDescription.length < 150;
+
         const prompt = `
             Act as an expert Resume Writer for Valencia College Alumni.
             Generate a ${type} Resume.
@@ -96,12 +98,14 @@ export const generateResume = async (type: string, userProfile: UserProfile, job
             CERTIFICATIONS:
             ${certsString}
             
-            TARGET JOB DESCRIPTION:
+            TARGET ${isGenericRole ? 'ROLE / PATH' : 'JOB DESCRIPTION'}:
             ${jobDescription}
             
             CRITICAL INSTRUCTIONS:
-            1. Tailor the resume content specifically to match keywords in the Target Job Description.
-            2. Use the provided Bullet Points from experience but rephrase them to sound more impactful if necessary for the target role.
+            1. ${isGenericRole
+                ? 'Create a strong, versatile resume optimized for this specific Career Path/Role.'
+                : 'Tailor the resume content specifically to match keywords in the Target Job Description.'}
+            2. Use the provided Bullet Points from experience but rephrase them to sound more impactful if necessary for the target.
             3. Highlight the Valencia College degrees.
             4. Format the output as clean Markdown.
             5. Keep it professional and ATS-friendly.

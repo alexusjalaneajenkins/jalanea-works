@@ -1,19 +1,119 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
+import { UpgradeModal } from '../components/UpgradeModal';
 import { ResumeType } from '../types';
-import { FileText, Download, Copy, Sparkles, ChevronDown, ChevronUp, Bot, ArrowRight, Settings, AlertCircle } from 'lucide-react';
+import { FileText, Download, Copy, Sparkles, ChevronDown, ChevronUp, Bot, ArrowRight, Settings, AlertCircle, Save, History, Trash2, Edit3, X, Database } from 'lucide-react';
 import { generateResume, recommendResumeStrategy } from '../services/geminiService';
+import { saveResume, getUserResumes, deleteResume, SavedResume } from '../services/resumeService';
 
 export const ResumeBuilder: React.FC = () => {
-    const { currentUser, userProfile } = useAuth();
+    const { currentUser, userProfile, useCredit, canUseCredits, isTrialActive, saveUserProfile } = useAuth();
     const [selectedType, setSelectedType] = useState<ResumeType>(ResumeType.CHRONOLOGICAL);
     const [jobDescription, setJobDescription] = useState('');
     const [generatedContent, setGeneratedContent] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
-    const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
+    const [viewMode, setViewMode] = useState<'preview' | 'edit'>('preview');
+
+    // Persistence State
+    const [currentResumeId, setCurrentResumeId] = useState<string | null>(null);
+    const [resumeTitle, setResumeTitle] = useState('');
+    const [savedResumes, setSavedResumes] = useState<SavedResume[]>([]);
+    const [showHistory, setShowHistory] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isRestoring, setIsRestoring] = useState(false);
+
+    const handleRestoreData = async () => {
+        if (!currentUser || !saveUserProfile) return;
+        if (!window.confirm("This will overwrite your current profile education and experience with the seed data. Continue?")) return;
+
+        setIsRestoring(true);
+        try {
+            await saveUserProfile({
+                education: [
+                    { id: 'edu1', degree: 'Bachelor of Applied Science', details: 'Computing Technology & Software Development', school: 'Valencia College', year: '2025', gpa: '3.93' },
+                    { id: 'edu2', degree: 'Associate of Science', details: 'Graphic and Interactive Design', school: 'Valencia College', year: '2023', gpa: '3.88' },
+                    { id: 'edu3', degree: 'Associate of Arts', details: 'General Studies', school: 'Valencia College', year: '2021' }
+                ],
+                experience: [
+                    {
+                        id: 'exp1', role: 'Junior UI/UX Design Intern', company: 'PETE Learning', duration: 'Jun 2024 - Aug 2024',
+                        description: [
+                            'Served as Junior UI/UX Designer to enhance PETE Learning\'s platforms with a fresh perspective.',
+                            'Identified navigation challenges and proposed a new tooltip system to reduce user confusion.',
+                            'Designed three tooltip variations (text, image, video) and documented their pros, cons, benefits, and use cases.',
+                            'Created animated UI mockups and delivered a full proposal directly to the President of the company.',
+                            'Contributed UI updates and quality of life improvements to PETE Learning\'s course builder.'
+                        ]
+                    },
+                    {
+                        id: 'exp2', role: 'Kid Coordinator (Imagination Station)', company: 'Mosaic Church', duration: 'Jun 2024 - Aug 2024',
+                        description: [
+                            'Coordinated 9 rotating activity stations for over 120 children during Mosaic Church\'s summer program.',
+                            'Developed hands-on learning activities using various materials to engage kids creatively.',
+                            'Adapted lessons in real-time to ensure all children received individual attention and support.',
+                            'Collaborated with a team of volunteers to maintain a safe and fun environment.'
+                        ]
+                    },
+                    {
+                        id: 'exp3', role: 'Educational Content Intern', company: 'CoLabL', duration: 'Feb 2024 - May 2024',
+                        description: [
+                            'Participated with ColaBB, focusing on mental health and wellness for teens.',
+                            'Collaborated with team members to create a comprehensive guide addressing mental health issues.',
+                            'Developed promotional strategies to effectively disseminate mental health resources to young adults.'
+                        ]
+                    },
+                    {
+                        id: 'exp4', role: 'Customer Associate', company: 'Wawa, Inc.', duration: 'Nov 2021 - May 2024',
+                        description: [
+                            'Worked at a 24/7 Wawa location for 2 years, specializing in service excellence.',
+                            'Handled everything from high-volume orders to customer escalation with patience and care.',
+                            'Known for staying calm during conflicts, solving customer issues, and helping people feel heard.',
+                            'Represented Wawa\'s values by creating a welcoming, safe space.'
+                        ]
+                    },
+                    {
+                        id: 'exp5', role: 'Crew Member', company: 'The Wendy\'s Company', duration: 'Mar 2020 - Oct 2021',
+                        description: [
+                            'Worked every major station: grill, fries, cashier, drive-thru, and overnight stocking.',
+                            'Averaged 30 hour shifts, 4 days a week with consistent on-time attendance.',
+                            'Transformed by managers and coworkers as reliable, adaptable, and fast-learning.'
+                        ]
+                    },
+                    {
+                        id: 'exp6', role: 'Concept Artist & Graphic Designer', company: 'River Rose Productions LLC', duration: 'Jun 2019 - Mar 2020',
+                        description: [
+                            'Developed unique visual identities and illustrations for various projects, enhancing brand recognition.',
+                            'Collaborated closely with authors and developers to create engaging content.',
+                            'Contributed illustrations to a children\'s book that achieved over 2,500 retail sales.',
+                            'Designed educational infographics for a gaming startup, boosting user retention by 20%.'
+                        ]
+                    }
+                ],
+                skills: {
+                    technical: ['Java', 'SQL', 'Docker', 'HTML/CSS/JS', 'SDLC', 'Database Management', 'VS Code', 'GitHub'],
+                    design: ['Figma', 'Adobe Creative Suite (Ps, Ai, Id, Ae)', 'User Journey Mapping', 'Wireframing'],
+                    soft: ['Conflict Resolution', 'Adaptability', 'Empathy', 'Team Leadership', 'High-Volume Cash Handling']
+                },
+                certifications: [
+                    { name: 'Graphics Interactive Design Production', issuer: 'Valencia College', date: '2023' },
+                    { name: 'Interactive Design Support', issuer: 'Valencia College', date: '2023' },
+                    { name: 'Microsoft Office Specialist', issuer: 'Microsoft', date: '2022' },
+                    { name: 'Entrepreneurship & Small Business', issuer: 'Microsoft', date: '2022' },
+                    { name: 'Strategic Career Alignment', issuer: 'University Park, FL', date: '2025' }
+                ]
+            });
+            alert('Profile restored! You can now generate resumes.');
+            window.location.reload();
+        } catch (e) {
+            console.error(e);
+            alert('Failed to restore profile.');
+        } finally {
+            setIsRestoring(false);
+        }
+    };
 
     // Formatting State
     const [fontFamily, setFontFamily] = useState('font-serif');
@@ -23,6 +123,9 @@ export const ResumeBuilder: React.FC = () => {
     const [showAllTypes, setShowAllTypes] = useState(false);
     const [isRecommending, setIsRecommending] = useState(false);
     const [recommendation, setRecommendation] = useState<{ recommendedType: string; reasoning: string; successProbability: string } | null>(null);
+
+    // Credit enforcement state
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
     // Build user data from Firebase profile
     const userData = {
@@ -53,11 +156,23 @@ export const ResumeBuilder: React.FC = () => {
         employmentStatus: 'Looking'
     };
 
-    const handleGenerate = async () => {
-        if (!jobDescription) return;
+    const handleGenerate = async (descriptionOverride?: string) => {
+        const descriptionToUse = descriptionOverride || jobDescription;
+        if (!descriptionToUse) return;
+
+        // Credit check - Resume generation costs 3 credits
+        if (!isTrialActive() && !canUseCredits(3)) {
+            setShowUpgradeModal(true);
+            return;
+        }
+
         setIsGenerating(true);
-        const content = await generateResume(selectedType, userData as any, jobDescription);
+        const content = await generateResume(selectedType, userData as any, descriptionToUse);
         setGeneratedContent(content);
+
+        // Deduct credits after successful generation
+        await useCredit(3);
+
         setIsGenerating(false);
     };
 
@@ -67,11 +182,20 @@ export const ResumeBuilder: React.FC = () => {
 
     const handleAiRecommendation = async () => {
         if (!jobDescription) return;
+
+        // Credit check - AI Recommendation costs 2 credits
+        if (!isTrialActive() && !canUseCredits(2)) {
+            setShowUpgradeModal(true);
+            return;
+        }
+
         setIsRecommending(true);
         const result = await recommendResumeStrategy(userData as any, jobDescription);
         if (result) {
             setRecommendation(result);
             setShowAllTypes(true);
+            // Deduct credits after successful recommendation
+            await useCredit(2);
         }
         setIsRecommending(false);
     };
@@ -88,6 +212,83 @@ export const ResumeBuilder: React.FC = () => {
         }
     };
 
+    // Persistence Handlers
+    const fetchResumes = async () => {
+        if (!currentUser) return;
+        try {
+            const resumes = await getUserResumes(currentUser.uid);
+            setSavedResumes(resumes);
+        } catch (error) {
+            console.error("Failed to fetch resumes", error);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!currentUser || !generatedContent) return;
+
+        setIsSaving(true);
+        try {
+            // Default title if none provided
+            const titleToSave = resumeTitle || `${selectedType} Resume - ${new Date().toLocaleDateString()}`;
+
+            const id = await saveResume(currentUser.uid, {
+                title: titleToSave,
+                type: selectedType,
+                content: generatedContent,
+                jobDescription: jobDescription,
+                targetRole: jobDescription.split('\n')[0].substring(0, 50) // Guess role from JD
+            }, currentResumeId || undefined);
+
+            setCurrentResumeId(id);
+            setResumeTitle(titleToSave);
+            await fetchResumes(); // Refresh list
+
+            // Show success feedback (optional, could use toast)
+        } catch (error) {
+            console.error("Failed to save", error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleLoad = (resume: SavedResume) => {
+        if (!resume.content) return;
+
+        setGeneratedContent(resume.content);
+        setSelectedType(resume.type);
+        setJobDescription(resume.jobDescription || '');
+        setResumeTitle(resume.title);
+        setCurrentResumeId(resume.id || null);
+        setViewMode('preview');
+        setShowHistory(false);
+    };
+
+    const handleDelete = async (e: React.MouseEvent, resumeId: string) => {
+        e.stopPropagation(); // Prevent loading when clicking delete
+        if (!currentUser) return;
+
+        if (window.confirm("Are you sure you want to delete this resume?")) {
+            try {
+                await deleteResume(currentUser.uid, resumeId);
+                await fetchResumes();
+                if (currentResumeId === resumeId) {
+                    setCurrentResumeId(null);
+                    setGeneratedContent('');
+                    setResumeTitle('');
+                }
+            } catch (error) {
+                console.error("Failed to delete", error);
+            }
+        }
+    };
+
+    // Load resumes on mount or when history opens
+    useEffect(() => {
+        if (showHistory) {
+            fetchResumes();
+        }
+    }, [showHistory, currentUser]);
+
     const resumeTypes = [
         { type: ResumeType.CHRONOLOGICAL, desc: "Best for showing steady career progression." },
         { type: ResumeType.FUNCTIONAL, desc: "Focuses on skills over work history. Good for career changers." },
@@ -102,22 +303,140 @@ export const ResumeBuilder: React.FC = () => {
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 pb-12">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
                 <div>
                     <h1 className="text-3xl font-display font-bold text-jalanea-900">AI Resume Studio</h1>
-                    <p className="text-jalanea-600 font-medium mt-1">Generate tailored resumes based on your Valencia degree and target roles.</p>
+                    <p className="text-jalanea-600 font-medium mt-1">Generate tailored resumes based on your Valencia degree.</p>
+                </div>
+
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                    {/* Debug Restore Button */}
+                    <Button
+                        variant="outline"
+                        onClick={handleRestoreData}
+                        disabled={isRestoring}
+                        className="text-orange-600 border-orange-200 hover:bg-orange-50 bg-white"
+                        icon={isRestoring ? <div className="animate-spin h-3 w-3 border-2 border-orange-600 border-t-transparent rounded-full" /> : <Database size={16} />}
+                        title="Restore Missing Profile Data"
+                    >
+                        Fix Data
+                    </Button>
+                    <div className="relative flex-1 md:flex-none">
+                        <input
+                            type="text"
+                            placeholder="Resume Title..."
+                            value={resumeTitle}
+                            onChange={(e) => setResumeTitle(e.target.value)}
+                            className="w-full md:w-64 px-4 py-2 rounded-lg border border-jalanea-200 focus:ring-2 focus:ring-gold focus:border-transparent text-sm font-bold text-jalanea-900"
+                        />
+                    </div>
+
+                    <Button
+                        variant="secondary"
+                        onClick={handleSave}
+                        disabled={!generatedContent || isSaving}
+                        icon={isSaving ? <div className="animate-spin h-3 w-3 border-2 border-jalanea-900 border-t-transparent rounded-full" /> : <Save size={16} />}
+                    >
+                        {isSaving ? 'Saving' : 'Save'}
+                    </Button>
+
+                    <Button
+                        variant="outline"
+                        onClick={() => setShowHistory(!showHistory)}
+                        icon={<History size={16} />}
+                        className={showHistory ? 'bg-jalanea-100 border-jalanea-300' : ''}
+                    >
+                        History
+                    </Button>
                 </div>
             </div>
 
+            {/* Resume History Sidepanel */}
+            {showHistory && (
+                <div className="fixed inset-0 z-50 flex justify-end">
+                    <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowHistory(false)}></div>
+                    <div className="relative w-full max-w-md bg-white h-full shadow-2xl p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold text-jalanea-900 flex items-center gap-2">
+                                <History size={20} /> Saved Resumes
+                            </h2>
+                            <button onClick={() => setShowHistory(false)} className="p-2 hover:bg-jalanea-100 rounded-full text-jalanea-500 hover:text-jalanea-900">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="space-y-3">
+                            {savedResumes.length === 0 ? (
+                                <div className="text-center py-12 text-jalanea-400">
+                                    <FileText size={48} className="mx-auto mb-3 opacity-20" />
+                                    <p>No saved resumes yet.</p>
+                                </div>
+                            ) : (
+                                savedResumes.map(resume => (
+                                    <div
+                                        key={resume.id}
+                                        onClick={() => handleLoad(resume)}
+                                        className={`p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md group relative
+                                            ${currentResumeId === resume.id ? 'bg-jalanea-50 border-jalanea-900' : 'bg-white border-jalanea-200 hover:border-jalanea-300'}
+                                        `}
+                                    >
+                                        <div className="pr-8">
+                                            <h3 className="font-bold text-jalanea-900 truncate">{resume.title}</h3>
+                                            <div className="flex items-center gap-2 mt-1 text-xs text-jalanea-500">
+                                                <span className="uppercase font-bold bg-jalanea-100 px-1.5 py-0.5 rounded">{resume.type}</span>
+                                                <span>• {new Date(resume.updatedAt).toLocaleDateString()}</span>
+                                            </div>
+                                            {resume.targetRole && (
+                                                <p className="mt-2 text-xs text-jalanea-600 line-clamp-1 italic">Target: {resume.targetRole}</p>
+                                            )}
+                                        </div>
+
+                                        <button
+                                            onClick={(e) => handleDelete(e, resume.id || '')}
+                                            className="absolute top-4 right-4 p-1.5 text-jalanea-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                                            title="Delete Resume"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Configuration Panel */}
-                <div className="lg:col-span-4 space-y-6">
+                <div className="lg:col-span-4 space-y-6 print:hidden">
                     <Card className="sticky top-6" variant="solid-white">
                         <h3 className="font-bold text-jalanea-900 mb-4 flex items-center gap-2">
                             <FileText size={18} /> Resume Configuration
                         </h3>
 
                         <div className="space-y-4">
+
+                            {/* Quick Start Buttons */}
+                            {(userProfile?.preferences?.targetRoles?.length || 0) > 0 && (
+                                <div className="bg-jalanea-50 p-3 rounded-xl border border-jalanea-100">
+                                    <label className="text-xs font-bold text-jalanea-500 uppercase block mb-2">One-Click Quick Start</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {userProfile?.preferences.targetRoles.map((role: string) => (
+                                            <button
+                                                key={role}
+                                                onClick={() => {
+                                                    setJobDescription(role);
+                                                    handleGenerate(role);
+                                                }}
+                                                disabled={isGenerating}
+                                                className="px-3 py-1.5 bg-white border border-jalanea-200 hover:border-gold hover:text-jalanea-900 text-jalanea-600 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1"
+                                            >
+                                                <Sparkles size={10} className="text-gold" /> {role}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
                             <div>
                                 <label className="block text-sm font-bold text-jalanea-900 mb-2">Target Job Description</label>
@@ -238,9 +557,9 @@ export const ResumeBuilder: React.FC = () => {
                 </div>
 
                 {/* Preview Panel */}
-                <div className="lg:col-span-8">
-                    <div className="bg-white rounded-2xl border border-jalanea-200 shadow-lg min-h-[600px] flex flex-col">
-                        <div className="p-4 border-b border-jalanea-200 flex justify-between items-center bg-jalanea-50/50 rounded-t-2xl">
+                <div className="lg:col-span-8 print:w-full print:col-span-12">
+                    <div className="bg-white rounded-2xl border border-jalanea-200 shadow-lg min-h-[600px] flex flex-col print:border-none print:shadow-none print:min-h-0">
+                        <div className="p-4 border-b border-jalanea-200 flex justify-between items-center bg-jalanea-50/50 rounded-t-2xl print:hidden">
                             <div className="flex gap-2 bg-white p-1 rounded-lg border border-jalanea-200">
                                 <button
                                     onClick={() => setViewMode('preview')}
@@ -249,10 +568,10 @@ export const ResumeBuilder: React.FC = () => {
                                     Preview
                                 </button>
                                 <button
-                                    onClick={() => setViewMode('code')}
-                                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${viewMode === 'code' ? 'bg-jalanea-900 text-white' : 'text-jalanea-600 hover:bg-jalanea-100'}`}
+                                    onClick={() => setViewMode('edit')}
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${viewMode === 'edit' ? 'bg-jalanea-900 text-white' : 'text-jalanea-600 hover:bg-jalanea-100'}`}
                                 >
-                                    Code / Text
+                                    Edit (Markdown)
                                 </button>
                             </div>
                             <div className="flex gap-2">
@@ -273,15 +592,24 @@ export const ResumeBuilder: React.FC = () => {
                                         {generatedContent}
                                     </div>
                                 ) : (
-                                    <pre className="font-mono text-xs bg-jalanea-950 text-jalanea-200 p-6 rounded-xl overflow-x-auto h-full">
-                                        {generatedContent}
-                                    </pre>
+                                    <textarea
+                                        value={generatedContent}
+                                        onChange={(e) => setGeneratedContent(e.target.value)}
+                                        className="w-full h-full font-mono text-sm bg-jalanea-50 text-jalanea-800 p-6 rounded-xl border border-transparent focus:border-jalanea-300 focus:ring-0 resize-none outline-none leading-relaxed"
+                                        spellCheck={false}
+                                    />
                                 )
                             )}
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Upgrade Modal */}
+            <UpgradeModal
+                isOpen={showUpgradeModal}
+                onClose={() => setShowUpgradeModal(false)}
+            />
         </div>
     );
 };

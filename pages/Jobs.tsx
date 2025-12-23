@@ -5,6 +5,7 @@ import { Input } from '../components/Input';
 import { generateJobIntel } from '../services/geminiService';
 import { searchJobs } from '../services/jobService';
 import { useAuth } from '../contexts/AuthContext';
+import { UpgradeModal } from '../components/UpgradeModal';
 import {
     Search, MapPin, Sparkles, FileText,
     GraduationCap, Clock, Zap, Heart, X,
@@ -158,7 +159,10 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
     const [searchLocation, setSearchLocation] = useState('');
 
     // Auth context for user profile and job saving
-    const { userProfile, saveJob, removeJob, isJobSaved, currentUser } = useAuth();
+    const { userProfile, saveJob, removeJob, isJobSaved, currentUser, useCredit, canUseCredits, isTrialActive } = useAuth();
+
+    // Credit enforcement state
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
     // Loading State Tracking
     const [loadingTime, setLoadingTime] = useState(0);
@@ -506,6 +510,12 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
         setPathSelectionOpen(false); // Close path selector
         setActiveTab('overview');
 
+        // Credit check - Deep Dive costs 5 credits
+        if (!isTrialActive() && !canUseCredits(5)) {
+            setShowUpgradeModal(true);
+            return;
+        }
+
         // Reset Loading States
         setLoadingTime(0);
         setRetryCount(0);
@@ -538,6 +548,8 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
 
             if (intel) {
                 job.analysis = intel;
+                // Deduct credits after successful generation
+                await useCredit(5);
             } else {
                 console.warn("All AI attempts failed. Using Universal Strategy.");
                 job.analysis = getUniversalFallback(job);
@@ -1549,6 +1561,11 @@ Make it engaging and easy to absorb while commuting!`;
                     </div>
                 )
             }
+            {/* Upgrade Modal */}
+            <UpgradeModal
+                isOpen={showUpgradeModal}
+                onClose={() => setShowUpgradeModal(false)}
+            />
         </div >
     );
 };

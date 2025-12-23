@@ -327,7 +327,7 @@ export const Dashboard: React.FC = () => {
     const scheduleType = isBusy ? 'Micro-Tasks' : 'Deep Work';
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500 pb-12">
+        <div className="space-y-12 animate-in fade-in duration-500 pb-16">
 
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -352,10 +352,10 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {/* Metrics Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
 
                 {/* Card 1: Market Demand (Dark Theme) */}
-                <Card variant="solid-forest" className="relative overflow-hidden min-h-[200px] flex flex-col justify-between group">
+                <Card variant="solid-forest" className="relative overflow-hidden min-h-[240px] flex flex-col justify-between group">
                     {/* Abstract Graph Visual Background */}
                     <svg className="absolute bottom-0 right-0 w-48 h-32 text-white/5 pointer-events-none transform translate-y-4 translate-x-4" viewBox="0 0 100 50" preserveAspectRatio="none">
                         <path d="M0 50 L20 40 L40 45 L60 25 L80 30 L100 10 V50 Z" fill="currentColor" />
@@ -399,7 +399,7 @@ export const Dashboard: React.FC = () => {
                 </Card>
 
                 {/* Card 2: Applications (White Theme) */}
-                <Card variant="solid-white" className="min-h-[200px] flex flex-col justify-between border-jalanea-200 shadow-sm hover:shadow-md transition-all">
+                <Card variant="solid-white" className="min-h-[240px] flex flex-col justify-between border-jalanea-200 shadow-sm hover:shadow-md transition-all">
                     <div className="flex justify-between items-start">
                         <div className="flex items-center gap-2">
                             <div className="p-1.5 bg-jalanea-100 rounded-md">
@@ -426,7 +426,7 @@ export const Dashboard: React.FC = () => {
                 </Card>
 
                 {/* Card 3: Smart Schedule (New) */}
-                <Card variant="gold" className="min-h-[200px] flex flex-col justify-between relative overflow-hidden">
+                <Card variant="gold" className="min-h-[240px] flex flex-col justify-between relative overflow-hidden">
                     <div className="absolute top-[-20%] right-[-10%] w-32 h-32 bg-white/20 rounded-full blur-2xl"></div>
 
                     <div className="flex items-center gap-2 relative z-10">
@@ -457,7 +457,7 @@ export const Dashboard: React.FC = () => {
             <SavedJobsCarousel navigate={navigate} />
 
             {/* Main Content Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
 
                 {/* LEFT COLUMN: Job Feed */}
                 <div className="lg:col-span-2 space-y-6">

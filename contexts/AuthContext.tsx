@@ -14,16 +14,16 @@ import {
 import { doc, setDoc, getDoc, onSnapshot, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { Job, SavedJob } from '../types';
-import { 
-    UserCredits, 
-    getUserCredits, 
-    initializeUserCredits, 
-    deductCredits, 
-    hasEnoughCredits, 
+import {
+    UserCredits,
+    getUserCredits,
+    initializeUserCredits,
+    deductCredits,
+    hasEnoughCredits,
     isTrialExpired,
     CreditAction,
     getDefaultCredits,
-    isOwnerEmail 
+    isOwnerEmail
 } from '../services/creditsService';
 
 // User profile type matching what we save during onboarding
@@ -107,12 +107,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [profileLoading, setProfileLoading] = useState(false);
 
     // Fetch user credits from Firestore
-    const fetchUserCredits = async (uid: string) => {
+    const fetchUserCredits = async (user: User) => {
         try {
-            let credits = await getUserCredits(uid);
+            let credits = await getUserCredits(user.uid);
+
+            // Sync Owner Status Logic
+            // If user is an owner but Firestore doesn't say so, update it.
+            if (user.email && isOwnerEmail(user.email)) {
+                if (credits?.tier !== 'owner') {
+                    console.log("👑 Syncing owner status for:", user.email);
+                    const ownerUpdate = {
+                        tier: 'owner',
+                        credits: Infinity,
+                        monthlyCreditsLimit: Infinity
+                    };
+                    await setDoc(doc(db, 'users', user.uid), ownerUpdate, { merge: true });
+
+                    // Merge local credits with update
+                    if (credits) {
+                        credits = { ...credits, ...ownerUpdate } as UserCredits;
+                    } else {
+                        // If no credits existed, we'll initialize below but let's just set it now
+                        credits = {
+                            ...getDefaultCredits(),
+                            ...ownerUpdate
+                        } as UserCredits;
+                        // The next block handles initialization if null, but we just handled it partially.
+                        // Actually, let's let the sync happen.
+                    }
+                }
+            }
+
             if (!credits) {
                 // Initialize credits for new user
-                credits = await initializeUserCredits(uid);
+                credits = await initializeUserCredits(user.uid);
+                // Re-check owner status for new users
+                if (user.email && isOwnerEmail(user.email)) {
+                    const ownerUpdate = {
+                        tier: 'owner',
+                        credits: Infinity,
+                        monthlyCreditsLimit: Infinity
+                    };
+                    await setDoc(doc(db, 'users', user.uid), ownerUpdate, { merge: true });
+                    credits = { ...credits, ...ownerUpdate } as UserCredits;
+                }
             }
             setUserCredits(credits);
         } catch (error) {
@@ -123,7 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Refresh credits manually
     const refreshCredits = async () => {
         if (auth.currentUser) {
-            await fetchUserCredits(auth.currentUser.uid);
+            await fetchUserCredits(auth.currentUser);
         }
     };
     // Fetch user profile from Firestore
@@ -155,9 +193,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             setCurrentUser(user);
+            setCurrentUser(user);
             if (user) {
                 await fetchUserProfile(user.uid);
-                await fetchUserCredits(user.uid);
+                await fetchUserCredits(user);
             } else {
                 setUserProfile(null);
                 setUserCredits(null);
@@ -288,19 +327,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!auth.currentUser) {
             return { success: false, error: 'Not logged in' };
         }
-        
+
         // Owner gets free pass
         if (isOwnerEmail(auth.currentUser.email)) {
             return { success: true };
         }
-        
+
         const result = await deductCredits(auth.currentUser.uid, action);
-        
+
         if (result.success) {
             // Update local state
             await refreshCredits();
         }
-        
+
         return { success: result.success, error: result.error };
     };
 

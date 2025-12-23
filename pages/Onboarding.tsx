@@ -800,7 +800,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
     // Fetch jobs when reaching the favorite step - use user's location and work style
     const [jobWorkStyleFilter, setJobWorkStyleFilter] = useState<'all' | 'Remote' | 'Hybrid' | 'On-site'>('all');
     const [careerFilter, setCareerFilter] = useState<string | null>(null); // null = all careers
-    
+
     // Store all jobs with their source career tag for client-side filtering
     const [allJobsWithCareers, setAllJobsWithCareers] = useState<Array<{ job: typeof jobsToFavorite[0], careerId: string, careerTitle: string }>>([]);
 
@@ -829,7 +829,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
             // For "All" and "Remote", search broadly (USA) to get more results
             // Only restrict to user's location for On-site and Hybrid
             const searchLocation = (jobWorkStyleFilter === 'Remote' || jobWorkStyleFilter === 'all')
-                ? 'United States' 
+                ? 'United States'
                 : (location?.trim() || 'United States');
 
             // Fetch jobs for EACH selected career separately and tag them
@@ -847,7 +847,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
                     if (response.jobs && response.jobs.length > 0) {
                         console.log(`📦 Found ${response.jobs.length} jobs for ${career.title}`);
-                        
+
                         // Filter and tag jobs with this career
                         const entryLevelExcludeTerms = ['senior', 'lead', 'manager', 'director', 'principal', 'staff', 'architect', 'vp', 'head of'];
                         const experienceExcludePatterns = [/(\d+)\+?\s*years?/i];
@@ -932,7 +932,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
             // Store all jobs with career tags for client-side filtering
             setAllJobsWithCareers(processedJobs);
-            
+
             // Initially show all jobs
             setJobsToFavorite(processedJobs.map(tj => tj.job));
 
@@ -976,186 +976,186 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
     const renderFavoriteJobs = () => {
         // Get selected careers for display
         const selectedCareers = careerPaths.filter(c => selectedCareerIds.includes(c.id));
-        
-        return (
-        <div className="animate-in slide-in-from-right-8 fade-in duration-300">
-            <div className="mb-6">
-                <h2 className="text-2xl font-display font-bold text-jalanea-900">Find your first targets.</h2>
-                <p className="text-jalanea-600">Save at least 3 jobs you'd like to pursue. We'll help you apply strategically.</p>
-            </div>
 
-            {/* Selected Career Paths - Clickable filter - Mobile friendly */}
-            {selectedCareers.length > 0 && (
-                <div className="mb-4 p-3 sm:p-4 bg-gradient-to-r from-gold/10 via-gold/5 to-transparent rounded-xl border border-gold/20">
-                    <div className="flex items-center gap-1.5 sm:gap-2 mb-2">
-                        <Sparkles size={14} className="text-gold sm:w-4 sm:h-4" />
-                        <span className="text-[10px] sm:text-xs font-bold text-jalanea-700 uppercase tracking-wider">
-                            Filter by career path
-                        </span>
-                    </div>
-                    {/* Horizontal scroll on mobile, wrap on larger screens */}
-                    <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-hide">
-                        {/* All Careers option */}
-                        <button
-                            onClick={() => setCareerFilter(null)}
-                            className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 sm:shrink
-                                ${careerFilter === null
-                                    ? 'bg-jalanea-900 text-white border border-jalanea-900 shadow-md'
-                                    : 'bg-white text-jalanea-600 border border-jalanea-200 hover:border-gold hover:text-jalanea-800'
-                                }
-                            `}
-                        >
-                            All Careers
-                        </button>
-                        {/* Individual career filters */}
-                        {selectedCareers.map(career => (
+        return (
+            <div className="animate-in slide-in-from-right-8 fade-in duration-300">
+                <div className="mb-6">
+                    <h2 className="text-2xl font-display font-bold text-jalanea-900">Find your first targets.</h2>
+                    <p className="text-jalanea-600">Save at least 3 jobs you'd like to pursue. We'll help you apply strategically.</p>
+                </div>
+
+                {/* Selected Career Paths - Clickable filter - Mobile friendly */}
+                {selectedCareers.length > 0 && (
+                    <div className="mb-4 p-3 sm:p-4 bg-gradient-to-r from-gold/10 via-gold/5 to-transparent rounded-xl border border-gold/20">
+                        <div className="flex items-center gap-1.5 sm:gap-2 mb-2">
+                            <Sparkles size={14} className="text-gold sm:w-4 sm:h-4" />
+                            <span className="text-[10px] sm:text-xs font-bold text-jalanea-700 uppercase tracking-wider">
+                                Filter by career path
+                            </span>
+                        </div>
+                        {/* Horizontal scroll on mobile, wrap on larger screens */}
+                        <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-hide">
+                            {/* All Careers option */}
                             <button
-                                key={career.id}
-                                onClick={() => setCareerFilter(careerFilter === career.id ? null : career.id)}
+                                onClick={() => setCareerFilter(null)}
                                 className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 sm:shrink
-                                    ${careerFilter === career.id
-                                        ? 'bg-gold text-jalanea-900 border border-gold shadow-md'
-                                        : 'bg-white text-jalanea-800 border border-gold/30 hover:border-gold hover:shadow-sm'
+                                ${careerFilter === null
+                                        ? 'bg-jalanea-900 text-white border border-jalanea-900 shadow-md'
+                                        : 'bg-white text-jalanea-600 border border-jalanea-200 hover:border-gold hover:text-jalanea-800'
                                     }
-                                `}
+                            `}
                             >
-                                <Target size={10} className={`sm:w-3 sm:h-3 ${careerFilter === career.id ? 'text-jalanea-900' : 'text-gold'}`} />
-                                {career.title}
+                                All Careers
+                            </button>
+                            {/* Individual career filters */}
+                            {selectedCareers.map(career => (
+                                <button
+                                    key={career.id}
+                                    onClick={() => setCareerFilter(careerFilter === career.id ? null : career.id)}
+                                    className={`inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 sm:shrink
+                                    ${careerFilter === career.id
+                                            ? 'bg-gold text-jalanea-900 border border-gold shadow-md'
+                                            : 'bg-white text-jalanea-800 border border-gold/30 hover:border-gold hover:shadow-sm'
+                                        }
+                                `}
+                                >
+                                    <Target size={10} className={`sm:w-3 sm:h-3 ${careerFilter === career.id ? 'text-jalanea-900' : 'text-gold'}`} />
+                                    {career.title}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Work Style Filter */}
+                <div className="mb-4">
+                    <label className="text-xs font-bold text-jalanea-600 mb-2 block">Filter by Work Style</label>
+                    <div className="flex gap-2 flex-wrap">
+                        {(['all', 'Remote', 'Hybrid', 'On-site'] as const).map(style => (
+                            <button
+                                key={style}
+                                onClick={() => setJobWorkStyleFilter(style)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all
+                                ${jobWorkStyleFilter === style
+                                        ? 'bg-jalanea-900 text-white'
+                                        : 'bg-white text-jalanea-600 border border-jalanea-200 hover:border-gold'
+                                    }
+                            `}
+                            >
+                                {style === 'all' ? 'All' : style}
                             </button>
                         ))}
                     </div>
-                </div>
-            )}
-
-            {/* Work Style Filter */}
-            <div className="mb-4">
-                <label className="text-xs font-bold text-jalanea-600 mb-2 block">Filter by Work Style</label>
-                <div className="flex gap-2 flex-wrap">
-                    {(['all', 'Remote', 'Hybrid', 'On-site'] as const).map(style => (
-                        <button
-                            key={style}
-                            onClick={() => setJobWorkStyleFilter(style)}
-                            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all
-                                ${jobWorkStyleFilter === style
-                                    ? 'bg-jalanea-900 text-white'
-                                    : 'bg-white text-jalanea-600 border border-jalanea-200 hover:border-gold'
-                                }
-                            `}
-                        >
-                            {style === 'all' ? 'All' : style}
-                        </button>
-                    ))}
-                </div>
-                {location && (
-                    <p className="text-xs text-jalanea-400 mt-2 flex items-center gap-1">
-                        <MapPin size={12} /> Showing jobs near {location}
-                    </p>
-                )}
-            </div>
-
-            {/* Progress indicator */}
-            <div className="mb-4 flex items-center gap-3">
-                <div className="flex-1 h-2 bg-jalanea-100 rounded-full overflow-hidden">
-                    <div
-                        className="h-full bg-gold transition-all duration-300"
-                        style={{ width: `${Math.min((savedJobsCount / 3) * 100, 100)}%` }}
-                    />
-                </div>
-                <span className={`text-sm font-bold ${savedJobsCount >= 3 ? 'text-green-600' : 'text-jalanea-600'}`}>
-                    {savedJobsCount} / 3 saved
-                </span>
-                {savedJobsCount >= 3 && <CheckCircle2 size={18} className="text-green-600" />}
-            </div>
-
-            {/* Jobs grid */}
-            <div className="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar">
-                {isLoadingJobs ? (
-                    <div className="text-center py-8">
-                        <div className="animate-spin w-8 h-8 border-2 border-gold border-t-transparent rounded-full mx-auto mb-2" />
-                        <p className="text-sm text-jalanea-500">Loading job opportunities...</p>
-                    </div>
-                ) : jobsToFavorite.length === 0 ? (
-                    <div className="text-center py-8 bg-jalanea-50 rounded-xl">
-                        <MapPin size={32} className="mx-auto text-jalanea-300 mb-2" />
-                        <p className="text-sm font-bold text-jalanea-600">
-                            {jobWorkStyleFilter === 'Remote' || jobWorkStyleFilter === 'all'
-                                ? 'No jobs found'
-                                : 'No local jobs found'}
+                    {location && (
+                        <p className="text-xs text-jalanea-400 mt-2 flex items-center gap-1">
+                            <MapPin size={12} /> Showing jobs near {location}
                         </p>
-                        <p className="text-xs text-jalanea-400 mt-1">
-                            {jobWorkStyleFilter === 'Remote'
-                                ? 'No remote positions found for your selected careers'
-                                : jobWorkStyleFilter === 'all'
-                                    ? 'No entry-level positions found for your selected careers'
-                                    : `No ${jobWorkStyleFilter.toLowerCase()} positions found near ${location || 'your location'}`}
-                        </p>
-                        {jobWorkStyleFilter !== 'Remote' && (
-                            <button
-                                onClick={() => setJobWorkStyleFilter('Remote')}
-                                className="mt-3 text-xs text-gold font-bold hover:underline"
-                            >
-                                Try Remote jobs →
-                            </button>
-                        )}
+                    )}
+                </div>
+
+                {/* Progress indicator */}
+                <div className="mb-4 flex items-center gap-3">
+                    <div className="flex-1 h-2 bg-jalanea-100 rounded-full overflow-hidden">
+                        <div
+                            className="h-full bg-gold transition-all duration-300"
+                            style={{ width: `${Math.min((savedJobsCount / 3) * 100, 100)}%` }}
+                        />
                     </div>
-                ) : (
-                    // Jobs are now tagged with their source career for filtering
-                    jobsToFavorite.map(job => {
-                    // Just check local state - simple selection
-                    const isSelected = localSavedJobIds.has(job.id);
-                    // Find the career tag for this job
-                    const jobCareer = allJobsWithCareers.find(tj => tj.job.id === job.id);
-                    return (
-                    <button
-                        key={job.id}
-                        type="button"
-                        className={`w-full text-left p-3 sm:p-4 rounded-xl border-2 transition-all active:scale-[0.98] ${isSelected
-                            ? 'bg-gold/10 border-gold shadow-md'
-                            : 'bg-white border-jalanea-200 hover:border-gold/50 active:border-gold'
-                            }`}
-                        onClick={() => {
-                            // Simple toggle - just update local state
-                            setLocalSavedJobIds(prev => {
-                                const next = new Set(prev);
-                                if (next.has(job.id)) {
-                                    next.delete(job.id); // Unselect
-                                } else {
-                                    next.add(job.id); // Select
-                                }
-                                return next;
-                            });
-                        }}
-                    >
-                        {/* Career Tag Badge */}
-                        {jobCareer && !careerFilter && (
-                            <div className="mb-2">
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-gold/20 text-gold-dark border border-gold/30">
-                                    <Target size={10} className="text-gold" />
-                                    {jobCareer.careerTitle}
-                                </span>
-                            </div>
-                        )}
-                        <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-jalanea-900 text-sm sm:text-base truncate">{job.title}</h4>
-                                <p className="text-xs sm:text-sm text-jalanea-600">{job.company}</p>
-                                <p className="text-[10px] sm:text-xs text-jalanea-400 mt-1">{job.location}</p>
-                            </div>
-                            <div className={`p-1.5 sm:p-2 rounded-full shrink-0 ${isSelected ? 'bg-gold text-jalanea-900' : 'bg-jalanea-100 text-jalanea-400'}`}>
-                                <Heart size={16} className="sm:w-[18px] sm:h-[18px]" fill={isSelected ? 'currentColor' : 'none'} />
-                            </div>
+                    <span className={`text-sm font-bold ${savedJobsCount >= 3 ? 'text-green-600' : 'text-jalanea-600'}`}>
+                        {savedJobsCount} / 3 saved
+                    </span>
+                    {savedJobsCount >= 3 && <CheckCircle2 size={18} className="text-green-600" />}
+                </div>
+
+                {/* Jobs grid */}
+                <div className="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar">
+                    {isLoadingJobs ? (
+                        <div className="text-center py-8">
+                            <div className="animate-spin w-8 h-8 border-2 border-gold border-t-transparent rounded-full mx-auto mb-2" />
+                            <p className="text-sm text-jalanea-500">Loading job opportunities...</p>
                         </div>
-                        {isSelected && (
-                            <div className="mt-2 flex items-center gap-1 text-[10px] sm:text-xs text-gold font-bold">
-                                <CheckCircle2 size={12} /> Selected
-                            </div>
-                        )}
-                    </button>
-                    );
-                })
-                )}
+                    ) : jobsToFavorite.length === 0 ? (
+                        <div className="text-center py-8 bg-jalanea-50 rounded-xl">
+                            <MapPin size={32} className="mx-auto text-jalanea-300 mb-2" />
+                            <p className="text-sm font-bold text-jalanea-600">
+                                {jobWorkStyleFilter === 'Remote' || jobWorkStyleFilter === 'all'
+                                    ? 'No jobs found'
+                                    : 'No local jobs found'}
+                            </p>
+                            <p className="text-xs text-jalanea-400 mt-1">
+                                {jobWorkStyleFilter === 'Remote'
+                                    ? 'No remote positions found for your selected careers'
+                                    : jobWorkStyleFilter === 'all'
+                                        ? 'No entry-level positions found for your selected careers'
+                                        : `No ${jobWorkStyleFilter.toLowerCase()} positions found near ${location || 'your location'}`}
+                            </p>
+                            {jobWorkStyleFilter !== 'Remote' && (
+                                <button
+                                    onClick={() => setJobWorkStyleFilter('Remote')}
+                                    className="mt-3 text-xs text-gold font-bold hover:underline"
+                                >
+                                    Try Remote jobs →
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        // Jobs are now tagged with their source career for filtering
+                        jobsToFavorite.map(job => {
+                            // Just check local state - simple selection
+                            const isSelected = localSavedJobIds.has(job.id);
+                            // Find the career tag for this job
+                            const jobCareer = allJobsWithCareers.find(tj => tj.job.id === job.id);
+                            return (
+                                <button
+                                    key={job.id}
+                                    type="button"
+                                    className={`w-full text-left p-3 sm:p-4 rounded-xl border-2 transition-all active:scale-[0.98] ${isSelected
+                                        ? 'bg-gold/10 border-gold shadow-md'
+                                        : 'bg-white border-jalanea-200 hover:border-gold/50 active:border-gold'
+                                        }`}
+                                    onClick={() => {
+                                        // Simple toggle - just update local state
+                                        setLocalSavedJobIds(prev => {
+                                            const next = new Set(prev);
+                                            if (next.has(job.id)) {
+                                                next.delete(job.id); // Unselect
+                                            } else {
+                                                next.add(job.id); // Select
+                                            }
+                                            return next;
+                                        });
+                                    }}
+                                >
+                                    {/* Career Tag Badge */}
+                                    {jobCareer && !careerFilter && (
+                                        <div className="mb-2">
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-gold/20 text-gold-dark border border-gold/30">
+                                                <Target size={10} className="text-gold" />
+                                                {jobCareer.careerTitle}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-bold text-jalanea-900 text-sm sm:text-base truncate">{job.title}</h4>
+                                            <p className="text-xs sm:text-sm text-jalanea-600">{job.company}</p>
+                                            <p className="text-[10px] sm:text-xs text-jalanea-400 mt-1">{job.location}</p>
+                                        </div>
+                                        <div className={`p-1.5 sm:p-2 rounded-full shrink-0 ${isSelected ? 'bg-gold text-jalanea-900' : 'bg-jalanea-100 text-jalanea-400'}`}>
+                                            <Heart size={16} className="sm:w-[18px] sm:h-[18px]" fill={isSelected ? 'currentColor' : 'none'} />
+                                        </div>
+                                    </div>
+                                    {isSelected && (
+                                        <div className="mt-2 flex items-center gap-1 text-[10px] sm:text-xs text-gold font-bold">
+                                            <CheckCircle2 size={12} /> Selected
+                                        </div>
+                                    )}
+                                </button>
+                            );
+                        })
+                    )}
+                </div>
             </div>
-        </div>
         );
     };
 
@@ -1241,7 +1241,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
             // First, save all the locally selected jobs to Firebase
             const jobsToSave = jobsToFavorite.filter(job => localSavedJobIds.has(job.id));
             console.log(`💾 Saving ${jobsToSave.length} selected jobs...`);
-            
+
             for (const job of jobsToSave) {
                 try {
                     // Clean the job object - remove undefined values
@@ -1273,16 +1273,29 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                 photoURL: profilePic,
                 linkedinUrl,
                 portfolioUrl,
-                // Education - save all degrees
+                // Education - map to the format expected by geminiService AND types.ts
                 education: selectedDegrees.length > 0 ? selectedDegrees.map(edu => ({
+                    // Core fields expected by geminiService.ts
+                    degree: `${edu.degree.level} in ${edu.degree.name}`,
+                    school: edu.degree.institution,
+                    year: edu.graduationYear || 'In Progress',
+                    gpa: undefined, // User can update in profile
+                    // Extra metadata for richer profile
                     programId: edu.degree.id,
                     programName: edu.degree.name,
                     degreeLevel: edu.degree.level,
-                    institution: edu.degree.institution,
                     field: edu.degree.field,
-                    graduationYear: edu.graduationYear,
                     qualifiedCareers: edu.degree.entryLevelCareers.map(c => c.title)
                 })) : undefined,
+                // Experience - map to the format expected by geminiService
+                experience: experienceList.map((exp: any) => ({
+                    role: exp.role,
+                    company: exp.company,
+                    duration: exp.dates || 'Present', // Map 'dates' to 'duration'
+                    description: exp.description
+                        ? exp.description.split(/[\n•\-]/).map((line: string) => line.trim()).filter((line: string) => line.length > 0)
+                        : [] // Convert string to array of bullet points
+                })),
                 // Status
                 onboardingCompleted: true,
                 hasSetupSchedule: true,

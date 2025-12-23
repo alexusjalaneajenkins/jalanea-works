@@ -33,6 +33,7 @@ export type UserTier = keyof typeof TIER_CREDITS;
 const OWNER_EMAILS = [
   'jalaneajenkins@gmail.com',
   'business@jalanea.works',
+  'alexxusjenkins91@gmail.com',
 ];
 
 /**
@@ -75,13 +76,13 @@ export const getDefaultCredits = (): UserCredits => ({
 export async function getUserCredits(userId: string): Promise<UserCredits | null> {
   try {
     const userDoc = await getDoc(doc(db, 'users', userId));
-    
+
     if (!userDoc.exists()) {
       return null;
     }
-    
+
     const data = userDoc.data();
-    
+
     // Convert Firestore Timestamps to Dates
     return {
       tier: data.tier || 'free',
@@ -105,7 +106,7 @@ export async function getUserCredits(userId: string): Promise<UserCredits | null
  */
 export async function initializeUserCredits(userId: string): Promise<UserCredits> {
   const defaultCredits = getDefaultCredits();
-  
+
   try {
     await setDoc(doc(db, 'users', userId), {
       tier: defaultCredits.tier,
@@ -118,7 +119,7 @@ export async function initializeUserCredits(userId: string): Promise<UserCredits
       subscriptionId: null,
       subscriptionStatus: 'trialing',
     }, { merge: true });
-    
+
     return defaultCredits;
   } catch (error) {
     console.error('Error initializing user credits:', error);
@@ -134,7 +135,7 @@ export function hasEnoughCredits(userCredits: UserCredits, action: CreditAction)
   if (userCredits.tier === 'unlimited') {
     return true;
   }
-  
+
   const cost = CREDIT_COSTS[action];
   return userCredits.credits >= cost;
 }
@@ -146,11 +147,11 @@ export function isTrialExpired(userCredits: UserCredits): boolean {
   if (userCredits.subscriptionStatus === 'active') {
     return false; // Paid user
   }
-  
+
   if (!userCredits.trialEndsAt) {
     return true; // No trial set
   }
-  
+
   return new Date() > userCredits.trialEndsAt;
 }
 
@@ -163,45 +164,45 @@ export async function deductCredits(
 ): Promise<{ success: boolean; remainingCredits: number; error?: string }> {
   try {
     const userCredits = await getUserCredits(userId);
-    
+
     if (!userCredits) {
       return { success: false, remainingCredits: 0, error: 'User not found' };
     }
-    
+
     // Check trial expiration
     if (isTrialExpired(userCredits) && userCredits.subscriptionStatus !== 'active') {
-      return { 
-        success: false, 
-        remainingCredits: 0, 
-        error: 'Trial expired. Please upgrade to continue.' 
+      return {
+        success: false,
+        remainingCredits: 0,
+        error: 'Trial expired. Please upgrade to continue.'
       };
     }
-    
+
     // Unlimited tier doesn't deduct
     if (userCredits.tier === 'unlimited') {
       return { success: true, remainingCredits: Infinity };
     }
-    
+
     const cost = CREDIT_COSTS[action];
-    
+
     // Check if enough credits
     if (userCredits.credits < cost) {
-      return { 
-        success: false, 
-        remainingCredits: userCredits.credits, 
-        error: `Not enough credits. Need ${cost}, have ${userCredits.credits}.` 
+      return {
+        success: false,
+        remainingCredits: userCredits.credits,
+        error: `Not enough credits. Need ${cost}, have ${userCredits.credits}.`
       };
     }
-    
+
     // Deduct credits
     const newCredits = userCredits.credits - cost;
     const newUsed = userCredits.creditsUsedThisMonth + cost;
-    
+
     await updateDoc(doc(db, 'users', userId), {
       credits: newCredits,
       creditsUsedThisMonth: newUsed,
     });
-    
+
     return { success: true, remainingCredits: newCredits };
   } catch (error) {
     console.error('Error deducting credits:', error);
@@ -214,7 +215,7 @@ export async function deductCredits(
  */
 export async function resetMonthlyCredits(userId: string, tier: UserTier): Promise<void> {
   const monthlyLimit = TIER_CREDITS[tier];
-  
+
   await updateDoc(doc(db, 'users', userId), {
     credits: monthlyLimit,
     creditsUsedThisMonth: 0,
@@ -235,7 +236,7 @@ export async function updateSubscription(
   status: 'active' | 'canceled' | 'past_due' | 'trialing'
 ): Promise<void> {
   const monthlyLimit = TIER_CREDITS[tier];
-  
+
   await updateDoc(doc(db, 'users', userId), {
     tier,
     credits: monthlyLimit,
@@ -256,7 +257,7 @@ export function getCreditUsagePercent(userCredits: UserCredits): number {
   if (userCredits.tier === 'unlimited' || userCredits.monthlyCreditsLimit === 0) {
     return 0;
   }
-  
+
   const used = userCredits.monthlyCreditsLimit - userCredits.credits;
   return Math.round((used / userCredits.monthlyCreditsLimit) * 100);
 }
