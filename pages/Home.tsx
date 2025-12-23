@@ -6,7 +6,7 @@ import { Card } from '../components/Card';
 import { NavRoute } from '../types';
 import { AuthModal, AuthMode } from '../components/AuthModal';
 import { WelcomeTransition } from '../components/WelcomeTransition';
-import { ArrowRight, Star, Globe, ShieldCheck, Zap, TrendingUp, GraduationCap, ChevronDown, MapPin, Search, X, Heart, Home as HomeIcon, Instagram, CheckCircle2, Users } from 'lucide-react';
+import { ArrowRight, Star, Globe, ShieldCheck, Zap, TrendingUp, GraduationCap, ChevronDown, MapPin, Search, X, Heart, Home as HomeIcon, Instagram, CheckCircle2, Users, Coffee } from 'lucide-react';
 
 interface HomeProps {
   setRoute: (route: NavRoute) => void;
@@ -328,16 +328,16 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
             {/* Left Content */}
             <div className="space-y-4 md:space-y-6 animate-in slide-in-from-left-4 duration-700 text-center md:text-left">
               {/* FIXED: Readable Badge - White text on Solid Red Background */}
-              <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 rounded-full bg-red-DEFAULT border border-red-400/50 text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-red-DEFAULT/20">
-                <GraduationCap size={14} className="md:w-4 md:h-4" />
-                For Valencia College Alumni
+              <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 rounded-full bg-gold/20 border border-gold/40 text-gold text-xs font-bold uppercase tracking-wider shadow-lg">
+                <Zap size={14} className="md:w-4 md:h-4" />
+                Work Should Work
               </div>
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-display font-bold leading-[0.95] tracking-tighter text-white">
                 Get a job by the<br />
                 <span className="text-transparent bg-clip-text bg-gold-flow bg-200% animate-text-flow">end of the month.</span>
               </h1>
               <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-jalanea-200 leading-relaxed max-w-lg mx-auto md:mx-0 font-light px-2 md:px-0">
-                Our goal is simple: <span className="text-white font-bold">3 quality applications per day.</span> Let our AI turn your Valencia credentials into a direct pipeline to the life you deserve.
+                Your credentials should pay off. <span className="text-white font-bold">3 quality applications per day.</span> We turn your degree into a direct pipeline to the life you deserve.
               </p>
 
               {/* CTA Buttons - STACK ON MOBILE */}
@@ -540,7 +540,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                 Jalanea<span className="text-gold">Works</span>
               </div>
               <p className="text-jalanea-400 max-w-xs mb-4">
-                Empowering Valencia College graduates to build careers, start businesses, and strengthen their communities.
+                Your credentials should open doors. We make sure they do — for community college grads, first-gen students, and anyone the system overlooked.
               </p>
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/20 text-gold text-xs font-bold">
                 <Zap size={12} /> Jalanea: Light the Block
@@ -548,7 +548,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
             </div>
 
             {/* Navigation Links */}
-            <div className="grid grid-cols-2 gap-x-12 gap-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-x-12 gap-y-4">
               <div>
                 <h4 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider mb-4">Platform</h4>
                 <div className="space-y-3">
@@ -563,6 +563,15 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                   <button onClick={() => navigate('/about')} className="block text-sm text-jalanea-300 hover:text-white transition-colors">The Founder</button>
                   <a href="https://www.linkedin.com/in/alexusjalaneajenkins/" target="_blank" rel="noopener noreferrer" className="block text-sm text-jalanea-300 hover:text-white transition-colors">LinkedIn</a>
                   <a href="https://www.instagram.com/JalaneaJ_/" target="_blank" rel="noopener noreferrer" className="block text-sm text-jalanea-300 hover:text-white transition-colors">Instagram</a>
+                </div>
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider mb-4">Support</h4>
+                <div className="space-y-3">
+                  <a href="https://buymeacoffee.com/alexusjalanea" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-jalanea-300 hover:text-gold transition-colors">
+                    <Coffee size={14} /> Support the Founder
+                  </a>
+                  <a href="mailto:business@jalanea.works" className="block text-sm text-jalanea-300 hover:text-white transition-colors">Partner With Us</a>
                 </div>
               </div>
             </div>
