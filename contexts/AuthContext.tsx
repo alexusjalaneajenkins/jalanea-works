@@ -28,6 +28,7 @@ import {
 // User profile type matching what we save during onboarding
 interface UserProfileData {
     fullName?: string;
+    displayName?: string;
     photoURL?: string;
     location?: string;
     linkedinUrl?: string;
