@@ -24,9 +24,24 @@ export const TIER_CREDITS = {
   starter: 300,
   pro: 1200,
   unlimited: Infinity,
+  owner: Infinity, // Owner tier
 } as const;
 
 export type UserTier = keyof typeof TIER_CREDITS;
+
+// Owner emails - these accounts get unlimited access
+const OWNER_EMAILS = [
+  'jalaneajenkins@gmail.com',
+  'business@jalanea.works',
+];
+
+/**
+ * Check if an email belongs to an owner account
+ */
+export function isOwnerEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return OWNER_EMAILS.includes(email.toLowerCase());
+}
 
 // User credits interface
 export interface UserCredits {

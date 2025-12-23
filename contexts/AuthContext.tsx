@@ -22,7 +22,8 @@ import {
     hasEnoughCredits, 
     isTrialExpired,
     CreditAction,
-    getDefaultCredits 
+    getDefaultCredits,
+    isOwnerEmail 
 } from '../services/creditsService';
 
 // User profile type matching what we save during onboarding
@@ -288,6 +289,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return { success: false, error: 'Not logged in' };
         }
         
+        // Owner gets free pass
+        if (isOwnerEmail(auth.currentUser.email)) {
+            return { success: true };
+        }
+        
         const result = await deductCredits(auth.currentUser.uid, action);
         
         if (result.success) {
@@ -300,12 +306,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Check if user can use credits for an action
     const canUseCredits = (action: CreditAction): boolean => {
+        // Owner always can
+        if (isOwnerEmail(auth.currentUser?.email)) return true;
         if (!userCredits) return false;
         return hasEnoughCredits(userCredits, action);
     };
 
     // Check if trial is still active
     const isTrialActive = (): boolean => {
+        // Owner is always active
+        if (isOwnerEmail(auth.currentUser?.email)) return true;
         if (!userCredits) return false;
         if (userCredits.subscriptionStatus === 'active') return true;
         return !isTrialExpired(userCredits);
