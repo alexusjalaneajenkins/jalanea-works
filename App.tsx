@@ -10,6 +10,8 @@ import { Onboarding } from './pages/Onboarding';
 import { About } from './pages/About';
 import { Mission } from './pages/Mission';
 import { Entrepreneur } from './pages/Entrepreneur';
+import { Blog } from './pages/Blog';
+import { BlogArticlePage } from './pages/BlogArticle';
 import { Schedule } from './pages/Schedule';
 import { AuthPage } from './pages/Auth';
 import { Sidebar } from './components/Sidebar';
@@ -141,6 +143,8 @@ const App: React.FC = () => {
           <Route path="/about" element={<About setRoute={() => { }} />} />
           <Route path="/mission" element={<Mission setRoute={() => { }} />} />
           <Route path="/entrepreneur" element={<Entrepreneur setRoute={() => { }} />} />
+          <Route path="/blog" element={<Blog setRoute={() => { }} />} />
+          <Route path="/blog/:slug" element={<BlogArticlePage setRoute={() => { }} />} />
           <Route path="/auth" element={<AuthPage />} />
 
           {/* Onboarding - Protected but OUTSIDE AppLayout (full-screen, no sidebar) */}

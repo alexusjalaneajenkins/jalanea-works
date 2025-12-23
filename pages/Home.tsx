@@ -302,7 +302,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
           <div className="hidden md:flex items-center gap-8">
             <button onClick={() => navigate('/mission')} className="text-sm font-bold text-jalanea-200 hover:text-white transition-colors">Our Why</button>
             <button onClick={() => navigate('/entrepreneur')} className="text-sm font-bold text-jalanea-200 hover:text-white transition-colors">Start a Business</button>
-            <button onClick={() => navigate('/about')} className="text-sm font-bold text-jalanea-200 hover:text-white transition-colors">The Founder</button>
+            <button onClick={() => navigate('/blog')} className="text-sm font-bold text-jalanea-200 hover:text-white transition-colors">Blog</button>
             <div className="h-4 w-px bg-white/20"></div>
             <button className="text-sm font-bold text-white hover:text-gold transition-colors" onClick={() => openAuth('signin')}>Sign in</button>
             <Button size="sm" variant="primary" onClick={() => openAuth('signup')}>Get Started</Button>
