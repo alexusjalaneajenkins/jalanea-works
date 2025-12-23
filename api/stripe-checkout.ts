@@ -2,9 +2,8 @@ import Stripe from 'stripe';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Initialize Stripe with secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',
-});
+// @ts-expect-error - API version from latest SDK
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 // Price IDs for subscription tiers
 const PRICE_IDS = {

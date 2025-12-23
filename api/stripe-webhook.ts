@@ -3,9 +3,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { buffer } from 'micro';
 
 // Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',
-});
+// @ts-expect-error - API version from latest SDK
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
