@@ -501,21 +501,6 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
             </p>
           </div>
 
-          {/* Transformation Visual - Image Placeholder for Custom Asset */}
-          <div className="relative w-full max-w-5xl mx-auto mb-20 rounded-3xl overflow-hidden shadow-2xl border-4 border-white group">
-            <img
-              src="JalaneaWorks_VCImage2png.png"
-              alt="Valencia College Transformation: From instability to homeownership and career success"
-              className="w-full h-auto object-contain transition-transform duration-700"
-            />
-            {/* Gradient Overlay for Text Readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-jalanea-900/90 via-jalanea-900/20 to-transparent flex items-end justify-center pb-12">
-              <span className="text-white/90 font-display font-medium text-xl md:text-2xl italic tracking-wide text-center px-4">
-                "The door to opportunity shouldn't be locked by instability."
-              </span>
-            </div>
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
