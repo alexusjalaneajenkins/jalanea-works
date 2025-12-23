@@ -118,6 +118,106 @@ const ActiveTracker = ({ navigate }: { navigate: (path: string) => void }) => {
     );
 };
 
+// Saved Jobs Carousel - Horizontal scroll of saved jobs
+const SavedJobsCarousel = ({ navigate }: { navigate: (path: string) => void }) => {
+    const { userProfile } = useAuth();
+
+    // Get saved jobs
+    const savedJobs = userProfile?.savedJobs?.filter(j => j.status === 'saved') || [];
+
+    if (savedJobs.length === 0) {
+        return null; // Don't show carousel if no saved jobs
+    }
+
+    return (
+        <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                    <div className="p-1.5 bg-gold/10 rounded-md">
+                        <Briefcase size={16} className="text-gold" />
+                    </div>
+                    <h2 className="text-xl font-bold text-jalanea-900">Your Saved Jobs</h2>
+                    <span className="text-xs font-bold text-jalanea-500 bg-jalanea-100 px-2 py-0.5 rounded-full">
+                        {savedJobs.length}
+                    </span>
+                </div>
+                <button
+                    onClick={() => navigate('/jobs')}
+                    className="text-sm font-bold text-jalanea-500 hover:text-jalanea-900 transition-colors flex items-center gap-1"
+                >
+                    View All <ChevronRight size={16} />
+                </button>
+            </div>
+
+            {/* Horizontal Scroll Container */}
+            <div className="relative -mx-4 px-4 md:-mx-8 md:px-8">
+                <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
+                    {savedJobs.slice(0, 10).map((savedJob: any) => (
+                        <Card
+                            key={savedJob.id}
+                            variant="solid-white"
+                            className="flex-shrink-0 w-[280px] md:w-[320px] snap-start cursor-pointer hover:shadow-lg transition-all border-l-4 border-l-gold"
+                            onClick={() => navigate('/jobs')}
+                        >
+                            <div className="space-y-3">
+                                <div>
+                                    <h4 className="font-bold text-jalanea-900 line-clamp-1">{savedJob.job?.title || 'Job Title'}</h4>
+                                    <p className="text-sm text-jalanea-500 line-clamp-1">{savedJob.job?.company || 'Company'}</p>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-jalanea-400">
+                                    <MapPin size={12} />
+                                    <span className="line-clamp-1">{savedJob.job?.location || 'Location'}</span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant="primary"
+                                        className="flex-1 text-xs"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (savedJob.job?.url) {
+                                                window.open(savedJob.job.url, '_blank');
+                                            }
+                                        }}
+                                    >
+                                        Apply Now
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-xs"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigate('/jobs');
+                                        }}
+                                    >
+                                        Details
+                                    </Button>
+                                </div>
+                            </div>
+                        </Card>
+                    ))}
+
+                    {/* Add More Jobs CTA */}
+                    <div
+                        className="flex-shrink-0 w-[200px] snap-start flex items-center justify-center cursor-pointer"
+                        onClick={() => navigate('/jobs')}
+                    >
+                        <div className="text-center p-6 rounded-xl border-2 border-dashed border-jalanea-200 hover:border-gold hover:bg-gold/5 transition-all group">
+                            <div className="w-12 h-12 rounded-full bg-jalanea-100 group-hover:bg-gold flex items-center justify-center mx-auto mb-3 transition-colors">
+                                <ArrowUpRight size={20} className="text-jalanea-400 group-hover:text-jalanea-900" />
+                            </div>
+                            <p className="text-sm font-bold text-jalanea-600 group-hover:text-jalanea-900">Find More Jobs</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export const Dashboard: React.FC = () => {
     const { userProfile } = useAuth();
     const navigate = useNavigate();
@@ -351,6 +451,9 @@ export const Dashboard: React.FC = () => {
                     </div>
                 </Card>
             </div>
+
+            {/* Saved Jobs Carousel - Appears when user has saved jobs */}
+            <SavedJobsCarousel navigate={navigate} />
 
             {/* Main Content Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
