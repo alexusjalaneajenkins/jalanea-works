@@ -303,6 +303,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
             <button onClick={() => navigate('/mission')} className="text-sm font-bold text-jalanea-200 hover:text-white transition-colors">Our Why</button>
             <button onClick={() => navigate('/entrepreneur')} className="text-sm font-bold text-jalanea-200 hover:text-white transition-colors">Start a Business</button>
             <button onClick={() => navigate('/blog')} className="text-sm font-bold text-jalanea-200 hover:text-white transition-colors">Blog</button>
+            <button onClick={() => navigate('/pricing')} className="text-sm font-bold text-gold hover:text-gold-light transition-colors">Pricing</button>
             <div className="h-4 w-px bg-white/20"></div>
             <button className="text-sm font-bold text-white hover:text-gold transition-colors" onClick={() => openAuth('signin')}>Sign in</button>
             <Button size="sm" variant="primary" onClick={() => openAuth('signup')}>Get Started</Button>
