@@ -1,5 +1,5 @@
 import { doc, getDoc, updateDoc, setDoc, Timestamp } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from './firebase';
 
 // Credit costs for each action
 export const CREDIT_COSTS = {
