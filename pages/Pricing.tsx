@@ -144,23 +144,23 @@ export const Pricing: React.FC = () => {
                                         ))}
                                     </ul>
 
-                                    <Button
+                                    <button
                                         onClick={() => handleSubscribe(tier)}
-                                        variant={isPopular ? 'primary' : 'outline'}
-                                        className={`w-full ${isPopular
-                                                ? 'bg-gold hover:bg-gold-light text-jalanea-950'
-                                                : 'border-white/20 hover:bg-white/5'
-                                            }`}
                                         disabled={loading !== null}
+                                        className={`w-full py-3 px-6 rounded-lg font-bold transition-all disabled:opacity-50 ${
+                                            isPopular
+                                                ? 'bg-gold hover:bg-gold-light text-jalanea-950'
+                                                : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+                                        }`}
                                     >
                                         {loading === tier ? (
-                                            <span className="flex items-center gap-2">
+                                            <span className="flex items-center justify-center gap-2">
                                                 <span className="animate-spin">⏳</span> Processing...
                                             </span>
                                         ) : (
                                             'Start Free Trial'
                                         )}
-                                    </Button>
+                                    </button>
                                 </div>
                             );
                         }
