@@ -6,7 +6,7 @@ import type { Job, SerpApiJobResult, JobSearchResponse, TransformedJobSearchResp
  */
 
 const API_BASE_URL = import.meta.env.PROD
-    ? 'https://jalanea-works.vercel.app'
+    ? ''  // Use relative paths in production (works on any domain)
     : 'http://localhost:5173';
 
 /**
@@ -171,7 +171,7 @@ export async function searchJobsAggregate(
 ): Promise<{ jobs: Job[]; totalResults: number; sources: string[] }> {
     try {
         const params = new URLSearchParams({ q: query });
-        
+
         if (options?.location) params.append('location', options.location);
         if (options?.remote) params.append('remote', 'true');
         if (options?.sources?.length) params.append('sources', options.sources.join(','));
@@ -190,9 +190,9 @@ export async function searchJobsAggregate(
         }
 
         const data = await response.json();
-        
+
         console.log(`✅ Aggregate search returned ${data.totalResults} jobs from sources:`, data.sources);
-        
+
         return {
             jobs: data.jobs || [],
             totalResults: data.totalResults || 0,

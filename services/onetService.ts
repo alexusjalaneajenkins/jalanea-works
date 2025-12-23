@@ -4,7 +4,7 @@
  */
 
 const API_BASE_URL = import.meta.env.PROD
-    ? 'https://jalanea-works.vercel.app'
+    ? ''  // Use relative paths in production (works on any domain)
     : 'http://localhost:5173';
 
 // Types matching O*NET API responses
