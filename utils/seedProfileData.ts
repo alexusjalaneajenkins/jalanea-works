@@ -50,8 +50,8 @@ export const seedProfileData = {
         {
             degree: "Associate of Arts in General Studies",
             school: "Valencia College",
-            year: "2022",
-            gpa: undefined
+            year: "2022"
+            // GPA not specified for this degree
         }
     ] as SeedEducation[],
 
