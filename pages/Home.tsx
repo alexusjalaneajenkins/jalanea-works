@@ -568,7 +568,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
               <div>
                 <h4 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider mb-4">Support</h4>
                 <div className="space-y-3">
-                  <a href="https://buymeacoffee.com/alexusjalanea" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-jalanea-300 hover:text-gold transition-colors">
+                  <a href="https://buymeacoffee.com/jalanea" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-jalanea-300 hover:text-gold transition-colors">
                     <Coffee size={14} /> Support the Founder
                   </a>
                   <a href="mailto:business@jalanea.works" className="block text-sm text-jalanea-300 hover:text-white transition-colors">Partner With Us</a>
