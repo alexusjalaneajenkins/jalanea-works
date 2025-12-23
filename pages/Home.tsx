@@ -300,9 +300,9 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
             <span>Jalanea<span className="text-gold font-light">Works</span></span>
           </div>
           <div className="hidden md:flex items-center gap-8">
-            <a href="#" className="text-sm font-bold text-jalanea-200 hover:text-white transition-colors">Platform</a>
-            <a href="#" className="text-sm font-bold text-jalanea-200 hover:text-white transition-colors">Valencia Alumni</a>
-            <a href="#" className="text-sm font-bold text-jalanea-200 hover:text-white transition-colors">Pricing</a>
+            <button onClick={() => navigate('/mission')} className="text-sm font-bold text-jalanea-200 hover:text-white transition-colors">Our Why</button>
+            <button onClick={() => navigate('/entrepreneur')} className="text-sm font-bold text-jalanea-200 hover:text-white transition-colors">Start a Business</button>
+            <button onClick={() => navigate('/about')} className="text-sm font-bold text-jalanea-200 hover:text-white transition-colors">The Founder</button>
             <div className="h-4 w-px bg-white/20"></div>
             <button className="text-sm font-bold text-white hover:text-gold transition-colors" onClick={() => openAuth('signin')}>Sign in</button>
             <Button size="sm" variant="primary" onClick={() => openAuth('signup')}>Get Started</Button>
@@ -551,16 +551,39 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-start gap-12">
             <div>
-              <div className="flex items-center gap-2 font-display font-bold text-2xl tracking-tighter mb-6">
+              <div className="flex items-center gap-2 font-display font-bold text-2xl tracking-tighter mb-4">
                 Jalanea<span className="text-gold">Works</span>
               </div>
-              <p className="text-jalanea-400 max-w-xs mb-6">
-                Empowering Valencia College graduates to launch thriving careers in Central Florida and beyond.
+              <p className="text-jalanea-400 max-w-xs mb-4">
+                Empowering Valencia College graduates to build careers, start businesses, and strengthen their communities.
               </p>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/20 text-gold text-xs font-bold">
+                <Zap size={12} /> Jalanea: Light the Block
+              </div>
+            </div>
+
+            {/* Navigation Links */}
+            <div className="grid grid-cols-2 gap-x-12 gap-y-4">
+              <div>
+                <h4 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider mb-4">Platform</h4>
+                <div className="space-y-3">
+                  <button onClick={() => navigate('/mission')} className="block text-sm text-jalanea-300 hover:text-white transition-colors">Our Mission</button>
+                  <button onClick={() => navigate('/entrepreneur')} className="block text-sm text-jalanea-300 hover:text-white transition-colors">Start a Business</button>
+                  <button onClick={() => openAuth('signup')} className="block text-sm text-jalanea-300 hover:text-white transition-colors">Find Jobs</button>
+                </div>
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider mb-4">About</h4>
+                <div className="space-y-3">
+                  <button onClick={() => navigate('/about')} className="block text-sm text-jalanea-300 hover:text-white transition-colors">The Founder</button>
+                  <a href="https://www.linkedin.com/in/alexusjalaneajenkins/" target="_blank" rel="noopener noreferrer" className="block text-sm text-jalanea-300 hover:text-white transition-colors">LinkedIn</a>
+                  <a href="https://www.instagram.com/JalaneaJ_/" target="_blank" rel="noopener noreferrer" className="block text-sm text-jalanea-300 hover:text-white transition-colors">Instagram</a>
+                </div>
+              </div>
             </div>
           </div>
           <div className="mt-20 pt-8 border-t border-white/10 text-xs text-jalanea-500 font-medium flex flex-col md:flex-row justify-between gap-4 uppercase tracking-wider">
-            <div>© 2024 Jalanea Works Inc.</div>
+            <div>© 2024 Jalanea Works Inc. | Part of the Jalanea: Light the Block Movement</div>
             <div className="flex gap-6">
               <a href="#" className="hover:text-white">Privacy</a>
               <a href="#" className="hover:text-white">Terms</a>

@@ -25,6 +25,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRoute, setRoute, isMobi
     { id: NavRoute.PROFILE, label: 'Profile', icon: <User size={20} />, path: '/profile' },
   ];
 
+  // External links (open in new context or navigate)
+  const externalLinks = [
+    { label: 'Start a Business', icon: <Zap size={20} />, path: '/entrepreneur' },
+  ];
+
   const handleNav = (route: NavRoute, path: string) => {
     navigate(path);
     setRoute(route);
@@ -82,6 +87,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRoute, setRoute, isMobi
                 {item.icon}
               </span>
               {item.label}
+            </button>
+          ))}
+
+          {/* Divider */}
+          <div className="h-px bg-white/10 my-4" />
+
+          {/* External Links */}
+          {externalLinks.map((link) => (
+            <button
+              key={link.label}
+              onClick={() => navigate(link.path)}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 border-l-[3px] text-gold/80 hover:text-gold hover:bg-gold/10 border-transparent hover:border-gold/50"
+            >
+              <span className="text-gold/60">{link.icon}</span>
+              {link.label}
             </button>
           ))}
         </nav>
