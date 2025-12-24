@@ -192,14 +192,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            // IMPORTANT: Clear previous user's data immediately to prevent cross-contamination
+            // This ensures old profile/jobs don't briefly show when switching accounts
+            setUserProfile(null);
+            setUserCredits(null);
             setCurrentUser(user);
-            setCurrentUser(user);
+
             if (user) {
+                console.log('[Auth] User changed, loading profile for:', user.uid.slice(-8));
                 await fetchUserProfile(user.uid);
                 await fetchUserCredits(user);
-            } else {
-                setUserProfile(null);
-                setUserCredits(null);
             }
             setLoading(false);
         });

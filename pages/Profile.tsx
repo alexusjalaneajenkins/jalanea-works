@@ -260,6 +260,9 @@ export const ProfilePage: React.FC = () => {
                 <div>
                   <h2 className="text-2xl font-bold text-jalanea-900">{fullName || 'No name set'}</h2>
                   <p className="text-jalanea-600">{currentUser?.email}</p>
+                  <p className="text-xs text-jalanea-400 font-mono mt-1">
+                    User ID: {currentUser?.uid?.slice(-12) || 'Not logged in'}
+                  </p>
                 </div>
                 <div className="flex flex-wrap gap-4 text-sm">
                   {location && (
