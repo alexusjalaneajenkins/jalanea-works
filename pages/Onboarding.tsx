@@ -1349,10 +1349,10 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
                 {/* Wizard Steps */}
                 {currentStep >= STEPS.PROFILE_BASICS && (
-                    <div className="w-full max-w-4xl flex flex-col">
+                    <div className="w-full max-w-4xl flex flex-col px-2 sm:px-0">
 
-                        {/* Wizard Content Card - Increased min-height for more vertical space */}
-                        <Card variant="glass-light" className="p-6 md:p-10 shadow-xl border-white/60 relative flex flex-col min-h-[500px] md:min-h-[600px]">
+                        {/* Wizard Content Card - Responsive width and height */}
+                        <Card variant="glass-light" className="p-4 sm:p-6 md:p-10 shadow-xl border-white/60 relative flex flex-col min-h-[450px] sm:min-h-[500px] md:min-h-[600px] overflow-hidden">
                             {renderProgressBar()}
 
                             <div className="flex-1 overflow-y-auto custom-scrollbar md:pr-2">
@@ -1365,13 +1365,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                                 {currentStep === STEPS.SETUP_SCHEDULE && renderScheduleSetup()}
                             </div>
 
-                            {/* Wizard Footer / Navigation */}
-                            <div className="pt-8 mt-4 border-t border-jalanea-100 flex justify-between items-center shrink-0">
+                            {/* Wizard Footer / Navigation - Stack on mobile */}
+                            <div className="pt-6 sm:pt-8 mt-4 border-t border-jalanea-100 flex flex-col-reverse sm:flex-row justify-between items-center gap-3 sm:gap-0 shrink-0">
                                 <Button
                                     variant="ghost"
                                     onClick={prevStep}
                                     icon={<ChevronLeft size={18} />}
-                                    className="text-jalanea-500 hover:text-jalanea-900 px-0 md:px-6"
+                                    className="text-jalanea-500 hover:text-jalanea-900 w-full sm:w-auto"
                                 >
                                     Back
                                 </Button>
@@ -1380,7 +1380,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                                     <Button
                                         variant="primary"
                                         onClick={handleCompleteOnboarding}
-                                        className="shadow-xl shadow-gold/20 animate-pulse"
+                                        className="shadow-xl shadow-gold/20 animate-pulse w-full sm:w-auto"
                                         icon={<CheckCircle2 size={18} />}
                                     >
                                         Complete Profile
@@ -1391,7 +1391,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                                         onClick={nextStep}
                                         icon={<ChevronRight size={18} />}
                                         disabled={savedJobsCount < 3}
-                                        className={savedJobsCount < 3 ? 'opacity-50 cursor-not-allowed' : ''}
+                                        className={`w-full sm:w-auto ${savedJobsCount < 3 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                         {savedJobsCount < 3 ? `Save ${3 - savedJobsCount} more` : 'Continue'}
                                     </Button>
@@ -1400,6 +1400,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                                         variant="primary"
                                         onClick={nextStep}
                                         icon={<ChevronRight size={18} />}
+                                        className="w-full sm:w-auto"
                                     >
                                         Next Step
                                     </Button>
