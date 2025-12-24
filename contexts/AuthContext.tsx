@@ -140,6 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (!credits) {
                 // Initialize credits for new user
+                console.log('[Credits] Initializing credits for new user:', user.uid.slice(-8));
                 credits = await initializeUserCredits(user.uid);
                 // Re-check owner status for new users
                 if (user.email && isOwnerEmail(user.email)) {
@@ -151,6 +152,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     await setDoc(doc(db, 'users', user.uid), ownerUpdate, { merge: true });
                     credits = { ...credits, ...ownerUpdate } as UserCredits;
                 }
+            } else if (isNaN(credits.credits) || credits.credits === null || credits.credits === undefined) {
+                // Auto-repair corrupted credits (NaN bug)
+                console.log('[Credits] Repairing corrupted credits for user:', user.uid.slice(-8));
+                credits = await initializeUserCredits(user.uid);
             }
             setUserCredits(credits);
         } catch (error) {

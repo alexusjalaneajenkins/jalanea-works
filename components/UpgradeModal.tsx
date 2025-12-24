@@ -44,7 +44,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
           icon: <Clock className="text-red-400" size={48} />,
           title: 'Your trial has ended',
           description:
-            "You've used your 3-day free trial. Subscribe now to continue building your career with Jalanea Works.",
+            "You've explored Jalanea Works for 7 days. Ready to invest in your career? Subscribe now to continue your journey.",
           buttonText: 'Choose a Plan',
         };
       case 'upgrade':
@@ -101,7 +101,9 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
               </div>
               <div className="flex justify-between text-sm mt-2">
                 <span className="text-jalanea-400">Credits Remaining</span>
-                <span className="text-white">{formatCredits(userCredits.credits)}</span>
+                <span className="text-white">
+                  {formatCredits(isNaN(userCredits.credits) ? 0 : userCredits.credits)}
+                </span>
               </div>
             </div>
           )}

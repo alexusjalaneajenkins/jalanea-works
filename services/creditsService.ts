@@ -57,14 +57,14 @@ export interface UserCredits {
   subscriptionStatus: 'active' | 'canceled' | 'past_due' | 'trialing' | null;
 }
 
-// Default credits for new users (3-day trial)
+// Default credits for new users (7-day trial - enough time to see value)
 export const getDefaultCredits = (): UserCredits => ({
   tier: 'trialing',
   credits: TIER_CREDITS.trialing,
   creditsUsedThisMonth: 0,
   monthlyCreditsLimit: TIER_CREDITS.trialing,
   lastCreditReset: new Date(),
-  trialEndsAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
+  trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
   stripeCustomerId: null,
   subscriptionId: null,
   subscriptionStatus: 'trialing',
@@ -83,17 +83,23 @@ export async function getUserCredits(userId: string): Promise<UserCredits | null
 
     const data = userDoc.data();
 
-    // Convert Firestore Timestamps to Dates
+    // Helper to safely parse number values (prevents NaN)
+    const safeNumber = (val: any, fallback: number): number => {
+      const num = Number(val);
+      return isNaN(num) ? fallback : num;
+    };
+
+    // Convert Firestore Timestamps to Dates, with robust NaN protection
     return {
-      tier: data.tier || 'free',
-      credits: data.credits ?? 0,
-      creditsUsedThisMonth: data.creditsUsedThisMonth ?? 0,
-      monthlyCreditsLimit: data.monthlyCreditsLimit ?? 0,
+      tier: data.tier || 'trialing',
+      credits: safeNumber(data.credits, TIER_CREDITS.trialing),
+      creditsUsedThisMonth: safeNumber(data.creditsUsedThisMonth, 0),
+      monthlyCreditsLimit: safeNumber(data.monthlyCreditsLimit, TIER_CREDITS.trialing),
       lastCreditReset: data.lastCreditReset?.toDate() || null,
       trialEndsAt: data.trialEndsAt?.toDate() || null,
       stripeCustomerId: data.stripeCustomerId || null,
       subscriptionId: data.subscriptionId || null,
-      subscriptionStatus: data.subscriptionStatus || null,
+      subscriptionStatus: data.subscriptionStatus || 'trialing',
     };
   } catch (error) {
     console.error('Error fetching user credits:', error);
@@ -268,6 +274,9 @@ export function getCreditUsagePercent(userCredits: UserCredits): number {
 export function formatCredits(credits: number): string {
   if (credits === Infinity) {
     return '∞';
+  }
+  if (isNaN(credits) || credits === null || credits === undefined) {
+    return '0';
   }
   return credits.toLocaleString();
 }
