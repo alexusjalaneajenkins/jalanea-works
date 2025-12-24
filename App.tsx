@@ -15,6 +15,7 @@ import { BlogArticlePage } from './pages/BlogArticle';
 import { Pricing } from './pages/Pricing';
 import { Support } from './pages/Support';
 import { Schedule } from './pages/Schedule';
+import { AIAssistant } from './pages/AIAssistant';
 import { AuthPage } from './pages/Auth';
 import { Sidebar } from './components/Sidebar';
 import { AIChat } from './components/AIChat';
@@ -66,6 +67,7 @@ const AppLayout: React.FC = () => {
     if (path.includes('jobs')) return NavRoute.JOBS;
     if (path.includes('resume')) return NavRoute.RESUME;
     if (path.includes('schedule')) return NavRoute.SCHEDULE;
+    if (path.includes('ai-assistant')) return NavRoute.AI_ASSISTANT;
     return NavRoute.HOME; // Fallback
   };
 
@@ -84,6 +86,8 @@ const AppLayout: React.FC = () => {
       navigate('/resume');
     } else if (route === NavRoute.SCHEDULE) {
       navigate('/schedule');
+    } else if (route === NavRoute.AI_ASSISTANT) {
+      navigate('/ai-assistant');
     } else if (route === NavRoute.PROFILE) {
       navigate('/profile');
     } else if (route === NavRoute.ONBOARDING) {
@@ -124,6 +128,7 @@ const AppLayout: React.FC = () => {
               <Route path="/jobs" element={<Jobs setRoute={handleSetRoute} />} />
               <Route path="/resume" element={<ResumeBuilder />} />
               <Route path="/schedule" element={<Schedule />} />
+              <Route path="/ai-assistant" element={<AIAssistant />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </div>

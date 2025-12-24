@@ -600,20 +600,28 @@ export const ResumeBuilder: React.FC = () => {
                                         `}
                                         dangerouslySetInnerHTML={{
                                             __html: generatedContent
-                                                // Headers
+                                                // Headers - match the whole line
                                                 .replace(/^### (.+)$/gm, '<h3>$1</h3>')
                                                 .replace(/^## (.+)$/gm, '<h2>$1</h2>')
                                                 .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-                                                // Bold
-                                                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                                                // Bullet points - convert markdown lists to HTML
+                                                // Bold - match double asterisks (non-greedy)
+                                                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                                                // Italic - single asterisks (after bold, only inline text)
+                                                .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>')
+                                                // Bullet points with asterisk at start of line
+                                                .replace(/^\*\s+(.+)$/gm, '<li>$1</li>')
+                                                // Bullet points with dash at start of line
                                                 .replace(/^[-•]\s+(.+)$/gm, '<li>$1</li>')
+                                                // Wrap consecutive list items in ul
                                                 .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
                                                 // Numbered lists
                                                 .replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>')
-                                                // Line breaks for remaining newlines
+                                                // Paragraphs from double newlines
                                                 .replace(/\n\n/g, '</p><p>')
+                                                // Single newlines to br
                                                 .replace(/\n/g, '<br/>')
+                                                // Clean up any remaining stray asterisks from malformed markdown
+                                                .replace(/\s\*\s/g, ' ')
                                         }}
                                     />
                                 ) : (

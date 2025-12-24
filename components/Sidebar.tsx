@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NavRoute } from '../types';
-import { LayoutDashboard, User, LogOut, Compass, FileText, Zap, CalendarClock, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, User, LogOut, Compass, FileText, Zap, CalendarClock, MessageSquare, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface SidebarProps {
@@ -22,6 +21,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRoute, setRoute, isMobi
     { id: NavRoute.SCHEDULE, label: 'Smart Schedule', icon: <CalendarClock size={20} />, path: '/schedule' },
     { id: NavRoute.JOBS, label: 'Explore Jobs', icon: <Compass size={20} />, path: '/jobs' },
     { id: NavRoute.RESUME, label: 'AI Resume Studio', icon: <FileText size={20} />, path: '/resume' },
+    { id: NavRoute.AI_ASSISTANT, label: 'AI Career Coach', icon: <Sparkles size={20} />, path: '/ai-assistant' },
     { id: NavRoute.PROFILE, label: 'Profile', icon: <User size={20} />, path: '/profile' },
   ];
 

@@ -6,6 +6,7 @@ export enum NavRoute {
   JOBS = 'jobs',
   RESUME = 'resume',
   SCHEDULE = 'schedule',
+  AI_ASSISTANT = 'ai-assistant',
   PROFILE = 'profile',
   ONBOARDING = 'onboarding',
 }
