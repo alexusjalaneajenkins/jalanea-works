@@ -588,9 +588,34 @@ export const ResumeBuilder: React.FC = () => {
                                 </div>
                             ) : (
                                 viewMode === 'preview' ? (
-                                    <div className={`prose max-w-none text-jalanea-800 whitespace-pre-wrap leading-relaxed print:text-black ${fontFamily} ${fontSize}`}>
-                                        {generatedContent}
-                                    </div>
+                                    <div
+                                        className={`prose max-w-none text-jalanea-800 leading-relaxed print:text-black ${fontFamily} ${fontSize} 
+                                            [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-jalanea-900 [&_h1]:border-b [&_h1]:pb-2 [&_h1]:mb-4
+                                            [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-jalanea-900 [&_h2]:mt-6 [&_h2]:mb-2 [&_h2]:border-l-4 [&_h2]:border-gold [&_h2]:pl-3
+                                            [&_h3]:text-base [&_h3]:font-bold [&_h3]:text-jalanea-800 [&_h3]:mt-4 [&_h3]:mb-1
+                                            [&_strong]:font-bold [&_strong]:text-jalanea-900
+                                            [&_ul]:list-disc [&_ul]:ml-5 [&_ul]:mt-2 [&_ul]:space-y-1
+                                            [&_li]:text-jalanea-700
+                                            [&_p]:mt-2 [&_p]:mb-2
+                                        `}
+                                        dangerouslySetInnerHTML={{
+                                            __html: generatedContent
+                                                // Headers
+                                                .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                                                .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                                                .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+                                                // Bold
+                                                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                                                // Bullet points - convert markdown lists to HTML
+                                                .replace(/^[-•]\s+(.+)$/gm, '<li>$1</li>')
+                                                .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+                                                // Numbered lists
+                                                .replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>')
+                                                // Line breaks for remaining newlines
+                                                .replace(/\n\n/g, '</p><p>')
+                                                .replace(/\n/g, '<br/>')
+                                        }}
+                                    />
                                 ) : (
                                     <textarea
                                         value={generatedContent}

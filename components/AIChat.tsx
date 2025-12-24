@@ -15,10 +15,13 @@ const formatMessage = (text: string): string => {
     // Bold: **text** or __text__ (process first)
     .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-jalanea-900">$1</strong>')
     .replace(/__(.*?)__/g, '<strong class="font-bold text-jalanea-900">$1</strong>')
-    // Italic: *text* (single asterisk, after bold is handled)
-    .replace(/\*([^*]+)\*/g, '<em class="italic">$1</em>')
+    // Italic: *text* (single asterisk, after bold is handled) - only match single asterisks not at line start
+    .replace(/(?<!\n|\r|^)\*([^*\n]+)\*(?!\*)/g, '<em class="italic">$1</em>')
+    // Bullet points: - text or * text at start of line
+    .replace(/(?:^|\n)[-•]\s+(.+)/g, '<br/><span class="inline-flex items-start gap-2"><span class="text-gold font-bold mt-0.5">•</span><span>$1</span></span>')
+    .replace(/(?:^|\n)\*\s+(.+)/g, '<br/><span class="inline-flex items-start gap-2"><span class="text-gold font-bold mt-0.5">•</span><span>$1</span></span>')
     // Numbered lists: 1. text -> styled line break and number
-    .replace(/(\d+)\.\s+/g, '<br/><span class="inline-flex items-center gap-1"><span class="text-gold font-bold">$1.</span></span> ')
+    .replace(/(?:^|\n)(\d+)\.\s+(.+)/g, '<br/><span class="inline-flex items-start gap-2"><span class="text-gold font-bold">$1.</span><span>$2</span></span>')
     // Line breaks for better readability
     .replace(/\n/g, '<br/>');
 };
