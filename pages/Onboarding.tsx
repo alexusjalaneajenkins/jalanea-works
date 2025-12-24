@@ -1266,52 +1266,65 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
             // Save all profile data and preferences, mark onboarding complete
             console.log('📝 Saving profile data...');
-            await saveUserProfile({
+
+            // Build education array - remove undefined values, Firestore rejects them
+            const educationData = selectedDegrees.map(edu => ({
+                // Core fields expected by geminiService.ts
+                degree: `${edu.degree.level} in ${edu.degree.name}`,
+                school: edu.degree.institution,
+                year: edu.graduationYear || 'In Progress',
+                // Note: gpa omitted - user can update in profile (Firestore rejects undefined)
+                // Extra metadata for richer profile
+                programId: edu.degree.id,
+                programName: edu.degree.name,
+                degreeLevel: edu.degree.level,
+                field: edu.degree.field,
+                qualifiedCareers: edu.degree.entryLevelCareers.map(c => c.title)
+            }));
+
+            // Build experience array
+            const experienceData = experienceList.map((exp: any) => ({
+                role: exp.role,
+                company: exp.company,
+                duration: exp.dates || 'Present', // Map 'dates' to 'duration'
+                description: exp.description
+                    ? exp.description.split(/[\n•\-]/).map((line: string) => line.trim()).filter((line: string) => line.length > 0)
+                    : [] // Convert string to array of bullet points
+            }));
+
+            // Build profile object - only include defined values
+            const profileData: Record<string, any> = {
                 // Profile basics
-                fullName,
-                location,
-                photoURL: profilePic,
-                linkedinUrl,
-                portfolioUrl,
-                // Education - map to the format expected by geminiService AND types.ts
-                education: selectedDegrees.length > 0 ? selectedDegrees.map(edu => ({
-                    // Core fields expected by geminiService.ts
-                    degree: `${edu.degree.level} in ${edu.degree.name}`,
-                    school: edu.degree.institution,
-                    year: edu.graduationYear || 'In Progress',
-                    gpa: undefined, // User can update in profile
-                    // Extra metadata for richer profile
-                    programId: edu.degree.id,
-                    programName: edu.degree.name,
-                    degreeLevel: edu.degree.level,
-                    field: edu.degree.field,
-                    qualifiedCareers: edu.degree.entryLevelCareers.map(c => c.title)
-                })) : undefined,
-                // Experience - map to the format expected by geminiService
-                experience: experienceList.map((exp: any) => ({
-                    role: exp.role,
-                    company: exp.company,
-                    duration: exp.dates || 'Present', // Map 'dates' to 'duration'
-                    description: exp.description
-                        ? exp.description.split(/[\n•\-]/).map((line: string) => line.trim()).filter((line: string) => line.length > 0)
-                        : [] // Convert string to array of bullet points
-                })),
+                fullName: fullName || '',
+                location: location || '',
+                linkedinUrl: linkedinUrl || '',
+                portfolioUrl: portfolioUrl || '',
+                // Education & Experience (use empty arrays instead of undefined)
+                education: educationData,
+                experience: experienceData,
                 // Status
                 onboardingCompleted: true,
                 hasSetupSchedule: true,
                 // Preferences
                 preferences: {
-                    ...userProfile?.preferences,
+                    ...(userProfile?.preferences || {}),
                     // Job search preferences (auto-populated from degree careers)
-                    targetRoles: roleTags,
-                    workStyles: [workStyle],
-                    salary: targetSalary,
-                    transportMode: transportMode,
+                    targetRoles: roleTags || [],
+                    workStyles: [workStyle || 'Hybrid'],
+                    salary: targetSalary || 50000,
+                    transportMode: transportMode || null, // null is OK, undefined is not
                     // Schedule preferences
-                    weeklyJobSearchHours: weeklyHours,
-                    preferredSearchTimes: preferredTimes
+                    weeklyJobSearchHours: weeklyHours || 5,
+                    preferredSearchTimes: preferredTimes || []
                 }
-            });
+            };
+
+            // Only add photoURL if it exists (Firestore rejects undefined)
+            if (profilePic) {
+                profileData.photoURL = profilePic;
+            }
+
+            await saveUserProfile(profileData);
             console.log('✅ Profile saved! Navigating to dashboard...');
             setRoute(NavRoute.DASHBOARD);
         } catch (error) {
