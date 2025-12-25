@@ -3,7 +3,6 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { CommuteCostCalculator } from '../components/CommuteCostCalculator';
-import { DegreeSearchSelect } from '../components/DegreeSearchSelect';
 import { CareerPathExplorer } from '../components/CareerPathExplorer';
 import { CareerPath } from '../components/CareerPathCard';
 import { NavRoute, Job, TransportMode } from '../types';
@@ -83,13 +82,15 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
     const [linkedinUrl, setLinkedinUrl] = useState('');
     const [portfolioUrl, setPortfolioUrl] = useState('');
 
-    // Education state - supporting multiple degrees
+    // Education state - supporting multiple degrees with flexible text input
     interface SelectedEducation {
-        degree: DegreeProgram;
+        degreeName: string;          // Free text, e.g. "B.S. in Computer Science"
+        institution: string;         // Free text, e.g. "University of Central Florida"
         graduationYear: string;
     }
     const [selectedDegrees, setSelectedDegrees] = useState<SelectedEducation[]>([]);
-    const [currentDegree, setCurrentDegree] = useState<DegreeProgram | null>(null);
+    const [currentDegreeName, setCurrentDegreeName] = useState('');
+    const [currentInstitution, setCurrentInstitution] = useState('');
     const [currentGradYear, setCurrentGradYear] = useState('2024');
     const [isAddingDegree, setIsAddingDegree] = useState(true); // Start with form open
 
@@ -132,9 +133,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                 const allCareers: CareerPath[] = [];
                 const seenIds = new Set<string>();
 
-                for (const { degree } of selectedDegrees) {
-                    // Use degree title as search keyword
-                    const onetResults = await searchCareersEnriched(degree.title, 6);
+                for (const { degreeName } of selectedDegrees) {
+                    // Use degree name as search keyword (user's free-text input)
+                    const onetResults = await searchCareersEnriched(degreeName, 6);
 
                     for (const career of onetResults) {
                         if (!seenIds.has(career.id)) {
@@ -482,14 +483,30 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
     // Helper to add a degree to the list
     const addDegreeToList = () => {
-        if (currentDegree) {
-            setSelectedDegrees(prev => [...prev, { degree: currentDegree, graduationYear: currentGradYear }]);
-            // Update role tags with all careers from all degrees
-            const allCareers = [...selectedDegrees, { degree: currentDegree, graduationYear: currentGradYear }]
-                .flatMap(ed => ed.degree.entryLevelCareers.slice(0, 2).map(c => c.title));
-            setRoleTags([...new Set(allCareers)].slice(0, 5));
+        if (currentDegreeName.trim() && currentInstitution.trim()) {
+            setSelectedDegrees(prev => [...prev, {
+                degreeName: currentDegreeName.trim(),
+                institution: currentInstitution.trim(),
+                graduationYear: currentGradYear
+            }]);
+            // Update role tags based on degree name for career matching
+            const degreeKeywords = currentDegreeName.toLowerCase();
+            let suggestedRoles: string[] = [];
+            if (degreeKeywords.includes('computer') || degreeKeywords.includes('software') || degreeKeywords.includes('programming')) {
+                suggestedRoles = ['Software Developer', 'Web Developer', 'IT Support'];
+            } else if (degreeKeywords.includes('business') || degreeKeywords.includes('management')) {
+                suggestedRoles = ['Business Analyst', 'Operations Coordinator', 'Management Trainee'];
+            } else if (degreeKeywords.includes('nursing') || degreeKeywords.includes('health')) {
+                suggestedRoles = ['Registered Nurse', 'Health Technician', 'Medical Assistant'];
+            } else if (degreeKeywords.includes('design') || degreeKeywords.includes('graphic')) {
+                suggestedRoles = ['Graphic Designer', 'UI Designer', 'Content Creator'];
+            } else {
+                suggestedRoles = ['Entry Level Professional'];
+            }
+            setRoleTags(prev => [...new Set([...prev, ...suggestedRoles])].slice(0, 5));
             // Reset form
-            setCurrentDegree(null);
+            setCurrentDegreeName('');
+            setCurrentInstitution('');
             setCurrentGradYear('2024');
             setIsAddingDegree(false);
         }
@@ -504,7 +521,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
         <div className="animate-in slide-in-from-right-8 fade-in duration-300">
             <div className="mb-6">
                 <h2 className="text-2xl font-display font-bold text-jalanea-900">What did you study?</h2>
-                <p className="text-jalanea-600">Add your degrees and certificates to see matching careers.</p>
+                <p className="text-jalanea-600">Add your degrees and certificates from any school to see matching careers.</p>
             </div>
 
             <div className="space-y-4">
@@ -523,19 +540,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-xs font-bold px-2 py-0.5 rounded border bg-jalanea-100 text-jalanea-700 border-jalanea-200">
-                                        {edu.degree.level.includes('Bachelor') ? 'B.S.' : edu.degree.level.includes('Associate') ? 'A.S.' : 'Cert'}
-                                    </span>
-                                    <span className="text-xs text-jalanea-500">{edu.degree.institution} • {edu.graduationYear}</span>
+                                    <span className="text-xs text-jalanea-500">{edu.institution} • {edu.graduationYear}</span>
                                 </div>
-                                <h4 className="font-bold text-jalanea-900 mt-1">{edu.degree.name}</h4>
-                                <div className="flex flex-wrap gap-1 mt-2">
-                                    {edu.degree.entryLevelCareers.slice(0, 2).map((career, idx) => (
-                                        <span key={idx} className="text-xs bg-gold/10 px-2 py-0.5 rounded-full text-jalanea-700">
-                                            {career.title}
-                                        </span>
-                                    ))}
-                                </div>
+                                <h4 className="font-bold text-jalanea-900 mt-1">{edu.degreeName}</h4>
                             </div>
                         </div>
                     </div>
@@ -548,43 +555,56 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                             <label className="text-sm font-bold text-jalanea-900 mb-2 block">
                                 {selectedDegrees.length === 0 ? 'Your Degree or Certificate' : 'Add Another Degree'}
                             </label>
-                            <DegreeSearchSelect
-                                selectedProgram={currentDegree}
-                                onSelect={(program) => setCurrentDegree(program)}
-                                placeholder="Search Valencia or UCF programs..."
-                                showCareers={true}
+                            <input
+                                type="text"
+                                value={currentDegreeName}
+                                onChange={(e) => setCurrentDegreeName(e.target.value)}
+                                placeholder="e.g., B.S. in Computer Science, A.S. in Nursing, IT Certificate..."
+                                className="w-full rounded-xl border-2 border-jalanea-200 py-3 px-4 text-jalanea-900 font-medium focus:ring-2 focus:ring-gold/20 focus:border-gold bg-white placeholder:text-jalanea-400"
                             />
                         </div>
 
-                        {currentDegree && (
-                            <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-200">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-jalanea-900">Graduation Year</label>
-                                    <select
-                                        value={currentGradYear}
-                                        onChange={(e) => setCurrentGradYear(e.target.value)}
-                                        className="w-full rounded-xl border-2 border-jalanea-200 py-3 px-4 text-jalanea-900 font-medium focus:ring-2 focus:ring-gold/20 focus:border-gold bg-white"
-                                    >
-                                        <option value="2025">2025 (Expected)</option>
-                                        <option value="2024">2024</option>
-                                        <option value="2023">2023</option>
-                                        <option value="2022">2022</option>
-                                        <option value="2021">2021 or earlier</option>
-                                    </select>
-                                </div>
-                                <div className="flex items-end">
-                                    <button
-                                        onClick={addDegreeToList}
-                                        className="w-full bg-gold text-jalanea-900 font-bold py-3 px-4 rounded-xl hover:bg-gold-light transition-colors flex items-center justify-center gap-2"
-                                    >
-                                        <Plus size={16} />
-                                        Add This Degree
-                                    </button>
-                                </div>
-                            </div>
-                        )}
+                        <div>
+                            <label className="text-sm font-bold text-jalanea-900 mb-2 block">
+                                School / Institution
+                            </label>
+                            <input
+                                type="text"
+                                value={currentInstitution}
+                                onChange={(e) => setCurrentInstitution(e.target.value)}
+                                placeholder="e.g., Valencia College, UCF, Florida State, Online..."
+                                className="w-full rounded-xl border-2 border-jalanea-200 py-3 px-4 text-jalanea-900 font-medium focus:ring-2 focus:ring-gold/20 focus:border-gold bg-white placeholder:text-jalanea-400"
+                            />
+                        </div>
 
-                        {selectedDegrees.length > 0 && !currentDegree && (
+                        <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-200">
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold text-jalanea-900">Graduation Year</label>
+                                <select
+                                    value={currentGradYear}
+                                    onChange={(e) => setCurrentGradYear(e.target.value)}
+                                    className="w-full rounded-xl border-2 border-jalanea-200 py-3 px-4 text-jalanea-900 font-medium focus:ring-2 focus:ring-gold/20 focus:border-gold bg-white"
+                                >
+                                    <option value="2025">2025 (Expected)</option>
+                                    <option value="2024">2024</option>
+                                    <option value="2023">2023</option>
+                                    <option value="2022">2022</option>
+                                    <option value="2021">2021 or earlier</option>
+                                </select>
+                            </div>
+                            <div className="flex items-end">
+                                <button
+                                    onClick={addDegreeToList}
+                                    disabled={!currentDegreeName.trim() || !currentInstitution.trim()}
+                                    className="w-full bg-gold text-jalanea-900 font-bold py-3 px-4 rounded-xl hover:bg-gold-light transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <Plus size={16} />
+                                    Add This Degree
+                                </button>
+                            </div>
+                        </div>
+
+                        {selectedDegrees.length > 0 && (
                             <button
                                 onClick={() => setIsAddingDegree(false)}
                                 className="text-sm text-jalanea-500 hover:text-jalanea-700 transition-colors"
@@ -603,27 +623,18 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                     </button>
                 )}
 
-                {/* Career Match Summary */}
+                {/* Career Search Info */}
                 {selectedDegrees.length > 0 && (
                     <div className="bg-gold/10 border border-gold/20 rounded-xl p-4 animate-in fade-in duration-300">
                         <div className="flex items-center gap-2 mb-2">
                             <Sparkles size={16} className="text-gold" />
                             <span className="text-sm font-bold text-jalanea-900">
-                                {selectedDegrees.length === 1 ? 'Career Match Preview' : `Careers from ${selectedDegrees.length} Degrees`}
+                                AI-Powered Career Search
                             </span>
                         </div>
                         <p className="text-sm text-jalanea-700">
-                            Based on your education, we'll search for jobs like:
+                            We'll use your degree in <strong>{selectedDegrees[0].degreeName}</strong> from <strong>{selectedDegrees[0].institution}</strong> to find entry-level jobs that match your qualifications.
                         </p>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                            {[...new Set(selectedDegrees.flatMap(ed =>
-                                ed.degree.entryLevelCareers.slice(0, 2).map(c => c.title)
-                            ))].slice(0, 6).map((career, idx) => (
-                                <span key={idx} className="text-xs bg-white px-2 py-1 rounded-full text-jalanea-700 border border-jalanea-200">
-                                    {career}
-                                </span>
-                            ))}
-                        </div>
                     </div>
                 )}
             </div>
@@ -726,8 +737,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                 minSelections={1}
                 isLoading={isLoadingCareers}
                 degreeInfo={selectedDegrees.length > 0 ? {
-                    name: selectedDegrees[0].degree.name,
-                    field: selectedDegrees[0].degree.field
+                    name: selectedDegrees[0].degreeName,
+                    field: 'General'  // Field inferred from degree name for universal support
                 } : undefined}
             />
         </div>
@@ -1269,17 +1280,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
             // Build education array - remove undefined values, Firestore rejects them
             const educationData = selectedDegrees.map(edu => ({
-                // Core fields expected by geminiService.ts
-                degree: `${edu.degree.level} in ${edu.degree.name}`,
-                school: edu.degree.institution,
-                year: edu.graduationYear || 'In Progress',
-                // Note: gpa omitted - user can update in profile (Firestore rejects undefined)
-                // Extra metadata for richer profile
-                programId: edu.degree.id,
-                programName: edu.degree.name,
-                degreeLevel: edu.degree.level,
-                field: edu.degree.field,
-                qualifiedCareers: edu.degree.entryLevelCareers.map(c => c.title)
+                // Core fields expected by geminiService.ts (now using flexible text input)
+                degree: edu.degreeName,
+                school: edu.institution,
+                year: edu.graduationYear || 'In Progress'
+                // Note: gpa omitted - user can update in profile
+                // With flexible input, we don't have structured metadata like programId, level, etc.
+                // The AI will infer career matches based on the degree name text
             }));
 
             // Build experience array
