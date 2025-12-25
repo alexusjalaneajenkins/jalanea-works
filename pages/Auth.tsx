@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { AlertCircle, ArrowRight, Loader } from 'lucide-react';
 
 export const AuthPage: React.FC = () => {
-    const [isLogin, setIsLogin] = useState(true);
+    // Read mode from URL params (?mode=login or ?mode=signup), default to signup for new users
+    const [searchParams] = useSearchParams();
+    const modeParam = searchParams.get('mode');
+    const [isLogin, setIsLogin] = useState(modeParam === 'login');
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState(''); // For signup
