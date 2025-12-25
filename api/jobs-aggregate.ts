@@ -36,10 +36,10 @@ interface Job {
 // Remotive API (no key needed)
 async function fetchRemotiveJobs(query: string): Promise<Job[]> {
     try {
-        const response = await fetch(`https://remotive.com/api/remote-jobs?search=${encodeURIComponent(query)}&limit=15`);
+        const response = await fetch(`https://remotive.com/api/remote-jobs?search=${encodeURIComponent(query)}&limit=25`);
         if (!response.ok) return [];
         const data = await response.json();
-        return (data.jobs || []).slice(0, 15).map((job: any) => ({
+        return (data.jobs || []).slice(0, 25).map((job: any) => ({
             id: `remotive-${job.id}`,
             title: job.title,
             company: job.company_name,
@@ -73,7 +73,7 @@ async function fetchRemoteOKJobs(query: string): Promise<Job[]> {
         const jobs = data.slice(1); // First item is metadata
         const queryLower = query.toLowerCase();
         return jobs
-            .filter((job: any) => 
+            .filter((job: any) =>
                 job.title?.toLowerCase().includes(queryLower) ||
                 job.position?.toLowerCase().includes(queryLower) ||
                 job.tags?.some((tag: string) => tag.toLowerCase().includes(queryLower))
@@ -85,8 +85,8 @@ async function fetchRemoteOKJobs(query: string): Promise<Job[]> {
                 company: job.company,
                 location: job.location || 'Remote Worldwide',
                 type: 'Full-time',
-                salaryRange: job.salary_min && job.salary_max 
-                    ? `$${(job.salary_min/1000).toFixed(0)}k - $${(job.salary_max/1000).toFixed(0)}k`
+                salaryRange: job.salary_min && job.salary_max
+                    ? `$${(job.salary_min / 1000).toFixed(0)}k - $${(job.salary_max / 1000).toFixed(0)}k`
                     : 'Not specified',
                 postedAt: job.date,
                 matchScore: 0,
@@ -112,7 +112,7 @@ async function fetchArbeitnowJobs(query: string): Promise<Job[]> {
         const data = await response.json();
         const queryLower = query.toLowerCase();
         return (data.data || [])
-            .filter((job: any) => 
+            .filter((job: any) =>
                 job.title?.toLowerCase().includes(queryLower) ||
                 job.tags?.some((tag: string) => tag.toLowerCase().includes(queryLower))
             )
@@ -147,7 +147,7 @@ async function fetchMuseJobs(query: string): Promise<Job[]> {
             'design': 'Design', 'designer': 'Design', 'ux': 'Design', 'graphic': 'Design',
             'marketing': 'Marketing', 'data': 'Data Science', 'analyst': 'Data Science'
         };
-        
+
         let category = '';
         const queryLower = query.toLowerCase();
         for (const [keyword, cat] of Object.entries(categoryMap)) {
@@ -163,7 +163,7 @@ async function fetchMuseJobs(query: string): Promise<Job[]> {
         const response = await fetch(`https://www.themuse.com/api/public/jobs?${params.toString()}`);
         if (!response.ok) return [];
         const data = await response.json();
-        
+
         return (data.results || []).slice(0, 15).map((job: any) => ({
             id: `muse-${job.id}`,
             title: job.name,
@@ -210,15 +210,15 @@ async function fetchJSearchJobs(query: string): Promise<Job[]> {
         );
         if (!response.ok) return [];
         const data = await response.json();
-        
+
         return (data.data || []).slice(0, 15).map((job: any) => ({
             id: `jsearch-${job.job_id}`,
             title: job.job_title,
             company: job.employer_name,
-            location: job.job_is_remote ? 'Remote' : 
+            location: job.job_is_remote ? 'Remote' :
                 [job.job_city, job.job_state].filter(Boolean).join(', ') || 'Not specified',
             type: job.job_employment_type === 'FULLTIME' ? 'Full-time' : 'Full-time',
-            salaryRange: job.job_min_salary && job.job_max_salary 
+            salaryRange: job.job_min_salary && job.job_max_salary
                 ? `$${job.job_min_salary.toLocaleString()} - $${job.job_max_salary.toLocaleString()}`
                 : 'Not specified',
             postedAt: job.job_posted_at_datetime_utc,
@@ -258,14 +258,14 @@ async function fetchAdzunaJobs(query: string): Promise<Job[]> {
         );
         if (!response.ok) return [];
         const data = await response.json();
-        
+
         return (data.results || []).map((job: any) => ({
             id: `adzuna-${job.id}`,
             title: job.title,
             company: job.company?.display_name || 'Unknown',
             location: job.location?.display_name || 'Not specified',
             type: job.contract_time === 'full_time' ? 'Full-time' : 'Full-time',
-            salaryRange: job.salary_min && job.salary_max 
+            salaryRange: job.salary_min && job.salary_max
                 ? `$${Math.round(job.salary_min).toLocaleString()} - $${Math.round(job.salary_max).toLocaleString()}`
                 : 'Not specified',
             postedAt: job.created,
@@ -283,24 +283,28 @@ async function fetchAdzunaJobs(query: string): Promise<Job[]> {
     }
 }
 
-// Existing SerpAPI (keep as primary)
+// Existing SerpAPI (keep as primary) - Optimized for better results
 async function fetchSerpApiJobs(query: string, location: string): Promise<Job[]> {
     const apiKey = process.env.SERPAPI_KEY;
     if (!apiKey) return [];
 
     try {
+        // Don't automatically add "entry level" - let user control filtering
+        // Use the query as-is for more comprehensive results
         const params = new URLSearchParams({
             engine: 'google_jobs',
-            q: `${query} entry level`,
+            q: query,
             location: location,
-            api_key: apiKey
+            api_key: apiKey,
+            num: '25' // Request more results
         });
 
         const response = await fetch(`https://serpapi.com/search?${params.toString()}`);
         if (!response.ok) return [];
         const data = await response.json();
-        
-        return (data.jobs_results || []).slice(0, 15).map((job: any, i: number) => ({
+
+        // Increase limit from 15 to 25 for more comprehensive results
+        return (data.jobs_results || []).slice(0, 25).map((job: any, i: number) => ({
             id: `serp-${data.search_metadata?.id || 'unknown'}-${i}`,
             title: job.title,
             company: job.company_name,
@@ -321,6 +325,7 @@ async function fetchSerpApiJobs(query: string, location: string): Promise<Job[]>
         return [];
     }
 }
+
 
 // Deduplicate jobs by title + company
 function deduplicateJobs(jobs: Job[]): Job[] {
@@ -349,7 +354,7 @@ export default async function handler(
 
     // Determine which sources to query
     const allSources = ['serpapi', 'remotive', 'remoteok', 'arbeitnow', 'muse', 'jsearch', 'adzuna'];
-    const requestedSources = sources 
+    const requestedSources = sources
         ? (typeof sources === 'string' ? sources.split(',') : sources)
         : allSources;
 
@@ -390,7 +395,7 @@ export default async function handler(
 
     // Fetch all in parallel
     const results = await Promise.all(promises);
-    
+
     // Log results per source
     results.forEach((jobs, i) => {
         console.log(`${sourceNames[i]}: ${jobs.length} jobs`);
@@ -403,7 +408,7 @@ export default async function handler(
     // Filter for remote if requested
     let finalJobs = deduped;
     if (remote === 'true') {
-        finalJobs = deduped.filter(job => 
+        finalJobs = deduped.filter(job =>
             job.location.toLowerCase().includes('remote') ||
             job.location.toLowerCase().includes('anywhere') ||
             job.location.toLowerCase().includes('worldwide')

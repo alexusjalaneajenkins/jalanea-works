@@ -216,6 +216,45 @@ export async function searchJobsAggregate(
 }
 
 /**
+ * Search for jobs using Gemini AI with Google Search grounding
+ * This provides real-time web search capabilities like Google AI Studio
+ * @param query - Search query (e.g., "IT Project Manager")
+ * @param location - Location (e.g., "Orlando, FL")
+ * @returns Job results from Gemini's real-time web search
+ */
+export async function searchJobsWithGemini(
+    query: string,
+    location?: string
+): Promise<{ jobs: Job[]; totalResults: number; source: string }> {
+    try {
+        const params = new URLSearchParams({ q: query });
+        if (location) params.append('location', location);
+
+        const response = await fetch(`${API_BASE_URL}/api/gemini-jobs?${params.toString()}`);
+
+        if (!response.ok) {
+            console.error('Gemini Jobs API error:', response.status);
+            return { jobs: [], totalResults: 0, source: 'gemini' };
+        }
+
+        const data = await response.json();
+
+        console.log(`🤖 Gemini AI found ${data.totalResults} jobs for "${query}" in "${location || 'US'}"`);
+
+        return {
+            jobs: data.jobs || [],
+            totalResults: data.totalResults || 0,
+            source: 'gemini'
+        };
+
+    } catch (error) {
+        console.error('Error in Gemini job search:', error);
+        return { jobs: [], totalResults: 0, source: 'gemini' };
+    }
+}
+
+
+/**
  * Get job details and generate AI analysis
  * This will be used for the "Deep Dive" feature
  * @param job - The job to analyze
