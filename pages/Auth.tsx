@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../services/firebase';
+import { auth, db } from '../services/firebase';
 import { AlertCircle, ArrowRight, Loader } from 'lucide-react';
 
 export const AuthPage: React.FC = () => {
@@ -24,9 +24,23 @@ export const AuthPage: React.FC = () => {
         try {
             if (isLogin) {
                 await login(email, password);
-                navigate('/dashboard');
+                // Check if user has completed onboarding
+                const user = auth.currentUser;
+                if (user) {
+                    const userDocRef = doc(db, "users", user.uid);
+                    const userDocSnap = await getDoc(userDocRef);
+                    if (userDocSnap.exists() && userDocSnap.data()?.onboardingCompleted) {
+                        navigate('/dashboard');
+                    } else {
+                        // User hasn't completed onboarding
+                        navigate('/onboarding');
+                    }
+                } else {
+                    navigate('/dashboard'); // Fallback
+                }
             } else {
                 await signup(email, password, name);
+                // New user - always go to onboarding
                 navigate('/onboarding');
             }
         } catch (err: any) {
