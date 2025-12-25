@@ -290,11 +290,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             const userRef = doc(db, "users", auth.currentUser.uid);
 
-            // Get current saved jobs and add new one
-            const currentSavedJobs = userProfile?.savedJobs || [];
-            await setDoc(userRef, {
-                savedJobs: [...currentSavedJobs, savedJob]
-            }, { merge: true });
+            // Use arrayUnion for atomic update - this prevents race conditions
+            // when multiple jobs are saved quickly in succession
+            await updateDoc(userRef, {
+                savedJobs: arrayUnion(savedJob)
+            });
 
             console.log("Job saved:", job.title);
         } catch (error) {

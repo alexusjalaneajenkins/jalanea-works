@@ -128,6 +128,7 @@ export const Schedule: React.FC = () => {
 
     // Task State
     const [newTaskText, setNewTaskText] = useState('');
+    const [schedulingTask, setSchedulingTask] = useState<ToDoItem | null>(null);
 
     // Suggestion State
     const [suggestions, setSuggestions] = useState<ScheduleSuggestion[]>([]);
@@ -214,6 +215,33 @@ export const Schedule: React.FC = () => {
 
     const deleteTask = (id: string) => {
         setTasks(prev => prev.filter(t => t.id !== id));
+    };
+
+    // Schedule a task as a time block
+    const scheduleTaskAsBlock = (task: ToDoItem) => {
+        const now = new Date();
+        const startHour = now.getHours().toString().padStart(2, '0');
+        const startMin = (Math.ceil(now.getMinutes() / 15) * 15 % 60).toString().padStart(2, '0');
+        const startTime = `${startHour}:${startMin}`;
+
+        const endDate = new Date(now.getTime() + 30 * 60000);
+        const endHour = endDate.getHours().toString().padStart(2, '0');
+        const endMin = endDate.getMinutes().toString().padStart(2, '0');
+        const endTime = `${endHour}:${endMin}`;
+
+        const newBlock: TimeBlock = {
+            id: Date.now().toString(),
+            title: task.text,
+            categoryId: 'work',
+            startTime,
+            endTime,
+            date: getTodayString(),
+            description: 'From To-Do List'
+        };
+        setSchedule(prev => [...prev, newBlock]);
+        deleteTask(task.id);
+        setSchedulingTask(null);
+        setViewMode('calendar');
     };
 
     // --- CRUD ---
@@ -333,6 +361,42 @@ export const Schedule: React.FC = () => {
     const getCatColor = (catId: string) => {
         const cat = categories.find(c => c.id === catId);
         return cat ? cat.color : '#cbd5e1';
+    };
+
+    // --- CALENDAR EXPORT FUNCTIONS ---
+    const exportToGoogleCalendar = (block: TimeBlock) => {
+        const dateStr = block.date.replace(/-/g, '');
+        const startStr = `${dateStr}T${block.startTime.replace(':', '')}00`;
+        const endStr = `${dateStr}T${block.endTime.replace(':', '')}00`;
+        const url = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(block.title)}&dates=${startStr}/${endStr}&details=${encodeURIComponent(block.description || '')}&sf=true&output=xml`;
+        window.open(url, '_blank');
+    };
+
+    const downloadICS = (block: TimeBlock) => {
+        const formatICSDate = (date: string, time: string) => {
+            return `${date.replace(/-/g, '')}T${time.replace(':', '')}00`;
+        };
+
+        const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//JalaneaWorks//Schedule//EN
+BEGIN:VEVENT
+DTSTART:${formatICSDate(block.date, block.startTime)}
+DTEND:${formatICSDate(block.date, block.endTime)}
+SUMMARY:${block.title}
+DESCRIPTION:${block.description || ''}
+END:VEVENT
+END:VCALENDAR`;
+
+        const blob = new Blob([icsContent], { type: 'text/calendar' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${block.title.replace(/[^a-z0-9]/gi, '_')}.ics`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     };
 
     // Type for CalendarViewMode local to component since not exported
@@ -544,6 +608,15 @@ export const Schedule: React.FC = () => {
                                             {task.text}
                                         </p>
                                     </div>
+                                    {!task.completed && (
+                                        <button
+                                            onClick={() => scheduleTaskAsBlock(task)}
+                                            className="text-jalanea-300 hover:text-gold opacity-0 group-hover:opacity-100 transition-opacity"
+                                            title="Add to Schedule"
+                                        >
+                                            <CalendarPlus size={18} />
+                                        </button>
+                                    )}
                                     <button onClick={() => deleteTask(task.id)} className="text-jalanea-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <Trash2 size={18} />
                                     </button>
@@ -564,81 +637,291 @@ export const Schedule: React.FC = () => {
             {isAddModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-jalanea-950/50 backdrop-blur-sm" onClick={() => setIsAddModalOpen(false)}></div>
-                    <Card variant="solid-white" className="relative w-full max-w-md z-10 shadow-2xl animate-in zoom-in-95 duration-200">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="font-bold text-xl">{editingBlockId ? 'Edit Block' : 'Add Block'}</h3>
-                            <button onClick={() => setIsAddModalOpen(false)}><X size={20} /></button>
+                    <Card variant="solid-white" className="relative w-full max-w-sm z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-5">
+                        {/* Header - Compact */}
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-bold text-lg">{editingBlockId ? 'Edit Block' : 'Add Block'}</h3>
+                            <button onClick={() => setIsAddModalOpen(false)} className="text-jalanea-400 hover:text-jalanea-600">
+                                <X size={18} />
+                            </button>
                         </div>
 
-                        {/* Date Indicator */}
-                        {newBlock.date && (
-                            <div className="bg-jalanea-50 border border-jalanea-100 rounded-xl p-3 mb-4 flex items-center gap-3">
-                                <div className="bg-white p-2 rounded-lg border border-jalanea-200 text-gold">
-                                    <Calendar size={20} />
-                                </div>
-                                <div>
-                                    <p className="text-xs font-bold text-jalanea-400 uppercase tracking-wide">Scheduling For</p>
-                                    <p className="text-sm font-bold text-jalanea-900">
-                                        {getFullDisplayDate(newBlock.date || getTodayString())}
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="space-y-4">
-                            <Input label="Title" value={newBlock.title} onChange={e => setNewBlock({ ...newBlock, title: e.target.value })} />
-
+                        <div className="space-y-3">
+                            {/* Title */}
                             <div>
-                                <label className="block text-sm font-bold mb-2 text-jalanea-900">Details</label>
+                                <label className="block text-xs font-bold text-jalanea-500 mb-1">Title</label>
+                                <input
+                                    type="text"
+                                    value={newBlock.title || ''}
+                                    onChange={e => setNewBlock({ ...newBlock, title: e.target.value })}
+                                    placeholder="What's this block for?"
+                                    className="w-full border border-jalanea-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-gold focus:border-gold outline-none"
+                                />
+                            </div>
+
+                            {/* Details - Smaller */}
+                            <div>
+                                <label className="block text-xs font-bold text-jalanea-500 mb-1">Notes</label>
                                 <textarea
-                                    className="w-full border border-jalanea-200 rounded-xl p-3 bg-white text-sm focus:ring-1 focus:ring-gold focus:border-gold outline-none resize-none"
-                                    placeholder="Add description or notes..."
-                                    rows={3}
+                                    className="w-full border border-jalanea-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-gold focus:border-gold outline-none resize-none"
+                                    placeholder="Optional notes..."
+                                    rows={2}
                                     value={newBlock.description || ''}
                                     onChange={e => setNewBlock({ ...newBlock, description: e.target.value })}
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <Input label="Start" type="time" value={newBlock.startTime} onChange={e => setNewBlock({ ...newBlock, startTime: e.target.value })} />
-                                <Input label="End" type="time" value={newBlock.endTime} onChange={e => setNewBlock({ ...newBlock, endTime: e.target.value })} />
+                            {/* Time & Date - All in one row */}
+                            <div className="grid grid-cols-3 gap-2">
+                                <div>
+                                    <label className="block text-xs font-bold text-jalanea-500 mb-1">Start</label>
+                                    <input
+                                        type="time"
+                                        value={newBlock.startTime}
+                                        onChange={e => setNewBlock({ ...newBlock, startTime: e.target.value })}
+                                        className="w-full border border-jalanea-200 rounded-lg px-2 py-1.5 text-sm focus:ring-1 focus:ring-gold outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-jalanea-500 mb-1">End</label>
+                                    <input
+                                        type="time"
+                                        value={newBlock.endTime}
+                                        onChange={e => setNewBlock({ ...newBlock, endTime: e.target.value })}
+                                        className="w-full border border-jalanea-200 rounded-lg px-2 py-1.5 text-sm focus:ring-1 focus:ring-gold outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-jalanea-500 mb-1">Date</label>
+                                    <input
+                                        type="date"
+                                        className="w-full border border-jalanea-200 rounded-lg px-2 py-1.5 text-sm focus:ring-1 focus:ring-gold outline-none"
+                                        value={newBlock.date}
+                                        onChange={e => setNewBlock({ ...newBlock, date: e.target.value })}
+                                    />
+                                </div>
                             </div>
 
-                            <div className="pt-2">
-                                <label className="block text-xs font-bold text-jalanea-400 mb-1 uppercase">Change Date</label>
-                                <input
-                                    type="date"
-                                    className="w-full border border-jalanea-200 rounded-lg p-2 text-sm bg-jalanea-50 text-jalanea-600"
-                                    value={newBlock.date}
-                                    onChange={e => setNewBlock({ ...newBlock, date: e.target.value })}
-                                />
-                            </div>
-
+                            {/* Category - Horizontal scroll */}
                             <div>
-                                <label className="block text-sm font-bold mb-2 text-jalanea-900">Category</label>
-                                <div className="grid grid-cols-2 gap-2">
+                                <label className="block text-xs font-bold text-jalanea-500 mb-1.5">Category</label>
+                                <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
                                     {categories.map(cat => (
                                         <button
                                             key={cat.id}
                                             onClick={() => setNewBlock({ ...newBlock, categoryId: cat.id })}
-                                            className={`p-2 rounded-lg text-sm font-bold border transition-all text-left flex items-center gap-2
-                                                ${newBlock.categoryId === cat.id ? 'ring-2 ring-jalanea-900 border-transparent bg-jalanea-50' : 'border-jalanea-200 hover:bg-jalanea-50'}
-                                            `}
+                                            className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-bold border transition-all
+                                                ${newBlock.categoryId === cat.id
+                                                    ? 'bg-jalanea-900 text-white border-jalanea-900'
+                                                    : 'bg-white text-jalanea-600 border-jalanea-200 hover:border-jalanea-300'
+                                                }`}
                                         >
-                                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }}></div>
+                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: newBlock.categoryId === cat.id ? 'white' : cat.color }}></div>
                                             {cat.label}
                                         </button>
                                     ))}
                                 </div>
                             </div>
 
-                            <div className="flex gap-2 pt-4">
-                                {editingBlockId && (
-                                    <Button variant="ghost" className="text-red-500 hover:bg-red-50" onClick={() => handleDeleteBlock(editingBlockId)}>
-                                        <Trash2 size={18} />
-                                    </Button>
-                                )}
-                                <Button fullWidth onClick={handleSaveBlock}>Save Block</Button>
+                            {/* Export - Only when editing, compact */}
+                            {editingBlockId && (
+                                <div className="flex gap-2 pt-1">
+                                    <button
+                                        onClick={() => exportToGoogleCalendar(newBlock as TimeBlock)}
+                                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-jalanea-50 rounded-lg text-xs font-medium text-jalanea-500 hover:bg-jalanea-100 transition-colors"
+                                    >
+                                        <ExternalLink size={12} />
+                                        Google Cal
+                                    </button>
+                                    <button
+                                        onClick={() => downloadICS(newBlock as TimeBlock)}
+                                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-jalanea-50 rounded-lg text-xs font-medium text-jalanea-500 hover:bg-jalanea-100 transition-colors"
+                                    >
+                                        <CalendarClock size={12} />
+                                        Download .ics
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer Actions */}
+                        <div className="flex gap-2 mt-4 pt-3 border-t border-jalanea-100">
+                            {editingBlockId && (
+                                <button
+                                    onClick={() => handleDeleteBlock(editingBlockId)}
+                                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            )}
+                            <Button fullWidth size="sm" onClick={handleSaveBlock}>
+                                {editingBlockId ? 'Save Changes' : 'Add Block'}
+                            </Button>
+                        </div>
+                    </Card>
+                </div>
+            )}
+
+            {/* --- SUGGESTIONS MODAL (Ask JW) --- */}
+            {isSuggestionsOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-jalanea-950/50 backdrop-blur-sm" onClick={() => setIsSuggestionsOpen(false)}></div>
+                    <Card variant="solid-white" className="relative w-full max-w-lg z-10 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[85vh] overflow-hidden flex flex-col">
+                        <div className="flex justify-between items-center mb-4 shrink-0">
+                            <h3 className="font-bold text-xl flex items-center gap-2">
+                                <Sparkles className="text-gold" size={20} />
+                                JW Suggestions
+                            </h3>
+                            <button onClick={() => setIsSuggestionsOpen(false)}><X size={20} /></button>
+                        </div>
+
+                        {/* JW Explanation */}
+                        <div className="bg-gold/10 border border-gold/30 rounded-xl p-4 mb-4 shrink-0">
+                            <p className="text-sm text-jalanea-600">
+                                <span className="font-bold text-jalanea-900">JW</span> (Jalanea Works AI) suggests optimal blocks for
+                                <span className="font-medium text-emerald-600"> wellness</span>,
+                                <span className="font-medium text-blue-600"> learning</span>, and
+                                <span className="font-medium text-violet-600"> career prep</span> based on your current schedule.
+                            </p>
+                        </div>
+
+                        {/* Suggestions List */}
+                        <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
+                            {suggestions.length === 0 ? (
+                                <div className="text-center py-8 text-jalanea-400">
+                                    <Loader2 className="animate-spin mx-auto mb-2" size={24} />
+                                    <p>Loading suggestions...</p>
+                                </div>
+                            ) : suggestions.map(s => {
+                                const isSelected = selectedSuggestions.has(s.id);
+                                const catColors: Record<string, string> = {
+                                    'Wellness': '#10b981',
+                                    'Learning': '#3b82f6',
+                                    'Career': '#8b5cf6'
+                                };
+                                return (
+                                    <div
+                                        key={s.id}
+                                        onClick={() => toggleSuggestion(s.id)}
+                                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${isSelected
+                                            ? 'border-gold bg-gold/5 shadow-sm'
+                                            : 'border-jalanea-100 hover:border-jalanea-200'
+                                            }`}
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            <div className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center mt-0.5 ${isSelected ? 'bg-gold border-gold text-white' : 'border-jalanea-300'
+                                                }`}>
+                                                {isSelected && <CheckCircle2 size={14} />}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="font-bold text-jalanea-900">{s.title}</span>
+                                                    <span
+                                                        className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full text-white"
+                                                        style={{ backgroundColor: catColors[s.category] || '#64748b' }}
+                                                    >
+                                                        {s.category}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-jalanea-500 mb-2">{s.reasoning}</p>
+                                                {isSelected && (
+                                                    <div className="flex items-center gap-3 mt-2 pt-2 border-t border-jalanea-100">
+                                                        <span className="text-xs font-bold text-jalanea-400">Duration:</span>
+                                                        <input
+                                                            type="range"
+                                                            min="10"
+                                                            max="60"
+                                                            step="5"
+                                                            value={customDurations[s.id] || s.suggestedDurationMinutes}
+                                                            onChange={(e) => {
+                                                                e.stopPropagation();
+                                                                setCustomDurations(prev => ({ ...prev, [s.id]: parseInt(e.target.value) }));
+                                                            }}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="flex-1 accent-gold"
+                                                        />
+                                                        <span className="text-sm font-bold text-gold min-w-[50px] text-right">
+                                                            {customDurations[s.id] || s.suggestedDurationMinutes}m
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Add Button */}
+                        <div className="pt-4 mt-4 border-t border-jalanea-100 shrink-0">
+                            <Button
+                                fullWidth
+                                onClick={addSuggestionsToSchedule}
+                                disabled={selectedSuggestions.size === 0}
+                                icon={<CalendarPlus size={18} />}
+                            >
+                                Add {selectedSuggestions.size} Block{selectedSuggestions.size !== 1 ? 's' : ''} to Schedule
+                            </Button>
+                        </div>
+                    </Card>
+                </div>
+            )}
+
+            {/* --- CATEGORY MODAL (Types) --- */}
+            {isCategoryModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-jalanea-950/50 backdrop-blur-sm" onClick={() => setIsCategoryModalOpen(false)}></div>
+                    <Card variant="solid-white" className="relative w-full max-w-md z-10 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[85vh] overflow-hidden flex flex-col">
+                        <div className="flex justify-between items-center mb-4 shrink-0">
+                            <h3 className="font-bold text-xl flex items-center gap-2">
+                                <Palette size={20} className="text-jalanea-600" />
+                                Manage Categories
+                            </h3>
+                            <button onClick={() => setIsCategoryModalOpen(false)}><X size={20} /></button>
+                        </div>
+
+                        {/* Existing Categories */}
+                        <div className="flex-1 overflow-y-auto space-y-2 mb-4 custom-scrollbar">
+                            {categories.map(cat => (
+                                <div key={cat.id} className="flex items-center gap-3 p-3 bg-jalanea-50 rounded-xl group">
+                                    <div
+                                        className="w-6 h-6 rounded-lg shrink-0 shadow-inner"
+                                        style={{ backgroundColor: cat.color }}
+                                    />
+                                    <span className="flex-1 font-medium text-jalanea-900">{cat.label}</span>
+                                    {!['work', 'personal', 'learning', 'wellness', 'interview'].includes(cat.id) && (
+                                        <button
+                                            onClick={() => deleteCategory(cat.id)}
+                                            className="text-jalanea-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Add New Category */}
+                        <div className="pt-4 border-t border-jalanea-100 shrink-0">
+                            <p className="text-xs font-bold text-jalanea-400 uppercase mb-3">Add New Category</p>
+                            <div className="flex gap-3">
+                                <input
+                                    type="color"
+                                    value={newCatColor}
+                                    onChange={(e) => setNewCatColor(e.target.value)}
+                                    className="w-12 h-12 rounded-xl cursor-pointer border-2 border-jalanea-200"
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Category name..."
+                                    value={newCatName}
+                                    onChange={(e) => setNewCatName(e.target.value)}
+                                    className="flex-1 border border-jalanea-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-gold"
+                                    onKeyDown={(e) => e.key === 'Enter' && addCategory()}
+                                />
+                                <Button onClick={addCategory} disabled={!newCatName.trim()}>
+                                    <Plus size={18} />
+                                </Button>
                             </div>
                         </div>
                     </Card>

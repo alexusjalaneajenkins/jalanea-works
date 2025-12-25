@@ -1,13 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import {
   GraduationCap, Briefcase, Award, PenTool, Edit3, MapPin,
-  Save, X, Plus, Trash2, Loader2, User, Link, Camera
+  Save, X, Plus, Trash2, Loader2, User, Link, Camera, Crown, Sparkles, Zap,
+  CreditCard, ArrowUpRight, ChevronRight
 } from 'lucide-react';
+import { isOwnerEmail, formatCredits, getCreditUsagePercent } from '../services/creditsService';
+import { setUserTier, getTierInfo, SettableTier } from '../utils/setUserTier';
+import { redirectToBillingPortal, SUBSCRIPTION_TIERS, formatPrice } from '../services/stripeService';
 
 // Keep MOCK_PROFILE for backwards compatibility with other pages
 export const MOCK_PROFILE: any = { // Typed as any temporarily to allow flexibility or import UserProfile and cast
@@ -49,9 +54,12 @@ export const MOCK_PROFILE: any = { // Typed as any temporarily to allow flexibil
 };
 
 export const ProfilePage: React.FC = () => {
-  const { currentUser, userProfile, saveUserProfile, profileLoading } = useAuth();
+  const navigate = useNavigate();
+  const { currentUser, userProfile, userCredits, refreshCredits, saveUserProfile, profileLoading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSwitchingTier, setIsSwitchingTier] = useState(false);
+  const [isLoadingPortal, setIsLoadingPortal] = useState(false);
 
   // Local state for editing
   const [fullName, setFullName] = useState('');
@@ -165,6 +173,25 @@ export const ProfilePage: React.FC = () => {
   const removeRole = (role: string) => {
     setTargetRoles(targetRoles.filter(r => r !== role));
   };
+
+  // Admin: Tier switching handler (owner accounts only)
+  const handleSetTier = async (tier: SettableTier) => {
+    if (!currentUser) return;
+    setIsSwitchingTier(true);
+    try {
+      const success = await setUserTier(currentUser.uid, tier);
+      if (success && refreshCredits) {
+        await refreshCredits();
+      }
+    } catch (err) {
+      console.error('Failed to set tier:', err);
+    } finally {
+      setIsSwitchingTier(false);
+    }
+  };
+
+  // Check if current user is an owner
+  const isOwner = isOwnerEmail(currentUser?.email);
 
   if (profileLoading) {
     return (
@@ -466,6 +493,164 @@ export const ProfilePage: React.FC = () => {
           </div>
         </Card>
       </div>
+
+      {/* Subscription & Billing Section */}
+      <Card variant="solid-white" className="overflow-hidden">
+        <div className="border-b border-jalanea-100 p-4 md:p-6 bg-gradient-to-r from-jalanea-900 to-jalanea-800 text-white">
+          <h3 className="text-sm md:text-base font-bold flex items-center gap-2">
+            <CreditCard size={18} />
+            Subscription & Billing
+          </h3>
+        </div>
+        <div className="p-4 md:p-6">
+          {/* Current Plan & Credits */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
+            {/* Current Plan */}
+            <div className="bg-jalanea-50 rounded-xl p-4 border border-jalanea-200">
+              <p className="text-xs text-jalanea-500 uppercase font-bold mb-1">Current Plan</p>
+              <p className="text-xl md:text-2xl font-bold text-jalanea-900 capitalize flex items-center gap-2">
+                {userCredits?.tier === 'unlimited' && <Crown size={20} className="text-gold" />}
+                {userCredits?.tier === 'pro' && <Sparkles size={20} className="text-purple-500" />}
+                {userCredits?.tier === 'starter' && <Zap size={20} className="text-blue-500" />}
+                {userCredits?.tier || 'Trial'}
+              </p>
+              <p className="text-sm text-jalanea-600 mt-1">
+                {userCredits?.subscriptionStatus === 'active' ? 'Active subscription' :
+                  userCredits?.subscriptionStatus === 'trialing' ? '7-day free trial' :
+                    userCredits?.subscriptionStatus || 'Trial period'}
+              </p>
+            </div>
+
+            {/* Credits Status */}
+            <div className="bg-jalanea-50 rounded-xl p-4 border border-jalanea-200">
+              <p className="text-xs text-jalanea-500 uppercase font-bold mb-1">Credits Remaining</p>
+              <p className="text-xl md:text-2xl font-bold text-jalanea-900">
+                {formatCredits(userCredits?.credits || 0)}
+                <span className="text-sm font-normal text-jalanea-500 ml-1">
+                  / {formatCredits(userCredits?.monthlyCreditsLimit || 50)}
+                </span>
+              </p>
+              {/* Progress bar */}
+              <div className="mt-2 h-2 bg-jalanea-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-gold to-amber-400 transition-all"
+                  style={{ width: `${100 - getCreditUsagePercent(userCredits || { tier: 'trialing', credits: 0, creditsUsedThisMonth: 0, monthlyCreditsLimit: 50, lastCreditReset: null, trialEndsAt: null, stripeCustomerId: null, subscriptionId: null, subscriptionStatus: null })}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Manage Billing - only if they have a Stripe customer ID */}
+            {userCredits?.stripeCustomerId && (
+              <Button
+                variant="secondary"
+                onClick={async () => {
+                  setIsLoadingPortal(true);
+                  try {
+                    await redirectToBillingPortal(userCredits.stripeCustomerId!);
+                  } catch (err) {
+                    console.error('Portal error:', err);
+                    alert('Unable to access billing portal. Please try again.');
+                  } finally {
+                    setIsLoadingPortal(false);
+                  }
+                }}
+                disabled={isLoadingPortal}
+                icon={isLoadingPortal ? <Loader2 size={16} className="animate-spin" /> : <CreditCard size={16} />}
+                className="flex-1"
+              >
+                {isLoadingPortal ? 'Loading...' : 'Manage Billing'}
+              </Button>
+            )}
+
+            {/* Upgrade CTA */}
+            {userCredits?.tier !== 'unlimited' && (
+              <Button
+                variant="primary"
+                onClick={() => navigate('/pricing')}
+                icon={<ArrowUpRight size={16} />}
+                className="flex-1"
+              >
+                {userCredits?.subscriptionStatus === 'trialing' ? 'Upgrade Now' : 'Change Plan'}
+              </Button>
+            )}
+
+            {/* View Pricing */}
+            {!userCredits?.stripeCustomerId && userCredits?.tier !== 'unlimited' && (
+              <Button
+                variant="outline"
+                onClick={() => navigate('/pricing')}
+                icon={<ChevronRight size={16} />}
+                className="flex-1"
+              >
+                View Plans
+              </Button>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      {/* Admin Controls - Owner Only */}
+      {isOwner && (
+        <Card variant="solid-white" className="border-2 border-gold/30 bg-gradient-to-br from-gold/5 to-amber-50">
+          <div className="p-4 md:p-6">
+            <div className="flex items-center gap-2 mb-3 md:mb-4">
+              <Crown size={18} className="text-gold" />
+              <h3 className="text-xs md:text-sm font-bold text-jalanea-900 uppercase tracking-wide">Admin: Tier Management</h3>
+            </div>
+
+            {/* Current Status - Stacks on mobile */}
+            <div className="bg-white rounded-xl p-3 md:p-4 border border-jalanea-200 mb-3 md:mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 text-center">
+                <div className="flex sm:block justify-between items-center sm:items-start">
+                  <p className="text-xs text-jalanea-500 uppercase font-bold">Current Tier</p>
+                  <p className="text-base md:text-lg font-bold text-jalanea-900 capitalize">{userCredits?.tier || 'Unknown'}</p>
+                </div>
+                <div className="flex sm:block justify-between items-center sm:items-start">
+                  <p className="text-xs text-jalanea-500 uppercase font-bold">Credits</p>
+                  <p className="text-base md:text-lg font-bold text-jalanea-900">{formatCredits(userCredits?.credits || 0)}</p>
+                </div>
+                <div className="flex sm:block justify-between items-center sm:items-start">
+                  <p className="text-xs text-jalanea-500 uppercase font-bold">Status</p>
+                  <p className="text-base md:text-lg font-bold text-green-600 capitalize">{userCredits?.subscriptionStatus || 'Unknown'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Tier Switching Buttons - 2 cols on mobile, 4 on desktop */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+              {(['trialing', 'starter', 'pro', 'unlimited'] as SettableTier[]).map((tier) => {
+                const info = getTierInfo(tier);
+                const isActive = userCredits?.tier === tier;
+                return (
+                  <button
+                    key={tier}
+                    onClick={() => handleSetTier(tier)}
+                    disabled={isSwitchingTier || isActive}
+                    className={`p-3 md:p-4 rounded-xl border-2 transition-all text-left relative overflow-hidden active:scale-95
+                      ${isActive
+                        ? 'border-jalanea-900 bg-jalanea-900 text-white shadow-lg'
+                        : `${info.color} border hover:shadow-md`
+                      }
+                      ${isSwitchingTier ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                    `}
+                  >
+                    {isActive && <div className="absolute top-1.5 right-1.5 md:top-2 md:right-2"><Sparkles size={12} className="text-gold md:w-[14px] md:h-[14px]" /></div>}
+                    <p className="font-bold text-xs md:text-sm">{info.name}</p>
+                    <p className="text-[10px] md:text-xs opacity-80 mt-0.5 md:mt-1">{info.credits} credits</p>
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="text-[10px] md:text-xs text-jalanea-400 mt-3 md:mt-4 text-center">
+              {isSwitchingTier ? 'Switching tier...' : 'Tap a tier to test. Changes take effect immediately.'}
+            </p>
+          </div>
+        </Card>
+      )}
     </div>
   );
 };

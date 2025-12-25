@@ -124,3 +124,32 @@ export function formatPrice(amount: number): string {
         minimumFractionDigits: 0,
     }).format(amount);
 }
+
+/**
+ * Redirect to Stripe Customer Portal for billing management
+ */
+export async function redirectToBillingPortal(customerId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/api/stripe-portal`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            customerId,
+            returnUrl: window.location.href,
+        }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to access billing portal');
+    }
+
+    const { url } = await response.json();
+    if (url) {
+        window.location.href = url;
+    } else {
+        throw new Error('No portal URL returned');
+    }
+}
+

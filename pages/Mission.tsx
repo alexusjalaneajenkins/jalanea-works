@@ -44,6 +44,7 @@ export const Mission: React.FC<MissionProps> = ({ setRoute }) => {
                             variant="primary"
                             size="sm"
                             onClick={() => navigate('/jobs')}
+                            className="gap-2"
                         >
                             Start Your Journey <ArrowRight size={16} />
                         </Button>
@@ -284,10 +285,10 @@ export const Mission: React.FC<MissionProps> = ({ setRoute }) => {
                         Join thousands of Valencia grads building careers and community right here in Orlando.
                     </p>
                     <div className="flex flex-wrap justify-center gap-4">
-                        <Button variant="primary" size="lg" onClick={() => navigate('/jobs')}>
+                        <Button variant="primary" size="lg" onClick={() => navigate('/jobs')} className="gap-2">
                             Find Your Career <ArrowRight size={18} />
                         </Button>
-                        <Button variant="outline" size="lg" onClick={() => navigate('/entrepreneur')}>
+                        <Button variant="outline" size="lg" onClick={() => navigate('/entrepreneur')} className="gap-2">
                             Start a Business <ExternalLink size={18} />
                         </Button>
                     </div>
