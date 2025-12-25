@@ -283,17 +283,41 @@ async function fetchAdzunaJobs(query: string): Promise<Job[]> {
     }
 }
 
+// Helper to detect work style from job data
+function detectWorkStyle(job: any): 'Remote' | 'Hybrid' | 'On-site' {
+    const location = (job.location || '').toLowerCase();
+    const title = (job.title || '').toLowerCase();
+    const description = (job.description || '').toLowerCase();
+    const extensions = (job.extensions || []).join(' ').toLowerCase();
+
+    // Check for remote indicators
+    if (location.includes('remote') || location.includes('anywhere') || location.includes('worldwide') ||
+        title.includes('remote') || extensions.includes('remote') ||
+        description.includes('fully remote') || description.includes('100% remote')) {
+        return 'Remote';
+    }
+
+    // Check for hybrid indicators
+    if (location.includes('hybrid') || title.includes('hybrid') || extensions.includes('hybrid') ||
+        description.includes('hybrid') || description.includes('flexible work')) {
+        return 'Hybrid';
+    }
+
+    // Default to on-site
+    return 'On-site';
+}
+
 // Existing SerpAPI (keep as primary) - Optimized for better results
 async function fetchSerpApiJobs(query: string, location: string): Promise<Job[]> {
     const apiKey = process.env.SERPAPI_KEY;
     if (!apiKey) return [];
 
     try {
-        // Don't automatically add "entry level" - let user control filtering
-        // Use the query as-is for more comprehensive results
+        // Add "entry level" to focus on target audience (entry-level professionals)
+        const entryLevelQuery = `${query} entry level`;
         const params = new URLSearchParams({
             engine: 'google_jobs',
-            q: query,
+            q: entryLevelQuery,
             location: location,
             api_key: apiKey,
             num: '25' // Request more results
@@ -303,28 +327,34 @@ async function fetchSerpApiJobs(query: string, location: string): Promise<Job[]>
         if (!response.ok) return [];
         const data = await response.json();
 
-        // Increase limit from 15 to 25 for more comprehensive results
-        return (data.jobs_results || []).slice(0, 25).map((job: any, i: number) => ({
-            id: `serp-${data.search_metadata?.id || 'unknown'}-${i}`,
-            title: job.title,
-            company: job.company_name,
-            location: job.location,
-            type: 'Full-time',
-            salaryRange: job.detected_extensions?.salary || 'Not specified',
-            postedAt: job.detected_extensions?.posted_at || 'Recently',
-            matchScore: 0,
-            skills: [],
-            description: (job.description || '').slice(0, 500),
-            experienceLevel: 'Entry Level',
-            experienceYears: 'Not specified',
-            applyUrl: job.apply_options?.[0]?.link || job.related_links?.[0]?.link || '#',
-            source: 'Google Jobs'
-        }));
+        // Map results with work style detection
+        return (data.jobs_results || []).slice(0, 25).map((job: any, i: number) => {
+            const workStyle = detectWorkStyle(job);
+
+            return {
+                id: `serp-${data.search_metadata?.id || 'unknown'}-${i}`,
+                title: job.title,
+                company: job.company_name,
+                location: job.location,
+                type: 'Full-time',
+                salaryRange: job.detected_extensions?.salary || 'Not specified',
+                postedAt: job.detected_extensions?.posted_at || 'Recently',
+                matchScore: 0,
+                skills: [],
+                description: (job.description || '').slice(0, 500),
+                experienceLevel: 'Entry Level',
+                experienceYears: 'Not specified',
+                applyUrl: job.apply_options?.[0]?.link || job.related_links?.[0]?.link || '#',
+                source: 'Google Jobs',
+                locationType: workStyle // Add work style to each job
+            };
+        });
     } catch (e) {
         console.error('SerpAPI error:', e);
         return [];
     }
 }
+
 
 
 // Deduplicate jobs by title + company

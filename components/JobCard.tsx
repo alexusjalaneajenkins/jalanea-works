@@ -3,7 +3,7 @@ import { Card } from './Card';
 import { Button } from './Button';
 import {
     Heart, Briefcase, MapPin, DollarSign, Calendar, Sparkles,
-    Car, Bus, Bike, Footprints, Zap
+    Car, Bus, Bike, Footprints, Zap, Home, Wifi, Building2
 } from 'lucide-react';
 import { Job, TransportMode } from '../types';
 
@@ -91,9 +91,18 @@ export const JobCard: React.FC<JobCardProps> = ({ job, isSaved, onSave, onClick 
                             {job.salaryRange}
                         </span>
 
+                        {/* Work Style Badge - Always visible with distinct colors */}
                         {job.locationType && (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-100">
-                                <MapPin size={12} className="text-blue-500" />
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide
+                                ${job.locationType === 'Remote'
+                                    ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                                    : job.locationType === 'Hybrid'
+                                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                                        : 'bg-orange-100 text-orange-700 border border-orange-200'
+                                }`}>
+                                {job.locationType === 'Remote' ? <Wifi size={12} /> :
+                                    job.locationType === 'Hybrid' ? <Home size={12} /> :
+                                        <Building2 size={12} />}
                                 {job.locationType}
                             </span>
                         )}
