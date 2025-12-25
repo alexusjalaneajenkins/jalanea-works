@@ -34,24 +34,26 @@ export const AuthPage: React.FC = () => {
                     const userDocRef = doc(db, "users", user.uid);
                     const userDocSnap = await getDoc(userDocRef);
                     if (userDocSnap.exists() && userDocSnap.data()?.onboardingCompleted) {
-                        navigate('/dashboard');
+                        // Use window.location for full page reload to avoid race conditions
+                        window.location.href = '/dashboard';
                     } else {
                         // User hasn't completed onboarding
-                        navigate('/onboarding');
+                        window.location.href = '/onboarding';
                     }
                 } else {
-                    navigate('/dashboard'); // Fallback
+                    window.location.href = '/dashboard'; // Fallback
                 }
             } else {
                 await signup(email, password, name);
-                // New user - always go to onboarding
-                navigate('/onboarding');
+                // New user - always go to onboarding with full page reload
+                // This ensures proper state initialization
+                window.location.href = '/onboarding';
             }
         } catch (err: any) {
             setError(err.message.replace('Firebase: ', ''));
-        } finally {
             setLoading(false);
         }
+        // Note: Don't set loading to false on success since we're navigating away
     };
 
     return (
@@ -83,15 +85,14 @@ export const AuthPage: React.FC = () => {
                             const userDocSnap = await getDoc(userDocRef);
 
                             if (userDocSnap.exists() && userDocSnap.data()?.onboardingCompleted) {
-                                // Returning user with completed onboarding
-                                navigate('/dashboard');
+                                // Returning user with completed onboarding - use full page reload
+                                window.location.href = '/dashboard';
                             } else {
-                                // New user or incomplete onboarding
-                                navigate('/onboarding');
+                                // New user or incomplete onboarding - use full page reload
+                                window.location.href = '/onboarding';
                             }
                         } catch (err: any) {
                             setError(err.message.replace('Firebase: ', ''));
-                        } finally {
                             setLoading(false);
                         }
                     }}
