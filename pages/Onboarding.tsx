@@ -91,7 +91,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
     const [selectedDegrees, setSelectedDegrees] = useState<SelectedEducation[]>([]);
     const [currentDegreeName, setCurrentDegreeName] = useState('');
     const [currentInstitution, setCurrentInstitution] = useState('');
-    const [currentGradYear, setCurrentGradYear] = useState('2024');
+    const [currentGradYear, setCurrentGradYear] = useState('');
     const [isAddingDegree, setIsAddingDegree] = useState(true); // Start with form open
 
     // Pre-populate form from userProfile (e.g., Google sign-in data)
@@ -507,7 +507,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
             // Reset form
             setCurrentDegreeName('');
             setCurrentInstitution('');
-            setCurrentGradYear('2024');
+            setCurrentGradYear('');
             setIsAddingDegree(false);
         }
     };
@@ -580,17 +580,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                         <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-200">
                             <div className="space-y-2">
                                 <label className="text-sm font-bold text-jalanea-900">Graduation Year</label>
-                                <select
+                                <input
+                                    type="text"
                                     value={currentGradYear}
                                     onChange={(e) => setCurrentGradYear(e.target.value)}
-                                    className="w-full rounded-xl border-2 border-jalanea-200 py-3 px-4 text-jalanea-900 font-medium focus:ring-2 focus:ring-gold/20 focus:border-gold bg-white"
-                                >
-                                    <option value="2025">2025 (Expected)</option>
-                                    <option value="2024">2024</option>
-                                    <option value="2023">2023</option>
-                                    <option value="2022">2022</option>
-                                    <option value="2021">2021 or earlier</option>
-                                </select>
+                                    placeholder="e.g., 2024, 2025 (Expected)..."
+                                    className="w-full rounded-xl border-2 border-jalanea-200 py-3 px-4 text-jalanea-900 font-medium focus:ring-2 focus:ring-gold/20 focus:border-gold bg-white placeholder:text-jalanea-400"
+                                />
                             </div>
                             <div className="flex items-end">
                                 <button
