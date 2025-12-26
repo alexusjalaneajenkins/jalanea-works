@@ -17,12 +17,31 @@ export const AuthPage: React.FC = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
+    // Strict email validation regex
+    const isValidEmail = (email: string): boolean => {
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        return emailRegex.test(email);
+    };
+
     const { login, signup, loginWithGoogle } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+
+        // Validate email format before submission
+        if (!isValidEmail(email)) {
+            setError('Please enter a valid email address (e.g., name@example.com)');
+            return;
+        }
+
+        // Validate password length
+        if (password.length < 6) {
+            setError('Password must be at least 6 characters long');
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -41,7 +60,8 @@ export const AuthPage: React.FC = () => {
                         window.location.href = '/onboarding';
                     }
                 } else {
-                    window.location.href = '/dashboard'; // Fallback
+                    // No user document found - send to onboarding
+                    window.location.href = '/onboarding';
                 }
             } else {
                 await signup(email, password, name);
@@ -133,9 +153,11 @@ export const AuthPage: React.FC = () => {
                                         id="name"
                                         name="name"
                                         type="text"
+                                        autoComplete="off"
                                         required
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
+                                        placeholder="Enter your full name"
                                         className="appearance-none block w-full px-3 py-2 border border-jalanea-300 rounded-md shadow-sm placeholder-jalanea-400 focus:outline-none focus:ring-jalanea-500 focus:border-jalanea-500 sm:text-sm"
                                     />
                                 </div>
@@ -151,10 +173,13 @@ export const AuthPage: React.FC = () => {
                                     id="email"
                                     name="email"
                                     type="email"
-                                    autoComplete="email"
+                                    autoComplete="off"
                                     required
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="name@example.com"
+                                    pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+                                    title="Please enter a valid email address"
                                     className="appearance-none block w-full px-3 py-2 border border-jalanea-300 rounded-md shadow-sm placeholder-jalanea-400 focus:outline-none focus:ring-jalanea-500 focus:border-jalanea-500 sm:text-sm"
                                 />
                             </div>
@@ -169,10 +194,12 @@ export const AuthPage: React.FC = () => {
                                     id="password"
                                     name="password"
                                     type="password"
-                                    autoComplete="current-password"
+                                    autoComplete="new-password"
                                     required
+                                    minLength={6}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="At least 6 characters"
                                     className="appearance-none block w-full px-3 py-2 border border-jalanea-300 rounded-md shadow-sm placeholder-jalanea-400 focus:outline-none focus:ring-jalanea-500 focus:border-jalanea-500 sm:text-sm"
                                 />
                             </div>

@@ -677,6 +677,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
             return;
         }
 
+        // Strict email validation - must have proper domain with TLD
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(signupEmail)) {
+            setSignupError({ message: 'Please enter a valid email address (e.g., name@example.com)', isEmailExists: false });
+            return;
+        }
+
         if (signupPassword.length < 6) {
             setSignupError({ message: 'Password must be at least 6 characters', isEmailExists: false });
             return;
@@ -955,6 +962,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                     <input
                         type="email"
                         placeholder="Enter your email"
+                        autoComplete="off"
                         value={signupEmail}
                         onChange={(e) => setSignupEmail(e.target.value)}
                         className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-jalanea-500 focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 transition-all font-medium"
@@ -972,6 +980,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                     <input
                         type={showPassword ? 'text' : 'password'}
                         placeholder="Create a password"
+                        autoComplete="new-password"
                         value={signupPassword}
                         onChange={(e) => setSignupPassword(e.target.value)}
                         className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-12 text-white placeholder-jalanea-500 focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 transition-all font-medium"
@@ -996,452 +1005,452 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                 </div>
 
             </div>
-                {/* Error Display */}
-                {signupError && (
-                    <div className={`rounded-xl p-4 ${signupError.isEmailExists ? 'bg-amber-500/10 border border-amber-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
-                        <p className={`text-sm font-medium ${signupError.isEmailExists ? 'text-amber-300' : 'text-red-300'}`}>
-                            {signupError.message}
-                        </p>
-                        {signupError.isEmailExists && (
-                            <div className="mt-3 flex flex-wrap gap-3">
-                                <button onClick={handleForgotPassword} className="text-sm font-bold text-gold hover:text-gold-light underline transition-colors">
-                                    Forgot password? Reset it →
-                                </button>
-                                <button onClick={() => setCurrentView(VIEWS.LOGIN)} className="text-sm font-bold text-white/70 hover:text-white transition-colors">
-                                    Sign in instead
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Create Account Button */}
-                <Button
-                    fullWidth
-                    variant="secondary"
-                    onClick={handleEmailAuth}
-                    disabled={isSaving}
-                    className="bg-white/10 hover:bg-white/20 text-white border-white/20 h-12 font-bold backdrop-blur-sm disabled:opacity-50"
-                >
-                    {isSaving ? <><Loader2 className="animate-spin mr-2" size={18} /> Creating Account...</> : 'Create Account with Email'}
-                </Button>
-
-                {/* Switch to Login */}
-                <div className="text-center pt-2">
-                    <p className="text-sm text-jalanea-400">
-                        Already have an account?{' '}
-                        <button
-                            onClick={() => setCurrentView(VIEWS.LOGIN)}
-                            className="text-gold font-bold hover:underline hover:text-gold-light transition-colors"
-                        >
-                            Sign in →
-                        </button>
+            {/* Error Display */}
+            {signupError && (
+                <div className={`rounded-xl p-4 ${signupError.isEmailExists ? 'bg-amber-500/10 border border-amber-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
+                    <p className={`text-sm font-medium ${signupError.isEmailExists ? 'text-amber-300' : 'text-red-300'}`}>
+                        {signupError.message}
                     </p>
+                    {signupError.isEmailExists && (
+                        <div className="mt-3 flex flex-wrap gap-3">
+                            <button onClick={handleForgotPassword} className="text-sm font-bold text-gold hover:text-gold-light underline transition-colors">
+                                Forgot password? Reset it →
+                            </button>
+                            <button onClick={() => setCurrentView(VIEWS.LOGIN)} className="text-sm font-bold text-white/70 hover:text-white transition-colors">
+                                Sign in instead
+                            </button>
+                        </div>
+                    )}
                 </div>
+            )}
 
-                {/* Terms */}
-                <p className="text-center text-[11px] text-jalanea-500 leading-relaxed">
-                    By continuing, you agree to our{' '}
-                    <a href="#" className="text-jalanea-400 hover:text-white underline">Terms of Service</a>
-                    {' '}and{' '}
-                    <a href="#" className="text-jalanea-400 hover:text-white underline">Privacy Policy</a>
+            {/* Create Account Button */}
+            <Button
+                fullWidth
+                variant="secondary"
+                onClick={handleEmailAuth}
+                disabled={isSaving}
+                className="bg-white/10 hover:bg-white/20 text-white border-white/20 h-12 font-bold backdrop-blur-sm disabled:opacity-50"
+            >
+                {isSaving ? <><Loader2 className="animate-spin mr-2" size={18} /> Creating Account...</> : 'Create Account with Email'}
+            </Button>
+
+            {/* Switch to Login */}
+            <div className="text-center pt-2">
+                <p className="text-sm text-jalanea-400">
+                    Already have an account?{' '}
+                    <button
+                        onClick={() => setCurrentView(VIEWS.LOGIN)}
+                        className="text-gold font-bold hover:underline hover:text-gold-light transition-colors"
+                    >
+                        Sign in →
+                    </button>
                 </p>
             </div>
-            );
+
+            {/* Terms */}
+            <p className="text-center text-[11px] text-jalanea-500 leading-relaxed">
+                By continuing, you agree to our{' '}
+                <a href="#" className="text-jalanea-400 hover:text-white underline">Terms of Service</a>
+                {' '}and{' '}
+                <a href="#" className="text-jalanea-400 hover:text-white underline">Privacy Policy</a>
+            </p>
+        </div>
+    );
 
     // --- Wizard Steps ---
 
     const renderBasics = () => (
-            <WizardLayout
-                title="Let's get to know you."
-                nextStep={() => setCurrentView(VIEWS.WIZARD_EDU)}
-                currentView={currentView}
-            >
-                <div className="flex flex-col items-center mb-6">
-                    <div className="relative group">
-                        <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-jalanea-500 group-hover:border-gold group-hover:text-gold transition-all overflow-hidden cursor-pointer">
-                            {isUploadingPic ? (
-                                <Loader2 className="animate-spin" size={32} />
-                            ) : profilePic ? (
-                                <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
-                            ) : (
-                                <User size={40} />
-                            )}
-                        </div>
-                        {/* Hidden file input */}
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*"
-                            onChange={handleProfilePicUpload}
-                            className="hidden"
-                        />
-                        {/* Camera Button */}
-                        <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={isUploadingPic}
-                            className="absolute bottom-0 right-0 p-2 bg-gold text-jalanea-950 rounded-full shadow-lg hover:bg-gold-light hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <Camera size={16} />
-                        </button>
-                    </div>
-                    <p className="text-xs text-jalanea-500 text-center mt-3">
-                        Max 5MB
-                    </p>
-                </div>
-                <Input
-                    variant="dark-glass"
-                    placeholder="Full Name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                />
-                <Input
-                    variant="dark-glass"
-                    placeholder="Location (e.g. Orlando, FL)"
-                    icon={<MapPin size={16} />}
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                />
-                <Input
-                    variant="dark-glass"
-                    placeholder="LinkedIn URL"
-                    icon={<Linkedin size={16} />}
-                    value={linkedinUrl}
-                    onChange={(e) => setLinkedinUrl(e.target.value)}
-                />
-                <Input
-                    variant="dark-glass"
-                    placeholder="Portfolio URL (Optional)"
-                    icon={<Globe size={16} />}
-                    value={portfolioUrl}
-                    onChange={(e) => setPortfolioUrl(e.target.value)}
-                />
-            </WizardLayout>
-            );
-
-    const renderEducation = () => (
-            <WizardLayout
-                title="Show off your hard work."
-                prevStep={() => setCurrentView(VIEWS.WIZARD_BASICS)}
-                nextStep={() => setCurrentView(VIEWS.WIZARD_EXP)}
-                currentView={currentView}
-            >
-                <div className="space-y-6">
-                    {educationList.map((edu, index) => (
-                        <div key={edu.id} className="relative p-5 border border-white/10 rounded-2xl bg-white/5 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            {/* Remove Degree Button */}
-                            {index > 0 && (
-                                <button
-                                    onClick={() => removeDegree(edu.id)}
-                                    className="absolute top-4 right-4 text-jalanea-500 hover:text-red-400 transition-colors"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                            )}
-
-                            <div className="space-y-4">
-                                <Input variant="dark-glass" label="Institution" defaultValue="Valencia College" />
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-white text-sm font-bold mb-2 block">Degree Level</label>
-                                        <select
-                                            value={edu.degreeLevel}
-                                            onChange={(e) => updateDegree(edu.id, 'degreeLevel', e.target.value)}
-                                            className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white focus:ring-1 focus:ring-gold focus:border-gold appearance-none"
-                                        >
-                                            <option>Associate of Science (A.S.)</option>
-                                            <option>Bachelor of Science (B.S.)</option>
-                                            <option>Technical Certificate</option>
-                                            <option>Advanced Technical Certificate</option>
-                                        </select>
-                                    </div>
-                                    <Input
-                                        variant="dark-glass"
-                                        label="Grad Year"
-                                        placeholder="2024"
-                                        value={edu.gradYear}
-                                        onChange={(e) => updateDegree(edu.id, 'gradYear', e.target.value)}
-                                    />
-                                </div>
-
-                                <ValenciaDegreeSelect
-                                    variant="dark-glass"
-                                    label="Major/Program"
-                                    degreeLevel={edu.degreeLevel}
-                                    value={edu.program}
-                                    onChange={(val) => handleProgramSelection(edu, val)}
-                                />
-                            </div>
-                        </div>
-                    ))}
-
-                    <button
-                        onClick={addDegree}
-                        className="w-full py-3 border border-dashed border-white/20 rounded-xl flex items-center justify-center gap-2 text-gold font-bold text-sm hover:bg-white/5 hover:border-gold/50 transition-all"
-                    >
-                        <Plus size={16} />
-                        Add Another Degree
-                    </button>
-                </div>
-            </WizardLayout>
-            );
-
-    const renderExperience = () => (
-            <WizardLayout
-                title="Experience & Projects."
-                prevStep={() => setCurrentView(VIEWS.WIZARD_EDU)}
-                nextStep={() => setCurrentView(VIEWS.WIZARD_PREFS)}
-                currentView={currentView}
-            >
-                {experiences.length === 0 && !isAddingExperience ? (
-                    <div
-                        onClick={() => setIsAddingExperience(true)}
-                        className="border border-dashed border-white/20 rounded-xl p-10 flex flex-col items-center justify-center text-center hover:bg-white/5 cursor-pointer transition-colors group h-48"
-                    >
-                        <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-jalanea-400 group-hover:text-gold mb-4 transition-colors">
-                            <Zap size={24} />
-                        </div>
-                        <span className="text-white font-bold text-lg">Add Position</span>
-                        <span className="text-jalanea-500 text-sm mt-1">Work, Internship, or Project</span>
-                    </div>
-                ) : (
-                    <div className="space-y-4">
-                        {experiences.map((exp, idx) => (
-                            <div key={idx} className="bg-white/5 rounded-xl p-4 border border-white/10 flex justify-between items-center group">
-                                <div>
-                                    <h4 className="font-bold text-white text-base">{exp.role}</h4>
-                                    <p className="text-sm text-jalanea-400 mt-1">{exp.company} • {exp.duration}</p>
-                                </div>
-                                <button
-                                    onClick={() => handleDeleteExperience(idx)}
-                                    className="p-2 text-jalanea-500 hover:text-red-400 hover:bg-white/5 rounded-full transition-colors opacity-0 group-hover:opacity-100"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                            </div>
-                        ))}
-
-                        {!isAddingExperience && (
-                            <Button
-                                fullWidth
-                                variant="glass-light"
-                                onClick={() => setIsAddingExperience(true)}
-                                className="border-dashed"
-                            >
-                                <Plus size={16} className="mr-2" /> Add Another Position
-                            </Button>
+        <WizardLayout
+            title="Let's get to know you."
+            nextStep={() => setCurrentView(VIEWS.WIZARD_EDU)}
+            currentView={currentView}
+        >
+            <div className="flex flex-col items-center mb-6">
+                <div className="relative group">
+                    <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-jalanea-500 group-hover:border-gold group-hover:text-gold transition-all overflow-hidden cursor-pointer">
+                        {isUploadingPic ? (
+                            <Loader2 className="animate-spin" size={32} />
+                        ) : profilePic ? (
+                            <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                            <User size={40} />
                         )}
                     </div>
-                )}
+                    {/* Hidden file input */}
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleProfilePicUpload}
+                        className="hidden"
+                    />
+                    {/* Camera Button */}
+                    <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploadingPic}
+                        className="absolute bottom-0 right-0 p-2 bg-gold text-jalanea-950 rounded-full shadow-lg hover:bg-gold-light hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Camera size={16} />
+                    </button>
+                </div>
+                <p className="text-xs text-jalanea-500 text-center mt-3">
+                    Max 5MB
+                </p>
+            </div>
+            <Input
+                variant="dark-glass"
+                placeholder="Full Name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+            />
+            <Input
+                variant="dark-glass"
+                placeholder="Location (e.g. Orlando, FL)"
+                icon={<MapPin size={16} />}
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+            />
+            <Input
+                variant="dark-glass"
+                placeholder="LinkedIn URL"
+                icon={<Linkedin size={16} />}
+                value={linkedinUrl}
+                onChange={(e) => setLinkedinUrl(e.target.value)}
+            />
+            <Input
+                variant="dark-glass"
+                placeholder="Portfolio URL (Optional)"
+                icon={<Globe size={16} />}
+                value={portfolioUrl}
+                onChange={(e) => setPortfolioUrl(e.target.value)}
+            />
+        </WizardLayout>
+    );
 
-                {isAddingExperience && (
-                    <div className="bg-jalanea-950/50 p-6 rounded-xl border border-white/10 space-y-4 animate-in zoom-in-95 duration-200">
-                        <h4 className="text-white font-bold mb-2">New Position</h4>
-                        <Input
-                            variant="dark-glass"
-                            placeholder="Role Title"
-                            value={tempExp.role}
-                            onChange={e => setTempExp({ ...tempExp, role: e.target.value })}
-                        />
-                        <Input
-                            variant="dark-glass"
-                            placeholder="Company / Organization"
-                            value={tempExp.company}
-                            onChange={e => setTempExp({ ...tempExp, company: e.target.value })}
-                        />
-                        <Input
-                            variant="dark-glass"
-                            placeholder="Duration (e.g. Summer 2024)"
-                            value={tempExp.duration}
-                            onChange={e => setTempExp({ ...tempExp, duration: e.target.value })}
-                        />
-                        <div className="flex gap-3 pt-2">
-                            <Button variant="ghost" className="text-jalanea-400" onClick={() => setIsAddingExperience(false)}>Cancel</Button>
-                            <Button fullWidth variant="primary" onClick={handleAddExperience}>Save</Button>
-                        </div>
-                    </div>
-                )}
-            </WizardLayout>
-            );
+    const renderEducation = () => (
+        <WizardLayout
+            title="Show off your hard work."
+            prevStep={() => setCurrentView(VIEWS.WIZARD_BASICS)}
+            nextStep={() => setCurrentView(VIEWS.WIZARD_EXP)}
+            currentView={currentView}
+        >
+            <div className="space-y-6">
+                {educationList.map((edu, index) => (
+                    <div key={edu.id} className="relative p-5 border border-white/10 rounded-2xl bg-white/5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        {/* Remove Degree Button */}
+                        {index > 0 && (
+                            <button
+                                onClick={() => removeDegree(edu.id)}
+                                className="absolute top-4 right-4 text-jalanea-500 hover:text-red-400 transition-colors"
+                            >
+                                <Trash2 size={16} />
+                            </button>
+                        )}
 
-    const renderPrefs = () => (
-            <WizardLayout
-                title="What are you looking for?"
-                prevStep={() => setCurrentView(VIEWS.WIZARD_EXP)}
-                nextStep={() => setCurrentView(VIEWS.WIZARD_LOGISTICS)}
-                currentView={currentView}
-            >
-                <div className="space-y-8">
-                    {/* Target Roles - Chips */}
-                    <div>
-                        <div className="flex items-center gap-2 mb-3">
-                            <label className="text-white text-sm font-bold block">Target Roles</label>
-                            {isLoadingRoles && (
-                                <div className="flex items-center gap-2 text-jalanea-400 text-xs">
-                                    <Loader2 size={12} className="animate-spin" /> Generating matches...
+                        <div className="space-y-4">
+                            <Input variant="dark-glass" label="Institution" defaultValue="Valencia College" />
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-white text-sm font-bold mb-2 block">Degree Level</label>
+                                    <select
+                                        value={edu.degreeLevel}
+                                        onChange={(e) => updateDegree(edu.id, 'degreeLevel', e.target.value)}
+                                        className="w-full bg-black/20 border border-white/10 rounded-xl py-3 px-4 text-white focus:ring-1 focus:ring-gold focus:border-gold appearance-none"
+                                    >
+                                        <option>Associate of Science (A.S.)</option>
+                                        <option>Bachelor of Science (B.S.)</option>
+                                        <option>Technical Certificate</option>
+                                        <option>Advanced Technical Certificate</option>
+                                    </select>
                                 </div>
-                            )}
-                            {!isLoadingRoles && autoMatched && (
-                                <div className="group relative flex items-center">
-                                    <span className="bg-gold/20 text-gold text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 cursor-help border border-gold/20">
-                                        <Sparkles size={10} /> {matchSource === 'static' ? 'Placement Match' : 'AI Suggested'}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
+                                <Input
+                                    variant="dark-glass"
+                                    label="Grad Year"
+                                    placeholder="2024"
+                                    value={edu.gradYear}
+                                    onChange={(e) => updateDegree(edu.id, 'gradYear', e.target.value)}
+                                />
+                            </div>
 
-                        <div className="bg-black/20 p-3 border border-white/10 rounded-xl flex flex-wrap gap-2 focus-within:ring-1 focus-within:ring-gold transition-all min-h-[50px]">
-                            {targetRoles.map(role => (
-                                <span key={role} className="bg-white/10 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-2 border border-white/20 animate-in zoom-in duration-200">
-                                    {role}
-                                    <button onClick={() => setTargetRoles(targetRoles.filter(r => r !== role))} className="hover:text-red-400"><X size={12} /></button>
-                                </span>
-                            ))}
-                            <input
-                                className="flex-1 bg-transparent border-none outline-none text-sm text-white placeholder-white/30 min-w-[120px]"
-                                placeholder="Add another role..."
-                                value={roleInput}
-                                onChange={(e) => setRoleInput(e.target.value)}
-                                onKeyDown={handleAddRole}
+                            <ValenciaDegreeSelect
+                                variant="dark-glass"
+                                label="Major/Program"
+                                degreeLevel={edu.degreeLevel}
+                                value={edu.program}
+                                onChange={(val) => handleProgramSelection(edu, val)}
                             />
                         </div>
                     </div>
+                ))}
 
-                    {/* Work Style - Toggles */}
-                    <div>
-                        <label className="text-white text-sm font-bold mb-3 block">Work Style</label>
-                        <div className="flex gap-3">
-                            {['Remote', 'Hybrid', 'On-site'].map(s => (
-                                <button
-                                    key={s}
-                                    onClick={() => toggleWorkStyle(s)}
-                                    className={`
-                                flex-1 py-3 rounded-xl text-sm font-bold border transition-all duration-200
-                                ${workStyles.includes(s)
-                                            ? 'bg-gold text-jalanea-950 border-gold shadow-[0_0_15px_rgba(255,196,37,0.3)]'
-                                            : 'bg-transparent text-jalanea-400 border-white/10 hover:border-white/30 hover:bg-white/5'}
-                            `}
-                                >
-                                    {s}
-                                </button>
-                            ))}
-                        </div>
+                <button
+                    onClick={addDegree}
+                    className="w-full py-3 border border-dashed border-white/20 rounded-xl flex items-center justify-center gap-2 text-gold font-bold text-sm hover:bg-white/5 hover:border-gold/50 transition-all"
+                >
+                    <Plus size={16} />
+                    Add Another Degree
+                </button>
+            </div>
+        </WizardLayout>
+    );
+
+    const renderExperience = () => (
+        <WizardLayout
+            title="Experience & Projects."
+            prevStep={() => setCurrentView(VIEWS.WIZARD_EDU)}
+            nextStep={() => setCurrentView(VIEWS.WIZARD_PREFS)}
+            currentView={currentView}
+        >
+            {experiences.length === 0 && !isAddingExperience ? (
+                <div
+                    onClick={() => setIsAddingExperience(true)}
+                    className="border border-dashed border-white/20 rounded-xl p-10 flex flex-col items-center justify-center text-center hover:bg-white/5 cursor-pointer transition-colors group h-48"
+                >
+                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-jalanea-400 group-hover:text-gold mb-4 transition-colors">
+                        <Zap size={24} />
                     </div>
-
-                    {/* Learning Style */}
-                    <div>
-                        <label className="text-white text-sm font-bold mb-3 block">Preferred Learning Styles</label>
-                        <div className="flex gap-3">
-                            {[
-                                { type: 'Video', icon: Video },
-                                { type: 'Reading', icon: BookOpen },
-                                { type: 'Both', icon: Sparkles }
-                            ].map((style) => (
-                                <button
-                                    key={style.type}
-                                    onClick={() => toggleLearningStyle(style.type as LearningStyle)}
-                                    className={`
-                                 flex-1 py-3 px-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all duration-200
-                                 ${learningStyle === style.type
-                                            ? 'bg-white/20 border-gold text-white shadow-[0_0_10px_rgba(255,196,37,0.2)]'
-                                            : 'bg-transparent border-white/10 text-jalanea-400 hover:bg-white/5'}
-                              `}
-                                >
-                                    <style.icon size={18} />
-                                    <span className="text-xs font-bold">{style.type}</span>
-                                </button>
-                            ))}
+                    <span className="text-white font-bold text-lg">Add Position</span>
+                    <span className="text-jalanea-500 text-sm mt-1">Work, Internship, or Project</span>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {experiences.map((exp, idx) => (
+                        <div key={idx} className="bg-white/5 rounded-xl p-4 border border-white/10 flex justify-between items-center group">
+                            <div>
+                                <h4 className="font-bold text-white text-base">{exp.role}</h4>
+                                <p className="text-sm text-jalanea-400 mt-1">{exp.company} • {exp.duration}</p>
+                            </div>
+                            <button
+                                onClick={() => handleDeleteExperience(idx)}
+                                className="p-2 text-jalanea-500 hover:text-red-400 hover:bg-white/5 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                            >
+                                <Trash2 size={16} />
+                            </button>
                         </div>
+                    ))}
+
+                    {!isAddingExperience && (
+                        <Button
+                            fullWidth
+                            variant="glass-light"
+                            onClick={() => setIsAddingExperience(true)}
+                            className="border-dashed"
+                        >
+                            <Plus size={16} className="mr-2" /> Add Another Position
+                        </Button>
+                    )}
+                </div>
+            )}
+
+            {isAddingExperience && (
+                <div className="bg-jalanea-950/50 p-6 rounded-xl border border-white/10 space-y-4 animate-in zoom-in-95 duration-200">
+                    <h4 className="text-white font-bold mb-2">New Position</h4>
+                    <Input
+                        variant="dark-glass"
+                        placeholder="Role Title"
+                        value={tempExp.role}
+                        onChange={e => setTempExp({ ...tempExp, role: e.target.value })}
+                    />
+                    <Input
+                        variant="dark-glass"
+                        placeholder="Company / Organization"
+                        value={tempExp.company}
+                        onChange={e => setTempExp({ ...tempExp, company: e.target.value })}
+                    />
+                    <Input
+                        variant="dark-glass"
+                        placeholder="Duration (e.g. Summer 2024)"
+                        value={tempExp.duration}
+                        onChange={e => setTempExp({ ...tempExp, duration: e.target.value })}
+                    />
+                    <div className="flex gap-3 pt-2">
+                        <Button variant="ghost" className="text-jalanea-400" onClick={() => setIsAddingExperience(false)}>Cancel</Button>
+                        <Button fullWidth variant="primary" onClick={handleAddExperience}>Save</Button>
                     </div>
                 </div>
-            </WizardLayout>
-            );
+            )}
+        </WizardLayout>
+    );
 
-    const renderLogistics = () => (
-            <WizardLayout
-                title="Reality Check."
-                prevStep={() => setCurrentView(VIEWS.WIZARD_PREFS)}
-                nextStep={() => setCurrentView(VIEWS.WIZARD_LIFESTYLE)}
-                currentView={currentView}
-            >
-                <div className="space-y-8">
-                    <p className="text-jalanea-400 text-sm">We build your schedule based on your real life obligations. No judgment, just logistics.</p>
-
-                    {/* Parenting */}
-                    <div>
-                        <label className="text-white text-sm font-bold mb-3 block">Are you a parent?</label>
-                        <div className="flex gap-3 mb-4">
-                            <button
-                                onClick={() => setIsParent(true)}
-                                className={`flex-1 py-3 rounded-xl text-sm font-bold border transition-all ${isParent ? 'bg-gold text-jalanea-950 border-gold' : 'bg-transparent text-jalanea-400 border-white/10 hover:bg-white/5'}`}
-                            >
-                                Yes
-                            </button>
-                            <button
-                                onClick={() => setIsParent(false)}
-                                className={`flex-1 py-3 rounded-xl text-sm font-bold border transition-all ${!isParent ? 'bg-white/20 text-white border-white/30' : 'bg-transparent text-jalanea-400 border-white/10 hover:bg-white/5'}`}
-                            >
-                                No
-                            </button>
-                        </div>
-                        {isParent && (
-                            <div className="animate-in slide-in-from-top-2 duration-300">
-                                <Input
-                                    variant="dark-glass"
-                                    label="Number of Children"
-                                    type="number"
-                                    value={childCount}
-                                    onChange={(e) => setChildCount(parseInt(e.target.value) || 0)}
-                                    icon={<Baby size={16} />}
-                                />
+    const renderPrefs = () => (
+        <WizardLayout
+            title="What are you looking for?"
+            prevStep={() => setCurrentView(VIEWS.WIZARD_EXP)}
+            nextStep={() => setCurrentView(VIEWS.WIZARD_LOGISTICS)}
+            currentView={currentView}
+        >
+            <div className="space-y-8">
+                {/* Target Roles - Chips */}
+                <div>
+                    <div className="flex items-center gap-2 mb-3">
+                        <label className="text-white text-sm font-bold block">Target Roles</label>
+                        {isLoadingRoles && (
+                            <div className="flex items-center gap-2 text-jalanea-400 text-xs">
+                                <Loader2 size={12} className="animate-spin" /> Generating matches...
+                            </div>
+                        )}
+                        {!isLoadingRoles && autoMatched && (
+                            <div className="group relative flex items-center">
+                                <span className="bg-gold/20 text-gold text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 cursor-help border border-gold/20">
+                                    <Sparkles size={10} /> {matchSource === 'static' ? 'Placement Match' : 'AI Suggested'}
+                                </span>
                             </div>
                         )}
                     </div>
 
-                    {/* Employment Status */}
-                    <div>
-                        <label className="text-white text-sm font-bold mb-3 block">Current Employment Status</label>
-                        <div className="grid grid-cols-2 gap-3">
-                            {['Unemployed', 'Full-time', 'Part-time', 'Multiple Jobs', 'Student'].map((status) => (
-                                <button
-                                    key={status}
-                                    onClick={() => setEmploymentStatus(status as EmploymentStatus)}
-                                    className={`
-                                py-3 px-2 rounded-xl text-xs font-bold border transition-all
-                                ${employmentStatus === status
-                                            ? 'bg-jalanea-800 text-gold border-gold'
-                                            : 'bg-transparent text-jalanea-400 border-white/10 hover:bg-white/5'}
-                            `}
-                                >
-                                    {status}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Available Hours Hint */}
-                    <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex gap-3 items-start">
-                        <Clock size={20} className="text-gold shrink-0 mt-0.5" />
-                        <div>
-                            <h4 className="text-white font-bold text-sm">Schedule Preview</h4>
-                            <p className="text-xs text-jalanea-400 mt-1 leading-relaxed">
-                                Based on this, we'll suggest {isParent || employmentStatus === 'Multiple Jobs' ? <span className="text-gold font-bold">15-minute micro-tasks</span> : <span className="text-gold font-bold">2-hour deep work blocks</span>} for your job search.
-                            </p>
-                        </div>
+                    <div className="bg-black/20 p-3 border border-white/10 rounded-xl flex flex-wrap gap-2 focus-within:ring-1 focus-within:ring-gold transition-all min-h-[50px]">
+                        {targetRoles.map(role => (
+                            <span key={role} className="bg-white/10 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-2 border border-white/20 animate-in zoom-in duration-200">
+                                {role}
+                                <button onClick={() => setTargetRoles(targetRoles.filter(r => r !== role))} className="hover:text-red-400"><X size={12} /></button>
+                            </span>
+                        ))}
+                        <input
+                            className="flex-1 bg-transparent border-none outline-none text-sm text-white placeholder-white/30 min-w-[120px]"
+                            placeholder="Add another role..."
+                            value={roleInput}
+                            onChange={(e) => setRoleInput(e.target.value)}
+                            onKeyDown={handleAddRole}
+                        />
                     </div>
                 </div>
-            </WizardLayout>
-            );
+
+                {/* Work Style - Toggles */}
+                <div>
+                    <label className="text-white text-sm font-bold mb-3 block">Work Style</label>
+                    <div className="flex gap-3">
+                        {['Remote', 'Hybrid', 'On-site'].map(s => (
+                            <button
+                                key={s}
+                                onClick={() => toggleWorkStyle(s)}
+                                className={`
+                                flex-1 py-3 rounded-xl text-sm font-bold border transition-all duration-200
+                                ${workStyles.includes(s)
+                                        ? 'bg-gold text-jalanea-950 border-gold shadow-[0_0_15px_rgba(255,196,37,0.3)]'
+                                        : 'bg-transparent text-jalanea-400 border-white/10 hover:border-white/30 hover:bg-white/5'}
+                            `}
+                            >
+                                {s}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Learning Style */}
+                <div>
+                    <label className="text-white text-sm font-bold mb-3 block">Preferred Learning Styles</label>
+                    <div className="flex gap-3">
+                        {[
+                            { type: 'Video', icon: Video },
+                            { type: 'Reading', icon: BookOpen },
+                            { type: 'Both', icon: Sparkles }
+                        ].map((style) => (
+                            <button
+                                key={style.type}
+                                onClick={() => toggleLearningStyle(style.type as LearningStyle)}
+                                className={`
+                                 flex-1 py-3 px-2 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all duration-200
+                                 ${learningStyle === style.type
+                                        ? 'bg-white/20 border-gold text-white shadow-[0_0_10px_rgba(255,196,37,0.2)]'
+                                        : 'bg-transparent border-white/10 text-jalanea-400 hover:bg-white/5'}
+                              `}
+                            >
+                                <style.icon size={18} />
+                                <span className="text-xs font-bold">{style.type}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </WizardLayout>
+    );
+
+    const renderLogistics = () => (
+        <WizardLayout
+            title="Reality Check."
+            prevStep={() => setCurrentView(VIEWS.WIZARD_PREFS)}
+            nextStep={() => setCurrentView(VIEWS.WIZARD_LIFESTYLE)}
+            currentView={currentView}
+        >
+            <div className="space-y-8">
+                <p className="text-jalanea-400 text-sm">We build your schedule based on your real life obligations. No judgment, just logistics.</p>
+
+                {/* Parenting */}
+                <div>
+                    <label className="text-white text-sm font-bold mb-3 block">Are you a parent?</label>
+                    <div className="flex gap-3 mb-4">
+                        <button
+                            onClick={() => setIsParent(true)}
+                            className={`flex-1 py-3 rounded-xl text-sm font-bold border transition-all ${isParent ? 'bg-gold text-jalanea-950 border-gold' : 'bg-transparent text-jalanea-400 border-white/10 hover:bg-white/5'}`}
+                        >
+                            Yes
+                        </button>
+                        <button
+                            onClick={() => setIsParent(false)}
+                            className={`flex-1 py-3 rounded-xl text-sm font-bold border transition-all ${!isParent ? 'bg-white/20 text-white border-white/30' : 'bg-transparent text-jalanea-400 border-white/10 hover:bg-white/5'}`}
+                        >
+                            No
+                        </button>
+                    </div>
+                    {isParent && (
+                        <div className="animate-in slide-in-from-top-2 duration-300">
+                            <Input
+                                variant="dark-glass"
+                                label="Number of Children"
+                                type="number"
+                                value={childCount}
+                                onChange={(e) => setChildCount(parseInt(e.target.value) || 0)}
+                                icon={<Baby size={16} />}
+                            />
+                        </div>
+                    )}
+                </div>
+
+                {/* Employment Status */}
+                <div>
+                    <label className="text-white text-sm font-bold mb-3 block">Current Employment Status</label>
+                    <div className="grid grid-cols-2 gap-3">
+                        {['Unemployed', 'Full-time', 'Part-time', 'Multiple Jobs', 'Student'].map((status) => (
+                            <button
+                                key={status}
+                                onClick={() => setEmploymentStatus(status as EmploymentStatus)}
+                                className={`
+                                py-3 px-2 rounded-xl text-xs font-bold border transition-all
+                                ${employmentStatus === status
+                                        ? 'bg-jalanea-800 text-gold border-gold'
+                                        : 'bg-transparent text-jalanea-400 border-white/10 hover:bg-white/5'}
+                            `}
+                            >
+                                {status}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Available Hours Hint */}
+                <div className="bg-white/5 p-4 rounded-xl border border-white/10 flex gap-3 items-start">
+                    <Clock size={20} className="text-gold shrink-0 mt-0.5" />
+                    <div>
+                        <h4 className="text-white font-bold text-sm">Schedule Preview</h4>
+                        <p className="text-xs text-jalanea-400 mt-1 leading-relaxed">
+                            Based on this, we'll suggest {isParent || employmentStatus === 'Multiple Jobs' ? <span className="text-gold font-bold">15-minute micro-tasks</span> : <span className="text-gold font-bold">2-hour deep work blocks</span>} for your job search.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </WizardLayout>
+    );
 
     const renderLifestyle = () => {
         // Dynamic housing calculation and Commute Budget
         const monthlyRentBudget = Math.round(salary / 12 * 0.3);
-            const commuteBudget = Math.round(salary / 12 * 0.05); // Estimate 5% for transport
-            const commuteTier = getCommuteTier(salary, transportMode);
+        const commuteBudget = Math.round(salary / 12 * 0.05); // Estimate 5% for transport
+        const commuteTier = getCommuteTier(salary, transportMode);
 
-            return (
+        return (
             <WizardLayout
                 title="Lifestyle & Commute."
                 prevStep={() => setCurrentView(VIEWS.WIZARD_LOGISTICS)}
@@ -1566,42 +1575,42 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                     </div>
                 </div>
             </WizardLayout>
-            );
+        );
     };
 
-            return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
-                {/* Backdrop */}
-                <div
-                    className="absolute inset-0 bg-jalanea-950/80 backdrop-blur-sm animate-in fade-in duration-300"
-                    onClick={onClose}
-                />
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+            {/* Backdrop */}
+            <div
+                className="absolute inset-0 bg-jalanea-950/80 backdrop-blur-sm animate-in fade-in duration-300"
+                onClick={onClose}
+            />
 
-                {/* Modal Container */}
-                <div className="relative w-full max-w-3xl mx-auto z-10 flex flex-col max-h-[85vh] sm:max-h-[90vh]">
-                    <Card variant="glass-dark" className="shadow-2xl border-white/10 bg-jalanea-900/95 backdrop-blur-2xl flex-1 flex flex-col overflow-hidden min-h-[400px] sm:min-h-[500px]">
-                        {/* Close Button */}
-                        <button
-                            onClick={onClose}
-                            className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors z-50"
-                        >
-                            <X size={24} />
-                        </button>
+            {/* Modal Container */}
+            <div className="relative w-full max-w-3xl mx-auto z-10 flex flex-col max-h-[85vh] sm:max-h-[90vh]">
+                <Card variant="glass-dark" className="shadow-2xl border-white/10 bg-jalanea-900/95 backdrop-blur-2xl flex-1 flex flex-col overflow-hidden min-h-[400px] sm:min-h-[500px]">
+                    {/* Close Button */}
+                    <button
+                        onClick={onClose}
+                        className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors z-50"
+                    >
+                        <X size={24} />
+                    </button>
 
-                        {/* Content Area */}
-                        <div className="p-3 sm:p-4 w-full h-full flex flex-col justify-center overflow-hidden">
-                            {currentView === VIEWS.LOGIN && renderLogin()}
-                            {currentView === VIEWS.INTRO && renderIntro()}
-                            {currentView === VIEWS.SIGNUP && renderSignup()}
-                            {currentView === VIEWS.WIZARD_BASICS && renderBasics()}
-                            {currentView === VIEWS.WIZARD_EDU && renderEducation()}
-                            {currentView === VIEWS.WIZARD_EXP && renderExperience()}
-                            {currentView === VIEWS.WIZARD_PREFS && renderPrefs()}
-                            {currentView === VIEWS.WIZARD_LOGISTICS && renderLogistics()}
-                            {currentView === VIEWS.WIZARD_LIFESTYLE && renderLifestyle()}
-                        </div>
-                    </Card>
-                </div>
+                    {/* Content Area */}
+                    <div className="p-3 sm:p-4 w-full h-full flex flex-col justify-center overflow-hidden">
+                        {currentView === VIEWS.LOGIN && renderLogin()}
+                        {currentView === VIEWS.INTRO && renderIntro()}
+                        {currentView === VIEWS.SIGNUP && renderSignup()}
+                        {currentView === VIEWS.WIZARD_BASICS && renderBasics()}
+                        {currentView === VIEWS.WIZARD_EDU && renderEducation()}
+                        {currentView === VIEWS.WIZARD_EXP && renderExperience()}
+                        {currentView === VIEWS.WIZARD_PREFS && renderPrefs()}
+                        {currentView === VIEWS.WIZARD_LOGISTICS && renderLogistics()}
+                        {currentView === VIEWS.WIZARD_LIFESTYLE && renderLifestyle()}
+                    </div>
+                </Card>
             </div>
-            );
+        </div>
+    );
 };
