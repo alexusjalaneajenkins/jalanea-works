@@ -38,7 +38,7 @@ export const analyzeJobMatch = async (resumeText: string, jobDescription: string
         const prompt = `Analyze the fit between this resume and job description. Provide a match score (0-100) and 3 key missing skills.\n\nResume: ${resumeText}\n\nJob: ${jobDescription}`;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: prompt,
         });
         return response.text || "Analysis failed.";
@@ -115,7 +115,7 @@ export const generateResume = async (type: string, userProfile: UserProfile, job
         `;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: prompt,
         });
         return response.text || "Failed to generate resume.";
@@ -147,7 +147,7 @@ export const recommendResumeStrategy = async (userProfile: UserProfile, jobDescr
         `;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
@@ -177,7 +177,7 @@ export const suggestRolesForDegree = async (degree: string): Promise<string[]> =
         const prompt = `List 4 specific entry-level job titles suitable for someone with a "${degree}" degree in the current Orlando, FL job market. Return ONLY a JSON array of strings.`;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
@@ -250,7 +250,7 @@ export const searchJobsWithGrounding = async (
         `;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.0-flash',
+            model: 'gemini-3-flash-preview',
             contents: prompt,
             config: {
                 tools: [{ googleSearch: {} }], // This enables real-time web search!
@@ -320,7 +320,7 @@ export const findRealTimeJobs = async (userProfile: UserProfile): Promise<Job[]>
         `;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
@@ -384,7 +384,7 @@ export const generateJobIntel = async (jobTitle: string, company: string, descri
         `;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: prompt,
             config: {
                 maxOutputTokens: 8192, // High limit to ensure JSON closes, but content is restricted by prompt
@@ -507,7 +507,7 @@ export const generateWellnessInsights = async (schedule: any[], userProfile: Use
         `;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
@@ -577,7 +577,7 @@ export const generateScheduleSuggestions = async (schedule: any[]): Promise<Sche
         `;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: prompt,
             config: {
                 responseMimeType: "application/json",

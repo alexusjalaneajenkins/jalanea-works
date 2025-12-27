@@ -212,23 +212,21 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
 
             console.log('🔍 Searching jobs:', { effectiveQuery, effectiveLocation, chips, inputLocation, isRemoteSearch });
 
-            // For on-site searches: Try Gemini Search Grounding first (real-time Google Search)
-            // For remote searches: Use the existing API (works well for remote job boards)
+            // Try Gemini Search Grounding FIRST for all searches (real-time Google Search)
+            // Falls back to backend API if grounding fails
             let fetchedJobs: Job[] = [];
 
-            if (isOnsiteSearch && !isRemoteSearch) {
-                console.log('🤖 Trying Gemini Search Grounding for on-site jobs...');
-                try {
-                    const groundedJobs = await searchJobsWithGrounding(effectiveQuery, effectiveLocation);
-                    if (groundedJobs && groundedJobs.length > 0) {
-                        console.log(`✅ Grounding found ${groundedJobs.length} live on-site jobs!`);
-                        fetchedJobs = groundedJobs;
-                    } else {
-                        console.log('⚠️ Grounding returned no results, falling back to API...');
-                    }
-                } catch (groundingError) {
-                    console.warn('⚠️ Grounding failed, falling back to API:', groundingError);
+            console.log('🤖 Trying Gemini Search Grounding for jobs...');
+            try {
+                const groundedJobs = await searchJobsWithGrounding(effectiveQuery, effectiveLocation);
+                if (groundedJobs && groundedJobs.length > 0) {
+                    console.log(`✅ Grounding found ${groundedJobs.length} live jobs!`);
+                    fetchedJobs = groundedJobs;
+                } else {
+                    console.log('⚠️ Grounding returned no results, falling back to API...');
                 }
+            } catch (groundingError) {
+                console.warn('⚠️ Grounding failed, falling back to API:', groundingError);
             }
 
             // Fallback to existing Gemini API if grounding didn't return results
@@ -248,7 +246,7 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                     ...(MOCK_PROFILE.skills?.design || []),
                 ];
 
-                let filteredJobs = response.jobs;
+                let filteredJobs = fetchedJobs;
 
                 // CLIENT-SIDE LOCATION FILTERING - Only if not remote and user specified a location
                 if (!isRemoteSearch && inputLocation && inputLocation.trim()) {
@@ -331,7 +329,7 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                         });
                     }
 
-                    console.log(`📍 Location filter: ${response.jobs.length} -> ${filteredJobs.length} jobs`);
+                    console.log(`📍 Location filter: ${fetchedJobs.length} -> ${filteredJobs.length} jobs`);
                 }
 
                 // ENTRY-LEVEL FILTERING - Only show jobs for career starters (0-2 years)

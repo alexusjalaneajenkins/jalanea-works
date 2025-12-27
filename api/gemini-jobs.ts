@@ -94,7 +94,7 @@ id, title, company, location, type, salaryRange, postedAt, description, applyUrl
 
         // Use Gemini with Google Search grounding enabled
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: searchPrompt,
             config: {
                 tools: [{
