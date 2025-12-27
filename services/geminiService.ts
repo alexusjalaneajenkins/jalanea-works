@@ -198,7 +198,102 @@ export const suggestRolesForDegree = async (degree: string): Promise<string[]> =
     }
 };
 
-// NEW: Real-Time Job Search Simulation
+/**
+ * NEW: Real-Time Job Search with Google Search Grounding
+ * Uses Gemini's googleSearch tool to find ACTUAL live job postings from the web
+ * This is the most accurate way to find current job listings
+ */
+export const searchJobsWithGrounding = async (
+    query: string,
+    location: string,
+    userProfile?: UserProfile
+): Promise<Job[]> => {
+    try {
+        console.log(`🔍 Using Gemini Search Grounding for: "${query}" in "${location}"`);
+
+        // Build context from user profile if available
+        const degreesContext = userProfile?.education?.map(e => {
+            const degreeType = (e as any).degreeType;
+            return degreeType ? `${degreeType} in ${e.degree}` : e.degree;
+        }).join(", ") || "";
+
+        const skillsContext = userProfile?.skills?.technical?.join(", ") || "";
+
+        const prompt = `
+            SEARCH TASK: Find 5 REAL, CURRENTLY ACTIVE job listings for "${query}" in or near "${location}".
+            
+            ${degreesContext ? `USER DEGREES: ${degreesContext}` : ''}
+            ${skillsContext ? `USER SKILLS: ${skillsContext}` : ''}
+            
+            CRITICAL INSTRUCTIONS:
+            1. USE GOOGLE SEARCH to find REAL job postings that are currently open.
+            2. Only include jobs that have actual application links.
+            3. Focus on entry-level and junior roles.
+            4. Include the DIRECT link to apply.
+            5. If salary is not listed, estimate based on market data.
+            
+            Return a JSON array of job objects with these EXACT fields:
+            - id: unique string (use format "grounded-[number]")
+            - title: exact job title from the listing
+            - company: company name
+            - location: City, State format
+            - type: "Full-time", "Part-time", "Contract", or "Internship"
+            - salaryRange: salary if found, or estimate like "$45,000 - $55,000"
+            - postedAt: when posted (e.g., "2 days ago", "1 week ago")
+            - matchScore: 0-100 based on fit with user's degrees/skills
+            - skills: array of 3-5 required skills
+            - description: 2-3 sentence summary of the role
+            - experienceLevel: "Entry Level", "Internship", "Associate", or "Mid-Senior"
+            - experienceYears: years required (e.g., "0-2 years", "Not specified")
+            - applyUrl: THE DIRECT LINK to apply (must be a real URL)
+            - source: "Google Search"
+        `;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.0-flash',
+            contents: prompt,
+            config: {
+                tools: [{ googleSearch: {} }], // This enables real-time web search!
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            id: { type: Type.STRING },
+                            title: { type: Type.STRING },
+                            company: { type: Type.STRING },
+                            location: { type: Type.STRING },
+                            type: { type: Type.STRING },
+                            salaryRange: { type: Type.STRING },
+                            postedAt: { type: Type.STRING },
+                            matchScore: { type: Type.NUMBER },
+                            skills: { type: Type.ARRAY, items: { type: Type.STRING } },
+                            description: { type: Type.STRING },
+                            experienceLevel: { type: Type.STRING },
+                            experienceYears: { type: Type.STRING },
+                            applyUrl: { type: Type.STRING },
+                            source: { type: Type.STRING }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (response.text) {
+            const jobs = JSON.parse(response.text);
+            console.log(`📍 Found ${jobs.length} live jobs via Google Search Grounding`);
+            return jobs;
+        }
+        return [];
+    } catch (error) {
+        console.error("Search Grounding Error:", error);
+        // Return empty array - caller should fall back to aggregate API
+        return [];
+    }
+};
+
+// LEGACY: Real-Time Job Search Simulation (generates fake jobs, kept for reference)
 export const findRealTimeJobs = async (userProfile: UserProfile): Promise<Job[]> => {
     try {
         const degrees = userProfile.education.map(e => {

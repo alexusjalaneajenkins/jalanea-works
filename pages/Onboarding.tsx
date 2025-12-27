@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { searchJobs, searchJobsAggregate } from '../services/jobService';
 import { searchCareersEnriched, getRelatedCareers, mapToCareerPath, getCareerOutlook } from '../services/onetService';
+import { searchJobsWithGrounding } from '../services/geminiService';
 
 interface OnboardingProps {
     setRoute: (route: NavRoute) => void;
@@ -917,19 +918,43 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                 console.log(`🔍 Searching for career: "${career.title}" with query: "${fullQuery}"`);
 
                 try {
-                    const response = await searchJobsAggregate(fullQuery, {
-                        location: searchLocation,
-                        remote: jobWorkStyleFilter === 'Remote'
-                    });
+                    let fetchedJobs: Job[] = [];
 
-                    if (response.jobs && response.jobs.length > 0) {
-                        console.log(`📦 Found ${response.jobs.length} jobs for ${career.title}`);
+                    // For On-site/Hybrid: Try Gemini Search Grounding first (real-time Google Search)
+                    if (jobWorkStyleFilter === 'On-site' || jobWorkStyleFilter === 'Hybrid') {
+                        console.log(`🤖 Trying Gemini Search Grounding for "${career.title}"...`);
+                        const groundedJobs = await searchJobsWithGrounding(
+                            `${career.title} entry level`,
+                            searchLocation
+                        );
+
+                        if (groundedJobs && groundedJobs.length > 0) {
+                            console.log(`✅ Grounding found ${groundedJobs.length} live jobs!`);
+                            fetchedJobs = groundedJobs;
+                        } else {
+                            console.log(`⚠️ Grounding returned no results, falling back to aggregate API...`);
+                        }
+                    }
+
+                    // Fallback to aggregate API (or primary for Remote/All)
+                    if (fetchedJobs.length === 0) {
+                        const response = await searchJobsAggregate(fullQuery, {
+                            location: searchLocation,
+                            remote: jobWorkStyleFilter === 'Remote'
+                        });
+                        if (response.jobs && response.jobs.length > 0) {
+                            fetchedJobs = response.jobs;
+                        }
+                    }
+
+                    if (fetchedJobs.length > 0) {
+                        console.log(`📦 Found ${fetchedJobs.length} jobs for ${career.title}`);
 
                         // Filter and tag jobs with this career
                         const entryLevelExcludeTerms = ['senior', 'lead', 'manager', 'director', 'principal', 'staff', 'architect', 'vp', 'head of'];
                         const experienceExcludePatterns = [/(\d+)\+?\s*years?/i];
 
-                        const filteredJobs = response.jobs.filter(job => {
+                        const filteredJobs = fetchedJobs.filter(job => {
                             const titleLower = job.title?.toLowerCase() || '';
                             const descLower = job.description?.toLowerCase() || '';
 
@@ -950,7 +975,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                         });
 
                         // Tag each job with this career
-                        filteredJobs.slice(0, 4).forEach(job => {
+                        filteredJobs.slice(0, 5).forEach(job => {
                             // Avoid duplicates by checking if job already exists
                             const exists = allTaggedJobs.some(tj => tj.job.id === job.id);
                             if (!exists) {
