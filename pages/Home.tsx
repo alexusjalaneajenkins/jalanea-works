@@ -1,12 +1,67 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, useInView } from 'framer-motion';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { NavRoute } from '../types';
 import { AuthModal, AuthMode } from '../components/AuthModal';
 import { WelcomeTransition } from '../components/WelcomeTransition';
 import { ArrowRight, Star, Globe, ShieldCheck, Zap, TrendingUp, GraduationCap, ChevronDown, MapPin, Search, X, Heart, Home as HomeIcon, Instagram, CheckCircle2, Users, Coffee, Briefcase, Clock, DollarSign, Target, Sparkles, Send } from 'lucide-react';
+
+// Animation Variants
+const fadeInUp = {
+  hidden: { opacity: 0, y: 40 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] }
+  }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+      delayChildren: 0.1
+    }
+  }
+};
+
+const scaleOnHover = {
+  rest: { scale: 1 },
+  hover: {
+    scale: 1.02,
+    y: -4,
+    transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] }
+  }
+};
+
+const floatAnimation = {
+  initial: { y: 0 },
+  animate: {
+    y: [-10, 10, -10],
+    transition: {
+      duration: 6,
+      ease: "easeInOut",
+      repeat: Infinity
+    }
+  }
+};
+
+const glowPulse = {
+  initial: { textShadow: "0 0 20px rgba(255, 196, 37, 0.3)" },
+  animate: {
+    textShadow: [
+      "0 0 20px rgba(255, 196, 37, 0.3)",
+      "0 0 40px rgba(255, 196, 37, 0.5)",
+      "0 0 20px rgba(255, 196, 37, 0.3)"
+    ],
+    transition: { duration: 3, ease: "easeInOut", repeat: Infinity }
+  }
+};
 
 interface HomeProps {
   setRoute: (route: NavRoute) => void;
@@ -514,17 +569,38 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
       {/* Stats Dashboard */}
       <section className="relative py-12 border-y border-white/5 bg-jalanea-900/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+          <motion.div
+            className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8"
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+          >
             {STATS.map((stat, i) => (
-              <div key={i} className="text-center">
-                <div className="inline-flex items-center justify-center w-10 h-10 mb-3 rounded-full bg-gold/10 text-gold">
+              <motion.div
+                key={i}
+                className="text-center"
+                variants={fadeInUp}
+              >
+                <motion.div
+                  className="inline-flex items-center justify-center w-10 h-10 mb-3 rounded-full bg-gold/10 text-gold"
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  transition={{ type: "spring", stiffness: 400 }}
+                >
                   <stat.icon size={20} />
-                </div>
-                <div className="text-2xl md:text-3xl font-display font-bold text-white mb-1">{stat.value}</div>
+                </motion.div>
+                <motion.div
+                  className="text-2xl md:text-3xl font-display font-bold text-white mb-1"
+                  variants={glowPulse}
+                  initial="initial"
+                  animate="animate"
+                >
+                  {stat.value}
+                </motion.div>
                 <div className="text-sm text-slate-300 font-medium">{stat.label}</div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -534,29 +610,50 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-900/10 rounded-full blur-[150px]"></div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center max-w-3xl mx-auto mb-16">
+          <motion.div
+            className="text-center max-w-3xl mx-auto mb-16"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          >
             <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-6 tracking-tight">
               How it <span className="text-gold">works</span>
             </h2>
             <p className="text-lg text-slate-300 leading-relaxed">
               Three simple steps to transform your credentials into career opportunities
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8"
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+          >
             {STEPS.map((step, i) => (
-              <Card key={i} variant="glass-dark" className="p-6 md:p-8 border-white/5 hover:border-gold/20 transition-all duration-500 group">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center text-gold group-hover:bg-gold group-hover:text-jalanea-950 transition-all duration-300">
-                    <step.icon size={24} />
+              <motion.div
+                key={i}
+                variants={fadeInUp}
+                whileHover={{ y: -8, transition: { duration: 0.3 } }}
+              >
+                <Card variant="glass-dark" className="p-6 md:p-8 border-white/5 hover:border-gold/20 transition-all duration-500 group h-full">
+                  <div className="flex items-start gap-4 mb-4">
+                    <motion.div
+                      className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center text-gold group-hover:bg-gold group-hover:text-jalanea-950 transition-all duration-300"
+                      whileHover={{ rotate: 5, scale: 1.05 }}
+                    >
+                      <step.icon size={24} />
+                    </motion.div>
+                    <span className="text-5xl font-display font-bold text-slate-600 group-hover:text-gold/30 transition-colors">{step.number}</span>
                   </div>
-                  <span className="text-5xl font-display font-bold text-slate-600 group-hover:text-gold/30 transition-colors">{step.number}</span>
-                </div>
-                <h3 className="text-xl font-display font-bold text-white mb-3">{step.title}</h3>
-                <p className="text-slate-300 leading-relaxed">{step.description}</p>
-              </Card>
+                  <h3 className="text-xl font-display font-bold text-white mb-3">{step.title}</h3>
+                  <p className="text-slate-300 leading-relaxed">{step.description}</p>
+                </Card>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -565,50 +662,82 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left Content */}
-            <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-bold uppercase tracking-widest">
+            <motion.div
+              className="space-y-6"
+              initial={{ opacity: 0, x: -40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <motion.div
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-bold uppercase tracking-widest"
+                whileHover={{ scale: 1.05 }}
+              >
                 <Heart size={12} fill="currentColor" /> Light the Block
-              </div>
+              </motion.div>
               <h2 className="text-3xl md:text-4xl font-display font-bold text-white leading-tight">
                 Building careers that <span className="text-gold">build communities</span>
               </h2>
               <p className="text-lg text-slate-200 leading-relaxed">
                 Jalanea Works isn't just about finding jobs—it's about transforming Orlando's workforce from the ground up. Every placement strengthens our local economy and proves that community college graduates are the backbone of innovation.
               </p>
-              <div className="flex flex-wrap gap-4 pt-4">
-                <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center min-w-[140px]">
-                  <div className="text-3xl font-display font-bold text-gold mb-1">94%</div>
-                  <div className="text-sm text-slate-300">Say life-changing</div>
-                </div>
-                <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center min-w-[140px]">
-                  <div className="text-3xl font-display font-bold text-gold mb-1">Orlando</div>
-                  <div className="text-sm text-slate-300">Focused opportunities</div>
-                </div>
-                <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center min-w-[140px]">
-                  <div className="text-3xl font-display font-bold text-gold mb-1">Valencia</div>
-                  <div className="text-sm text-slate-300">Direct partnerships</div>
-                </div>
-              </div>
-            </div>
+              <motion.div
+                className="flex flex-wrap gap-4 pt-4"
+                variants={staggerContainer}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+              >
+                {[
+                  { value: "94%", label: "Say life-changing" },
+                  { value: "Orlando", label: "Focused opportunities" },
+                  { value: "Valencia", label: "Direct partnerships" }
+                ].map((item, i) => (
+                  <motion.div
+                    key={i}
+                    className="bg-white/5 border border-white/10 rounded-xl p-4 text-center min-w-[140px]"
+                    variants={fadeInUp}
+                    whileHover={{ scale: 1.05, borderColor: "rgba(255, 196, 37, 0.3)" }}
+                  >
+                    <div className="text-3xl font-display font-bold text-gold mb-1">{item.value}</div>
+                    <div className="text-sm text-slate-300">{item.label}</div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </motion.div>
 
             {/* Right Content - Feature Cards */}
-            <div className="space-y-4">
+            <motion.div
+              className="space-y-4"
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.2 }}
+            >
               {[
                 { icon: Users, title: "Community First", desc: "We prioritize local Orlando employers who believe in investing in homegrown talent." },
                 { icon: TrendingUp, title: "Breaking Cycles", desc: "Education should be the exit strategy from poverty. We bridge the gap to that first sustainable paycheck." },
                 { icon: Zap, title: "AI-Powered Advocacy", desc: "Our AI translates your Valencia coursework into professional assets that speak to employers." }
               ].map((feature, i) => (
-                <div key={i} className="flex gap-4 p-5 bg-white/5 border border-white/5 rounded-xl hover:border-gold/20 transition-all group">
-                  <div className="w-12 h-12 shrink-0 rounded-xl bg-gold/10 flex items-center justify-center text-gold group-hover:bg-gold group-hover:text-jalanea-950 transition-all">
+                <motion.div
+                  key={i}
+                  className="flex gap-4 p-5 bg-white/5 border border-white/5 rounded-xl hover:border-gold/20 transition-colors group"
+                  variants={fadeInUp}
+                  whileHover={{ x: 8, transition: { duration: 0.2 } }}
+                >
+                  <motion.div
+                    className="w-12 h-12 shrink-0 rounded-xl bg-gold/10 flex items-center justify-center text-gold group-hover:bg-gold group-hover:text-jalanea-950 transition-all"
+                    whileHover={{ rotate: 10, scale: 1.1 }}
+                  >
                     <feature.icon size={24} />
-                  </div>
+                  </motion.div>
                   <div>
                     <h4 className="font-bold text-white mb-1">{feature.title}</h4>
                     <p className="text-sm text-slate-300">{feature.desc}</p>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -616,31 +745,69 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
       {/* Final CTA Section */}
       <section className="py-20 md:py-28 relative overflow-hidden">
         <div className="absolute inset-0 bg-jalanea-950"></div>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-gold/5 rounded-full blur-[100px]"></div>
+        <motion.div
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-gold/5 rounded-full blur-[100px]"
+          variants={floatAnimation}
+          initial="initial"
+          animate="animate"
+        />
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-          <h2 className="text-4xl md:text-6xl font-display font-bold text-white mb-6 tracking-tight">
-            Ready to start your <span className="text-gold">career?</span>
-          </h2>
-          <p className="text-lg md:text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
+          <motion.h2
+            className="text-4xl md:text-6xl font-display font-bold text-white mb-6 tracking-tight"
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          >
+            Ready to start your <motion.span
+              className="text-gold"
+              variants={glowPulse}
+              initial="initial"
+              animate="animate"
+            >career?</motion.span>
+          </motion.h2>
+          <motion.p
+            className="text-lg md:text-xl text-slate-300 mb-10 max-w-2xl mx-auto"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          >
             Join thousands of Valencia College graduates who've transformed their credentials into rewarding careers.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button
-              onClick={() => openAuth('signup')}
-              variant="primary"
-              className="bg-gold hover:bg-gold-light text-jalanea-950 font-bold border-none shadow-[0_0_30px_rgba(255,196,37,0.3)] hover:shadow-[0_0_40px_rgba(255,196,37,0.5)] px-10 py-4 text-lg"
+          </motion.p>
+          <motion.div
+            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
             >
-              Get Started Free
-            </Button>
-            <Button
-              onClick={() => navigate('/pricing')}
-              variant="outline"
-              className="border-white/20 hover:bg-white/10 hover:border-gold text-white px-10 py-4"
+              <Button
+                onClick={() => openAuth('signup')}
+                variant="primary"
+                className="bg-gold hover:bg-gold-light text-jalanea-950 font-bold border-none shadow-[0_0_30px_rgba(255,196,37,0.3)] hover:shadow-[0_0_40px_rgba(255,196,37,0.5)] px-10 py-4 text-lg"
+              >
+                Get Started Free
+              </Button>
+            </motion.div>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
             >
-              See Pricing Plans
-            </Button>
-          </div>
+              <Button
+                onClick={() => navigate('/pricing')}
+                variant="outline"
+                className="border-white/20 hover:bg-white/10 hover:border-gold text-white px-10 py-4"
+              >
+                See Pricing Plans
+              </Button>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
