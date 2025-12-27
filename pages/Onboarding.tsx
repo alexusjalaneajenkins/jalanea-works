@@ -847,6 +847,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
     // Fetch jobs when reaching the favorite step - use user's location and work style
     const [jobWorkStyleFilter, setJobWorkStyleFilter] = useState<'all' | 'Remote' | 'Hybrid' | 'On-site'>('all');
+    const [localOnlyFilter, setLocalOnlyFilter] = useState<boolean>(true); // Default: only show local jobs
     const [careerFilter, setCareerFilter] = useState<string | null>(null); // null = all careers
 
     // Store all jobs with their source career tag for client-side filtering
@@ -974,7 +975,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
                     const matchesCity = city.length >= 3 && jobLocation.includes(city);
                     const matchesState = stateMatches.some(s => jobLocation.includes(s));
-                    return matchesCity || matchesState;
+
+                    // If localOnlyFilter is ON, require city match; otherwise accept city OR state
+                    return localOnlyFilter ? matchesCity : (matchesCity || matchesState);
                 });
             }
 
@@ -997,12 +1000,12 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
         }
     }, [currentStep]);
 
-    // Refetch only when work style filter changes (career filter is now client-side)
+    // Refetch only when work style filter or local filter changes (career filter is now client-side)
     useEffect(() => {
         if (currentStep === STEPS.FAVORITE_JOBS) {
             fetchJobsForFavorites();
         }
-    }, [jobWorkStyleFilter]);
+    }, [jobWorkStyleFilter, localOnlyFilter]);
 
     // Client-side filtering when career filter changes
     useEffect(() => {
@@ -1098,6 +1101,32 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                         <p className="text-xs text-jalanea-400 mt-2 flex items-center gap-1">
                             <MapPin size={12} /> Showing jobs near {location}
                         </p>
+                    )}
+
+                    {/* Local Only Toggle - visible for On-site and Hybrid */}
+                    {(jobWorkStyleFilter === 'On-site' || jobWorkStyleFilter === 'Hybrid') && location && (
+                        <div className="mt-3 p-3 bg-jalanea-50 rounded-xl border border-jalanea-100">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <MapPin size={14} className="text-gold" />
+                                    <span className="text-xs font-bold text-jalanea-700">
+                                        {localOnlyFilter ? '📍 Local Only' : '🌎 Open to Relocate'}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => setLocalOnlyFilter(!localOnlyFilter)}
+                                    className={`relative w-12 h-6 rounded-full transition-colors ${localOnlyFilter ? 'bg-gold' : 'bg-jalanea-300'}`}
+                                >
+                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${localOnlyFilter ? 'left-7' : 'left-1'}`} />
+                                </button>
+                            </div>
+                            <p className="text-[10px] text-jalanea-500 mt-1.5">
+                                {localOnlyFilter
+                                    ? `Only showing jobs in ${location.split(',')[0]}`
+                                    : `Showing jobs across ${location.split(',')[1]?.trim() || 'your state'}`
+                                }
+                            </p>
+                        </div>
                     )}
                 </div>
 
