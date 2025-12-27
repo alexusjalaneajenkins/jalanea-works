@@ -876,10 +876,38 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
             // Use user's location or default
             // For "All" and "Remote", search broadly (USA) to get more results
-            // Only restrict to user's location for On-site and Hybrid
-            const searchLocation = (jobWorkStyleFilter === 'Remote' || jobWorkStyleFilter === 'all')
-                ? 'United States'
-                : (location?.trim() || 'United States');
+            // For On-site and Hybrid, search by STATE (not city) for better results
+            // Then filter by city client-side
+            let searchLocation = 'United States';
+            if (jobWorkStyleFilter === 'On-site' || jobWorkStyleFilter === 'Hybrid') {
+                if (location?.trim()) {
+                    // Extract state from "City, State" format
+                    const parts = location.trim().split(',');
+                    const stateAbbr = parts[1]?.trim() || '';
+
+                    // Convert state abbreviation to full name for better SerpAPI results
+                    const stateFullNames: Record<string, string> = {
+                        'FL': 'Florida',
+                        'CA': 'California',
+                        'TX': 'Texas',
+                        'NY': 'New York',
+                        'PA': 'Pennsylvania',
+                        'VA': 'Virginia',
+                        'MA': 'Massachusetts',
+                        'GA': 'Georgia',
+                        'NC': 'North Carolina',
+                        'OH': 'Ohio',
+                        'IL': 'Illinois',
+                        'WA': 'Washington',
+                        'AZ': 'Arizona',
+                        'CO': 'Colorado',
+                    };
+
+                    // Use full state name for broader search results
+                    searchLocation = stateFullNames[stateAbbr.toUpperCase()] || stateAbbr || 'United States';
+                    console.log(`📍 Searching with state-level location: "${searchLocation}" (user's city: ${parts[0]})`);
+                }
+            }
 
             // Fetch jobs for EACH selected career separately and tag them
             const allTaggedJobs: Array<{ job: typeof jobsToFavorite[0], careerId: string, careerTitle: string }> = [];
