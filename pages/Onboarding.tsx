@@ -965,20 +965,67 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
                 const stateMatches = stateAbbreviations[state] || [state, `, ${state}`];
 
-                processedJobs = allTaggedJobs.filter(tagged => {
+                // Debug: log all job locations to see what we're working with
+                console.log(`📍 Filtering for city: "${city}", state patterns:`, stateMatches);
+                console.log(`📍 Job locations found:`, allTaggedJobs.map(t => t.job.location).slice(0, 10));
+
+                // First pass: filter for city or state matches
+                const filteredJobs = allTaggedJobs.filter(tagged => {
                     const jobLocation = tagged.job.location?.toLowerCase() || '';
                     const jobTitle = tagged.job.title?.toLowerCase() || '';
 
-                    if (jobLocation.includes('remote') || jobTitle.includes('remote')) {
+                    // Exclude remote jobs
+                    if (jobLocation.includes('remote') || jobTitle.includes('remote') ||
+                        jobLocation.includes('anywhere') || jobLocation.includes('worldwide')) {
                         return false;
                     }
 
                     const matchesCity = city.length >= 3 && jobLocation.includes(city);
                     const matchesState = stateMatches.some(s => jobLocation.includes(s));
 
-                    // If localOnlyFilter is ON, require city match; otherwise accept city OR state
-                    return localOnlyFilter ? matchesCity : (matchesCity || matchesState);
+                    return { matchesCity, matchesState };
                 });
+
+                // Separate into city-only matches and state matches
+                const cityMatches = allTaggedJobs.filter(tagged => {
+                    const jobLocation = tagged.job.location?.toLowerCase() || '';
+                    const jobTitle = tagged.job.title?.toLowerCase() || '';
+                    if (jobLocation.includes('remote') || jobTitle.includes('remote') ||
+                        jobLocation.includes('anywhere') || jobLocation.includes('worldwide')) {
+                        return false;
+                    }
+                    return city.length >= 3 && jobLocation.includes(city);
+                });
+
+                const stateOnlyMatches = allTaggedJobs.filter(tagged => {
+                    const jobLocation = tagged.job.location?.toLowerCase() || '';
+                    const jobTitle = tagged.job.title?.toLowerCase() || '';
+                    if (jobLocation.includes('remote') || jobTitle.includes('remote') ||
+                        jobLocation.includes('anywhere') || jobLocation.includes('worldwide')) {
+                        return false;
+                    }
+                    const matchesCity = city.length >= 3 && jobLocation.includes(city);
+                    const matchesState = stateMatches.some(s => jobLocation.includes(s));
+                    return !matchesCity && matchesState;
+                });
+
+                console.log(`📍 City matches (${city}): ${cityMatches.length}, State-only matches: ${stateOnlyMatches.length}`);
+
+                // Smart fallback: if localOnlyFilter is ON but no city matches, show state matches with notice
+                if (localOnlyFilter) {
+                    if (cityMatches.length > 0) {
+                        processedJobs = cityMatches;
+                    } else if (stateOnlyMatches.length > 0) {
+                        // No city matches, but there are state matches - show them anyway!
+                        console.log(`⚠️ No jobs in ${city}, showing ${stateOnlyMatches.length} jobs in ${state || 'state'}`);
+                        processedJobs = stateOnlyMatches;
+                    } else {
+                        processedJobs = [];
+                    }
+                } else {
+                    // Open to relocate: show both city and state matches
+                    processedJobs = [...cityMatches, ...stateOnlyMatches];
+                }
             }
 
             // Store all jobs with career tags for client-side filtering
