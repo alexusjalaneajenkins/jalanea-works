@@ -637,20 +637,20 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                 key={i}
                 variants={fadeInUp}
                 whileHover={{ y: -8, transition: { duration: 0.3 } }}
+                className="group"
               >
-                <Card variant="glass-dark" className="p-6 md:p-8 border-white/5 hover:border-gold/20 transition-all duration-500 group h-full">
-                  <div className="flex items-start gap-4 mb-4">
-                    <motion.div
-                      className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center text-gold group-hover:bg-gold group-hover:text-jalanea-950 transition-all duration-300"
-                      whileHover={{ rotate: 5, scale: 1.05 }}
-                    >
-                      <step.icon size={24} />
-                    </motion.div>
-                    <span className="text-5xl font-display font-bold text-slate-600 group-hover:text-gold/30 transition-colors">{step.number}</span>
-                  </div>
+                <div className="relative p-6 md:p-8 bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-xl border border-white/10 rounded-3xl h-full transition-all duration-500 hover:border-gold/30 hover:shadow-[0_0_40px_rgba(255,196,37,0.1)]">
+                  {/* Icon Container */}
+                  <motion.div
+                    className="w-14 h-14 mb-6 rounded-2xl bg-slate-900/80 border border-white/10 flex items-center justify-center text-gold group-hover:bg-gold/10 group-hover:border-gold/30 transition-all duration-300"
+                    whileHover={{ rotate: 5, scale: 1.05 }}
+                  >
+                    <step.icon size={26} />
+                  </motion.div>
+
                   <h3 className="text-xl font-display font-bold text-white mb-3">{step.title}</h3>
-                  <p className="text-slate-300 leading-relaxed">{step.description}</p>
-                </Card>
+                  <p className="text-slate-400 leading-relaxed">{step.description}</p>
+                </div>
               </motion.div>
             ))}
           </motion.div>
@@ -777,36 +777,38 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
             Join thousands of Valencia College graduates who've transformed their credentials into rewarding careers.
           </motion.p>
           <motion.div
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            className="flex flex-col items-center gap-6"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Button
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <motion.button
                 onClick={() => openAuth('signup')}
-                variant="primary"
-                className="bg-gold hover:bg-gold-light text-jalanea-950 font-bold border-none shadow-[0_0_30px_rgba(255,196,37,0.3)] hover:shadow-[0_0_40px_rgba(255,196,37,0.5)] px-10 py-4 text-lg"
+                className="inline-flex items-center gap-2 bg-gold hover:bg-gold-light text-jalanea-950 font-bold rounded-full px-8 py-4 text-lg shadow-[0_0_30px_rgba(255,196,37,0.4)] hover:shadow-[0_0_50px_rgba(255,196,37,0.6)] transition-all duration-300"
+                whileHover={{ scale: 1.05, x: 2 }}
+                whileTap={{ scale: 0.98 }}
               >
                 Get Started Free
-              </Button>
-            </motion.div>
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Button
+                <motion.span
+                  className="inline-block"
+                  whileHover={{ x: 4 }}
+                  transition={{ type: "spring", stiffness: 400 }}
+                >
+                  <ArrowRight size={20} />
+                </motion.span>
+              </motion.button>
+              <motion.button
                 onClick={() => navigate('/pricing')}
-                variant="outline"
-                className="border-white/20 hover:bg-white/10 hover:border-gold text-white px-10 py-4"
+                className="inline-flex items-center gap-2 bg-transparent border border-slate-600 hover:border-gold text-white font-semibold rounded-full px-8 py-4 text-lg hover:bg-white/5 transition-all duration-300"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.98 }}
               >
                 See Pricing Plans
-              </Button>
-            </motion.div>
+              </motion.button>
+            </div>
+            <p className="text-sm text-slate-500">No credit card required • Free for Valencia students</p>
           </motion.div>
         </div>
       </section>
