@@ -550,7 +550,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                   <div className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center text-gold group-hover:bg-gold group-hover:text-jalanea-950 transition-all duration-300">
                     <step.icon size={24} />
                   </div>
-                  <span className="text-5xl font-display font-bold text-jalanea-800 group-hover:text-gold/20 transition-colors">{step.number}</span>
+                  <span className="text-5xl font-display font-bold text-slate-600 group-hover:text-gold/30 transition-colors">{step.number}</span>
                 </div>
                 <h3 className="text-xl font-display font-bold text-white mb-3">{step.title}</h3>
                 <p className="text-slate-300 leading-relaxed">{step.description}</p>
