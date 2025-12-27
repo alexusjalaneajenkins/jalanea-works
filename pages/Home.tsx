@@ -377,22 +377,30 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
 
       {/* Navbar - Glass Effect */}
       <header className="fixed w-full z-40 bg-jalanea-950/90 backdrop-blur-md border-b border-white/10 transition-colors duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between relative">
+          {/* Logo - Left */}
           <div className="flex items-center gap-2 font-display font-bold text-xl md:text-2xl tracking-tighter text-white">
             <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-gold-sheen flex items-center justify-center text-jalanea-950">
               <Zap size={16} fill="currentColor" />
             </div>
             <span>Jalanea<span className="text-gold font-light">Works</span></span>
           </div>
-          <div className="hidden md:flex items-center gap-8">
-            <button onClick={() => navigate('/mission')} className="text-sm font-bold text-jalanea-200 hover:text-gold transition-colors">Our Why</button>
-            <button onClick={() => navigate('/entrepreneur')} className="text-sm font-bold text-jalanea-200 hover:text-gold transition-colors">Start a Business</button>
-            <button onClick={() => navigate('/blog')} className="text-sm font-bold text-jalanea-200 hover:text-gold transition-colors">Blog</button>
-            <button onClick={() => navigate('/pricing')} className="text-sm font-bold text-jalanea-200 hover:text-gold transition-colors">Pricing</button>
-            <div className="h-4 w-px bg-white/20"></div>
-            <button className="text-sm font-bold text-white hover:text-gold transition-colors" onClick={() => openAuth('signin')}>Sign in</button>
+
+          {/* Centered Nav Links - Absolute Center */}
+          <nav className="hidden md:flex items-center gap-8 absolute left-1/2 transform -translate-x-1/2">
+            <button onClick={() => navigate('/mission')} className="text-sm font-medium text-slate-300 hover:text-gold transition-colors">Our Why</button>
+            <button onClick={() => navigate('/entrepreneur')} className="text-sm font-medium text-slate-300 hover:text-gold transition-colors">Start a Business</button>
+            <button onClick={() => navigate('/blog')} className="text-sm font-medium text-slate-300 hover:text-gold transition-colors">Blog</button>
+            <button onClick={() => navigate('/pricing')} className="text-sm font-medium text-slate-300 hover:text-gold transition-colors">Pricing</button>
+          </nav>
+
+          {/* Auth Buttons - Right */}
+          <div className="hidden md:flex items-center gap-4">
+            <button className="text-sm font-medium text-white hover:text-gold transition-colors" onClick={() => openAuth('signin')}>Sign in</button>
             <Button size="sm" variant="primary" onClick={() => openAuth('signup')}>Get Started</Button>
           </div>
+
+          {/* Mobile Auth */}
           <div className="md:hidden flex items-center gap-2">
             <button className="text-sm font-bold text-white hover:text-gold transition-colors px-2 py-1" onClick={() => openAuth('signin')}>Sign in</button>
             <Button size="sm" variant="primary" onClick={() => openAuth('signup')}>Join</Button>
