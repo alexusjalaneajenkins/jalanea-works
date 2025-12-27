@@ -113,12 +113,36 @@ export interface JobAnalysis {
 }
 
 // Education & Experience
+export type DegreeType =
+  | "Bachelor's (BS/BA)"
+  | "Associate's (AS/AA)"
+  | "Certificate"
+  | "Master's (MS/MA/MBA)"
+  | "Doctorate (PhD/EdD)"
+  | "GED / High School"
+  | "Professional (JD/MD)"
+  | "Other";
+
+export const DEGREE_TYPE_OPTIONS: DegreeType[] = [
+  "Bachelor's (BS/BA)",
+  "Associate's (AS/AA)",
+  "Certificate",
+  "Master's (MS/MA/MBA)",
+  "Doctorate (PhD/EdD)",
+  "GED / High School",
+  "Professional (JD/MD)",
+  "Other"
+];
+
 export interface Education {
   id?: string;
+  degreeType?: DegreeType; // Dropdown selection for degree level
   degree: string;
+  program?: string;        // Field of study / major
   school: string;
-  year: string; // Renamed from graduationYear to match Onboarding/Profile
-  details?: string; // Added for major/program details
+  year: string;            // Renamed from graduationYear to match Onboarding/Profile
+  gradYear?: string;       // Alternative field name for compatibility
+  details?: string;        // Added for major/program details
   gpa?: string;
 }
 

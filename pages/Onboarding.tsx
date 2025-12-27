@@ -1317,13 +1317,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
             // Build education array - remove undefined values, Firestore rejects them
             const educationData = selectedDegrees.map(edu => ({
-                // Core fields expected by geminiService.ts (now using flexible text input)
-                degree: edu.degreeName,
+                // Core fields for Profile.tsx display and geminiService.ts resume generation
+                degreeType: edu.degreeType,           // e.g. "Bachelor's Degree", "Certificate"
+                program: edu.degreeName,              // Field of study, e.g. "Computer Science"
+                degree: `${edu.degreeType} in ${edu.degreeName}`, // Full degree string for AI/resume
                 school: edu.institution,
-                year: edu.graduationYear || 'In Progress'
-                // Note: gpa omitted - user can update in profile
-                // With flexible input, we don't have structured metadata like programId, level, etc.
-                // The AI will infer career matches based on the degree name text
+                gradYear: edu.graduationYear || 'In Progress',
+                year: edu.graduationYear || 'In Progress' // Keep for backward compatibility
             }));
 
             // Build experience array

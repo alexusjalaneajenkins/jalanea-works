@@ -58,7 +58,10 @@ export const getFollowUpStrategy = async (company: string, daysSinceApplied: num
 export const generateResume = async (type: string, userProfile: UserProfile, jobDescription: string): Promise<string> => {
     try {
         const educationString = userProfile.education
-            .map(e => `${e.degree} from ${e.school} (${e.year}) - GPA: ${e.gpa || 'N/A'}`)
+            .map(e => {
+                const degreeLabel = e.degreeType ? `${e.degreeType} in ${e.degree}` : e.degree;
+                return `${degreeLabel} from ${e.school} (${e.year || e.gradYear || 'N/A'}) - GPA: ${e.gpa || 'N/A'}`;
+            })
             .join('\n');
 
         const experienceString = userProfile.experience
