@@ -6,7 +6,7 @@ import { Card } from '../components/Card';
 import { NavRoute } from '../types';
 import { AuthModal, AuthMode } from '../components/AuthModal';
 import { WelcomeTransition } from '../components/WelcomeTransition';
-import { ArrowRight, Star, Globe, ShieldCheck, Zap, TrendingUp, GraduationCap, ChevronDown, MapPin, Search, X, Heart, Home as HomeIcon, Instagram, CheckCircle2, Users, Coffee } from 'lucide-react';
+import { ArrowRight, Star, Globe, ShieldCheck, Zap, TrendingUp, GraduationCap, ChevronDown, MapPin, Search, X, Heart, Home as HomeIcon, Instagram, CheckCircle2, Users, Coffee, Briefcase, Clock, DollarSign, Target, Sparkles, Send } from 'lucide-react';
 
 interface HomeProps {
   setRoute: (route: NavRoute) => void;
@@ -90,6 +90,36 @@ const VALENCIA_PROGRAMS: Record<string, { roles: { title: string; match: number;
 
 const degreeList = Object.keys(VALENCIA_PROGRAMS);
 
+// Stats Data
+const STATS = [
+  { value: "2,400+", label: "Jobs Matched", icon: Briefcase },
+  { value: "89%", label: "Placement Rate", icon: Target },
+  { value: "$48k", label: "Avg Starting Salary", icon: DollarSign },
+  { value: "21 days", label: "Avg Time to Hire", icon: Clock }
+];
+
+// How It Works Steps
+const STEPS = [
+  {
+    number: "01",
+    title: "Enter Your Credentials",
+    description: "Our AI analyzes your unique qualifications, coursework, and skills from Valencia College programs.",
+    icon: GraduationCap
+  },
+  {
+    number: "02",
+    title: "Get Matched Instantly",
+    description: "Receive personalized job matches with salary estimates and match percentages based on your profile.",
+    icon: Sparkles
+  },
+  {
+    number: "03",
+    title: "Apply Smarter",
+    description: "We send 3 quality applications daily on your behalf, tailored to each opportunity.",
+    icon: Send
+  }
+];
+
 export const Home: React.FC<HomeProps> = ({ setRoute }) => {
   const [degreeSearch, setDegreeSearch] = useState<string>("AS Graphic and Interactive Design");
   const [showResults, setShowResults] = useState(false);
@@ -136,7 +166,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
   const currentData = VALENCIA_PROGRAMS[matchedDegree];
 
   return (
-    <div className="min-h-screen flex flex-col bg-jalanea-50">
+    <div className="min-h-screen flex flex-col bg-jalanea-950">
       {/* Welcome Transition */}
       {showWelcome && (
         <WelcomeTransition
@@ -300,10 +330,10 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
             <span>Jalanea<span className="text-gold font-light">Works</span></span>
           </div>
           <div className="hidden md:flex items-center gap-8">
-            <button onClick={() => navigate('/mission')} className="text-sm font-bold text-jalanea-200 hover:text-white transition-colors">Our Why</button>
-            <button onClick={() => navigate('/entrepreneur')} className="text-sm font-bold text-jalanea-200 hover:text-white transition-colors">Start a Business</button>
-            <button onClick={() => navigate('/blog')} className="text-sm font-bold text-jalanea-200 hover:text-white transition-colors">Blog</button>
-            <button onClick={() => navigate('/pricing')} className="text-sm font-bold text-gold hover:text-gold-light transition-colors">Pricing</button>
+            <button onClick={() => navigate('/mission')} className="text-sm font-bold text-jalanea-200 hover:text-gold transition-colors">Our Why</button>
+            <button onClick={() => navigate('/entrepreneur')} className="text-sm font-bold text-jalanea-200 hover:text-gold transition-colors">Start a Business</button>
+            <button onClick={() => navigate('/blog')} className="text-sm font-bold text-jalanea-200 hover:text-gold transition-colors">Blog</button>
+            <button onClick={() => navigate('/pricing')} className="text-sm font-bold text-jalanea-200 hover:text-gold transition-colors">Pricing</button>
             <div className="h-4 w-px bg-white/20"></div>
             <button className="text-sm font-bold text-white hover:text-gold transition-colors" onClick={() => openAuth('signin')}>Sign in</button>
             <Button size="sm" variant="primary" onClick={() => openAuth('signup')}>Get Started</Button>
@@ -316,77 +346,68 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
       </header>
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center pt-20 md:pt-32 pb-8 md:pb-12 bg-jalanea-900 overflow-hidden">
-        {/* Background Mesh Gradients - Slate & Gold */}
-        <div className="absolute inset-0 bg-premium-gradient"></div>
-        <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-jalanea-800/60 rounded-full blur-[100px] mix-blend-overlay"></div>
-        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-gold/5 rounded-full blur-[100px] mix-blend-overlay"></div>
+      <section className="relative min-h-screen flex items-center pt-20 md:pt-32 pb-8 md:pb-12 overflow-hidden">
+        {/* Background Mesh Gradients */}
+        <div className="absolute inset-0 bg-jalanea-950"></div>
+        <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-blue-900/20 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-900/20 rounded-full blur-[120px]"></div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
-          {/* REDUCED GRID GAP from 12 to 6 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
 
             {/* Left Content */}
-            <div className="space-y-4 md:space-y-6 animate-in slide-in-from-left-4 duration-700 text-center md:text-left">
-              {/* FIXED: Readable Badge - White text on Solid Red Background */}
-              <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 rounded-full bg-gold/20 border border-gold/40 text-gold text-xs font-bold uppercase tracking-wider shadow-lg">
-                <Zap size={14} className="md:w-4 md:h-4" />
-                Work Should Work
-              </div>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-display font-bold leading-[0.95] tracking-tighter text-white">
+            <div className="space-y-6 md:space-y-8 animate-in slide-in-from-left-4 duration-700 text-center lg:text-left">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold leading-[0.95] tracking-tight text-white">
                 Get a job by the<br />
                 <span className="text-transparent bg-clip-text bg-gold-flow bg-200% animate-text-flow">end of the month.</span>
               </h1>
-              <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-jalanea-200 leading-relaxed max-w-lg mx-auto md:mx-0 font-light px-2 md:px-0">
-                Your credentials should pay off. <span className="text-white font-bold">3 quality applications per day.</span> We turn your degree into a direct pipeline to the life you deserve.
+              <p className="text-lg md:text-xl lg:text-2xl text-jalanea-300 leading-relaxed max-w-xl mx-auto lg:mx-0">
+                Your credentials should pay off. <span className="text-white font-semibold">3 quality applications per day.</span> We turn your degree into a direct pipeline to the life you deserve.
               </p>
 
-              {/* CTA Buttons - STACK ON MOBILE */}
-              <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-3 sm:gap-4 pt-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 px-4 md:px-0">
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
                 <Button
-                  onClick={() => {
-                    const element = document.getElementById('career-map');
-                    element?.scrollIntoView({ behavior: 'smooth' });
-                  }}
+                  onClick={() => openAuth('signup')}
                   variant="primary"
-                  className="w-full sm:w-auto bg-gold hover:bg-gold-light text-jalanea-950 font-bold border-none shadow-[0_0_20px_rgba(255,196,37,0.3)] hover:shadow-[0_0_30px_rgba(255,196,37,0.5)] transform hover:-translate-y-1 transition-all"
+                  className="w-full sm:w-auto bg-gold hover:bg-gold-light text-jalanea-950 font-bold border-none shadow-[0_0_30px_rgba(255,196,37,0.3)] hover:shadow-[0_0_40px_rgba(255,196,37,0.5)] transform hover:-translate-y-1 transition-all px-8 py-4 text-lg"
                 >
-                  <Zap className="mr-2 fill-current" size={18} />Match My Credentials
+                  <Zap className="mr-2 fill-current" size={20} />Match My Credentials
                 </Button>
 
                 <Button
                   onClick={() => setIsMissionOpen(true)}
                   variant="outline"
-                  className="w-full sm:w-auto border-white/20 hover:bg-white/10 hover:border-white/40 text-white backdrop-blur-sm"
+                  className="w-full sm:w-auto border-white/20 hover:bg-white/10 hover:border-gold text-white backdrop-blur-sm px-8 py-4"
                 >
-                  <HomeIcon className="mr-2" size={18} />Our Mission
+                  Our Mission
                 </Button>
               </div>
             </div>
 
-            {/* Right Content: The "Show and Tell" Calculator - NOW VISIBLE ON MOBILE */}
-            <div className="relative animate-in slide-in-from-right-4 duration-700 delay-150 mt-8 md:mt-0">
+            {/* Right Content: Live Career Mapping Card */}
+            <div className="relative animate-in slide-in-from-right-4 duration-700 delay-150 mt-8 lg:mt-0">
               {/* Glass Card Container */}
-              <Card variant="glass-dark" className="shadow-2xl backdrop-blur-xl border border-white/10 relative z-20 mx-4 md:mx-0" noPadding>
-                <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6">
+              <Card variant="glass-dark" className="shadow-2xl backdrop-blur-xl border border-white/10 relative z-20" noPadding>
+                <div className="p-5 sm:p-6 md:p-8 space-y-5 sm:space-y-6">
                   <div className="flex justify-between items-center border-b border-white/10 pb-4">
-                    <span className="text-xs font-bold text-jalanea-300 uppercase tracking-widest">Live Career Mapping</span>
+                    <span className="text-xs font-bold text-jalanea-400 uppercase tracking-widest">Live Career Mapping</span>
                     <div className="flex items-center gap-2">
-                      <span className="relative flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-gold"></span>
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-400"></span>
                       </span>
-                      <span className="text-gold font-bold text-xs uppercase tracking-wider">Analysis Active</span>
+                      <span className="text-green-400 font-bold text-xs uppercase tracking-wider">Analysis Active</span>
                     </div>
                   </div>
 
-                  <div className="space-y-6">
-                    {/* Input 1: Searchable Degree Selector */}
+                  <div className="space-y-5">
+                    {/* Input: Searchable Degree Selector */}
                     <div className="space-y-2 group relative">
-                      <label className="text-xs font-bold text-white/90 uppercase tracking-wider mb-2 block">Type Your Degree or Certificate</label>
+                      <label className="text-xs font-bold text-jalanea-400 uppercase tracking-wider mb-2 block">Type Your Degree or Certificate</label>
 
                       <div className="relative">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/70">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-jalanea-500">
                           <Search size={18} />
                         </div>
                         <input
@@ -401,13 +422,13 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                             setShowResults(true);
                           }}
                           onBlur={() => setTimeout(() => setShowResults(false), 200)}
-                          className="w-full bg-jalanea-950 border border-white/20 rounded-xl py-4 pl-12 pr-4 text-white placeholder-white/40 focus:ring-2 focus:ring-gold focus:border-transparent outline-none font-display font-medium text-lg transition-all shadow-inner"
+                          className="w-full bg-jalanea-900 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white placeholder-jalanea-600 focus:ring-2 focus:ring-gold focus:border-transparent outline-none font-medium text-base transition-all"
                           placeholder="e.g. Graphic Design"
                         />
                         {degreeSearch && (
                           <button
                             onClick={() => setDegreeSearch('')}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-jalanea-500 hover:text-white transition-colors"
                           >
                             <X size={16} />
                           </button>
@@ -434,28 +455,28 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                     </div>
 
                     {/* Arrow Divider */}
-                    <div className="flex justify-center -my-2 relative z-20">
-                      <div className="bg-jalanea-800 rounded-full p-2 border border-white/20 shadow-lg">
-                        <ArrowRight className="text-gold rotate-90" size={20} />
+                    <div className="flex justify-center -my-1 relative z-20">
+                      <div className="bg-jalanea-800 rounded-full p-2 border border-white/10">
+                        <ArrowRight className="text-gold rotate-90" size={18} />
                       </div>
                     </div>
 
                     {/* Dynamic Results List */}
                     <div className="space-y-3">
-                      <label className="text-xs font-bold text-jalanea-300 uppercase tracking-wider">Qualified Entry-Level Roles</label>
+                      <label className="text-xs font-bold text-jalanea-400 uppercase tracking-wider">Qualified Entry-Level Roles</label>
 
-                      <div className="space-y-3 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
+                      <div className="space-y-2.5 max-h-[180px] overflow-y-auto pr-1 custom-scrollbar">
                         {currentData?.roles.map((role, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all group">
+                          <div key={idx} className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 transition-all group">
                             <div className="flex flex-col">
                               <div className="flex items-center gap-2">
-                                <Star size={12} className={idx === 0 ? "text-gold" : "text-white/40"} fill={idx === 0 ? "currentColor" : "none"} />
-                                <span className="text-white font-bold text-sm">{role.title}</span>
+                                <Star size={12} className={idx === 0 ? "text-gold" : "text-jalanea-600"} fill={idx === 0 ? "currentColor" : "none"} />
+                                <span className="text-white font-semibold text-sm">{role.title}</span>
                               </div>
-                              <span className="text-jalanea-300 text-xs ml-5">{role.salary}</span>
+                              <span className="text-jalanea-400 text-xs ml-5">{role.salary}</span>
                             </div>
                             <div className="text-right">
-                              <span className="block text-gold font-bold text-sm">{role.match}%</span>
+                              <span className="block text-gold font-bold text-base">{role.match}%</span>
                             </div>
                           </div>
                         ))}
@@ -464,16 +485,16 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                   </div>
 
                   {/* Results Footer */}
-                  <div className="pt-4 sm:pt-6 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 md:-mx-8 md:-mb-8 p-4 sm:p-6 md:p-8 rounded-b-2xl bg-black/20 border-t border-white/5">
-                    <div className="flex justify-between items-center mb-4 sm:mb-6">
+                  <div className="pt-5 -mx-5 sm:-mx-6 md:-mx-8 -mb-5 sm:-mb-6 md:-mb-8 p-5 sm:p-6 md:p-8 rounded-b-2xl bg-jalanea-900/50 border-t border-white/5">
+                    <div className="flex justify-between items-center mb-5">
                       <div className="flex flex-col">
-                        <span className="text-jalanea-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Est. Salary Bump</span>
-                        <span className="font-display font-bold text-lg sm:text-2xl text-white">{currentData?.avgBump}<span className="text-white/40 text-sm sm:text-lg">/yr</span></span>
+                        <span className="text-jalanea-500 text-xs font-bold uppercase tracking-wider">Est. Salary Bump</span>
+                        <span className="font-display font-bold text-xl sm:text-2xl text-white">{currentData?.avgBump}<span className="text-jalanea-500 text-base">/yr</span></span>
                       </div>
-                      <div className="h-8 sm:h-10 w-px bg-white/10"></div>
+                      <div className="h-10 w-px bg-white/10"></div>
                       <div className="flex flex-col text-right">
-                        <span className="text-jalanea-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider">Open Local Roles</span>
-                        <span className="font-display font-bold text-lg sm:text-2xl text-white">{currentData?.openRoles}</span>
+                        <span className="text-jalanea-500 text-xs font-bold uppercase tracking-wider">Open Local Roles</span>
+                        <span className="font-display font-bold text-xl sm:text-2xl text-white">{currentData?.openRoles}</span>
                       </div>
                     </div>
                     <Button fullWidth onClick={() => openAuth('signup')} variant="primary" className="shadow-gold/10 shadow-xl">
@@ -490,57 +511,151 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
         </div>
       </section>
 
-      {/* Value Props */}
-      <section className="py-24 relative overflow-hidden bg-jalanea-50">
-        <div className="absolute inset-0 bg-subtle-mesh opacity-50"></div>
+      {/* Stats Dashboard */}
+      <section className="relative py-12 border-y border-white/5 bg-jalanea-900/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+            {STATS.map((stat, i) => (
+              <div key={i} className="text-center">
+                <div className="inline-flex items-center justify-center w-10 h-10 mb-3 rounded-full bg-gold/10 text-gold">
+                  <stat.icon size={20} />
+                </div>
+                <div className="text-2xl md:text-3xl font-display font-bold text-white mb-1">{stat.value}</div>
+                <div className="text-sm text-jalanea-400 font-medium">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section className="py-20 md:py-28 relative overflow-hidden">
+        <div className="absolute inset-0 bg-jalanea-950"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-900/10 rounded-full blur-[150px]"></div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-5xl font-display font-bold text-jalanea-900 mb-6 tracking-tight">From Graduation to <span className="text-transparent bg-clip-text bg-premium-gradient">Stability.</span></h2>
-            <p className="text-xl text-jalanea-700/80 leading-relaxed">
-              For many, financial aid covers the degree, but not the transition. We are building a tool to ensure that students who fight their way to graduation don't return to the struggle. We provide the guidance needed to secure a stable future.
+            <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-6 tracking-tight">
+              How it <span className="text-gold">works</span>
+            </h2>
+            <p className="text-lg text-jalanea-400 leading-relaxed">
+              Three simple steps to transform your credentials into career opportunities
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: <Users size={32} />,
-                title: "Community Transformation",
-                desc: "We are on a mission to partner with Orlando employers, convincing them to invest in local talent. When our graduates succeed, our entire community rises."
-              },
-              {
-                icon: <TrendingUp size={32} />,
-                title: "Breaking the Cycle",
-                desc: "Education should be the exit strategy from poverty. We bridge the critical gap between walking across the stage and receiving that first sustainable paycheck."
-              },
-              {
-                icon: <Zap size={32} />,
-                title: "AI-Powered Advocacy",
-                desc: "You've done the work. Our AI translates your specific Valencia coursework into professional assets, advocating for your skills even when you don't know how to."
-              }
-            ].map((feature, i) => (
-              <Card key={i} variant="glass-light" className="p-8 hover:-translate-y-2 transition-transform duration-500 group border-jalanea-200">
-                <div className="mb-6 p-4 bg-white rounded-2xl w-16 h-16 flex items-center justify-center text-jalanea-900 shadow-md group-hover:bg-gold group-hover:text-jalanea-950 transition-colors duration-300">
-                  {feature.icon}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+            {STEPS.map((step, i) => (
+              <Card key={i} variant="glass-dark" className="p-6 md:p-8 border-white/5 hover:border-gold/20 transition-all duration-500 group">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-gold/10 flex items-center justify-center text-gold group-hover:bg-gold group-hover:text-jalanea-950 transition-all duration-300">
+                    <step.icon size={24} />
+                  </div>
+                  <span className="text-5xl font-display font-bold text-jalanea-800 group-hover:text-gold/20 transition-colors">{step.number}</span>
                 </div>
-                <h3 className="text-2xl font-display font-bold text-jalanea-900 mb-4">{feature.title}</h3>
-                <p className="text-jalanea-600 leading-relaxed font-medium">{feature.desc}</p>
+                <h3 className="text-xl font-display font-bold text-white mb-3">{step.title}</h3>
+                <p className="text-jalanea-400 leading-relaxed">{step.description}</p>
               </Card>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-jalanea-950 text-white py-20 border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-start gap-12">
-            <div>
-              <div className="flex items-center gap-2 font-display font-bold text-2xl tracking-tighter mb-4">
-                Jalanea<span className="text-gold">Works</span>
+      {/* Community Impact Section */}
+      <section className="py-20 md:py-28 relative overflow-hidden bg-jalanea-900/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left Content */}
+            <div className="space-y-6">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-bold uppercase tracking-widest">
+                <Heart size={12} fill="currentColor" /> Light the Block
               </div>
-              <p className="text-jalanea-400 max-w-xs mb-4">
+              <h2 className="text-3xl md:text-4xl font-display font-bold text-white leading-tight">
+                Building careers that <span className="text-gold">build communities</span>
+              </h2>
+              <p className="text-lg text-jalanea-300 leading-relaxed">
+                Jalanea Works isn't just about finding jobs—it's about transforming Orlando's workforce from the ground up. Every placement strengthens our local economy and proves that community college graduates are the backbone of innovation.
+              </p>
+              <div className="flex flex-wrap gap-4 pt-4">
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center min-w-[140px]">
+                  <div className="text-3xl font-display font-bold text-gold mb-1">94%</div>
+                  <div className="text-sm text-jalanea-400">Say life-changing</div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center min-w-[140px]">
+                  <div className="text-3xl font-display font-bold text-gold mb-1">Orlando</div>
+                  <div className="text-sm text-jalanea-400">Focused opportunities</div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center min-w-[140px]">
+                  <div className="text-3xl font-display font-bold text-gold mb-1">Valencia</div>
+                  <div className="text-sm text-jalanea-400">Direct partnerships</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Content - Feature Cards */}
+            <div className="space-y-4">
+              {[
+                { icon: Users, title: "Community First", desc: "We prioritize local Orlando employers who believe in investing in homegrown talent." },
+                { icon: TrendingUp, title: "Breaking Cycles", desc: "Education should be the exit strategy from poverty. We bridge the gap to that first sustainable paycheck." },
+                { icon: Zap, title: "AI-Powered Advocacy", desc: "Our AI translates your Valencia coursework into professional assets that speak to employers." }
+              ].map((feature, i) => (
+                <div key={i} className="flex gap-4 p-5 bg-white/5 border border-white/5 rounded-xl hover:border-gold/20 transition-all group">
+                  <div className="w-12 h-12 shrink-0 rounded-xl bg-gold/10 flex items-center justify-center text-gold group-hover:bg-gold group-hover:text-jalanea-950 transition-all">
+                    <feature.icon size={24} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white mb-1">{feature.title}</h4>
+                    <p className="text-sm text-jalanea-400">{feature.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA Section */}
+      <section className="py-20 md:py-28 relative overflow-hidden">
+        <div className="absolute inset-0 bg-jalanea-950"></div>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-gold/5 rounded-full blur-[100px]"></div>
+
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+          <h2 className="text-4xl md:text-6xl font-display font-bold text-white mb-6 tracking-tight">
+            Ready to start your <span className="text-gold">career?</span>
+          </h2>
+          <p className="text-lg md:text-xl text-jalanea-400 mb-10 max-w-2xl mx-auto">
+            Join thousands of Valencia College graduates who've transformed their credentials into rewarding careers.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Button
+              onClick={() => openAuth('signup')}
+              variant="primary"
+              className="bg-gold hover:bg-gold-light text-jalanea-950 font-bold border-none shadow-[0_0_30px_rgba(255,196,37,0.3)] hover:shadow-[0_0_40px_rgba(255,196,37,0.5)] px-10 py-4 text-lg"
+            >
+              Get Started Free
+            </Button>
+            <Button
+              onClick={() => navigate('/pricing')}
+              variant="outline"
+              className="border-white/20 hover:bg-white/10 hover:border-gold text-white px-10 py-4"
+            >
+              See Pricing Plans
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer - Simplified */}
+      <footer className="bg-jalanea-950 text-white py-16 border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-start gap-12 mb-12">
+            <div className="max-w-sm">
+              <div className="flex items-center gap-2 font-display font-bold text-2xl tracking-tighter mb-4">
+                <div className="w-8 h-8 rounded-lg bg-gold-sheen flex items-center justify-center text-jalanea-950">
+                  <Zap size={16} fill="currentColor" />
+                </div>
+                Jalanea<span className="text-gold font-light">Works</span>
+              </div>
+              <p className="text-jalanea-400 mb-4">
                 Your credentials should open doors. We make sure they do — for community college grads, first-gen students, and anyone the system overlooked.
               </p>
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/20 text-gold text-xs font-bold">
@@ -549,40 +664,41 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
             </div>
 
             {/* Navigation Links */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-x-12 gap-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-x-12 gap-y-6">
               <div>
                 <h4 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider mb-4">Platform</h4>
                 <div className="space-y-3">
-                  <button onClick={() => navigate('/mission')} className="block text-sm text-jalanea-300 hover:text-white transition-colors">Our Mission</button>
-                  <button onClick={() => navigate('/entrepreneur')} className="block text-sm text-jalanea-300 hover:text-white transition-colors">Start a Business</button>
-                  <button onClick={() => openAuth('signup')} className="block text-sm text-jalanea-300 hover:text-white transition-colors">Find Jobs</button>
+                  <button onClick={() => navigate('/mission')} className="block text-sm text-jalanea-300 hover:text-gold transition-colors">Our Mission</button>
+                  <button onClick={() => navigate('/entrepreneur')} className="block text-sm text-jalanea-300 hover:text-gold transition-colors">Start a Business</button>
+                  <button onClick={() => openAuth('signup')} className="block text-sm text-jalanea-300 hover:text-gold transition-colors">Find Jobs</button>
                 </div>
               </div>
               <div>
                 <h4 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider mb-4">About</h4>
                 <div className="space-y-3">
-                  <button onClick={() => navigate('/about')} className="block text-sm text-jalanea-300 hover:text-white transition-colors">The Founder</button>
-                  <a href="https://www.linkedin.com/in/alexusjalaneajenkins/" target="_blank" rel="noopener noreferrer" className="block text-sm text-jalanea-300 hover:text-white transition-colors">LinkedIn</a>
-                  <a href="https://www.instagram.com/JalaneaJ_/" target="_blank" rel="noopener noreferrer" className="block text-sm text-jalanea-300 hover:text-white transition-colors">Instagram</a>
+                  <button onClick={() => navigate('/about')} className="block text-sm text-jalanea-300 hover:text-gold transition-colors">The Founder</button>
+                  <a href="https://www.linkedin.com/in/alexusjalaneajenkins/" target="_blank" rel="noopener noreferrer" className="block text-sm text-jalanea-300 hover:text-gold transition-colors">LinkedIn</a>
+                  <a href="https://www.instagram.com/JalaneaJ_/" target="_blank" rel="noopener noreferrer" className="block text-sm text-jalanea-300 hover:text-gold transition-colors">Instagram</a>
                 </div>
               </div>
               <div>
                 <h4 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider mb-4">Support</h4>
                 <div className="space-y-3">
-                  <button onClick={() => navigate('/support')} className="block text-sm text-jalanea-300 hover:text-white transition-colors">Help & FAQ</button>
+                  <button onClick={() => navigate('/support')} className="block text-sm text-jalanea-300 hover:text-gold transition-colors">Help & FAQ</button>
                   <a href="https://buymeacoffee.com/jalanea" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-jalanea-300 hover:text-gold transition-colors">
                     <Coffee size={14} /> Support the Founder
                   </a>
-                  <a href="mailto:business@jalanea.works" className="block text-sm text-jalanea-300 hover:text-white transition-colors">Partner With Us</a>
+                  <a href="mailto:business@jalanea.works" className="block text-sm text-jalanea-300 hover:text-gold transition-colors">Partner With Us</a>
                 </div>
               </div>
             </div>
           </div>
-          <div className="mt-20 pt-8 border-t border-white/10 text-xs text-jalanea-500 font-medium flex flex-col md:flex-row justify-between gap-4 uppercase tracking-wider">
+
+          <div className="pt-8 border-t border-white/5 text-xs text-jalanea-500 font-medium flex flex-col md:flex-row justify-between gap-4 uppercase tracking-wider">
             <div>© 2024 Jalanea Works Inc. | Part of the Jalanea: Light the Block Movement</div>
             <div className="flex gap-6">
-              <a href="#" className="hover:text-white">Privacy</a>
-              <a href="#" className="hover:text-white">Terms</a>
+              <a href="#" className="hover:text-gold transition-colors">Privacy</a>
+              <a href="#" className="hover:text-gold transition-colors">Terms</a>
             </div>
           </div>
         </div>
