@@ -44,7 +44,7 @@ async function fetchRemotiveJobs(query: string): Promise<Job[]> {
             title: job.title,
             company: job.company_name,
             location: job.candidate_required_location || 'Remote',
-            type: job.job_type === 'full_time' ? 'Full-time' : 'Full-time',
+            type: job.job_type === 'full_time' ? 'Full-time' : job.job_type === 'part_time' ? 'Contract' : job.job_type === 'contract' ? 'Contract' : 'Full-time',
             salaryRange: job.salary || 'Not specified',
             postedAt: job.publication_date,
             matchScore: 0,
@@ -217,7 +217,7 @@ async function fetchJSearchJobs(query: string): Promise<Job[]> {
             company: job.employer_name,
             location: job.job_is_remote ? 'Remote' :
                 [job.job_city, job.job_state].filter(Boolean).join(', ') || 'Not specified',
-            type: job.job_employment_type === 'FULLTIME' ? 'Full-time' : 'Full-time',
+            type: job.job_employment_type === 'FULLTIME' ? 'Full-time' : job.job_employment_type === 'PARTTIME' ? 'Contract' : job.job_employment_type === 'CONTRACTOR' ? 'Contract' : job.job_employment_type === 'INTERN' ? 'Internship' : 'Full-time',
             salaryRange: job.job_min_salary && job.job_max_salary
                 ? `$${job.job_min_salary.toLocaleString()} - $${job.job_max_salary.toLocaleString()}`
                 : 'Not specified',
@@ -264,7 +264,7 @@ async function fetchAdzunaJobs(query: string): Promise<Job[]> {
             title: job.title,
             company: job.company?.display_name || 'Unknown',
             location: job.location?.display_name || 'Not specified',
-            type: job.contract_time === 'full_time' ? 'Full-time' : 'Full-time',
+            type: job.contract_time === 'full_time' ? 'Full-time' : job.contract_time === 'part_time' ? 'Contract' : 'Full-time',
             salaryRange: job.salary_min && job.salary_max
                 ? `$${Math.round(job.salary_min).toLocaleString()} - $${Math.round(job.salary_max).toLocaleString()}`
                 : 'Not specified',

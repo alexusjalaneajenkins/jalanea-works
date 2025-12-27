@@ -1293,17 +1293,18 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
             for (const job of jobsToSave) {
                 try {
                     // Clean the job object - remove undefined values
+                    // Use correct property names from Job interface
                     const cleanJob = {
                         id: job.id || '',
                         title: job.title || '',
                         company: job.company || '',
                         location: job.location || '',
-                        salary: job.salary || null,
-                        type: job.type || '',
-                        url: job.url || '',
+                        salaryRange: job.salaryRange || 'Not specified',
+                        type: job.type || 'Full-time',
+                        applyUrl: job.applyUrl || '',
                         description: job.description || '',
-                        postedDate: job.postedDate || null,
-                        source: job.source || 'onboarding'
+                        postedAt: job.postedAt || 'Recently',
+                        source: (job as any).source || 'onboarding'
                     };
                     await saveJob(cleanJob);
                     console.log('✅ Saved job:', cleanJob.title);
