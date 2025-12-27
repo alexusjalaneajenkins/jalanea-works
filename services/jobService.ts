@@ -224,11 +224,15 @@ export async function searchJobsAggregate(
  */
 export async function searchJobsWithGemini(
     query: string,
-    location?: string
+    options?: {
+        location?: string;
+        userLocation?: string;
+        transportMode?: TransportMode;
+    }
 ): Promise<{ jobs: Job[]; totalResults: number; source: string }> {
     try {
         const params = new URLSearchParams({ q: query });
-        if (location) params.append('location', location);
+        if (options?.location) params.append('location', options.location);
 
         const response = await fetch(`${API_BASE_URL}/api/gemini-jobs?${params.toString()}`);
 
@@ -239,10 +243,59 @@ export async function searchJobsWithGemini(
 
         const data = await response.json();
 
-        console.log(`🤖 Gemini AI found ${data.totalResults} jobs for "${query}" in "${location || 'US'}"`);
+        console.log(`🤖 Gemini AI found ${data.totalResults} jobs for "${query}" in "${options?.location || 'US'}"`);
+
+        // Transform and add commute info
+        const jobs: Job[] = await Promise.all(
+            (data.jobs || []).map(async (geminiJob: any, index: number) => {
+                // Calculate commute if user location is provided
+                let commute;
+                if (options?.userLocation && geminiJob.location) {
+                    try {
+                        const commuteMode = options.transportMode === 'Car' ? 'driving' :
+                            options.transportMode === 'Bike' ? 'bicycling' :
+                                options.transportMode === 'Walk' ? 'walking' :
+                                    options.transportMode === 'Bus' || options.transportMode === 'Uber' ? 'transit' :
+                                        'driving';
+
+                        const commuteResponse = await fetch(
+                            `${API_BASE_URL}/api/commute?origin=${encodeURIComponent(options.userLocation)}&destination=${encodeURIComponent(geminiJob.location)}&mode=${commuteMode}`
+                        );
+
+                        if (commuteResponse.ok) {
+                            const commuteData = await commuteResponse.json();
+                            commute = commuteData.commute;
+                        }
+                    } catch (error) {
+                        console.warn('Failed to calculate commute for job:', geminiJob.title, error);
+                    }
+                }
+
+                // Ensure ID is unique and string
+                const jobId = geminiJob.id || `gemini-${Date.now()}-${index}`;
+
+                return {
+                    id: jobId,
+                    title: geminiJob.title,
+                    company: geminiJob.company,
+                    location: geminiJob.location,
+                    type: (geminiJob.type || 'Full-time') as Job['type'],
+                    salaryRange: geminiJob.salaryRange || 'Not specified',
+                    postedAt: geminiJob.postedAt || 'Recently',
+                    matchScore: 0,
+                    skills: geminiJob.skills || [],
+                    description: geminiJob.description || '',
+                    experienceLevel: 'Entry Level', // Default assumption for Gemini results unless parsed
+                    experienceYears: 'Not specified',
+                    applyUrl: geminiJob.applyUrl || '#',
+                    commute,
+                    bulletPoints: [], // Gemini might not return bullet points, keep empty or parse description
+                };
+            })
+        );
 
         return {
-            jobs: data.jobs || [],
+            jobs,
             totalResults: data.totalResults || 0,
             source: 'gemini'
         };

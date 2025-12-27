@@ -201,7 +201,9 @@ export const suggestRolesForDegree = async (degree: string): Promise<string[]> =
 // NEW: Real-Time Job Search Simulation
 export const findRealTimeJobs = async (userProfile: UserProfile): Promise<Job[]> => {
     try {
-        const degrees = userProfile.education.map(e => e.degree).join(", ");
+        const degrees = userProfile.education.map(e => {
+            return e.degreeType ? `${e.degreeType} in ${e.degree}` : e.degree;
+        }).join(", ");
         const skills = userProfile.skills.technical.join(", ");
 
         const prompt = `

@@ -3,7 +3,7 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { generateJobIntel } from '../services/geminiService';
-import { searchJobs } from '../services/jobService';
+import { searchJobsWithGemini } from '../services/jobService';
 import { useAuth } from '../contexts/AuthContext';
 import { UpgradeModal } from '../components/UpgradeModal';
 import {
@@ -212,11 +212,11 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
 
             console.log('🔍 Searching jobs:', { effectiveQuery, effectiveLocation, chips, inputLocation, isRemoteSearch });
 
-            const response = await searchJobs(effectiveQuery, {
+            // Call Gemini Search instead of SerpAPI
+            const response = await searchJobsWithGemini(effectiveQuery, {
                 location: effectiveLocation,
                 userLocation: userProfile?.location || 'Orlando, FL',
-                transportMode: transportMode,
-                chips: chips || undefined
+                transportMode: transportMode
             });
 
             if (response.jobs && response.jobs.length > 0) {

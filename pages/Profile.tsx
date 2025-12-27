@@ -13,6 +13,7 @@ import {
 import { isOwnerEmail, formatCredits, getCreditUsagePercent } from '../services/creditsService';
 import { setUserTier, getTierInfo, SettableTier } from '../utils/setUserTier';
 import { redirectToBillingPortal, SUBSCRIPTION_TIERS, formatPrice } from '../services/stripeService';
+import { DEGREE_TYPE_OPTIONS } from '../types';
 
 // Keep MOCK_PROFILE for backwards compatibility with other pages
 export const MOCK_PROFILE: any = { // Typed as any temporarily to allow flexibility or import UserProfile and cast
@@ -339,18 +340,28 @@ export const ProfilePage: React.FC = () => {
                 )}
                 {isEditing ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pr-8">
+                    <div>
+                      <label className="block text-xs font-bold text-jalanea-500 mb-1">Degree Type</label>
+                      <select
+                        value={edu.degreeType || edu.degreeLevel || ''}
+                        onChange={e => updateEducation(idx, 'degreeType', e.target.value)}
+                        className="w-full border border-jalanea-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-gold focus:border-gold outline-none"
+                      >
+                        <option value="">Select degree type...</option>
+                        {DEGREE_TYPE_OPTIONS.map(opt => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
                     <Input
-                      placeholder="Degree Level (e.g., A.S., B.A.S.)"
-                      value={edu.degreeLevel || ''}
-                      onChange={e => updateEducation(idx, 'degreeLevel', e.target.value)}
-                    />
-                    <Input
-                      placeholder="Program/Major"
+                      label="Program/Major"
+                      placeholder="e.g., Computer Science"
                       value={edu.program || ''}
                       onChange={e => updateEducation(idx, 'program', e.target.value)}
                     />
                     <Input
-                      placeholder="Graduation Year"
+                      label="Graduation Year"
+                      placeholder="e.g., 2024"
                       value={edu.gradYear || ''}
                       onChange={e => updateEducation(idx, 'gradYear', e.target.value)}
                     />
@@ -358,7 +369,7 @@ export const ProfilePage: React.FC = () => {
                 ) : (
                   <div>
                     <h4 className="text-sm font-bold text-jalanea-900">
-                      {edu.degreeLevel} {edu.program && `in ${edu.program}`}
+                      {edu.degreeType || edu.degreeLevel} {edu.program && `in ${edu.program}`}
                     </h4>
                     {edu.gradYear && (
                       <p className="text-sm text-jalanea-500">Class of {edu.gradYear}</p>
@@ -494,15 +505,48 @@ export const ProfilePage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Subscription & Billing Section */}
+      {/* Account Section */}
       <Card variant="solid-white" className="overflow-hidden">
         <div className="border-b border-jalanea-100 p-4 md:p-6 bg-gradient-to-r from-jalanea-900 to-jalanea-800 text-white">
           <h3 className="text-sm md:text-base font-bold flex items-center gap-2">
             <CreditCard size={18} />
-            Subscription & Billing
+            Account
           </h3>
         </div>
         <div className="p-4 md:p-6">
+          {/* Friendly Trial/Upgrade Message */}
+          {(!userCredits?.stripeCustomerId || userCredits?.subscriptionStatus === 'trialing') && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-gold/10 to-amber-50 rounded-xl border border-gold/20">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-gold/20 rounded-full">
+                  <Sparkles size={18} className="text-gold" />
+                </div>
+                <div className="flex-1">
+                  {userCredits?.subscriptionStatus === 'trialing' && userCredits?.trialEndsAt ? (
+                    <>
+                      <p className="font-bold text-jalanea-900">
+                        {(() => {
+                          const daysLeft = Math.max(0, Math.ceil((new Date(userCredits.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+                          return `You have ${daysLeft} day${daysLeft !== 1 ? 's' : ''} left to explore!`;
+                        })()}
+                      </p>
+                      <p className="text-sm text-jalanea-600 mt-1">
+                        For less than a McDonald's meal, unlock unlimited career tools. Just $8/month to invest in your future.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-bold text-jalanea-900">Ready to invest in your future?</p>
+                      <p className="text-sm text-jalanea-600 mt-1">
+                        Just $8/month – less than a single meal out. Start building the career you deserve.
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Current Plan & Credits */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
             {/* Current Plan */}

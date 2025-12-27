@@ -1,11 +1,10 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Sparkles, Zap } from 'lucide-react';
+import { MessageSquare, X, Send, Sparkles, Zap, CalendarPlus, CheckCircle2 } from 'lucide-react';
 import { Button } from './Button';
 import { Card } from './Card';
 import { Input } from './Input';
 import { getCareerAdvice } from '../services/geminiService';
-import { ChatMessage } from '../types';
+import { ChatMessage, ToDoItem } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { UpgradeModal } from './UpgradeModal';
 
@@ -27,7 +26,7 @@ const formatMessage = (text: string): string => {
 };
 
 export const AIChat: React.FC = () => {
-  const { useCredit, canUseCredits, isTrialActive } = useAuth();
+  const { useCredit, canUseCredits, isTrialActive, userProfile, saveUserProfile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<'no_credits' | 'trial_expired'>('no_credits');
@@ -36,6 +35,7 @@ export const AIChat: React.FC = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [addedTasks, setAddedTasks] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -121,10 +121,36 @@ export const AIChat: React.FC = () => {
     }
   };
 
+  const addToSchedule = async (text: string, messageId: string) => {
+    if (!userProfile) return;
+
+    // Create a new task from the AI message
+    // We truncate if it's too long or take the first sentence/line which is often the actionable advice
+    // For now, let's take the first 100 chars or summary
+    const taskTitle = text.split('\n')[0].substring(0, 60) + (text.length > 60 ? '...' : '');
+
+    const newTask: ToDoItem = {
+      id: Date.now().toString(),
+      text: `AI: ${taskTitle}`,
+      completed: false,
+      priority: 'high'
+    };
+
+    try {
+      const currentTasks = userProfile.tasks || [];
+      await saveUserProfile({
+        tasks: [...currentTasks, newTask]
+      });
+      setAddedTasks(prev => new Set(prev).add(messageId));
+    } catch (error) {
+      console.error('Failed to add to schedule:', error);
+    }
+  };
+
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
       {isOpen && (
-        <Card variant="glass-light" className="w-80 md:w-96 h-[500px] shadow-2xl border-jalanea-200 flex flex-col mb-4 animate-in slide-in-from-bottom-5 fade-in duration-300 overflow-hidden" noPadding>
+        <Card variant="glass-light" className="w-[90vw] md:w-[600px] h-[600px] md:h-[700px] shadow-2xl border-jalanea-200 flex flex-col mb-4 animate-in slide-in-from-bottom-5 fade-in duration-300 overflow-hidden" noPadding>
           {/* Header */}
           <div className="bg-jalanea-900 text-white p-4 flex justify-between items-center border-b border-white/10">
             <div className="flex items-center gap-2">
@@ -137,9 +163,9 @@ export const AIChat: React.FC = () => {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white/50" ref={scrollRef}>
+          <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-white/50" ref={scrollRef}>
             {messages.map((msg) => (
-              <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                 <div className={`
                   max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm
                   ${msg.role === 'user'
@@ -155,6 +181,28 @@ export const AIChat: React.FC = () => {
                     />
                   )}
                 </div>
+
+                {/* AI Actions */}
+                {msg.role === 'model' && msg.sender === 'ai' && (
+                  <div className="mt-2 ml-1">
+                    <button
+                      onClick={() => addToSchedule(msg.text, msg.id)}
+                      disabled={addedTasks.has(msg.id)}
+                      className={`
+                        text-[10px] uppercase font-bold tracking-wider flex items-center gap-1 px-2 py-1 rounded-md transition-all
+                        ${addedTasks.has(msg.id)
+                          ? 'text-green-600 bg-green-50'
+                          : 'text-jalanea-400 hover:text-gold hover:bg-gold/10'}
+                      `}
+                    >
+                      {addedTasks.has(msg.id) ? (
+                        <><CheckCircle2 size={12} /> Added to Schedule</>
+                      ) : (
+                        <><CalendarPlus size={12} /> Add to Schedule</>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
             {isLoading && (

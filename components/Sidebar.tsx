@@ -1,8 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NavRoute } from '../types';
-import { LayoutDashboard, User, LogOut, Compass, FileText, Zap, CalendarClock, MessageSquare, Sparkles } from 'lucide-react';
+import { LayoutDashboard, User, LogOut, Compass, FileText, Zap, CalendarClock, MessageSquare, Sparkles, CreditCard } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { redirectToBillingPortal } from '../services/stripeService';
 
 interface SidebarProps {
   currentRoute: NavRoute;
@@ -14,7 +15,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentRoute, setRoute, isMobileOpen, setIsMobileOpen, onOpenFeedback }) => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, userCredits } = useAuth();
 
   const menuItems = [
     { id: NavRoute.DASHBOARD, label: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard' },
@@ -89,6 +90,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRoute, setRoute, isMobi
               {item.label}
             </button>
           ))}
+
+          {/* Manage Billing (if customer) */}
+          {userCredits?.stripeCustomerId && (
+            <button
+              onClick={() => redirectToBillingPortal(userCredits.stripeCustomerId!)}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-jalanea-400 hover:text-white hover:bg-white/5 border-l-[3px] border-transparent transition-all duration-200"
+            >
+              <CreditCard size={20} />
+              Manage Billing
+            </button>
+          )}
 
           {/* Divider */}
           <div className="h-px bg-white/10 my-4" />
