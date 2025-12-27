@@ -84,11 +84,21 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
     // Education state - supporting multiple degrees with flexible text input
     interface SelectedEducation {
-        degreeName: string;          // Free text, e.g. "B.S. in Computer Science"
+        degreeType: string;          // e.g. "Associate's", "Bachelor's", "Master's", "Certificate"
+        degreeName: string;          // Free text, e.g. "Computer Science", "Nursing"
         institution: string;         // Free text, e.g. "University of Central Florida"
         graduationYear: string;
     }
+    const DEGREE_TYPES = [
+        { value: 'certificate', label: 'Certificate' },
+        { value: 'associates', label: "Associate's Degree" },
+        { value: 'bachelors', label: "Bachelor's Degree" },
+        { value: 'masters', label: "Master's Degree" },
+        { value: 'doctorate', label: 'Doctorate / PhD' },
+        { value: 'other', label: 'Other' },
+    ];
     const [selectedDegrees, setSelectedDegrees] = useState<SelectedEducation[]>([]);
+    const [currentDegreeType, setCurrentDegreeType] = useState('');
     const [currentDegreeName, setCurrentDegreeName] = useState('');
     const [currentInstitution, setCurrentInstitution] = useState('');
     const [currentGradYear, setCurrentGradYear] = useState('');
@@ -483,8 +493,10 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
     // Helper to add a degree to the list
     const addDegreeToList = () => {
-        if (currentDegreeName.trim() && currentInstitution.trim()) {
+        if (currentDegreeType && currentDegreeName.trim() && currentInstitution.trim()) {
+            const degreeTypeLabel = DEGREE_TYPES.find(d => d.value === currentDegreeType)?.label || currentDegreeType;
             setSelectedDegrees(prev => [...prev, {
+                degreeType: degreeTypeLabel,
                 degreeName: currentDegreeName.trim(),
                 institution: currentInstitution.trim(),
                 graduationYear: currentGradYear
@@ -505,6 +517,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
             }
             setRoleTags(prev => [...new Set([...prev, ...suggestedRoles])].slice(0, 5));
             // Reset form
+            setCurrentDegreeType('');
             setCurrentDegreeName('');
             setCurrentInstitution('');
             setCurrentGradYear('');
@@ -540,6 +553,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-xs font-medium text-gold bg-gold/10 px-2 py-0.5 rounded-full">{edu.degreeType}</span>
                                     <span className="text-xs text-jalanea-500">{edu.institution} • {edu.graduationYear}</span>
                                 </div>
                                 <h4 className="font-bold text-jalanea-900 mt-1">{edu.degreeName}</h4>
@@ -551,15 +565,42 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                 {/* Add Degree Form */}
                 {isAddingDegree ? (
                     <div className="bg-jalanea-50 border-2 border-dashed border-jalanea-200 rounded-xl p-4 space-y-4">
+                        {/* Degree Type Selector - Dropdown */}
                         <div>
                             <label className="text-sm font-bold text-jalanea-900 mb-2 block">
-                                {selectedDegrees.length === 0 ? 'Your Degree or Certificate' : 'Add Another Degree'}
+                                What type of credential?
+                            </label>
+                            <select
+                                value={currentDegreeType}
+                                onChange={(e) => setCurrentDegreeType(e.target.value)}
+                                className="w-full rounded-xl border-2 border-jalanea-200 py-3 px-4 text-jalanea-900 font-medium focus:ring-2 focus:ring-gold/20 focus:border-gold bg-white appearance-none cursor-pointer"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    backgroundSize: '20px',
+                                    paddingRight: '40px'
+                                }}
+                            >
+                                <option value="">Select degree type...</option>
+                                {DEGREE_TYPES.map((type) => (
+                                    <option key={type.value} value={type.value}>
+                                        {type.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Field of Study */}
+                        <div>
+                            <label className="text-sm font-bold text-jalanea-900 mb-2 block">
+                                Field of Study
                             </label>
                             <input
                                 type="text"
                                 value={currentDegreeName}
                                 onChange={(e) => setCurrentDegreeName(e.target.value)}
-                                placeholder="e.g., B.S. in Computer Science, A.S. in Nursing, IT Certificate..."
+                                placeholder="e.g., Computer Science, Nursing, Business Administration..."
                                 className="w-full rounded-xl border-2 border-jalanea-200 py-3 px-4 text-jalanea-900 font-medium focus:ring-2 focus:ring-gold/20 focus:border-gold bg-white placeholder:text-jalanea-400"
                             />
                         </div>
@@ -591,7 +632,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                             <div className="flex items-end">
                                 <button
                                     onClick={addDegreeToList}
-                                    disabled={!currentDegreeName.trim() || !currentInstitution.trim()}
+                                    disabled={!currentDegreeType || !currentDegreeName.trim() || !currentInstitution.trim()}
                                     className="w-full bg-gold text-jalanea-900 font-bold py-3 px-4 rounded-xl hover:bg-gold-light transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <Plus size={16} />
