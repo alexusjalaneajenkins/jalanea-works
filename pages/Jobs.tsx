@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { generateJobIntel } from '../services/geminiService';
+import { generateJobIntel, searchJobsWithGrounding } from '../services/geminiService';
 import { searchJobsWithGemini } from '../services/jobService';
 import { useAuth } from '../contexts/AuthContext';
 import { UpgradeModal } from '../components/UpgradeModal';
@@ -212,14 +212,36 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
 
             console.log('🔍 Searching jobs:', { effectiveQuery, effectiveLocation, chips, inputLocation, isRemoteSearch });
 
-            // Call Gemini Search instead of SerpAPI
-            const response = await searchJobsWithGemini(effectiveQuery, {
-                location: effectiveLocation,
-                userLocation: userProfile?.location || 'Orlando, FL',
-                transportMode: transportMode
-            });
+            // For on-site searches: Try Gemini Search Grounding first (real-time Google Search)
+            // For remote searches: Use the existing API (works well for remote job boards)
+            let fetchedJobs: Job[] = [];
 
-            if (response.jobs && response.jobs.length > 0) {
+            if (isOnsiteSearch && !isRemoteSearch) {
+                console.log('🤖 Trying Gemini Search Grounding for on-site jobs...');
+                try {
+                    const groundedJobs = await searchJobsWithGrounding(effectiveQuery, effectiveLocation);
+                    if (groundedJobs && groundedJobs.length > 0) {
+                        console.log(`✅ Grounding found ${groundedJobs.length} live on-site jobs!`);
+                        fetchedJobs = groundedJobs;
+                    } else {
+                        console.log('⚠️ Grounding returned no results, falling back to API...');
+                    }
+                } catch (groundingError) {
+                    console.warn('⚠️ Grounding failed, falling back to API:', groundingError);
+                }
+            }
+
+            // Fallback to existing Gemini API if grounding didn't return results
+            if (fetchedJobs.length === 0) {
+                const response = await searchJobsWithGemini(effectiveQuery, {
+                    location: effectiveLocation,
+                    userLocation: userProfile?.location || 'Orlando, FL',
+                    transportMode: transportMode
+                });
+                fetchedJobs = response.jobs || [];
+            }
+
+            if (fetchedJobs.length > 0) {
                 // Add match scores based on user skills
                 const userSkills = [
                     ...(MOCK_PROFILE.skills?.technical || []),
@@ -263,7 +285,7 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
 
                     console.log('📍 Filtering by location:', { city, stateInput, stateMatches });
 
-                    filteredJobs = response.jobs.filter(job => {
+                    filteredJobs = fetchedJobs.filter(job => {
                         const jobLocation = job.location?.toLowerCase() || '';
                         const jobTitle = job.title?.toLowerCase() || '';
                         const jobDescription = job.description?.toLowerCase() || '';
@@ -302,7 +324,7 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
                     // If the filter was too strict, relax it and just show state matches
                     if (filteredJobs.length === 0 && stateInput) {
                         console.log('📍 Location filter too strict, relaxing to state-level...');
-                        filteredJobs = response.jobs.filter(job => {
+                        filteredJobs = fetchedJobs.filter(job => {
                             const jobLocation = job.location?.toLowerCase() || '';
                             return stateMatches.some(s => jobLocation.includes(s)) ||
                                 jobLocation.includes('remote');

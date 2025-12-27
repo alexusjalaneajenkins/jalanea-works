@@ -16,6 +16,7 @@ export const AuthPage: React.FC = () => {
     const [name, setName] = useState(''); // For signup
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [checkingAuth, setCheckingAuth] = useState(true);
 
     // Strict email validation regex
     const isValidEmail = (email: string): boolean => {
@@ -23,8 +24,42 @@ export const AuthPage: React.FC = () => {
         return emailRegex.test(email);
     };
 
-    const { login, signup, loginWithGoogle } = useAuth();
+    const { login, signup, loginWithGoogle, currentUser, userProfile, profileLoading } = useAuth();
     const navigate = useNavigate();
+
+    // Redirect already logged-in users
+    useEffect(() => {
+        const checkAuthAndRedirect = async () => {
+            if (profileLoading) return; // Wait for profile to load
+
+            if (currentUser) {
+                // User is already logged in - redirect based on onboarding status
+                if (userProfile?.onboardingCompleted) {
+                    window.location.href = '/dashboard';
+                } else {
+                    window.location.href = '/onboarding';
+                }
+            } else {
+                setCheckingAuth(false);
+            }
+        };
+
+        checkAuthAndRedirect();
+    }, [currentUser, userProfile, profileLoading]);
+
+    // Show loading while checking auth
+    if (checkingAuth && !currentUser) {
+        // Brief check - if no currentUser after a moment, show the form
+        setTimeout(() => setCheckingAuth(false), 500);
+    }
+
+    if (checkingAuth) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-jalanea-50">
+                <Loader className="animate-spin text-jalanea-600 w-12 h-12" />
+            </div>
+        );
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
