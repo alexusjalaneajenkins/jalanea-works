@@ -215,7 +215,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                       <GraduationCap size={16} className="sm:w-5 sm:h-5" />
                     </div>
                     <h4 className="font-bold text-white mb-1 text-xs sm:text-sm">Your Degree, Your Power</h4>
-                    <p className="text-[11px] sm:text-xs text-jalanea-300">
+                    <p className="text-[11px] sm:text-xs text-slate-200">
                       We link Valencia & UCF programs directly to careers that want YOUR specific skills.
                     </p>
                   </div>
@@ -224,7 +224,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                       <TrendingUp size={16} className="sm:w-5 sm:h-5" />
                     </div>
                     <h4 className="font-bold text-white mb-1 text-xs sm:text-sm">12-24 Month Runway</h4>
-                    <p className="text-[11px] sm:text-xs text-jalanea-300">
+                    <p className="text-[11px] sm:text-xs text-slate-200">
                       Find entry-level jobs while in transitional housing. Build savings. Build stability.
                     </p>
                   </div>
@@ -233,7 +233,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                       <MapPin size={16} className="sm:w-5 sm:h-5" />
                     </div>
                     <h4 className="font-bold text-white mb-1 text-xs sm:text-sm">Alumni Housing Advocacy</h4>
-                    <p className="text-[11px] sm:text-xs text-jalanea-300">
+                    <p className="text-[11px] sm:text-xs text-slate-200">
                       We're fighting for income-restricted housing so graduates can transition sustainably.
                     </p>
                   </div>
@@ -276,7 +276,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
 
                 {/* Contact Section */}
                 <div className="pt-4 sm:pt-6 border-t border-white/10 mt-3 sm:mt-4">
-                  <p className="text-[10px] sm:text-xs text-jalanea-500 uppercase tracking-widest font-bold mb-3 sm:mb-4">Want to Help or Work Together?</p>
+                  <p className="text-[10px] sm:text-xs text-slate-400 uppercase tracking-widest font-bold mb-3 sm:mb-4">Want to Help or Work Together?</p>
                   <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
                     <a
                       href="https://www.linkedin.com/in/alexusjalaneajenkins/"
@@ -305,12 +305,12 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                     </a>
                     <button
                       disabled
-                      className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-jalanea-500 cursor-not-allowed text-xs sm:text-sm font-bold"
+                      className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-slate-400 cursor-not-allowed text-xs sm:text-sm font-bold"
                       title="Portfolio coming soon!"
                     >
                       <Globe size={14} className="sm:w-4 sm:h-4" />
                       Portfolio
-                      <span className="text-[8px] sm:text-[10px] bg-jalanea-700 text-jalanea-300 px-1 sm:px-1.5 py-0.5 rounded uppercase">Soon</span>
+                      <span className="text-[8px] sm:text-[10px] bg-jalanea-700 text-slate-200 px-1 sm:px-1.5 py-0.5 rounded uppercase">Soon</span>
                     </button>
                   </div>
                 </div>
@@ -361,7 +361,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                 Get a job by the<br />
                 <span className="text-transparent bg-clip-text bg-gold-flow bg-200% animate-text-flow">end of the month.</span>
               </h1>
-              <p className="text-lg md:text-xl lg:text-2xl text-jalanea-300 leading-relaxed max-w-xl mx-auto lg:mx-0">
+              <p className="text-lg md:text-xl lg:text-2xl text-slate-200 leading-relaxed max-w-xl mx-auto lg:mx-0">
                 Your credentials should pay off. <span className="text-white font-semibold">3 quality applications per day.</span> We turn your degree into a direct pipeline to the life you deserve.
               </p>
 
@@ -391,7 +391,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
               <Card variant="glass-dark" className="shadow-2xl backdrop-blur-xl border border-white/10 relative z-20" noPadding>
                 <div className="p-5 sm:p-6 md:p-8 space-y-5 sm:space-y-6">
                   <div className="flex justify-between items-center border-b border-white/10 pb-4">
-                    <span className="text-xs font-bold text-jalanea-400 uppercase tracking-widest">Live Career Mapping</span>
+                    <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">Live Career Mapping</span>
                     <div className="flex items-center gap-2">
                       <span className="relative flex h-2.5 w-2.5">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -404,10 +404,10 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                   <div className="space-y-5">
                     {/* Input: Searchable Degree Selector */}
                     <div className="space-y-2 group relative">
-                      <label className="text-xs font-bold text-jalanea-400 uppercase tracking-wider mb-2 block">Type Your Degree or Certificate</label>
+                      <label className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 block">Type Your Degree or Certificate</label>
 
                       <div className="relative">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-jalanea-500">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
                           <Search size={18} />
                         </div>
                         <input
@@ -428,7 +428,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                         {degreeSearch && (
                           <button
                             onClick={() => setDegreeSearch('')}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-jalanea-500 hover:text-white transition-colors"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
                           >
                             <X size={16} />
                           </button>
@@ -463,17 +463,17 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
 
                     {/* Dynamic Results List */}
                     <div className="space-y-3">
-                      <label className="text-xs font-bold text-jalanea-400 uppercase tracking-wider">Qualified Entry-Level Roles</label>
+                      <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">Qualified Entry-Level Roles</label>
 
                       <div className="space-y-2.5 max-h-[180px] overflow-y-auto pr-1 custom-scrollbar">
                         {currentData?.roles.map((role, idx) => (
                           <div key={idx} className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 transition-all group">
                             <div className="flex flex-col">
                               <div className="flex items-center gap-2">
-                                <Star size={12} className={idx === 0 ? "text-gold" : "text-jalanea-600"} fill={idx === 0 ? "currentColor" : "none"} />
+                                <Star size={12} className={idx === 0 ? "text-gold" : "text-slate-500"} fill={idx === 0 ? "currentColor" : "none"} />
                                 <span className="text-white font-semibold text-sm">{role.title}</span>
                               </div>
-                              <span className="text-jalanea-400 text-xs ml-5">{role.salary}</span>
+                              <span className="text-slate-300 text-xs ml-5">{role.salary}</span>
                             </div>
                             <div className="text-right">
                               <span className="block text-gold font-bold text-base">{role.match}%</span>
@@ -488,12 +488,12 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                   <div className="pt-5 -mx-5 sm:-mx-6 md:-mx-8 -mb-5 sm:-mb-6 md:-mb-8 p-5 sm:p-6 md:p-8 rounded-b-2xl bg-jalanea-900/50 border-t border-white/5">
                     <div className="flex justify-between items-center mb-5">
                       <div className="flex flex-col">
-                        <span className="text-jalanea-500 text-xs font-bold uppercase tracking-wider">Est. Salary Bump</span>
-                        <span className="font-display font-bold text-xl sm:text-2xl text-white">{currentData?.avgBump}<span className="text-jalanea-500 text-base">/yr</span></span>
+                        <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Est. Salary Bump</span>
+                        <span className="font-display font-bold text-xl sm:text-2xl text-white">{currentData?.avgBump}<span className="text-slate-400 text-base">/yr</span></span>
                       </div>
                       <div className="h-10 w-px bg-white/10"></div>
                       <div className="flex flex-col text-right">
-                        <span className="text-jalanea-500 text-xs font-bold uppercase tracking-wider">Open Local Roles</span>
+                        <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Open Local Roles</span>
                         <span className="font-display font-bold text-xl sm:text-2xl text-white">{currentData?.openRoles}</span>
                       </div>
                     </div>
@@ -521,7 +521,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                   <stat.icon size={20} />
                 </div>
                 <div className="text-2xl md:text-3xl font-display font-bold text-white mb-1">{stat.value}</div>
-                <div className="text-sm text-jalanea-400 font-medium">{stat.label}</div>
+                <div className="text-sm text-slate-300 font-medium">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -538,7 +538,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
             <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-6 tracking-tight">
               How it <span className="text-gold">works</span>
             </h2>
-            <p className="text-lg text-jalanea-400 leading-relaxed">
+            <p className="text-lg text-slate-300 leading-relaxed">
               Three simple steps to transform your credentials into career opportunities
             </p>
           </div>
@@ -553,7 +553,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                   <span className="text-5xl font-display font-bold text-jalanea-800 group-hover:text-gold/20 transition-colors">{step.number}</span>
                 </div>
                 <h3 className="text-xl font-display font-bold text-white mb-3">{step.title}</h3>
-                <p className="text-jalanea-400 leading-relaxed">{step.description}</p>
+                <p className="text-slate-300 leading-relaxed">{step.description}</p>
               </Card>
             ))}
           </div>
@@ -572,21 +572,21 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
               <h2 className="text-3xl md:text-4xl font-display font-bold text-white leading-tight">
                 Building careers that <span className="text-gold">build communities</span>
               </h2>
-              <p className="text-lg text-jalanea-300 leading-relaxed">
+              <p className="text-lg text-slate-200 leading-relaxed">
                 Jalanea Works isn't just about finding jobs—it's about transforming Orlando's workforce from the ground up. Every placement strengthens our local economy and proves that community college graduates are the backbone of innovation.
               </p>
               <div className="flex flex-wrap gap-4 pt-4">
                 <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center min-w-[140px]">
                   <div className="text-3xl font-display font-bold text-gold mb-1">94%</div>
-                  <div className="text-sm text-jalanea-400">Say life-changing</div>
+                  <div className="text-sm text-slate-300">Say life-changing</div>
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center min-w-[140px]">
                   <div className="text-3xl font-display font-bold text-gold mb-1">Orlando</div>
-                  <div className="text-sm text-jalanea-400">Focused opportunities</div>
+                  <div className="text-sm text-slate-300">Focused opportunities</div>
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center min-w-[140px]">
                   <div className="text-3xl font-display font-bold text-gold mb-1">Valencia</div>
-                  <div className="text-sm text-jalanea-400">Direct partnerships</div>
+                  <div className="text-sm text-slate-300">Direct partnerships</div>
                 </div>
               </div>
             </div>
@@ -604,7 +604,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                   </div>
                   <div>
                     <h4 className="font-bold text-white mb-1">{feature.title}</h4>
-                    <p className="text-sm text-jalanea-400">{feature.desc}</p>
+                    <p className="text-sm text-slate-300">{feature.desc}</p>
                   </div>
                 </div>
               ))}
@@ -622,7 +622,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
           <h2 className="text-4xl md:text-6xl font-display font-bold text-white mb-6 tracking-tight">
             Ready to start your <span className="text-gold">career?</span>
           </h2>
-          <p className="text-lg md:text-xl text-jalanea-400 mb-10 max-w-2xl mx-auto">
+          <p className="text-lg md:text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
             Join thousands of Valencia College graduates who've transformed their credentials into rewarding careers.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -655,7 +655,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                 </div>
                 Jalanea<span className="text-gold font-light">Works</span>
               </div>
-              <p className="text-jalanea-400 mb-4">
+              <p className="text-slate-300 mb-4">
                 Your credentials should open doors. We make sure they do — for community college grads, first-gen students, and anyone the system overlooked.
               </p>
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/20 text-gold text-xs font-bold">
@@ -666,35 +666,35 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
             {/* Navigation Links */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-x-12 gap-y-6">
               <div>
-                <h4 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider mb-4">Platform</h4>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Platform</h4>
                 <div className="space-y-3">
-                  <button onClick={() => navigate('/mission')} className="block text-sm text-jalanea-300 hover:text-gold transition-colors">Our Mission</button>
-                  <button onClick={() => navigate('/entrepreneur')} className="block text-sm text-jalanea-300 hover:text-gold transition-colors">Start a Business</button>
-                  <button onClick={() => openAuth('signup')} className="block text-sm text-jalanea-300 hover:text-gold transition-colors">Find Jobs</button>
+                  <button onClick={() => navigate('/mission')} className="block text-sm text-slate-200 hover:text-gold transition-colors">Our Mission</button>
+                  <button onClick={() => navigate('/entrepreneur')} className="block text-sm text-slate-200 hover:text-gold transition-colors">Start a Business</button>
+                  <button onClick={() => openAuth('signup')} className="block text-sm text-slate-200 hover:text-gold transition-colors">Find Jobs</button>
                 </div>
               </div>
               <div>
-                <h4 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider mb-4">About</h4>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">About</h4>
                 <div className="space-y-3">
-                  <button onClick={() => navigate('/about')} className="block text-sm text-jalanea-300 hover:text-gold transition-colors">The Founder</button>
-                  <a href="https://www.linkedin.com/in/alexusjalaneajenkins/" target="_blank" rel="noopener noreferrer" className="block text-sm text-jalanea-300 hover:text-gold transition-colors">LinkedIn</a>
-                  <a href="https://www.instagram.com/JalaneaJ_/" target="_blank" rel="noopener noreferrer" className="block text-sm text-jalanea-300 hover:text-gold transition-colors">Instagram</a>
+                  <button onClick={() => navigate('/about')} className="block text-sm text-slate-200 hover:text-gold transition-colors">The Founder</button>
+                  <a href="https://www.linkedin.com/in/alexusjalaneajenkins/" target="_blank" rel="noopener noreferrer" className="block text-sm text-slate-200 hover:text-gold transition-colors">LinkedIn</a>
+                  <a href="https://www.instagram.com/JalaneaJ_/" target="_blank" rel="noopener noreferrer" className="block text-sm text-slate-200 hover:text-gold transition-colors">Instagram</a>
                 </div>
               </div>
               <div>
-                <h4 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider mb-4">Support</h4>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Support</h4>
                 <div className="space-y-3">
-                  <button onClick={() => navigate('/support')} className="block text-sm text-jalanea-300 hover:text-gold transition-colors">Help & FAQ</button>
-                  <a href="https://buymeacoffee.com/jalanea" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-jalanea-300 hover:text-gold transition-colors">
+                  <button onClick={() => navigate('/support')} className="block text-sm text-slate-200 hover:text-gold transition-colors">Help & FAQ</button>
+                  <a href="https://buymeacoffee.com/jalanea" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-slate-200 hover:text-gold transition-colors">
                     <Coffee size={14} /> Support the Founder
                   </a>
-                  <a href="mailto:business@jalanea.works" className="block text-sm text-jalanea-300 hover:text-gold transition-colors">Partner With Us</a>
+                  <a href="mailto:business@jalanea.works" className="block text-sm text-slate-200 hover:text-gold transition-colors">Partner With Us</a>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="pt-8 border-t border-white/5 text-xs text-jalanea-500 font-medium flex flex-col md:flex-row justify-between gap-4 uppercase tracking-wider">
+          <div className="pt-8 border-t border-white/5 text-xs text-slate-400 font-medium flex flex-col md:flex-row justify-between gap-4 uppercase tracking-wider">
             <div>© 2024 Jalanea Works Inc. | Part of the Jalanea: Light the Block Movement</div>
             <div className="flex gap-6">
               <a href="#" className="hover:text-gold transition-colors">Privacy</a>
