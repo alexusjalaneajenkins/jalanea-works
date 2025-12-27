@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Card } from '../components/Card';
@@ -14,6 +13,8 @@ import { isOwnerEmail, formatCredits, getCreditUsagePercent } from '../services/
 import { setUserTier, getTierInfo, SettableTier } from '../utils/setUserTier';
 import { redirectToBillingPortal, SUBSCRIPTION_TIERS, formatPrice } from '../services/stripeService';
 import { DEGREE_TYPE_OPTIONS } from '../types';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage, auth } from '../services/firebase';
 
 // Keep MOCK_PROFILE for backwards compatibility with other pages
 export const MOCK_PROFILE: any = { // Typed as any temporarily to allow flexibility or import UserProfile and cast
@@ -61,6 +62,8 @@ export const ProfilePage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSwitchingTier, setIsSwitchingTier] = useState(false);
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
+  const [isUploadingPic, setIsUploadingPic] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Local state for editing
   const [fullName, setFullName] = useState('');
@@ -194,6 +197,49 @@ export const ProfilePage: React.FC = () => {
   // Check if current user is an owner
   const isOwner = isOwnerEmail(currentUser?.email);
 
+  // Profile picture upload handler
+  const handleProfilePicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !auth.currentUser) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image must be less than 5MB');
+      return;
+    }
+
+    setIsUploadingPic(true);
+    try {
+      // Create a reference to the storage location
+      const storageRef = ref(storage, `profile-pictures/${auth.currentUser.uid}/${Date.now()}_${file.name}`);
+
+      // Upload the file
+      await uploadBytes(storageRef, file);
+
+      // Get the download URL
+      const downloadURL = await getDownloadURL(storageRef);
+
+      // Save to user profile
+      await saveUserProfile({
+        photoURL: downloadURL,
+        updatedAt: new Date().toISOString()
+      });
+
+      console.log('Profile picture uploaded successfully!');
+    } catch (error) {
+      console.error('Error uploading profile picture:', error);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      setIsUploadingPic(false);
+    }
+  };
+
   if (profileLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -249,9 +295,22 @@ export const ProfilePage: React.FC = () => {
               )}
             </div>
             {isEditing && (
-              <button className="absolute bottom-0 right-0 p-1.5 bg-jalanea-900 text-white rounded-full">
-                <Camera size={14} />
-              </button>
+              <>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleProfilePicUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingPic}
+                  className="absolute bottom-0 right-0 p-1.5 bg-jalanea-900 text-white rounded-full hover:bg-gold transition-colors disabled:opacity-50"
+                >
+                  {isUploadingPic ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+                </button>
+              </>
             )}
           </div>
 
