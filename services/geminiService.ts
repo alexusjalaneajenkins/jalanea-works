@@ -253,7 +253,7 @@ export const searchJobsWithGrounding = async (
             Return a JSON array of job objects with these EXACT fields:
             - id: unique string (use format "grounded-[number]")
             - title: exact job title from the listing
-            - company: company name
+            - company: THE HIRING COMPANY NAME (REQUIRED - do not leave blank!)
             - location: City, State format (MUST be in or near ${location} for on-site jobs)
             - locationType: "On-site", "Remote", or "Hybrid"
             - type: "Full-time", "Part-time", "Contract", or "Internship"
@@ -309,10 +309,11 @@ export const searchJobsWithGrounding = async (
                 console.log('📋 Sample grounded job structure:', JSON.stringify(rawJobs[0], null, 2));
             }
 
-            // Ensure all jobs have location set (fallback to searched location if missing)
+            // Ensure all jobs have required fields (fallback for missing values)
             const jobs = rawJobs.map((job: any, index: number) => ({
                 ...job,
                 id: job.id || `grounded-${index}`,
+                company: job.company || 'Company Hiring',  // Fallback if Gemini doesn't return company
                 location: job.location || location, // Use searched location as fallback
                 locationType: job.locationType || (isOnSite ? 'On-site' : 'Remote'),
                 source: job.source || 'Google Search'
