@@ -206,10 +206,11 @@ export const suggestRolesForDegree = async (degree: string): Promise<string[]> =
 export const searchJobsWithGrounding = async (
     query: string,
     location: string,
+    workStyle?: 'On-site' | 'Remote' | 'Hybrid' | 'All',
     userProfile?: UserProfile
 ): Promise<Job[]> => {
     try {
-        console.log(`🔍 Using Gemini Search Grounding for: "${query}" in "${location}"`);
+        console.log(`🔍 Using Gemini Search Grounding for: "${query}" in "${location}" (workStyle: ${workStyle || 'All'})`);
 
         // Build context from user profile if available
         const degreesContext = userProfile?.education?.map(e => {
@@ -219,24 +220,42 @@ export const searchJobsWithGrounding = async (
 
         const skillsContext = userProfile?.skills?.technical?.join(", ") || "";
 
+        // Build location requirements based on work style
+        const isOnSite = workStyle === 'On-site' || workStyle === 'Hybrid';
+        const locationRequirement = isOnSite
+            ? `LOCATION REQUIREMENT: Jobs MUST be physically located in or within 30 miles of ${location}. Do NOT include jobs from other cities or states.`
+            : `LOCATION: ${location} (remote positions from any location are acceptable)`;
+
+        const remoteExclusion = isOnSite
+            ? `
+            CRITICAL EXCLUSIONS - Do NOT include:
+            - Remote positions or "Work from Home" jobs
+            - Jobs located in other cities or states
+            - Jobs that don't specify ${location} or nearby areas as the work location`
+            : '';
+
         const prompt = `
-            SEARCH TASK: Find 5 REAL, CURRENTLY ACTIVE job listings for "${query}" in or near "${location}".
+            SEARCH TASK: Find 8 REAL, CURRENTLY ACTIVE job listings for "${query}".
+            
+            ${locationRequirement}
             
             ${degreesContext ? `USER DEGREES: ${degreesContext}` : ''}
             ${skillsContext ? `USER SKILLS: ${skillsContext}` : ''}
             
-            CRITICAL INSTRUCTIONS:
-            1. USE GOOGLE SEARCH to find REAL job postings that are currently open.
-            2. Only include jobs that have actual application links.
-            3. Focus on entry-level and junior roles.
-            4. Include the DIRECT link to apply.
-            5. If salary is not listed, estimate based on market data.
+            STRICT REQUIREMENTS:
+            1. USE GOOGLE SEARCH to find REAL job postings from Indeed, LinkedIn, Glassdoor, or company career pages.
+            2. Jobs MUST be entry-level or junior roles (0-3 years experience).
+            3. Each job MUST have a real application link.
+            4. ${isOnSite ? `Work style MUST be On-site or Hybrid in ${location}` : 'Remote jobs are acceptable'}.
+            
+            ${remoteExclusion}
             
             Return a JSON array of job objects with these EXACT fields:
             - id: unique string (use format "grounded-[number]")
             - title: exact job title from the listing
             - company: company name
-            - location: City, State format
+            - location: City, State format (MUST be in or near ${location} for on-site jobs)
+            - locationType: "On-site", "Remote", or "Hybrid"
             - type: "Full-time", "Part-time", "Contract", or "Internship"
             - salaryRange: salary if found, or estimate like "$45,000 - $55,000"
             - postedAt: when posted (e.g., "2 days ago", "1 week ago")
@@ -264,6 +283,7 @@ export const searchJobsWithGrounding = async (
                             title: { type: Type.STRING },
                             company: { type: Type.STRING },
                             location: { type: Type.STRING },
+                            locationType: { type: Type.STRING },
                             type: { type: Type.STRING },
                             salaryRange: { type: Type.STRING },
                             postedAt: { type: Type.STRING },

@@ -212,13 +212,21 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
 
             console.log('🔍 Searching jobs:', { effectiveQuery, effectiveLocation, chips, inputLocation, isRemoteSearch });
 
+            // Determine work style for grounding
+            const workStyle = isRemoteSearch ? 'Remote' : (isOnsiteSearch ? 'On-site' : 'All');
+
             // Try Gemini Search Grounding FIRST for all searches (real-time Google Search)
             // Falls back to backend API if grounding fails
             let fetchedJobs: Job[] = [];
 
-            console.log('🤖 Trying Gemini Search Grounding for jobs...');
+            console.log(`🤖 Trying Gemini Search Grounding for jobs (workStyle: ${workStyle})...`);
             try {
-                const groundedJobs = await searchJobsWithGrounding(effectiveQuery, effectiveLocation);
+                const groundedJobs = await searchJobsWithGrounding(
+                    effectiveQuery,
+                    effectiveLocation,
+                    workStyle as 'On-site' | 'Remote' | 'Hybrid' | 'All',
+                    userProfile || undefined
+                );
                 if (groundedJobs && groundedJobs.length > 0) {
                     console.log(`✅ Grounding found ${groundedJobs.length} live jobs!`);
                     fetchedJobs = groundedJobs;
