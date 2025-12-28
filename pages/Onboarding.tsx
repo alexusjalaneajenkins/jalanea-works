@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
@@ -17,6 +17,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { searchJobs, searchJobsAggregate } from '../services/jobService';
 import { searchCareersEnriched, getRelatedCareers, mapToCareerPath, getCareerOutlook } from '../services/onetService';
 import { searchJobsWithGrounding } from '../services/geminiService';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage, auth } from '../services/firebase';
 
 interface OnboardingProps {
     setRoute: (route: NavRoute) => void;
@@ -82,6 +84,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
     const [profilePic, setProfilePic] = useState<string | null>(null);
     const [linkedinUrl, setLinkedinUrl] = useState('');
     const [portfolioUrl, setPortfolioUrl] = useState('');
+    const [isUploadingPic, setIsUploadingPic] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Education state - supporting multiple degrees with flexible text input
     interface SelectedEducation {
@@ -437,6 +441,46 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
         );
     };
 
+    // Profile picture upload handler
+    const handleProfilePicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !auth.currentUser) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            alert('Please select an image file');
+            return;
+        }
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Image must be less than 5MB');
+            return;
+        }
+
+        setIsUploadingPic(true);
+        try {
+            // Create a reference to the storage location
+            const storageRef = ref(storage, `profile-pictures/${auth.currentUser.uid}/${Date.now()}_${file.name}`);
+
+            // Upload the file
+            await uploadBytes(storageRef, file);
+
+            // Get the download URL
+            const downloadURL = await getDownloadURL(storageRef);
+
+            // Update the local state (will be saved when onboarding completes)
+            setProfilePic(downloadURL);
+
+            console.log('Profile picture uploaded successfully!');
+        } catch (error) {
+            console.error('Error uploading profile picture:', error);
+            alert('Failed to upload image. Please try again.');
+        } finally {
+            setIsUploadingPic(false);
+        }
+    };
+
     const renderBasics = () => (
         <div className="animate-in slide-in-from-right-8 fade-in duration-300">
             <div className="mb-6">
@@ -447,16 +491,38 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
             <div className="space-y-6">
 
                 <div className="flex items-center gap-4">
-                    {/* Profile Picture - shows Google photo if available */}
+                    {/* Profile Picture - clickable to upload */}
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleProfilePicUpload}
+                        accept="image/*"
+                        className="hidden"
+                    />
                     {profilePic ? (
-                        <img
-                            src={profilePic}
-                            alt={fullName || 'Profile'}
-                            className="w-20 h-20 rounded-full object-cover border-2 border-gold shadow-lg"
-                        />
+                        <div className="relative">
+                            <img
+                                src={profilePic}
+                                alt={fullName || 'Profile'}
+                                className="w-20 h-20 rounded-full object-cover border-2 border-gold shadow-lg cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={() => fileInputRef.current?.click()}
+                            />
+                            {isUploadingPic && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                </div>
+                            )}
+                        </div>
                     ) : (
-                        <div className="w-20 h-20 rounded-full bg-jalanea-100 flex items-center justify-center border-2 border-dashed border-jalanea-300 text-jalanea-400 cursor-pointer hover:border-gold hover:text-gold transition-colors">
-                            <Plus size={24} />
+                        <div
+                            onClick={() => !isUploadingPic && fileInputRef.current?.click()}
+                            className={`w-20 h-20 rounded-full bg-jalanea-100 flex items-center justify-center border-2 border-dashed border-jalanea-300 text-jalanea-400 cursor-pointer hover:border-gold hover:text-gold transition-colors ${isUploadingPic ? 'opacity-50' : ''}`}
+                        >
+                            {isUploadingPic ? (
+                                <div className="w-6 h-6 border-2 border-jalanea-400 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                                <Plus size={24} />
+                            )}
                         </div>
                     )}
                     <div className="flex-1 space-y-3">
