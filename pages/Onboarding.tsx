@@ -14,7 +14,7 @@ import {
     Home, Target
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { searchJobs, searchJobsAggregate } from '../services/jobService';
+import { searchJobs } from '../services/jobService';
 import { searchCareersEnriched, getRelatedCareers, mapToCareerPath, getCareerOutlook } from '../services/onetService';
 import { searchJobsWithGrounding } from '../services/geminiService';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -953,11 +953,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
             // For remote, add to query. For on-site/hybrid, we rely on location filtering
             const workStyleQuery = jobWorkStyleFilter === 'Remote' ? ' remote' : '';
 
-            // Use user's location or default
-            // For Grounding: Use city-level location (more accurate)
-            // For Aggregate API: Use state-level location (broader results)
-            let groundingLocation = 'United States';  // City-level for grounding
-            let aggregateLocation = 'United States'; // State-level for aggregate
+            // Use user's location for Google Search Grounding
+            let groundingLocation = 'United States';
 
             if (jobWorkStyleFilter === 'On-site' || jobWorkStyleFilter === 'Hybrid') {
                 if (location?.trim()) {
@@ -977,19 +974,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                     };
 
                     const stateFull = stateFullNames[stateAbbr.toUpperCase()] || stateAbbr;
-
-                    // Grounding: Use city + state for precise results
                     groundingLocation = city && stateFull ? `${city}, ${stateFull}` : location.trim();
-
-                    // Aggregate: Use state for broader results
-                    aggregateLocation = stateFull || 'United States';
-
-                    console.log(`📍 Location for grounding: "${groundingLocation}", for aggregate: "${aggregateLocation}"`);
+                    console.log(`📍 Searching jobs in: "${groundingLocation}"`);
                 }
             }
 
             // Fetch jobs for EACH selected career separately and tag them
-            const allTaggedJobs: Array<{ job: typeof jobsToFavorite[0], careerId: string, careerTitle: string, fromGrounding: boolean }> = [];
+            const allTaggedJobs: Array<{ job: typeof jobsToFavorite[0], careerId: string, careerTitle: string }> = [];
 
             for (const career of selectedCareers) {
                 const fullQuery = `${career.title} ${entryLevelModifier}${workStyleQuery}`.trim();
@@ -998,36 +989,20 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                 try {
                     let fetchedJobs: Job[] = [];
 
-                    // For On-site/Hybrid: Try Gemini Search Grounding first (real-time Google Search)
-                    let fromGrounding = false;
-                    if (jobWorkStyleFilter === 'On-site' || jobWorkStyleFilter === 'Hybrid') {
-                        console.log(`🤖 Trying Gemini Search Grounding for "${career.title}" in "${groundingLocation}"...`);
-                        const groundedJobs = await searchJobsWithGrounding(
-                            `${career.title} entry level`,
-                            groundingLocation,  // City-level for precise results
-                            jobWorkStyleFilter as 'On-site' | 'Remote' | 'Hybrid',
-                            userProfile || undefined
-                        );
+                    // Use ONLY Google Search Grounding for all job searches
+                    console.log(`🤖 Using Gemini Search Grounding for "${career.title}" in "${groundingLocation}"...`);
+                    const groundedJobs = await searchJobsWithGrounding(
+                        `${career.title} entry level`,
+                        groundingLocation,
+                        jobWorkStyleFilter as 'On-site' | 'Remote' | 'Hybrid' | 'All',
+                        userProfile || undefined
+                    );
 
-                        if (groundedJobs && groundedJobs.length > 0) {
-                            console.log(`✅ Grounding found ${groundedJobs.length} live jobs! (Location filter will be skipped)`);
-                            fetchedJobs = groundedJobs;
-                            fromGrounding = true;  // Mark as from grounding - skip location filter
-                        } else {
-                            console.log(`⚠️ Grounding returned no results, falling back to aggregate API...`);
-                        }
-                    }
-
-                    // Fallback to aggregate API (or primary for Remote/All)
-                    if (fetchedJobs.length === 0) {
-                        const response = await searchJobsAggregate(fullQuery, {
-                            location: aggregateLocation,  // State-level for broader results
-                            remote: jobWorkStyleFilter === 'Remote'
-                        });
-                        if (response.jobs && response.jobs.length > 0) {
-                            fetchedJobs = response.jobs;
-                            fromGrounding = false;  // Mark as NOT from grounding - needs location filter
-                        }
+                    if (groundedJobs && groundedJobs.length > 0) {
+                        console.log(`✅ Grounding found ${groundedJobs.length} live jobs!`);
+                        fetchedJobs = groundedJobs;
+                    } else {
+                        console.log(`⚠️ Grounding returned no results for ${career.title}`);
                     }
 
                     if (fetchedJobs.length > 0) {
@@ -1065,8 +1040,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                                 allTaggedJobs.push({
                                     job: job,
                                     careerId: career.id,
-                                    careerTitle: career.title,
-                                    fromGrounding: fromGrounding  // Track source for filtering
+                                    careerTitle: career.title
                                 });
                             }
                         });
@@ -1078,83 +1052,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
             console.log(`✅ Total jobs collected: ${allTaggedJobs.length} across ${selectedCareers.length} careers`);
 
-            // Separate grounded jobs (location already enforced) from aggregate jobs (need filtering)
-            const groundedJobs = allTaggedJobs.filter(t => t.fromGrounding);
-            const aggregateJobs = allTaggedJobs.filter(t => !t.fromGrounding);
-
-            console.log(`📊 Source breakdown: ${groundedJobs.length} from grounding (trusted), ${aggregateJobs.length} from aggregate (need filtering)`);
-
-            // For on-site and hybrid, filter ONLY aggregate jobs by location
-            // Grounded jobs are trusted since Gemini already enforced location
-            let processedJobs = [...groundedJobs]; // Start with all grounded jobs (trusted)
-
-            // Location filtering for aggregate jobs only
-            if ((jobWorkStyleFilter === 'On-site' || jobWorkStyleFilter === 'Hybrid') && location && aggregateJobs.length > 0) {
-                const locationLower = location.toLowerCase().trim();
-                const parts = locationLower.split(',').map(p => p.trim());
-                const city = parts[0] || '';
-                const state = parts[1]?.trim() || '';
-
-                // Extended state abbreviation mapping (all 50 states)
-                const statePatterns: Record<string, string[]> = {
-                    'fl': ['florida', 'fl'], 'ca': ['california', 'ca'], 'tx': ['texas', 'tx'],
-                    'ny': ['new york', 'ny'], 'pa': ['pennsylvania', 'pa'], 'va': ['virginia', 'va'],
-                    'ma': ['massachusetts', 'ma'], 'ga': ['georgia', 'ga'], 'nc': ['north carolina', 'nc'],
-                    'oh': ['ohio', 'oh'], 'il': ['illinois', 'il'], 'wa': ['washington', 'wa'],
-                    'az': ['arizona', 'az'], 'co': ['colorado', 'co'], 'nv': ['nevada', 'nv'],
-                    'or': ['oregon', 'or'], 'md': ['maryland', 'md'], 'nj': ['new jersey', 'nj'],
-                    'sc': ['south carolina', 'sc'], 'tn': ['tennessee', 'tn'], 'mi': ['michigan', 'mi'],
-                    'in': ['indiana', 'in'], 'mo': ['missouri', 'mo'], 'wi': ['wisconsin', 'wi'],
-                    'florida': ['florida', 'fl'], 'california': ['california', 'ca'], 'texas': ['texas', 'tx'],
-                };
-
-                const stateMatches = statePatterns[state] || [state];
-
-                console.log(`📍 Filtering aggregate jobs for city: "${city}", state patterns:`, stateMatches);
-
-                // Filter aggregate jobs - only keep those matching location
-                const locationFiltered = aggregateJobs.filter(tagged => {
-                    const jobLocation = tagged.job.location?.toLowerCase() || '';
-                    const jobTitle = tagged.job.title?.toLowerCase() || '';
-
-                    // Exclude remote jobs for on-site/hybrid searches
-                    if (jobLocation.includes('remote') || jobTitle.includes('remote') ||
-                        jobLocation.includes('anywhere') || jobLocation.includes('worldwide')) {
-                        return false;
-                    }
-
-                    const matchesCity = city.length >= 3 && jobLocation.includes(city);
-                    const matchesState = stateMatches.some(s => jobLocation.includes(s));
-
-                    return matchesCity || matchesState;  // FIX: Return boolean, not object!
-                });
-
-                console.log(`📍 Aggregate jobs after location filter: ${locationFiltered.length} (filtered from ${aggregateJobs.length})`);
-
-                // Apply localOnlyFilter logic to filtered aggregate jobs
-                if (localOnlyFilter) {
-                    // City matches get priority
-                    const cityMatches = locationFiltered.filter(t => {
-                        const jobLocation = t.job.location?.toLowerCase() || '';
-                        return city.length >= 3 && jobLocation.includes(city);
-                    });
-
-                    if (cityMatches.length > 0) {
-                        processedJobs = [...groundedJobs, ...cityMatches];
-                    } else {
-                        processedJobs = [...groundedJobs, ...locationFiltered];
-                        if (locationFiltered.length > 0) {
-                            console.log(`⚠️ No jobs in "${city}", showing ${locationFiltered.length} state-level matches`);
-                        }
-                    }
-                } else {
-                    // Not local only - show all location-filtered aggregate jobs
-                    processedJobs = [...groundedJobs, ...locationFiltered];
-                }
-            } else if (aggregateJobs.length > 0) {
-                // Remote or All mode - include all aggregate jobs without location filter
-                processedJobs = [...groundedJobs, ...aggregateJobs];
-            }
+            // All jobs are from Google Search Grounding - trusted, no filtering needed
+            // Gemini already enforced location requirements in the search
+            const processedJobs = allTaggedJobs;
 
             console.log(`📋 Final jobs to display: ${processedJobs.length}`);
 
