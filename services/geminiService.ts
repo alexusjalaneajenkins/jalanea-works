@@ -301,8 +301,23 @@ export const searchJobsWithGrounding = async (
         });
 
         if (response.text) {
-            const jobs = JSON.parse(response.text);
-            console.log(`📍 Found ${jobs.length} live jobs via Google Search Grounding`);
+            const rawJobs = JSON.parse(response.text);
+            console.log(`📍 Found ${rawJobs.length} live jobs via Google Search Grounding`);
+
+            // Debug: log first job to see actual structure
+            if (rawJobs.length > 0) {
+                console.log('📋 Sample grounded job structure:', JSON.stringify(rawJobs[0], null, 2));
+            }
+
+            // Ensure all jobs have location set (fallback to searched location if missing)
+            const jobs = rawJobs.map((job: any, index: number) => ({
+                ...job,
+                id: job.id || `grounded-${index}`,
+                location: job.location || location, // Use searched location as fallback
+                locationType: job.locationType || (isOnSite ? 'On-site' : 'Remote'),
+                source: job.source || 'Google Search'
+            }));
+
             return jobs;
         }
         return [];
