@@ -1062,7 +1062,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
 
             // For on-site and hybrid, filter by location
             let processedJobs = allTaggedJobs;
-            if ((jobWorkStyleFilter === 'On-site' || jobWorkStyleFilter === 'Hybrid') && location) {
+
+            // SMART BYPASS: If grounding returned few jobs (≤5), skip strict location filtering
+            // Gemini grounding already considers location in its search, so these are likely relevant
+            if (allTaggedJobs.length <= 5 && allTaggedJobs.length > 0) {
+                console.log(`🎯 Showing all ${allTaggedJobs.length} grounded jobs (bypassing strict location filter for small result sets)`);
+                processedJobs = allTaggedJobs;
+            } else if ((jobWorkStyleFilter === 'On-site' || jobWorkStyleFilter === 'Hybrid') && location) {
                 const locationLower = location.toLowerCase().trim();
                 const parts = locationLower.split(',').map(p => p.trim());
                 const city = parts[0] || '';
