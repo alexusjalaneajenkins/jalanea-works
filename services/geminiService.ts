@@ -235,36 +235,31 @@ export const searchJobsWithGrounding = async (
             : '';
 
         const prompt = `
-            SEARCH TASK: Find 8 REAL, CURRENTLY ACTIVE job listings for "${query}".
+            TASK: Find 5 REAL job listings for "${query}" ${isOnSite ? `in ${location}` : ''}.
             
             ${locationRequirement}
             
-            ${degreesContext ? `USER DEGREES: ${degreesContext}` : ''}
-            ${skillsContext ? `USER SKILLS: ${skillsContext}` : ''}
+            REQUIREMENTS:
+            1. Search Indeed, LinkedIn, Glassdoor for REAL current job postings.
+            2. Entry-level or junior roles only (0-3 years experience).
+            3. Must have real application links.
+            ${isOnSite ? `4. On-site or Hybrid only in ${location}. NO remote jobs.` : '4. Remote jobs are acceptable.'}
             
-            STRICT REQUIREMENTS:
-            1. USE GOOGLE SEARCH to find REAL job postings from Indeed, LinkedIn, Glassdoor, or company career pages.
-            2. Jobs MUST be entry-level or junior roles (0-3 years experience).
-            3. Each job MUST have a real application link.
-            4. ${isOnSite ? `Work style MUST be On-site or Hybrid in ${location}` : 'Remote jobs are acceptable'}.
-            
-            ${remoteExclusion}
-            
-            Return a JSON array of job objects with these EXACT fields:
-            - id: unique string (use format "grounded-[number]")
-            - title: exact job title from the listing
-            - company: THE HIRING COMPANY NAME (REQUIRED - do not leave blank!)
-            - location: City, State format (MUST be in or near ${location} for on-site jobs)
+            Return JSON array with these fields (keep descriptions SHORT):
+            - id: "grounded-[number]"
+            - title: job title
+            - company: COMPANY NAME (required!)
+            - location: "City, State"
             - locationType: "On-site", "Remote", or "Hybrid"
             - type: "Full-time", "Part-time", "Contract", or "Internship"
-            - salaryRange: salary if found, or estimate like "$45,000 - $55,000"
-            - postedAt: when posted (e.g., "2 days ago", "1 week ago")
-            - matchScore: 0-100 based on fit with user's degrees/skills
-            - skills: array of 3-5 required skills
-            - description: 2-3 sentence summary of the role
-            - experienceLevel: "Entry Level", "Internship", "Associate", or "Mid-Senior"
-            - experienceYears: years required (e.g., "0-2 years", "Not specified")
-            - applyUrl: THE DIRECT LINK to apply (must be a real URL)
+            - salaryRange: salary or "Not specified"
+            - postedAt: e.g., "2 days ago"
+            - matchScore: 0-100
+            - skills: [3 key skills]
+            - description: ONE short sentence about the role
+            - experienceLevel: "Entry Level" or "Internship"
+            - experienceYears: e.g., "0-2 years"
+            - applyUrl: direct link to apply
             - source: "Google Search"
         `;
 
@@ -273,6 +268,7 @@ export const searchJobsWithGrounding = async (
             contents: prompt,
             config: {
                 tools: [{ googleSearch: {} }], // This enables real-time web search!
+                maxOutputTokens: 4096, // Limit response size to prevent JSON truncation
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.ARRAY,
@@ -301,7 +297,17 @@ export const searchJobsWithGrounding = async (
         });
 
         if (response.text) {
-            const rawJobs = JSON.parse(response.text);
+            // Safer JSON parsing with error handling
+            let rawJobs;
+            try {
+                rawJobs = JSON.parse(response.text);
+            } catch (parseError) {
+                console.error('❌ JSON Parse Error in Grounding Response:', parseError);
+                console.log('📄 Response length:', response.text.length, 'characters');
+                console.log('📄 Response preview:', response.text.substring(0, 500) + '...');
+                return []; // Return empty - will fallback to aggregate API
+            }
+
             console.log(`📍 Found ${rawJobs.length} live jobs via Google Search Grounding`);
 
             // Debug: log first job to see actual structure
