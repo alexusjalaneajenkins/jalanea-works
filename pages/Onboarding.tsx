@@ -442,19 +442,28 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
     };
 
     // Profile picture upload handler
+    const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const MAX_FILE_SIZE_MB = 5;
+
     const handleProfilePicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (!file || !auth.currentUser) return;
+        if (!file) return;
+
+        if (!auth.currentUser) {
+            alert('Please sign in to upload a profile picture.');
+            return;
+        }
 
         // Validate file type
-        if (!file.type.startsWith('image/')) {
-            alert('Please select an image file');
+        if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+            alert(`Invalid file type: ${file.type || 'unknown'}\n\nAccepted formats: JPG, PNG, GIF, WebP`);
             return;
         }
 
         // Validate file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            alert('Image must be less than 5MB');
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+            alert(`File too large: ${fileSizeMB}MB\n\nMaximum size: ${MAX_FILE_SIZE_MB}MB\n\nPlease choose a smaller image.`);
             return;
         }
 
@@ -473,9 +482,10 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
             setProfilePic(downloadURL);
 
             console.log('Profile picture uploaded successfully!');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error uploading profile picture:', error);
-            alert('Failed to upload image. Please try again.');
+            const errorMessage = error?.message || 'Unknown error';
+            alert(`Failed to upload image.\n\nError: ${errorMessage}\n\nPlease try again or choose a different file.`);
         } finally {
             setIsUploadingPic(false);
         }
@@ -496,16 +506,17 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                         type="file"
                         ref={fileInputRef}
                         onChange={handleProfilePicUpload}
-                        accept="image/*"
+                        accept=".jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp"
                         className="hidden"
                     />
                     {profilePic ? (
-                        <div className="relative">
+                        <div className="relative group">
                             <img
                                 src={profilePic}
                                 alt={fullName || 'Profile'}
                                 className="w-20 h-20 rounded-full object-cover border-2 border-gold shadow-lg cursor-pointer hover:opacity-80 transition-opacity"
                                 onClick={() => fileInputRef.current?.click()}
+                                title="Click to change photo (JPG, PNG, GIF, WebP - Max 5MB)"
                             />
                             {isUploadingPic && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
@@ -516,7 +527,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                     ) : (
                         <div
                             onClick={() => !isUploadingPic && fileInputRef.current?.click()}
-                            className={`w-20 h-20 rounded-full bg-jalanea-100 flex items-center justify-center border-2 border-dashed border-jalanea-300 text-jalanea-400 cursor-pointer hover:border-gold hover:text-gold transition-colors ${isUploadingPic ? 'opacity-50' : ''}`}
+                            className={`w-20 h-20 rounded-full bg-jalanea-100 flex flex-col items-center justify-center border-2 border-dashed border-jalanea-300 text-jalanea-400 cursor-pointer hover:border-gold hover:text-gold transition-colors ${isUploadingPic ? 'opacity-50' : ''}`}
+                            title="Upload photo (JPG, PNG, GIF, WebP - Max 5MB)"
                         >
                             {isUploadingPic ? (
                                 <div className="w-6 h-6 border-2 border-jalanea-400 border-t-transparent rounded-full animate-spin" />

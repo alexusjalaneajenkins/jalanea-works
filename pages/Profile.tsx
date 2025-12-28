@@ -198,19 +198,28 @@ export const ProfilePage: React.FC = () => {
   const isOwner = isOwnerEmail(currentUser?.email);
 
   // Profile picture upload handler
+  const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  const MAX_FILE_SIZE_MB = 5;
+
   const handleProfilePicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !auth.currentUser) return;
+    if (!file) return;
+
+    if (!auth.currentUser) {
+      alert('Please sign in to upload a profile picture.');
+      return;
+    }
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      alert(`Invalid file type: ${file.type || 'unknown'}\n\nAccepted formats: JPG, PNG, GIF, WebP`);
       return;
     }
 
     // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image must be less than 5MB');
+    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      alert(`File too large: ${fileSizeMB}MB\n\nMaximum size: ${MAX_FILE_SIZE_MB}MB\n\nPlease choose a smaller image.`);
       return;
     }
 
@@ -232,9 +241,10 @@ export const ProfilePage: React.FC = () => {
       });
 
       console.log('Profile picture uploaded successfully!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading profile picture:', error);
-      alert('Failed to upload image. Please try again.');
+      const errorMessage = error?.message || 'Unknown error';
+      alert(`Failed to upload image.\n\nError: ${errorMessage}\n\nPlease try again or choose a different file.`);
     } finally {
       setIsUploadingPic(false);
     }
@@ -300,13 +310,14 @@ export const ProfilePage: React.FC = () => {
                   type="file"
                   ref={fileInputRef}
                   onChange={handleProfilePicUpload}
-                  accept="image/*"
+                  accept=".jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp"
                   className="hidden"
                 />
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploadingPic}
                   className="absolute bottom-0 right-0 p-1.5 bg-jalanea-900 text-white rounded-full hover:bg-gold transition-colors disabled:opacity-50"
+                  title="Upload photo (JPG, PNG, GIF, WebP - Max 5MB)"
                 >
                   {isUploadingPic ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
                 </button>
