@@ -6,7 +6,7 @@ import { Button } from '../components/Button';
 import {
     Rocket, Target, TrendingUp, CheckCircle, AlertCircle,
     ExternalLink, Briefcase, DollarSign, Home, Search,
-    Linkedin, Building2, Zap
+    Linkedin, Building2, Zap, Sparkles
 } from 'lucide-react';
 
 // Helper: Get time-based greeting
@@ -29,7 +29,7 @@ const getHousingTier = (maxRent: number): string => {
 };
 
 // ===========================================
-// COMPONENT: Power Hour Tracker (Circular Progress)
+// COMPONENT: Power Hour Tracker (Gold Ring)
 // ===========================================
 const PowerHourTracker: React.FC<{ current: number; goal: number }> = ({ current, goal }) => {
     const percentage = Math.min((current / goal) * 100, 100);
@@ -37,38 +37,39 @@ const PowerHourTracker: React.FC<{ current: number; goal: number }> = ({ current
     const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
     return (
-        <div className="flex items-center gap-4 bg-slate-50 rounded-2xl p-4 border border-slate-200">
+        <div className="flex items-center gap-4 bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
             <div className="relative w-20 h-20">
                 <svg className="w-20 h-20 -rotate-90" viewBox="0 0 100 100">
                     {/* Background circle */}
                     <circle
                         cx="50" cy="50" r="40"
                         fill="none"
-                        stroke="#e2e8f0"
+                        stroke="rgba(255,255,255,0.1)"
                         strokeWidth="8"
                     />
-                    {/* Progress circle */}
+                    {/* Progress circle - Gold */}
                     <circle
                         cx="50" cy="50" r="40"
                         fill="none"
-                        stroke={current >= goal ? '#10b981' : '#6366f1'}
+                        stroke={current >= goal ? '#facc15' : '#eab308'}
                         strokeWidth="8"
                         strokeLinecap="round"
                         strokeDasharray={circumference}
                         strokeDashoffset={strokeDashoffset}
                         className="transition-all duration-500"
+                        style={{ filter: 'drop-shadow(0 0 8px rgba(234, 179, 8, 0.4))' }}
                     />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xl font-bold text-slate-900">{current}/{goal}</span>
+                    <span className="text-xl font-bold text-white">{current}/{goal}</span>
                 </div>
             </div>
             <div>
-                <p className="text-sm font-bold text-slate-900">Power Hour</p>
-                <p className="text-xs text-slate-500">Daily Applications</p>
+                <p className="text-sm font-bold text-white">Power Hour</p>
+                <p className="text-xs text-slate-400">Daily Applications</p>
                 {current >= goal && (
-                    <span className="inline-flex items-center gap-1 mt-1 text-xs font-bold text-emerald-600">
-                        <CheckCircle size={12} /> Goal Hit!
+                    <span className="inline-flex items-center gap-1 mt-1 text-xs font-bold text-yellow-400">
+                        <Sparkles size={12} /> Goal Hit!
                     </span>
                 )}
             </div>
@@ -77,26 +78,25 @@ const PowerHourTracker: React.FC<{ current: number; goal: number }> = ({ current
 };
 
 // ===========================================
-// COMPONENT: Smart Launchpad Button
+// COMPONENT: Smart Launchpad Button (Dark)
 // ===========================================
 const LaunchpadButton: React.FC<{
     icon: React.ReactNode;
     label: string;
-    color: string;
     onClick: () => void;
-}> = ({ icon, label, color, onClick }) => (
+}> = ({ icon, label, onClick }) => (
     <button
         onClick={onClick}
-        className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-slate-200 bg-white hover:border-slate-300 hover:shadow-md transition-all group`}
+        className="flex items-center gap-2 px-4 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-yellow-500/30 transition-all group"
     >
-        <span className={color}>{icon}</span>
-        <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900">{label}</span>
-        <ExternalLink size={14} className="ml-auto text-slate-400 group-hover:text-slate-600" />
+        <span className="text-yellow-400">{icon}</span>
+        <span className="text-sm font-bold text-white group-hover:text-yellow-400 transition-colors">{label}</span>
+        <ExternalLink size={14} className="ml-auto text-slate-500 group-hover:text-yellow-400 transition-colors" />
     </button>
 );
 
 // ===========================================
-// COMPONENT: Active Mission Card
+// COMPONENT: Active Mission Card (Dark)
 // ===========================================
 const MissionCard: React.FC<{
     role: string;
@@ -105,31 +105,31 @@ const MissionCard: React.FC<{
     grade?: string;
 }> = ({ role, company, status, grade }) => {
     const statusColors: Record<string, string> = {
-        'saved': 'bg-slate-100 text-slate-600',
-        'applied': 'bg-blue-100 text-blue-700',
-        'interviewing': 'bg-amber-100 text-amber-700',
-        'offer': 'bg-emerald-100 text-emerald-700',
-        'rejected': 'bg-red-100 text-red-600',
+        'saved': 'bg-white/10 text-slate-300 border-white/10',
+        'applied': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+        'interviewing': 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+        'offer': 'bg-green-500/20 text-green-300 border-green-500/30',
+        'rejected': 'bg-red-500/20 text-red-300 border-red-500/30',
     };
 
     const gradeColors: Record<string, string> = {
-        'A': 'bg-emerald-500 text-white',
-        'B': 'bg-blue-500 text-white',
-        'C': 'bg-amber-500 text-white',
+        'A': 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/50',
+        'B': 'bg-blue-500/20 text-blue-300 border border-blue-500/50',
+        'C': 'bg-slate-500/20 text-slate-300 border border-slate-500/50',
     };
 
     return (
-        <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all">
+        <div className="flex items-center justify-between p-4 bg-[#13132B] rounded-xl border border-white/10 hover:border-yellow-500/30 transition-all group">
             <div className="flex-1 min-w-0">
-                <h4 className="font-bold text-slate-900 truncate">{role}</h4>
-                <p className="text-sm text-slate-500 truncate">{company}</p>
+                <h4 className="font-bold text-white truncate group-hover:text-yellow-400 transition-colors">{role}</h4>
+                <p className="text-sm text-slate-400 truncate">{company}</p>
             </div>
             <div className="flex items-center gap-2 ml-4">
-                <span className={`px-2 py-1 rounded-lg text-xs font-bold capitalize ${statusColors[status] || statusColors['saved']}`}>
+                <span className={`px-2 py-1 rounded-lg text-xs font-bold capitalize border ${statusColors[status] || statusColors['saved']}`}>
                     {status}
                 </span>
                 {grade && (
-                    <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${gradeColors[grade] || 'bg-slate-200 text-slate-600'}`}>
+                    <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${gradeColors[grade] || gradeColors['C']}`}>
                         {grade}
                     </span>
                 )}
@@ -139,7 +139,7 @@ const MissionCard: React.FC<{
 };
 
 // ===========================================
-// MAIN COMPONENT: Dashboard
+// MAIN COMPONENT: Dashboard (Dark Theme)
 // ===========================================
 export const Dashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -157,7 +157,7 @@ export const Dashboard: React.FC = () => {
     const maxRent = userProfile?.monthlyBudgetEstimate?.maxRent || 0;
     const housingTier = getHousingTier(maxRent);
 
-    // Profile strength calculation (simplified)
+    // Profile strength calculation
     const hasEducation = (userProfile?.education?.length || 0) > 0;
     const hasSkills = (userProfile?.skills?.technical?.length || 0) > 0;
     const hasExperience = (userProfile?.experience?.length || 0) > 0;
@@ -167,7 +167,6 @@ export const Dashboard: React.FC = () => {
     // Handlers
     const handleAnalyzeJob = () => {
         if (jobUrl.trim()) {
-            // TODO: Implement Jalanea Grade AI analysis
             console.log('Analyzing:', jobUrl);
             alert('Jalanea Grade AI analysis coming soon!');
             setJobUrl('');
@@ -185,7 +184,7 @@ export const Dashboard: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white pb-16">
+        <div className="min-h-screen bg-[#0B0B15] pb-16">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
                 {/* ========================================= */}
@@ -193,82 +192,82 @@ export const Dashboard: React.FC = () => {
                 {/* ========================================= */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
-                        <h1 className="text-3xl font-bold text-slate-900">
+                        <h1 className="text-3xl font-bold text-white">
                             {getGreeting()}, {userName}.
                         </h1>
-                        <p className="text-lg text-slate-500 mt-1">Ready to execute?</p>
+                        <p className="text-lg text-slate-400 mt-1">Ready to execute?</p>
                     </div>
                     <PowerHourTracker current={dailyApps} goal={3} />
                 </div>
 
                 {/* ========================================= */}
-                {/* HERO MODULE: The Input Nexus */}
+                {/* HERO MODULE: The Input Nexus (Dark) */}
                 {/* ========================================= */}
-                <Card variant="solid-white" className="p-6 md:p-8 border-2 border-slate-200 shadow-lg">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2.5 bg-indigo-100 rounded-xl">
-                            <Target size={24} className="text-indigo-600" />
+                <div className="relative p-6 md:p-8 rounded-2xl bg-[#13132B] border border-white/10 shadow-[0_0_60px_-15px_rgba(234,179,8,0.15)]">
+                    {/* Subtle glow effect */}
+                    <div className="absolute -top-20 -right-20 w-40 h-40 bg-yellow-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-2.5 bg-yellow-500/20 rounded-xl border border-yellow-500/30">
+                                <Target size={24} className="text-yellow-400" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-white">The Input Nexus</h2>
+                                <p className="text-sm text-slate-400">Paste a job link to get your Jalanea Grade</p>
+                            </div>
                         </div>
+
+                        {/* Job URL Input (Dark) */}
+                        <div className="flex flex-col sm:flex-row gap-3 mb-8">
+                            <div className="flex-1 relative">
+                                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+                                <input
+                                    type="url"
+                                    value={jobUrl}
+                                    onChange={(e) => setJobUrl(e.target.value)}
+                                    placeholder="Paste job link (LinkedIn, Indeed, etc)..."
+                                    className="w-full pl-12 pr-4 py-4 rounded-xl bg-[#1A1A35] border border-white/10 focus:border-yellow-500/50 focus:ring-4 focus:ring-yellow-500/10 outline-none text-white placeholder:text-slate-500 transition-all"
+                                    onKeyDown={(e) => e.key === 'Enter' && handleAnalyzeJob()}
+                                />
+                            </div>
+                            <button
+                                onClick={handleAnalyzeJob}
+                                className="flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-8 py-4 rounded-xl shadow-lg shadow-yellow-500/20 hover:shadow-yellow-500/30 transition-all"
+                            >
+                                <Zap size={18} />
+                                Analyze Match
+                            </button>
+                        </div>
+
+                        {/* Smart Launchpads */}
                         <div>
-                            <h2 className="text-xl font-bold text-slate-900">The Input Nexus</h2>
-                            <p className="text-sm text-slate-500">Paste a job link to get your Jalanea Grade</p>
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Smart Launchpads</p>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <LaunchpadButton
+                                    icon={<img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />}
+                                    label="Google Jobs"
+                                    onClick={() => handleLaunchpad('google')}
+                                />
+                                <LaunchpadButton
+                                    icon={<Linkedin size={20} />}
+                                    label="LinkedIn"
+                                    onClick={() => handleLaunchpad('linkedin')}
+                                />
+                                <LaunchpadButton
+                                    icon={<Building2 size={20} />}
+                                    label="Indeed"
+                                    onClick={() => handleLaunchpad('indeed')}
+                                />
+                                <LaunchpadButton
+                                    icon={<Rocket size={20} />}
+                                    label="ZipRecruiter"
+                                    onClick={() => handleLaunchpad('ziprecruiter')}
+                                />
+                            </div>
                         </div>
                     </div>
-
-                    {/* Job URL Input */}
-                    <div className="flex flex-col sm:flex-row gap-3 mb-8">
-                        <div className="flex-1 relative">
-                            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <input
-                                type="url"
-                                value={jobUrl}
-                                onChange={(e) => setJobUrl(e.target.value)}
-                                placeholder="Paste job link (LinkedIn, Indeed, etc)..."
-                                className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none text-slate-900 placeholder:text-slate-400 transition-all"
-                                onKeyDown={(e) => e.key === 'Enter' && handleAnalyzeJob()}
-                            />
-                        </div>
-                        <Button
-                            variant="primary"
-                            onClick={handleAnalyzeJob}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 text-base font-bold shadow-lg hover:shadow-xl transition-all"
-                            icon={<Zap size={18} />}
-                        >
-                            Analyze Match
-                        </Button>
-                    </div>
-
-                    {/* Smart Launchpads */}
-                    <div>
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Smart Launchpads</p>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <LaunchpadButton
-                                icon={<img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />}
-                                label="Google Jobs"
-                                color=""
-                                onClick={() => handleLaunchpad('google')}
-                            />
-                            <LaunchpadButton
-                                icon={<Linkedin size={20} />}
-                                label="LinkedIn"
-                                color="text-blue-600"
-                                onClick={() => handleLaunchpad('linkedin')}
-                            />
-                            <LaunchpadButton
-                                icon={<Building2 size={20} />}
-                                label="Indeed"
-                                color="text-indigo-600"
-                                onClick={() => handleLaunchpad('indeed')}
-                            />
-                            <LaunchpadButton
-                                icon={<Rocket size={20} />}
-                                label="ZipRecruiter"
-                                color="text-emerald-600"
-                                onClick={() => handleLaunchpad('ziprecruiter')}
-                            />
-                        </div>
-                    </div>
-                </Card>
+                </div>
 
                 {/* ========================================= */}
                 {/* MAIN CONTENT: 2-Column Grid */}
@@ -278,35 +277,33 @@ export const Dashboard: React.FC = () => {
                     {/* LEFT COLUMN: Active Missions (2/3 width) */}
                     <div className="lg:col-span-2 space-y-4">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                <Briefcase size={20} className="text-slate-600" />
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                <Briefcase size={20} className="text-yellow-400" />
                                 Active Missions
                             </h3>
-                            <Button
-                                variant="ghost"
-                                size="sm"
+                            <button
                                 onClick={() => navigate('/jobs')}
-                                className="text-slate-500 hover:text-slate-900"
+                                className="text-sm font-bold text-slate-400 hover:text-yellow-400 transition-colors"
                             >
-                                View All
-                            </Button>
+                                View All →
+                            </button>
                         </div>
 
                         {applications.length === 0 ? (
-                            <Card variant="solid-white" className="p-8 text-center border-2 border-dashed border-slate-200">
-                                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <Target size={32} className="text-slate-400" />
+                            <div className="p-8 text-center rounded-2xl border-2 border-dashed border-white/10 bg-white/5">
+                                <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Target size={32} className="text-yellow-400" />
                                 </div>
-                                <h4 className="font-bold text-slate-900 mb-2">No Active Missions</h4>
-                                <p className="text-sm text-slate-500 mb-4">Launch a search to begin tracking your applications.</p>
-                                <Button
-                                    variant="secondary"
+                                <h4 className="font-bold text-white mb-2">No Active Missions</h4>
+                                <p className="text-sm text-slate-400 mb-4">Launch a search to begin tracking your applications.</p>
+                                <button
                                     onClick={() => navigate('/jobs')}
-                                    icon={<Rocket size={16} />}
+                                    className="inline-flex items-center gap-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 font-bold px-5 py-2.5 rounded-xl border border-yellow-500/30 transition-all"
                                 >
+                                    <Rocket size={16} />
                                     Start Searching
-                                </Button>
-                            </Card>
+                                </button>
+                            </div>
                         ) : (
                             <div className="space-y-3">
                                 {applications.slice(0, 5).map((app) => (
@@ -315,7 +312,7 @@ export const Dashboard: React.FC = () => {
                                         role={app.job.title}
                                         company={app.job.company}
                                         status={app.status}
-                                        grade={undefined} // TODO: Add Jalanea Grade
+                                        grade={undefined}
                                     />
                                 ))}
                             </div>
@@ -325,90 +322,85 @@ export const Dashboard: React.FC = () => {
                     {/* RIGHT COLUMN: Strategy & Pulse (1/3 width) */}
                     <div className="space-y-6">
 
-                        {/* Card 1: Market Readiness */}
-                        <Card variant="solid-white" className="p-5 border border-slate-200">
+                        {/* Card 1: Market Readiness (Dark) */}
+                        <div className="p-5 rounded-2xl bg-[#13132B] border border-white/10">
                             <div className="flex items-center gap-2 mb-4">
-                                <TrendingUp size={18} className="text-indigo-600" />
-                                <h4 className="font-bold text-slate-900">Market Readiness</h4>
+                                <TrendingUp size={18} className="text-yellow-400" />
+                                <h4 className="font-bold text-white">Market Readiness</h4>
                             </div>
                             <div className="flex items-center justify-between mb-3">
-                                <span className="text-sm text-slate-500">Profile Strength</span>
-                                <span className={`px-2 py-1 rounded-lg text-sm font-bold ${profileGrade === 'A' ? 'bg-emerald-100 text-emerald-700' :
-                                        profileGrade.startsWith('B') ? 'bg-blue-100 text-blue-700' :
-                                            'bg-amber-100 text-amber-700'
+                                <span className="text-sm text-slate-400">Profile Strength</span>
+                                <span className={`px-2 py-1 rounded-lg text-sm font-bold border ${profileGrade === 'A' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' :
+                                        profileGrade.startsWith('B') ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
+                                            'bg-white/10 text-slate-300 border-white/10'
                                     }`}>
                                     {profileGrade} Candidate
                                 </span>
                             </div>
-                            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                            <div className="w-full bg-white/10 rounded-full h-2.5 overflow-hidden">
                                 <div
-                                    className={`h-full rounded-full transition-all ${profileGrade === 'A' ? 'bg-emerald-500' :
-                                            profileGrade.startsWith('B') ? 'bg-blue-500' :
-                                                'bg-amber-500'
-                                        }`}
+                                    className="h-full rounded-full bg-gradient-to-r from-yellow-500 to-yellow-400 transition-all"
                                     style={{ width: `${(profileScore / 4) * 100}%` }}
                                 />
                             </div>
-                            <p className="text-xs text-slate-400 mt-2">
+                            <p className="text-xs text-slate-500 mt-2">
                                 {4 - profileScore > 0 ? `Complete ${4 - profileScore} more section${4 - profileScore > 1 ? 's' : ''} to improve.` : 'Your profile is complete!'}
                             </p>
-                        </Card>
+                        </div>
 
-                        {/* Card 2: Financial Pulse */}
-                        <Card variant="solid-white" className="p-5 border border-slate-200">
+                        {/* Card 2: Financial Pulse (Dark) */}
+                        <div className="p-5 rounded-2xl bg-[#13132B] border border-white/10">
                             <div className="flex items-center gap-2 mb-4">
-                                <DollarSign size={18} className="text-emerald-600" />
-                                <h4 className="font-bold text-slate-900">Financial Pulse</h4>
+                                <DollarSign size={18} className="text-yellow-400" />
+                                <h4 className="font-bold text-white">Financial Pulse</h4>
                             </div>
 
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-slate-500">Target Salary</span>
-                                    <span className="text-sm font-bold text-slate-900">
+                            <div className="space-y-4">
+                                <div>
+                                    <span className="text-xs text-slate-500 uppercase tracking-wide">Target Salary</span>
+                                    <p className="text-2xl font-bold text-white mt-1">
                                         ${(salaryMin / 1000).toFixed(0)}k – ${(salaryMax / 1000).toFixed(0)}k
-                                    </span>
+                                    </p>
                                 </div>
 
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-slate-500">Lifestyle Tier</span>
+                                <div className="flex justify-between items-center pt-3 border-t border-white/10">
+                                    <span className="text-sm text-slate-400">Lifestyle Tier</span>
                                     <div className="flex items-center gap-2">
-                                        <Home size={14} className="text-slate-400" />
-                                        <span className="text-sm font-bold text-slate-900">{housingTier}</span>
+                                        <Home size={14} className="text-slate-500" />
+                                        <span className="text-sm font-bold text-yellow-400">{housingTier}</span>
                                     </div>
                                 </div>
 
-                                <div className="pt-3 border-t border-slate-100">
+                                <div className="pt-3 border-t border-white/10">
                                     {maxRent > 0 ? (
-                                        <div className="flex items-center gap-2 text-emerald-600">
+                                        <div className="flex items-center gap-2 text-green-400">
                                             <CheckCircle size={16} />
                                             <span className="text-sm font-bold">Budget Aligned</span>
                                         </div>
                                     ) : (
-                                        <div className="flex items-center gap-2 text-amber-600">
+                                        <div className="flex items-center gap-2 text-yellow-400">
                                             <AlertCircle size={16} />
-                                            <span className="text-sm font-bold">Complete onboarding for budget analysis</span>
+                                            <span className="text-sm font-bold">Complete onboarding</span>
                                         </div>
                                     )}
                                 </div>
                             </div>
-                        </Card>
+                        </div>
 
-                        {/* Quick Actions */}
+                        {/* Quick Actions (Dark) */}
                         <div className="space-y-2">
-                            <Button
-                                variant="outline"
-                                className="w-full justify-start text-slate-700 border-slate-200 hover:border-slate-300"
+                            <button
                                 onClick={() => navigate('/profile')}
+                                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-yellow-500/30 text-white font-medium transition-all text-left"
                             >
                                 ✏️ Edit Profile
-                            </Button>
-                            <Button
-                                variant="outline"
-                                className="w-full justify-start text-slate-700 border-slate-200 hover:border-slate-300"
+                            </button>
+                            <button
                                 onClick={() => navigate('/resume')}
+                                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-yellow-500/30 text-white font-medium transition-all text-left"
                             >
                                 📄 Build Resume
-                            </Button>
+                            </button>
                         </div>
                     </div>
                 </div>
