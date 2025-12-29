@@ -355,6 +355,15 @@ export const cleanAndScoreJobs = async (
 
         console.log(`🧹 Cleaning ${rawJobs.length} jobs with Gemini...`);
 
+        // Debug: log first job structure
+        if (rawJobs.length > 0) {
+            console.log('📋 Sample raw job from SerpAPI:', {
+                title: rawJobs[0].title,
+                company: rawJobs[0].company,
+                location: rawJobs[0].location
+            });
+        }
+
         // Build user context for scoring
         const degreesContext = userProfile?.education?.map(e => {
             const degreeType = (e as any).degreeType;
@@ -393,14 +402,14 @@ export const cleanAndScoreJobs = async (
             - skills: array of 3-5 required skills
             
             Raw Jobs Data:
-            ${JSON.stringify(rawJobs.slice(0, 15), null, 2)}
+            ${JSON.stringify(rawJobs.slice(0, 8), null, 2)}
         `;
 
         const response = await ai.models.generateContent({
             model: 'gemini-3-flash-preview',
             contents: prompt,
             config: {
-                maxOutputTokens: 4096,
+                maxOutputTokens: 8192,
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.ARRAY,
@@ -436,7 +445,7 @@ export const cleanAndScoreJobs = async (
                 return rawJobs.map((job, i) => ({
                     id: `serpapi-${i}`,
                     title: job.title || 'Unknown',
-                    company: job.company_name || 'Company Hiring',
+                    company: job.company || job.company_name || 'Company Hiring',
                     location: job.location || 'Unknown',
                     salaryRange: 'Not specified',
                     postedAt: job.detected_extensions?.posted_at || 'Recently',
@@ -478,7 +487,7 @@ export const cleanAndScoreJobs = async (
         return rawJobs.slice(0, 10).map((job, i) => ({
             id: `fallback-${i}`,
             title: job.title || 'Unknown',
-            company: job.company_name || 'Company Hiring',
+            company: job.company || job.company_name || 'Company Hiring',
             location: job.location || 'Unknown',
             salaryRange: 'Not specified',
             postedAt: job.detected_extensions?.posted_at || 'Recently',
