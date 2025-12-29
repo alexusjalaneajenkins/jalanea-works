@@ -405,7 +405,7 @@ ${JSON.stringify(jobBatch.map(job => ({
         const prompt = systemPrompt + "\n\n" + userPrompt;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-3.0-flash', // Updated to 3.0 Flash
+            model: 'gemini-3-flash-preview', // Updated to 3.0 Flash
             contents: [
                 { role: "user", parts: [{ text: prompt }] }
             ],
