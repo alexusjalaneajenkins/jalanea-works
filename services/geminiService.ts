@@ -5,6 +5,82 @@ import { UserProfile, JobAnalysis, Job } from "../types";
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
 const ai = new GoogleGenAI({ apiKey });
 
+// ============================================
+// JOB CACHE: Save API costs with 4-hour TTL
+// ============================================
+
+interface CachedJobResult {
+    jobs: Job[];
+    timestamp: number;
+}
+
+class JobCache {
+    private cache: Map<string, CachedJobResult> = new Map();
+    private readonly TTL_MS = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+
+    /**
+     * Generate a unique cache key from search parameters
+     */
+    private generateKey(query: string, location?: string, preferences?: string): string {
+        const raw = `${query}|${location || ''}|${preferences || ''}`.toLowerCase().trim();
+        // Simple hash function for consistent keys
+        let hash = 0;
+        for (let i = 0; i < raw.length; i++) {
+            const char = raw.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+        return `jobs_${Math.abs(hash)}`;
+    }
+
+    /**
+     * Get cached jobs if they exist and are not expired
+     */
+    get(query: string, location?: string, preferences?: string): Job[] | null {
+        const key = this.generateKey(query, location, preferences);
+        const cached = this.cache.get(key);
+
+        if (!cached) {
+            console.log(`🔍 [CACHE MISS] No cached results for: ${query}`);
+            return null;
+        }
+
+        const age = Date.now() - cached.timestamp;
+        if (age > this.TTL_MS) {
+            console.log(`⏰ [CACHE EXPIRED] Results older than 4 hours for: ${query}`);
+            this.cache.delete(key);
+            return null;
+        }
+
+        const ageMinutes = Math.round(age / 60000);
+        console.log(`✅ [CACHE HIT] Returning ${cached.jobs.length} cached jobs (${ageMinutes}m old)`);
+        return cached.jobs;
+    }
+
+    /**
+     * Store jobs in cache with current timestamp
+     */
+    set(query: string, location: string | undefined, preferences: string | undefined, jobs: Job[]): void {
+        const key = this.generateKey(query, location, preferences);
+        this.cache.set(key, {
+            jobs,
+            timestamp: Date.now()
+        });
+        console.log(`💾 [CACHE SAVE] Stored ${jobs.length} jobs for: ${query}`);
+    }
+
+    /**
+     * Clear the entire cache (useful for debugging)
+     */
+    clear(): void {
+        this.cache.clear();
+        console.log('🧹 [CACHE CLEARED]');
+    }
+}
+
+// Singleton cache instance
+const jobCache = new JobCache();
+
 /**
  * Get career advice using the serverless API endpoint
  * This calls /api/chat which runs server-side with proper API key access
@@ -526,6 +602,40 @@ ${JSON.stringify(jobBatch.map(job => ({
         }));
     }
 };
+
+/**
+ * CACHED WRAPPER: Fetch and clean jobs with caching
+ * Checks cache first (4-hour TTL), only calls API if miss
+ */
+export const searchJobsCached = async (
+    rawJobs: any[],
+    userProfile?: UserProfile,
+    userPreferences?: string,
+    targetLocation?: string,
+    cacheQuery?: string  // For cache key generation
+): Promise<Job[]> => {
+    // Generate a cache key from the search parameters
+    const query = cacheQuery || 'jobs';
+
+    // Check cache first
+    const cachedJobs = jobCache.get(query, targetLocation, userPreferences);
+    if (cachedJobs) {
+        return cachedJobs;
+    }
+
+    // Cache miss - run the full cleaning pipeline
+    const freshJobs = await cleanAndScoreJobs(rawJobs, userProfile, userPreferences, targetLocation);
+
+    // Store in cache for next time
+    if (freshJobs.length > 0) {
+        jobCache.set(query, targetLocation, userPreferences, freshJobs);
+    }
+
+    return freshJobs;
+};
+
+// Export cache clear function for debugging
+export const clearJobCache = () => jobCache.clear();
 
 // LEGACY: Real-Time Job Search Simulation (generates fake jobs, kept for reference)
 export const findRealTimeJobs = async (userProfile: UserProfile): Promise<Job[]> => {

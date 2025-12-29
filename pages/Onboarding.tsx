@@ -16,7 +16,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { searchJobs } from '../services/jobService';
 import { searchCareersEnriched, getRelatedCareers, mapToCareerPath, getCareerOutlook } from '../services/onetService';
-import { cleanAndScoreJobs } from '../services/geminiService';
+import { searchJobsCached } from '../services/geminiService';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../services/firebase';
 
@@ -1005,12 +1005,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                     if (rawResponse.jobs && rawResponse.jobs.length > 0) {
                         console.log(`📦 SerpAPI found ${rawResponse.jobs.length} raw jobs from Google Jobs`);
 
-                        // Step 2: Clean and score jobs with Gemini
-                        const cleanedJobs = await cleanAndScoreJobs(
+                        // Step 2: Clean and score jobs with Gemini (CACHED)
+                        const cleanedJobs = await searchJobsCached(
                             rawResponse.jobs,
                             userProfile || undefined,
                             `Looking for ${jobWorkStyleFilter} positions in ${groundingLocation}`,
-                            groundingLocation  // NEW: Pass target location for 50-mile radius filtering
+                            groundingLocation,  // Target location for radius filtering
+                            `${career.title} ${groundingLocation}`  // Cache key
                         );
 
                         if (cleanedJobs && cleanedJobs.length > 0) {
