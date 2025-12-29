@@ -763,9 +763,9 @@ export const Onboarding: React.FC = () => {
                                     <span className="text-jalanea-500">Location</span>
                                     <span className="font-medium text-jalanea-700">{form.location}</span>
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-jalanea-500">Degree</span>
-                                    <span className="font-medium text-jalanea-700 text-right">
+                                <div className="flex justify-between items-start text-sm gap-4">
+                                    <span className="text-jalanea-500 shrink-0">Degree</span>
+                                    <span className="font-medium text-jalanea-700 text-right break-words flex-1">
                                         {(() => {
                                             const validEdu = form.educations.find(e => e.degreeType && e.major);
                                             return validEdu
