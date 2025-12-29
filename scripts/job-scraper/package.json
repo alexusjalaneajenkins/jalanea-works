@@ -1,0 +1,21 @@
+{
+    "name": "ai-job-scraper",
+    "version": "1.0.0",
+    "description": "AI Job Board Scraper using SerpAPI + Gemini 3.0 Flash",
+    "main": "job-engine.ts",
+    "type": "module",
+    "scripts": {
+        "start": "npx tsx job-engine.ts",
+        "dev": "npx tsx watch job-engine.ts"
+    },
+    "dependencies": {
+        "@google/genai": "^0.7.0",
+        "serpapi": "^2.1.0",
+        "dotenv": "^16.4.5"
+    },
+    "devDependencies": {
+        "@types/node": "^22.0.0",
+        "tsx": "^4.19.0",
+        "typescript": "^5.6.0"
+    }
+}

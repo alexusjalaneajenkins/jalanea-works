@@ -371,43 +371,41 @@ export const cleanAndScoreJobs = async (
         }).join(", ") || "";
         const skillsContext = userProfile?.skills?.technical?.join(", ") || "";
 
-        const prompt = `
-            You are an expert Job Recruiter AI. 
-            Clean and score these raw job listings for a recent graduate.
-            
-            ${degreesContext ? `USER DEGREES: ${degreesContext}` : ''}
-            ${skillsContext ? `USER SKILLS: ${skillsContext}` : ''}
-            ${userPreferences ? `USER PREFERENCES: ${userPreferences}` : ''}
-            
-            For each job:
-            1. Clean up company name (remove extra characters)
-            2. Standardize salary to "Annual USD" format (e.g., "$50k - $70k")
-            3. Extract the apply URL from apply_options if available
-            4. Score match 0-100 based on user profile fit
-            5. Flag any scam indicators (bad grammar, asking for money, MLM)
-            
-            Return a JSON array with ONLY these fields for each job:
-            - id: unique string
-            - title: cleaned job title  
-            - company: company name only
-            - location: "City, State" format
-            - salaryRange: standardized salary or "Not specified"
-            - postedAt: when posted (e.g., "2 days ago")
-            - matchScore: 0-100 based on user fit
-            - applyUrl: direct application link
-            - description: 1-2 sentence summary
-            - type: "Full-time", "Part-time", "Contract", or "Internship"
-            - experienceLevel: "Entry Level", "Internship", "Associate", or "Mid-Senior"
-            - isScam: boolean (true if suspicious)
-            - skills: array of 3-5 required skills
-            
-            Raw Jobs Data:
-            ${JSON.stringify(rawJobs.slice(0, 8), null, 2)}
-        `;
+        // System prompt with strict rules (proven pattern from job-engine.ts)
+        const systemPrompt = `You are an expert Job Recruiter AI.
+Clean and score these raw job listings for a recent graduate.
+
+CRITICAL RULES:
+1. Output ONLY valid JSON - no markdown, no code blocks, no explanations
+2. Standardize ALL salaries to "Annual USD" format (e.g., "$50k - $70k")
+3. If salary is missing, set salaryRange to "Not specified"
+4. isScam = true for: MLM, asks for money, unrealistic pay. isScam = false otherwise.
+5. Score match 0-100 based on user profile fit
+
+${degreesContext ? `USER DEGREES: ${degreesContext}` : ''}
+${skillsContext ? `USER SKILLS: ${skillsContext}` : ''}
+${userPreferences ? `USER PREFERENCES: ${userPreferences}` : ''}`;
+
+        // Limit to 8 jobs to prevent truncation
+        const jobBatch = rawJobs.slice(0, 8);
+
+        const userPrompt = `Clean and score these job listings:
+
+${JSON.stringify(jobBatch.map(job => ({
+            title: job.title,
+            company: job.company,
+            location: job.location,
+            salary: job.salaryRange || job.detected_extensions?.salary,
+            applyUrl: job.applyUrl || job.apply_options?.[0]?.link
+        })), null, 2)}`;
+
+        const prompt = systemPrompt + "\n\n" + userPrompt;
 
         const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: prompt,
+            model: 'gemini-3.0-flash', // Updated to 3.0 Flash
+            contents: [
+                { role: "user", parts: [{ text: prompt }] }
+            ],
             config: {
                 maxOutputTokens: 8192,
                 responseMimeType: "application/json",
@@ -443,7 +441,7 @@ export const cleanAndScoreJobs = async (
                 console.error('❌ JSON Parse Error in Job Cleaning:', parseError);
                 // Return raw jobs as fallback
                 return rawJobs.map((job, i) => ({
-                    id: `serpapi-${i}`,
+                    id: `serpapi - ${i} `,
                     title: job.title || 'Unknown',
                     company: job.company || job.company_name || 'Company Hiring',
                     location: job.location || 'Unknown',
@@ -465,7 +463,7 @@ export const cleanAndScoreJobs = async (
             console.log(`📋 ${goodJobs.length} quality jobs after scam filter`);
 
             return goodJobs.map((job: any, index: number) => ({
-                id: job.id || `cleaned-${index}`,
+                id: job.id || `cleaned - ${index} `,
                 title: job.title || 'Job Opening',
                 company: job.company || 'Company Hiring',
                 location: job.location || 'Unknown',
@@ -485,7 +483,7 @@ export const cleanAndScoreJobs = async (
         console.error("Job Cleaning Error:", error);
         // Return raw jobs as basic fallback
         return rawJobs.slice(0, 10).map((job, i) => ({
-            id: `fallback-${i}`,
+            id: `fallback - ${i} `,
             title: job.title || 'Unknown',
             company: job.company || job.company_name || 'Company Hiring',
             location: job.location || 'Unknown',
@@ -505,26 +503,26 @@ export const cleanAndScoreJobs = async (
 export const findRealTimeJobs = async (userProfile: UserProfile): Promise<Job[]> => {
     try {
         const degrees = userProfile.education.map(e => {
-            return e.degreeType ? `${e.degreeType} in ${e.degree}` : e.degree;
+            return e.degreeType ? `${e.degreeType} in ${e.degree} ` : e.degree;
         }).join(", ");
         const skills = userProfile.skills.technical.join(", ");
 
         const prompt = `
-            Act as a Real-Time Job Scraper for Orlando, FL.
-            Find 3 currently active (or highly realistic based on current market data) job listings for a candidate with these credentials:
-            
-            Degrees: ${degrees}
-            Skills: ${skills}
-            Location: ${userProfile.location}
+        Act as a Real - Time Job Scraper for Orlando, FL.
+            Find 3 currently active(or highly realistic based on current market data) job listings for a candidate with these credentials:
+
+                Degrees: ${degrees}
+        Skills: ${skills}
+        Location: ${userProfile.location}
             
             Generate a JSON array of 3 Job objects.
-            
+
             CRITICAL:
-            1. Use REAL company names in Orlando (e.g., Disney, Universal, Lockheed Martin, AdventHealth, Orlando Health, EA, Tech start-ups).
-            2. Ensure "postedAt" implies recent activity (e.g., "2h ago", "Just now").
+        1. Use REAL company names in Orlando(e.g., Disney, Universal, Lockheed Martin, AdventHealth, Orlando Health, EA, Tech start - ups).
+            2. Ensure "postedAt" implies recent activity(e.g., "2h ago", "Just now").
             3. "matchScore" should be between 85 and 99.
-            4. "matchReason" should explain WHY it fits the candidate's specific skills/degree.
-            5. "logo" should be a URL string: "https://ui-avatars.com/api/?name=[CompanyName]&background=random&color=fff&size=128&bold=true" (Replace [CompanyName] with the actual name).
+        4. "matchReason" should explain WHY it fits the candidate's specific skills/degree.
+        5. "logo" should be a URL string: "https://ui-avatars.com/api/?name=[CompanyName]&background=random&color=fff&size=128&bold=true"(Replace[CompanyName] with the actual name).
         `;
 
         const response = await ai.models.generateContent({
