@@ -47,18 +47,18 @@ export const SalaryRealityCheck: React.FC<SalaryRealityCheckProps> = ({
     const monthlyGross = avgSalary / 12;
     const monthlyNet = Math.round(monthlyGross * 0.75); // 25% tax estimate
 
-    // 30% rent rule
-    const maxRent = Math.round(monthlyNet * 0.30);
+    // 30% Gross Income rule for Rent Qualification (Standard landlord metric)
+    const maxRent = Math.round(monthlyGross / 3);
 
-    // 15% car note rule
+    // 15% Net Income rule for Car (Conservative budget)
     const maxCarPayment = Math.round(monthlyNet * 0.15);
 
     // Is rent affordable?
     const isAffordable = maxRent >= cityRent;
     const rentGap = cityRent - maxRent;
 
-    // Calculate recommended salary to afford this city
-    const recommendedSalary = Math.ceil((cityRent / 0.30) * 12 / 0.75 / 1000) * 1000;
+    // Calculate recommended salary to afford this city (Gross * 3 rule)
+    const recommendedSalary = Math.ceil((cityRent * 3) * 12 / 1000) * 1000;
 
     // Notify parent of changes
     useEffect(() => {
@@ -163,12 +163,12 @@ export const SalaryRealityCheck: React.FC<SalaryRealityCheckProps> = ({
                     </div>
                     <div className="bg-white rounded-xl p-4 border border-jalanea-100">
                         <p className="text-xs font-medium text-jalanea-500 uppercase tracking-wide mb-1">
-                            Max Rent
+                            Max Rent (Qualify)
                         </p>
                         <p className="text-2xl font-display font-bold text-jalanea-900">
                             {formatCurrency(maxRent)}
                         </p>
-                        <p className="text-xs text-jalanea-400 mt-1">30% Rule</p>
+                        <p className="text-xs text-jalanea-400 mt-1">Gross / 3 Rule</p>
                     </div>
                     <div className="bg-white rounded-xl p-4 border border-jalanea-100">
                         <p className="text-xs font-medium text-jalanea-500 uppercase tracking-wide mb-1">
@@ -198,10 +198,13 @@ export const SalaryRealityCheck: React.FC<SalaryRealityCheckProps> = ({
                             <div>
                                 <p className="text-sm font-bold text-jalanea-900">Housing</p>
                                 <p className="text-sm text-jalanea-600">
-                                    {maxRent < 1000 ? "Room in shared house / Student housing" :
-                                        maxRent < 1400 ? "Studio apartment or older 1BR" :
-                                            maxRent < 1800 ? "Modern 1BR apartment" :
-                                                "Luxury 1BR or 2BR apartment"}
+                                    {maxRent < 900 ? "Roommates / Shared Housing (<$900)" :
+                                        maxRent < 1100 ? "Studio Apartment ($900 - $1100)" :
+                                            maxRent < 1300 ? "Basic 1 Bed / 1 Bath ($1100 - $1300)" :
+                                                maxRent < 1550 ? "Nice 1 Bed / 1 Bath ($1300 - $1550)" :
+                                                    maxRent < 1900 ? "Standard 2 Bed / 2 Bath ($1550 - $1900)" :
+                                                        maxRent < 2400 ? "Nice 2 Bed / 2 Bath ($1900 - $2400)" :
+                                                            "3+ Bedrooms / House (> $2400)"}
                                 </p>
                             </div>
                         </div>
