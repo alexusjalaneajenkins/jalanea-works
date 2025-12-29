@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { VALENCIA_PROGRAMS_DB } from '../data/valenciaPrograms';
+import { CENTRAL_FL_DATA, CENTRAL_FL_SCHOOLS, getDegreeTypes, getPrograms } from '../data/centralFloridaPrograms';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Combobox } from '../components/Combobox';
@@ -437,21 +437,28 @@ export const Onboarding: React.FC = () => {
                                             )}
                                         </div>
                                         <div className="grid grid-cols-2 gap-4 mb-3">
+                                            {/* SCHOOL - First in cascade */}
                                             <div>
                                                 <label className="block text-sm font-medium text-jalanea-700 mb-2">
-                                                    Degree Type
+                                                    School
                                                 </label>
                                                 <select
-                                                    value={edu.degreeType}
-                                                    onChange={(e) => updateEducation(edu.id, 'degreeType', e.target.value)}
-                                                    className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none"
+                                                    value={edu.school}
+                                                    onChange={(e) => {
+                                                        updateEducation(edu.id, 'school', e.target.value);
+                                                        // Reset dependent fields when school changes
+                                                        updateEducation(edu.id, 'degreeType', '');
+                                                        updateEducation(edu.id, 'major', '');
+                                                    }}
+                                                    className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none bg-white"
                                                 >
-                                                    <option value="">Select...</option>
-                                                    {DEGREE_TYPE_OPTIONS.map((opt) => (
-                                                        <option key={opt} value={opt}>{opt}</option>
+                                                    <option value="">Select School...</option>
+                                                    {CENTRAL_FL_SCHOOLS.map((school) => (
+                                                        <option key={school} value={school}>{school}</option>
                                                     ))}
                                                 </select>
                                             </div>
+                                            {/* GRADUATION YEAR */}
                                             <div>
                                                 <label className="block text-sm font-medium text-jalanea-700 mb-2">
                                                     Graduation Year
@@ -465,46 +472,50 @@ export const Onboarding: React.FC = () => {
                                                 />
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-2 gap-4 mb-3">
+                                            {/* DEGREE TYPE - Second in cascade */}
                                             <div>
                                                 <label className="block text-sm font-medium text-jalanea-700 mb-2">
-                                                    Major / Field of Study
-                                                </label>
-                                                <Combobox
-                                                    value={edu.major}
-                                                    onChange={(val) => updateEducation(edu.id, 'major', val)}
-                                                    options={(() => {
-                                                        // Valencia programs based on degree type
-                                                        if (edu.degreeType?.includes("Bachelor's")) return VALENCIA_PROGRAMS_DB.Bachelor_Degrees;
-                                                        if (edu.degreeType?.includes("Associate's")) return VALENCIA_PROGRAMS_DB.AS_Degrees;
-                                                        if (edu.degreeType?.includes("Certificate")) return [
-                                                            ...VALENCIA_PROGRAMS_DB.Technical_Certificates,
-                                                            ...VALENCIA_PROGRAMS_DB.Advanced_Technical_Certificates
-                                                        ];
-                                                        // Default: show all Valencia options
-                                                        return [...VALENCIA_PROGRAMS_DB.Bachelor_Degrees, ...VALENCIA_PROGRAMS_DB.AS_Degrees];
-                                                    })()}
-                                                    placeholder="Search or type your major..."
-                                                />
-                                                <p className="text-xs text-jalanea-400 mt-1.5">
-                                                    Select your program or type manually for others.
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-jalanea-700 mb-2">
-                                                    School
+                                                    Degree Type
                                                 </label>
                                                 <select
-                                                    value={edu.school}
-                                                    onChange={(e) => updateEducation(edu.id, 'school', e.target.value)}
-                                                    className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none bg-white"
+                                                    value={edu.degreeType}
+                                                    onChange={(e) => {
+                                                        updateEducation(edu.id, 'degreeType', e.target.value);
+                                                        // Reset program when degree type changes
+                                                        updateEducation(edu.id, 'major', '');
+                                                    }}
+                                                    disabled={!edu.school}
+                                                    className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none bg-white disabled:bg-gray-50 disabled:cursor-not-allowed"
                                                 >
-                                                    <option value="">Select School...</option>
-                                                    <option value="Valencia College">Valencia College</option>
-                                                    <option value="Seminole State College of Florida">Seminole State College of Florida</option>
-                                                    <option value="Orange Technical College">Orange Technical College</option>
-                                                    <option value="Other">Other</option>
+                                                    <option value="">{edu.school ? 'Select Degree Type...' : 'Select school first'}</option>
+                                                    {edu.school && getDegreeTypes(edu.school).map((type) => (
+                                                        <option key={type} value={type}>{type}</option>
+                                                    ))}
                                                 </select>
+                                            </div>
+                                            {/* PROGRAM / MAJOR - Third in cascade */}
+                                            <div>
+                                                <label className="block text-sm font-medium text-jalanea-700 mb-2">
+                                                    Program / Major
+                                                </label>
+                                                {edu.school && edu.degreeType && edu.degreeType !== 'Other / Not Listed' ? (
+                                                    <Combobox
+                                                        value={edu.major}
+                                                        onChange={(val) => updateEducation(edu.id, 'major', val)}
+                                                        options={getPrograms(edu.school, edu.degreeType)}
+                                                        placeholder="Search or type your program..."
+                                                    />
+                                                ) : (
+                                                    <input
+                                                        type="text"
+                                                        value={edu.major}
+                                                        onChange={(e) => updateEducation(edu.id, 'major', e.target.value)}
+                                                        placeholder={edu.degreeType ? 'Enter your program...' : 'Select degree type first'}
+                                                        disabled={!edu.degreeType}
+                                                        className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                                                    />
+                                                )}
                                             </div>
                                         </div>
                                     </div>
