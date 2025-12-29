@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { VALENCIA_PROGRAMS_DB } from '../data/valenciaPrograms';
+import { UCF_DEGREES } from '../data/ucfDegrees';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Combobox } from '../components/Combobox';
@@ -474,18 +475,24 @@ export const Onboarding: React.FC = () => {
                                                     value={edu.major}
                                                     onChange={(val) => updateEducation(edu.id, 'major', val)}
                                                     options={(() => {
+                                                        // UCF degrees when UCF is selected
+                                                        if (edu.school?.includes('UCF') || edu.school?.includes('University of Central Florida')) {
+                                                            return UCF_DEGREES;
+                                                        }
+                                                        // Valencia programs based on degree type
                                                         if (edu.degreeType?.includes("Bachelor's")) return VALENCIA_PROGRAMS_DB.Bachelor_Degrees;
                                                         if (edu.degreeType?.includes("Associate's")) return VALENCIA_PROGRAMS_DB.AS_Degrees;
                                                         if (edu.degreeType?.includes("Certificate")) return [
                                                             ...VALENCIA_PROGRAMS_DB.Technical_Certificates,
                                                             ...VALENCIA_PROGRAMS_DB.Advanced_Technical_Certificates
                                                         ];
-                                                        return [];
+                                                        // Default: show all options
+                                                        return [...UCF_DEGREES, ...VALENCIA_PROGRAMS_DB.Bachelor_Degrees, ...VALENCIA_PROGRAMS_DB.AS_Degrees];
                                                     })()}
-                                                    placeholder="e.g. Graphic Design"
+                                                    placeholder="Search or type your major..."
                                                 />
                                                 <p className="text-xs text-jalanea-400 mt-1.5">
-                                                    Select your Valencia program or type manually for others.
+                                                    {edu.school?.includes('UCF') ? 'Select from UCF degrees or type manually.' : 'Select your program or type manually.'}
                                                 </p>
                                             </div>
                                             <div>
@@ -786,8 +793,8 @@ export const Onboarding: React.FC = () => {
                                             onClick={() => addSuggestedRole(role)}
                                             disabled={form.targetRoles.includes(role)}
                                             className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${form.targetRoles.includes(role)
-                                                    ? 'bg-jalanea-100 text-jalanea-400 border-jalanea-200 cursor-default'
-                                                    : 'bg-white text-jalanea-700 border-jalanea-200 hover:border-jalanea-400 hover:bg-jalanea-50'
+                                                ? 'bg-jalanea-100 text-jalanea-400 border-jalanea-200 cursor-default'
+                                                : 'bg-white text-jalanea-700 border-jalanea-200 hover:border-jalanea-400 hover:bg-jalanea-50'
                                                 }`}
                                         >
                                             + {role}
