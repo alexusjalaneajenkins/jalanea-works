@@ -1,666 +1,420 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
-import { Briefcase, ChevronRight, TrendingUp, MapPin, Zap, ArrowUpRight, CheckCircle2, Circle, ExternalLink, GraduationCap, Clock, MoreHorizontal, Sparkles, Loader2, Calendar, Target, Mail, MessageCircle } from 'lucide-react';
-import { Job, TransportMode, MarketDemand, IndustryPulseItem } from '../types';
-import { useAuth } from '../contexts/AuthContext';
-import { searchJobs } from '../services/jobService';
-import { getMarketDemand } from '../services/marketDemandService';
-import { generateIndustryPulse } from '../services/industryPulseService';
-import { useNavigate } from 'react-router-dom';
-import { CreditsWidget } from '../components/CreditsWidget';
+import {
+    Rocket, Target, TrendingUp, CheckCircle, AlertCircle,
+    ExternalLink, Briefcase, DollarSign, Home, Search,
+    Linkedin, Building2, Zap
+} from 'lucide-react';
 
-// Skeleton Component for "Filling in the Blanks" visual
-const SkeletonJobCard = () => (
-    <Card variant="solid-white" className="border-l-[4px] border-l-jalanea-100 opacity-60">
-        <div className="flex flex-col sm:flex-row justify-between gap-6 animate-pulse">
-            <div className="flex-1 space-y-4">
-                <div className="space-y-2">
-                    <div className="h-6 bg-jalanea-200 rounded w-3/4"></div>
-                    <div className="h-4 bg-jalanea-100 rounded w-1/2"></div>
-                </div>
-                <div className="flex gap-2">
-                    <div className="h-6 w-20 bg-jalanea-100 rounded-full"></div>
-                    <div className="h-6 w-24 bg-jalanea-100 rounded-full"></div>
-                    <div className="h-6 w-16 bg-jalanea-100 rounded-full"></div>
-                </div>
-                <div className="grid grid-cols-2 gap-2 max-w-xs">
-                    <div className="h-4 bg-jalanea-50 rounded w-full"></div>
-                    <div className="h-4 bg-jalanea-50 rounded w-full"></div>
-                </div>
-            </div>
-            <div className="hidden sm:flex flex-col items-center justify-center pl-6 border-l border-jalanea-100 min-w-[100px]">
-                <div className="w-14 h-14 rounded-full border-4 border-jalanea-100"></div>
-                <div className="h-3 w-12 bg-jalanea-100 rounded mt-2"></div>
-            </div>
-        </div>
-    </Card>
-);
+// Helper: Get time-based greeting
+const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+};
 
-// Active Application Tracker - Shows real applications or empty state
-const ActiveTracker = ({ navigate }: { navigate: (path: string) => void }) => {
-    const { userProfile } = useAuth();
+// Helper: Get housing tier from max rent
+const getHousingTier = (maxRent: number): string => {
+    if (maxRent < 900) return 'Shared Housing';
+    if (maxRent < 1100) return 'Studio Apartment';
+    if (maxRent < 1300) return 'Basic 1-Bed';
+    if (maxRent < 1550) return 'Nice 1-Bed';
+    if (maxRent < 1900) return 'Standard 2-Bed';
+    if (maxRent < 2400) return 'Nice 2-Bed';
+    return '3+ Bedrooms';
+};
 
-    // Get applications from saved jobs (jobs with status other than 'saved')
-    const apps = userProfile?.savedJobs?.filter(j => j.status !== 'saved') || [];
+// ===========================================
+// COMPONENT: Power Hour Tracker (Circular Progress)
+// ===========================================
+const PowerHourTracker: React.FC<{ current: number; goal: number }> = ({ current, goal }) => {
+    const percentage = Math.min((current / goal) * 100, 100);
+    const circumference = 2 * Math.PI * 40;
+    const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
-    // Empty state when no applications
-    if (apps.length === 0) {
-        return (
-            <Card variant="solid-white" className="border-jalanea-200" noPadding>
-                <div className="p-4 border-b border-jalanea-100 flex items-center gap-2">
-                    <div className="p-1.5 bg-jalanea-900 text-white rounded-md">
-                        <Target size={16} />
-                    </div>
-                    <h3 className="font-bold text-jalanea-900">Active Mission Control</h3>
-                </div>
-                <div className="p-6 text-center">
-                    <div className="w-12 h-12 bg-jalanea-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <Briefcase size={24} className="text-jalanea-400" />
-                    </div>
-                    <h4 className="font-bold text-jalanea-900 mb-1">No Active Applications</h4>
-                    <p className="text-sm text-jalanea-500 mb-4">
-                        Start applying to jobs to track your progress here.
-                    </p>
-                    <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => navigate('/jobs')}
-                        icon={<ArrowUpRight size={14} />}
-                    >
-                        Find Jobs to Apply
-                    </Button>
-                </div>
-            </Card>
-        );
-    }
-
-    // Show real applications
     return (
-        <Card variant="solid-white" className="border-jalanea-200" noPadding>
-            <div className="p-4 border-b border-jalanea-100 flex items-center gap-2">
-                <div className="p-1.5 bg-jalanea-900 text-white rounded-md">
-                    <Target size={16} />
+        <div className="flex items-center gap-4 bg-slate-50 rounded-2xl p-4 border border-slate-200">
+            <div className="relative w-20 h-20">
+                <svg className="w-20 h-20 -rotate-90" viewBox="0 0 100 100">
+                    {/* Background circle */}
+                    <circle
+                        cx="50" cy="50" r="40"
+                        fill="none"
+                        stroke="#e2e8f0"
+                        strokeWidth="8"
+                    />
+                    {/* Progress circle */}
+                    <circle
+                        cx="50" cy="50" r="40"
+                        fill="none"
+                        stroke={current >= goal ? '#10b981' : '#6366f1'}
+                        strokeWidth="8"
+                        strokeLinecap="round"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={strokeDashoffset}
+                        className="transition-all duration-500"
+                    />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-xl font-bold text-slate-900">{current}/{goal}</span>
                 </div>
-                <h3 className="font-bold text-jalanea-900">Active Mission Control</h3>
-                <span className="ml-auto text-xs font-bold text-jalanea-500">{apps.length} Active</span>
             </div>
-            <div className="divide-y divide-jalanea-100">
-                {apps.slice(0, 3).map(app => (
-                    <div key={app.id} className="p-4 hover:bg-jalanea-50 transition-colors">
-                        <div className="flex justify-between items-start mb-2">
-                            <div>
-                                <h4 className="font-bold text-jalanea-900">{app.job.company}</h4>
-                                <p className="text-xs text-jalanea-500">{app.job.title} • {app.status}</p>
-                            </div>
-                            {app.nextActionDate && new Date(app.nextActionDate) <= new Date() && (
-                                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                            )}
-                        </div>
-                        {app.nextAction && (
-                            <div className="bg-gold/10 border border-gold/20 rounded-lg p-2 flex items-center justify-between">
-                                <span className="text-xs font-bold text-jalanea-800 flex items-center gap-2">
-                                    <Zap size={12} className="text-gold" /> {app.nextAction}
-                                </span>
-                                <button className="text-[10px] font-bold text-jalanea-500 hover:text-jalanea-900 uppercase">Do It</button>
-                            </div>
-                        )}
-                    </div>
-                ))}
-                {apps.length > 3 && (
-                    <div className="p-3 text-center">
-                        <button className="text-xs font-bold text-jalanea-400 hover:text-gold transition-colors">
-                            View All {apps.length} Applications
-                        </button>
-                    </div>
+            <div>
+                <p className="text-sm font-bold text-slate-900">Power Hour</p>
+                <p className="text-xs text-slate-500">Daily Applications</p>
+                {current >= goal && (
+                    <span className="inline-flex items-center gap-1 mt-1 text-xs font-bold text-emerald-600">
+                        <CheckCircle size={12} /> Goal Hit!
+                    </span>
                 )}
             </div>
-        </Card>
+        </div>
     );
 };
 
-// Saved Jobs Carousel - Horizontal scroll of saved jobs
-const SavedJobsCarousel = ({ navigate }: { navigate: (path: string) => void }) => {
-    const { userProfile } = useAuth();
+// ===========================================
+// COMPONENT: Smart Launchpad Button
+// ===========================================
+const LaunchpadButton: React.FC<{
+    icon: React.ReactNode;
+    label: string;
+    color: string;
+    onClick: () => void;
+}> = ({ icon, label, color, onClick }) => (
+    <button
+        onClick={onClick}
+        className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-slate-200 bg-white hover:border-slate-300 hover:shadow-md transition-all group`}
+    >
+        <span className={color}>{icon}</span>
+        <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900">{label}</span>
+        <ExternalLink size={14} className="ml-auto text-slate-400 group-hover:text-slate-600" />
+    </button>
+);
 
-    // Get saved jobs
-    const savedJobs = userProfile?.savedJobs?.filter(j => j.status === 'saved') || [];
+// ===========================================
+// COMPONENT: Active Mission Card
+// ===========================================
+const MissionCard: React.FC<{
+    role: string;
+    company: string;
+    status: string;
+    grade?: string;
+}> = ({ role, company, status, grade }) => {
+    const statusColors: Record<string, string> = {
+        'saved': 'bg-slate-100 text-slate-600',
+        'applied': 'bg-blue-100 text-blue-700',
+        'interviewing': 'bg-amber-100 text-amber-700',
+        'offer': 'bg-emerald-100 text-emerald-700',
+        'rejected': 'bg-red-100 text-red-600',
+    };
 
-    if (savedJobs.length === 0) {
-        return null; // Don't show carousel if no saved jobs
-    }
+    const gradeColors: Record<string, string> = {
+        'A': 'bg-emerald-500 text-white',
+        'B': 'bg-blue-500 text-white',
+        'C': 'bg-amber-500 text-white',
+    };
 
     return (
-        <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                    <div className="p-1.5 bg-gold/10 rounded-md">
-                        <Briefcase size={16} className="text-gold" />
-                    </div>
-                    <h2 className="text-xl font-bold text-jalanea-900">Your Saved Jobs</h2>
-                    <span className="text-xs font-bold text-jalanea-500 bg-jalanea-100 px-2 py-0.5 rounded-full">
-                        {savedJobs.length}
-                    </span>
-                </div>
-                <button
-                    onClick={() => navigate('/jobs')}
-                    className="text-sm font-bold text-jalanea-500 hover:text-jalanea-900 transition-colors flex items-center gap-1"
-                >
-                    View All <ChevronRight size={16} />
-                </button>
+        <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all">
+            <div className="flex-1 min-w-0">
+                <h4 className="font-bold text-slate-900 truncate">{role}</h4>
+                <p className="text-sm text-slate-500 truncate">{company}</p>
             </div>
+            <div className="flex items-center gap-2 ml-4">
+                <span className={`px-2 py-1 rounded-lg text-xs font-bold capitalize ${statusColors[status] || statusColors['saved']}`}>
+                    {status}
+                </span>
+                {grade && (
+                    <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${gradeColors[grade] || 'bg-slate-200 text-slate-600'}`}>
+                        {grade}
+                    </span>
+                )}
+            </div>
+        </div>
+    );
+};
 
-            {/* Horizontal Scroll Container */}
-            <div className="relative -mx-4 px-4 md:-mx-8 md:px-8">
-                <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide"
-                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                >
-                    {savedJobs.slice(0, 10).map((savedJob: any) => (
-                        <Card
-                            key={savedJob.id}
-                            variant="solid-white"
-                            className="flex-shrink-0 w-[280px] md:w-[320px] snap-start cursor-pointer hover:shadow-lg transition-all border-l-4 border-l-gold"
-                            onClick={() => navigate('/jobs')}
+// ===========================================
+// MAIN COMPONENT: Dashboard
+// ===========================================
+export const Dashboard: React.FC = () => {
+    const navigate = useNavigate();
+    const { userProfile } = useAuth();
+
+    // Local state
+    const [jobUrl, setJobUrl] = useState('');
+    const [dailyApps, setDailyApps] = useState(0); // TODO: Persist this
+
+    // Derived data
+    const userName = userProfile?.fullName?.split(' ')[0] || userProfile?.displayName?.split(' ')[0] || 'there';
+    const applications = userProfile?.savedJobs?.filter(j => j.status !== 'saved') || [];
+    const salaryMin = userProfile?.targetSalaryRange?.min || 45000;
+    const salaryMax = userProfile?.targetSalaryRange?.max || 65000;
+    const maxRent = userProfile?.monthlyBudgetEstimate?.maxRent || 0;
+    const housingTier = getHousingTier(maxRent);
+
+    // Profile strength calculation (simplified)
+    const hasEducation = (userProfile?.education?.length || 0) > 0;
+    const hasSkills = (userProfile?.skills?.technical?.length || 0) > 0;
+    const hasExperience = (userProfile?.experience?.length || 0) > 0;
+    const profileScore = [hasEducation, hasSkills, hasExperience, maxRent > 0].filter(Boolean).length;
+    const profileGrade = profileScore >= 4 ? 'A' : profileScore >= 3 ? 'B+' : profileScore >= 2 ? 'B' : 'C';
+
+    // Handlers
+    const handleAnalyzeJob = () => {
+        if (jobUrl.trim()) {
+            // TODO: Implement Jalanea Grade AI analysis
+            console.log('Analyzing:', jobUrl);
+            alert('Jalanea Grade AI analysis coming soon!');
+            setJobUrl('');
+        }
+    };
+
+    const handleLaunchpad = (platform: string) => {
+        const urls: Record<string, string> = {
+            'google': 'https://www.google.com/search?q=entry+level+jobs+near+me&ibp=htl;jobs',
+            'linkedin': 'https://www.linkedin.com/jobs/',
+            'indeed': 'https://www.indeed.com/',
+            'ziprecruiter': 'https://www.ziprecruiter.com/',
+        };
+        window.open(urls[platform], '_blank');
+    };
+
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white pb-16">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+                {/* ========================================= */}
+                {/* HEADER ROW: Daily Briefing */}
+                {/* ========================================= */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
+                        <h1 className="text-3xl font-bold text-slate-900">
+                            {getGreeting()}, {userName}.
+                        </h1>
+                        <p className="text-lg text-slate-500 mt-1">Ready to execute?</p>
+                    </div>
+                    <PowerHourTracker current={dailyApps} goal={3} />
+                </div>
+
+                {/* ========================================= */}
+                {/* HERO MODULE: The Input Nexus */}
+                {/* ========================================= */}
+                <Card variant="solid-white" className="p-6 md:p-8 border-2 border-slate-200 shadow-lg">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2.5 bg-indigo-100 rounded-xl">
+                            <Target size={24} className="text-indigo-600" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900">The Input Nexus</h2>
+                            <p className="text-sm text-slate-500">Paste a job link to get your Jalanea Grade</p>
+                        </div>
+                    </div>
+
+                    {/* Job URL Input */}
+                    <div className="flex flex-col sm:flex-row gap-3 mb-8">
+                        <div className="flex-1 relative">
+                            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input
+                                type="url"
+                                value={jobUrl}
+                                onChange={(e) => setJobUrl(e.target.value)}
+                                placeholder="Paste job link (LinkedIn, Indeed, etc)..."
+                                className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none text-slate-900 placeholder:text-slate-400 transition-all"
+                                onKeyDown={(e) => e.key === 'Enter' && handleAnalyzeJob()}
+                            />
+                        </div>
+                        <Button
+                            variant="primary"
+                            onClick={handleAnalyzeJob}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 text-base font-bold shadow-lg hover:shadow-xl transition-all"
+                            icon={<Zap size={18} />}
                         >
+                            Analyze Match
+                        </Button>
+                    </div>
+
+                    {/* Smart Launchpads */}
+                    <div>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Smart Launchpads</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <LaunchpadButton
+                                icon={<img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />}
+                                label="Google Jobs"
+                                color=""
+                                onClick={() => handleLaunchpad('google')}
+                            />
+                            <LaunchpadButton
+                                icon={<Linkedin size={20} />}
+                                label="LinkedIn"
+                                color="text-blue-600"
+                                onClick={() => handleLaunchpad('linkedin')}
+                            />
+                            <LaunchpadButton
+                                icon={<Building2 size={20} />}
+                                label="Indeed"
+                                color="text-indigo-600"
+                                onClick={() => handleLaunchpad('indeed')}
+                            />
+                            <LaunchpadButton
+                                icon={<Rocket size={20} />}
+                                label="ZipRecruiter"
+                                color="text-emerald-600"
+                                onClick={() => handleLaunchpad('ziprecruiter')}
+                            />
+                        </div>
+                    </div>
+                </Card>
+
+                {/* ========================================= */}
+                {/* MAIN CONTENT: 2-Column Grid */}
+                {/* ========================================= */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                    {/* LEFT COLUMN: Active Missions (2/3 width) */}
+                    <div className="lg:col-span-2 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <Briefcase size={20} className="text-slate-600" />
+                                Active Missions
+                            </h3>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate('/jobs')}
+                                className="text-slate-500 hover:text-slate-900"
+                            >
+                                View All
+                            </Button>
+                        </div>
+
+                        {applications.length === 0 ? (
+                            <Card variant="solid-white" className="p-8 text-center border-2 border-dashed border-slate-200">
+                                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Target size={32} className="text-slate-400" />
+                                </div>
+                                <h4 className="font-bold text-slate-900 mb-2">No Active Missions</h4>
+                                <p className="text-sm text-slate-500 mb-4">Launch a search to begin tracking your applications.</p>
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => navigate('/jobs')}
+                                    icon={<Rocket size={16} />}
+                                >
+                                    Start Searching
+                                </Button>
+                            </Card>
+                        ) : (
                             <div className="space-y-3">
-                                <div>
-                                    <h4 className="font-bold text-jalanea-900 line-clamp-1">{savedJob.job?.title || 'Job Title'}</h4>
-                                    <p className="text-sm text-jalanea-500 line-clamp-1">{savedJob.job?.company || 'Company'}</p>
+                                {applications.slice(0, 5).map((app) => (
+                                    <MissionCard
+                                        key={app.id}
+                                        role={app.job.title}
+                                        company={app.job.company}
+                                        status={app.status}
+                                        grade={undefined} // TODO: Add Jalanea Grade
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* RIGHT COLUMN: Strategy & Pulse (1/3 width) */}
+                    <div className="space-y-6">
+
+                        {/* Card 1: Market Readiness */}
+                        <Card variant="solid-white" className="p-5 border border-slate-200">
+                            <div className="flex items-center gap-2 mb-4">
+                                <TrendingUp size={18} className="text-indigo-600" />
+                                <h4 className="font-bold text-slate-900">Market Readiness</h4>
+                            </div>
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="text-sm text-slate-500">Profile Strength</span>
+                                <span className={`px-2 py-1 rounded-lg text-sm font-bold ${profileGrade === 'A' ? 'bg-emerald-100 text-emerald-700' :
+                                        profileGrade.startsWith('B') ? 'bg-blue-100 text-blue-700' :
+                                            'bg-amber-100 text-amber-700'
+                                    }`}>
+                                    {profileGrade} Candidate
+                                </span>
+                            </div>
+                            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                                <div
+                                    className={`h-full rounded-full transition-all ${profileGrade === 'A' ? 'bg-emerald-500' :
+                                            profileGrade.startsWith('B') ? 'bg-blue-500' :
+                                                'bg-amber-500'
+                                        }`}
+                                    style={{ width: `${(profileScore / 4) * 100}%` }}
+                                />
+                            </div>
+                            <p className="text-xs text-slate-400 mt-2">
+                                {4 - profileScore > 0 ? `Complete ${4 - profileScore} more section${4 - profileScore > 1 ? 's' : ''} to improve.` : 'Your profile is complete!'}
+                            </p>
+                        </Card>
+
+                        {/* Card 2: Financial Pulse */}
+                        <Card variant="solid-white" className="p-5 border border-slate-200">
+                            <div className="flex items-center gap-2 mb-4">
+                                <DollarSign size={18} className="text-emerald-600" />
+                                <h4 className="font-bold text-slate-900">Financial Pulse</h4>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-slate-500">Target Salary</span>
+                                    <span className="text-sm font-bold text-slate-900">
+                                        ${(salaryMin / 1000).toFixed(0)}k – ${(salaryMax / 1000).toFixed(0)}k
+                                    </span>
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-jalanea-400">
-                                    <MapPin size={12} />
-                                    <span className="line-clamp-1">{savedJob.job?.location || 'Location'}</span>
+
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-slate-500">Lifestyle Tier</span>
+                                    <div className="flex items-center gap-2">
+                                        <Home size={14} className="text-slate-400" />
+                                        <span className="text-sm font-bold text-slate-900">{housingTier}</span>
+                                    </div>
                                 </div>
-                                <div className="flex gap-2">
-                                    <Button
-                                        size="sm"
-                                        variant="primary"
-                                        className="flex-1 text-xs"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (savedJob.job?.url) {
-                                                window.open(savedJob.job.url, '_blank');
-                                            }
-                                        }}
-                                    >
-                                        Apply Now
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="text-xs"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            navigate('/jobs');
-                                        }}
-                                    >
-                                        Details
-                                    </Button>
+
+                                <div className="pt-3 border-t border-slate-100">
+                                    {maxRent > 0 ? (
+                                        <div className="flex items-center gap-2 text-emerald-600">
+                                            <CheckCircle size={16} />
+                                            <span className="text-sm font-bold">Budget Aligned</span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2 text-amber-600">
+                                            <AlertCircle size={16} />
+                                            <span className="text-sm font-bold">Complete onboarding for budget analysis</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </Card>
-                    ))}
 
-                    {/* Add More Jobs CTA */}
-                    <div
-                        className="flex-shrink-0 w-[200px] snap-start flex items-center justify-center cursor-pointer"
-                        onClick={() => navigate('/jobs')}
-                    >
-                        <div className="text-center p-6 rounded-xl border-2 border-dashed border-jalanea-200 hover:border-gold hover:bg-gold/5 transition-all group">
-                            <div className="w-12 h-12 rounded-full bg-jalanea-100 group-hover:bg-gold flex items-center justify-center mx-auto mb-3 transition-colors">
-                                <ArrowUpRight size={20} className="text-jalanea-400 group-hover:text-jalanea-900" />
-                            </div>
-                            <p className="text-sm font-bold text-jalanea-600 group-hover:text-jalanea-900">Find More Jobs</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-export const Dashboard: React.FC = () => {
-    const { userProfile } = useAuth();
-    const navigate = useNavigate();
-
-    const [jobs, setJobs] = useState<Job[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    // New state for dynamic data
-    const [marketDemand, setMarketDemand] = useState<MarketDemand | null>(null);
-    const [industryPulse, setIndustryPulse] = useState<IndustryPulseItem[]>([]);
-    const [isLoadingMarket, setIsLoadingMarket] = useState(true);
-    const [isLoadingPulse, setIsLoadingPulse] = useState(true);
-
-    // Fetch live jobs on mount
-    useEffect(() => {
-        const fetchDashboardJobs = async () => {
-            setIsLoading(true);
-            try {
-                // Use user profile for search terms or fallback
-                const searchTerms = userProfile?.preferences?.targetRoles?.join(' OR ') || 'entry level';
-                const location = userProfile?.location || 'Orlando, FL';
-
-                // Fetch just a few jobs for the dashboard
-                const response = await searchJobs(searchTerms, {
-                    location: location,
-                    userLocation: location,
-                    transportMode: (userProfile?.preferences?.transportMode?.[0] || 'Car') as TransportMode,
-                });
-
-                if (response.jobs && response.jobs.length > 0) {
-                    setJobs(response.jobs.slice(0, 3)); // Only show top 3
-                }
-            } catch (err) {
-                console.error("Dashboard job fetch failed", err);
-                setError("Could not load recommendations.");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchDashboardJobs();
-    }, [userProfile]);
-
-    // Fetch market demand data
-    useEffect(() => {
-        const fetchMarketDemand = async () => {
-            // Check for programName (new format) or degree (legacy format)
-            const firstEdu = userProfile?.education?.[0];
-            const degreeStr = firstEdu?.programName || firstEdu?.degree;
-
-            if (!degreeStr) {
-                setIsLoadingMarket(false);
-                return;
-            }
-
-            setIsLoadingMarket(true);
-            try {
-                const location = userProfile?.location || 'Orlando, FL';
-                const demand = await getMarketDemand(degreeStr, location);
-                setMarketDemand(demand);
-            } catch (err) {
-                console.error('Market demand fetch failed', err);
-            } finally {
-                setIsLoadingMarket(false);
-            }
-        };
-
-        fetchMarketDemand();
-    }, [userProfile?.education, userProfile?.location]);
-
-    // Fetch AI-generated Industry Pulse
-    useEffect(() => {
-        const fetchIndustryPulse = async () => {
-            if (!userProfile) {
-                setIsLoadingPulse(false);
-                return;
-            }
-
-            setIsLoadingPulse(true);
-            try {
-                const pulseItems = await generateIndustryPulse(userProfile);
-                setIndustryPulse(pulseItems);
-            } catch (err) {
-                console.error('Industry pulse fetch failed', err);
-            } finally {
-                setIsLoadingPulse(false);
-            }
-        };
-
-        fetchIndustryPulse();
-    }, [userProfile]);
-
-    // Derived State - use fullName (from Profile) or displayName (from Google Auth) as fallback
-    const userName = userProfile?.fullName?.split(' ')[0] || userProfile?.displayName?.split(' ')[0] || 'Friend';
-    // Build user degree display - support both new format (programName) and legacy (degree)
-    const firstEdu = userProfile?.education?.[0];
-    const userDegree = firstEdu?.degreeLevel && firstEdu?.programName
-        ? `${firstEdu.degreeLevel} in ${firstEdu.programName}`
-        : firstEdu?.programName || firstEdu?.degree || 'Credentials';
-
-    // Logic for Smart Schedule
-    // Fallback to MOCK_PROFILE for schedule logic if userProfile is incomplete for now, 
-    // or just assume standard flow.
-    const isBusy = false;
-    const scheduleType = isBusy ? 'Micro-Tasks' : 'Deep Work';
-
-    return (
-        <div className="space-y-12 animate-in fade-in duration-500 pb-16">
-
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-display font-bold text-jalanea-900">Dashboard</h1>
-                    <p className="text-jalanea-600 mt-2 text-lg">
-                        Welcome back, {userName}. Your <span className="font-bold text-jalanea-900">{userDegree}</span> is in high demand today.
-                    </p>
-                </div>
-                <div className="flex gap-3">
-                    <Button variant="outline" className="border-jalanea-200 text-jalanea-600 hover:border-jalanea-900 hover:text-jalanea-900" onClick={() => navigate('/profile')}>
-                        Update Profile
-                    </Button>
-                    <Button
-                        variant="secondary"
-                        onClick={() => navigate('/jobs')}
-                        icon={<Zap size={16} className="text-gold" />}
-                    >
-                        Find More Roles
-                    </Button>
-                </div>
-            </div>
-
-            {/* Metrics Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-
-                {/* Card 1: Market Demand (Dark Theme) */}
-                <Card variant="solid-forest" className="relative overflow-hidden min-h-[240px] flex flex-col justify-between group">
-                    {/* Abstract Graph Visual Background */}
-                    <svg className="absolute bottom-0 right-0 w-48 h-32 text-white/5 pointer-events-none transform translate-y-4 translate-x-4" viewBox="0 0 100 50" preserveAspectRatio="none">
-                        <path d="M0 50 L20 40 L40 45 L60 25 L80 30 L100 10 V50 Z" fill="currentColor" />
-                        <path d="M0 50 L20 40 L40 45 L60 25 L80 30 L100 10" fill="none" stroke="currentColor" strokeWidth="2" />
-                    </svg>
-
-                    <div className="flex justify-between items-start relative z-10">
-                        <div className="flex items-center gap-2">
-                            <div className="p-1.5 bg-white/10 rounded-md">
-                                <TrendingUp size={16} className="text-gold" />
-                            </div>
-                            <span className="text-xs font-bold text-jalanea-300 uppercase tracking-wider">Market Demand</span>
-                        </div>
-                    </div>
-
-                    <div className="relative z-10 mt-4">
-                        {isLoadingMarket ? (
-                            <div className="animate-pulse">
-                                <div className="h-12 bg-white/10 rounded w-24 mb-2"></div>
-                                <div className="h-4 bg-white/5 rounded w-48"></div>
-                            </div>
-                        ) : (
-                            <>
-                                <div className="flex items-baseline gap-3">
-                                    <h3 className="text-5xl font-display font-bold text-white">
-                                        {marketDemand?.demandLevel || 'Moderate'}
-                                    </h3>
-                                    <span className={`px-2 py-1 rounded text-xs font-bold border ${(marketDemand?.percentChange || 0) >= 0
-                                        ? 'bg-gold/20 text-gold border-gold/20'
-                                        : 'bg-red-500/20 text-red-400 border-red-500/20'
-                                        }`}>
-                                        {(marketDemand?.percentChange || 0) >= 0 ? '+' : ''}{marketDemand?.percentChange || 0}%
-                                    </span>
-                                </div>
-                                <p className="text-sm text-jalanea-400 mt-2 font-medium">
-                                    {(marketDemand?.totalOpenings || 0).toLocaleString()} US roles matching your degree.
-                                </p>
-                            </>
-                        )}
-                    </div>
-                </Card>
-
-                {/* Card 2: Applications (White Theme) */}
-                <Card variant="solid-white" className="min-h-[240px] flex flex-col justify-between border-jalanea-200 shadow-sm hover:shadow-md transition-all">
-                    <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-2">
-                            <div className="p-1.5 bg-jalanea-100 rounded-md">
-                                <Briefcase size={16} className="text-jalanea-700" />
-                            </div>
-                            <span className="text-xs font-bold text-jalanea-500 uppercase tracking-wider">Applications</span>
-                        </div>
-                        <span className="inline-flex items-center gap-1.5 bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-bold">
-                            <div className="w-1.5 h-1.5 rounded-full bg-green-600 animate-pulse"></div>
-                            0 Active
-                        </span>
-                    </div>
-
-                    <div>
-                        <div className="flex justify-between items-end mb-2">
-                            <h3 className="text-4xl font-display font-bold text-jalanea-900">0<span className="text-2xl text-jalanea-300">/15</span></h3>
-                            <span className="text-xs font-bold text-jalanea-500 uppercase">Weekly Goal</span>
-                        </div>
-                        <div className="w-full bg-jalanea-100 rounded-full h-2">
-                            <div className="bg-jalanea-900 h-2 rounded-full w-[0%]"></div>
-                        </div>
-                        <p className="text-xs text-jalanea-500 font-medium mt-3">Start applying to hit your target.</p>
-                    </div>
-                </Card>
-
-                {/* Card 3: Smart Schedule (New) */}
-                <Card variant="gold" className="min-h-[240px] flex flex-col justify-between relative overflow-hidden">
-                    <div className="absolute top-[-20%] right-[-10%] w-32 h-32 bg-white/20 rounded-full blur-2xl"></div>
-
-                    <div className="flex items-center gap-2 relative z-10">
-                        <div className="p-1.5 bg-jalanea-950/10 rounded-md">
-                            <Calendar size={16} className="text-jalanea-950" />
-                        </div>
-                        <span className="text-xs font-bold text-jalanea-950/70 uppercase tracking-wider">Daily Smart Schedule</span>
-                    </div>
-
-                    <div className="relative z-10 mt-2">
-                        <h4 className="text-lg font-bold text-jalanea-950 leading-tight mb-2">
-                            {scheduleType === 'Micro-Tasks' ? "15-Min Power Sprint" : "2-Hour Deep Dive"}
-                        </h4>
-                        <p className="text-xs text-jalanea-950/70 mb-4 font-medium">
-                            {scheduleType === 'Micro-Tasks'
-                                ? "We know you're busy. Use your break to apply to 1 job."
-                                : "You have open blocks. Use this time for certification study."}
-                        </p>
-                        <Button size="sm" className="w-full bg-jalanea-950 text-white hover:bg-jalanea-800 border-none shadow-xl justify-between group" onClick={() => navigate('/schedule')}>
-                            Start {scheduleType === 'Micro-Tasks' ? "Quick Apply" : "Study Session"}
-                            <ArrowUpRight size={16} className="text-gold group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                        </Button>
-                    </div>
-                </Card>
-            </div>
-
-            {/* Saved Jobs Carousel - Appears when user has saved jobs */}
-            <SavedJobsCarousel navigate={navigate} />
-
-            {/* Main Content Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-
-                {/* LEFT COLUMN: Job Feed */}
-                <div className="lg:col-span-2 space-y-6">
-
-                    {/* Section Header */}
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <h2 className="text-xl font-bold text-jalanea-900">Today's Top Matches</h2>
-                        </div>
-                        <button
-                            onClick={() => navigate('/jobs')}
-                            className="text-sm font-bold text-jalanea-500 hover:text-jalanea-900 transition-colors flex items-center gap-1"
-                        >
-                            View All <ChevronRight size={16} />
-                        </button>
-                    </div>
-
-                    {/* Job Cards */}
-                    <div className="space-y-4">
-                        {isLoading && (
-                            <>
-                                <SkeletonJobCard />
-                                <SkeletonJobCard />
-                                <SkeletonJobCard />
-                            </>
-                        )}
-
-                        {!isLoading && jobs.length === 0 && !error && (
-                            <Card variant="glass-light" className="p-8 text-center text-jalanea-600">
-                                <p>No recommendations yet. Update your profile or check the full job feed.</p>
-                                <Button size="sm" variant="secondary" onClick={() => navigate('/jobs')} className="mt-4">Search Jobs</Button>
-                            </Card>
-                        )}
-
-                        {!isLoading && jobs.map((job) => (
-                            <Card
-                                key={job.id}
-                                variant="solid-white"
-                                hoverEffect
-                                className="group cursor-pointer border-l-[4px] border-l-transparent hover:border-l-jalanea-300 transition-all duration-300"
-                                onClick={() => navigate('/jobs')} // For now, clicking takes you to jobs page where you can apply
+                        {/* Quick Actions */}
+                        <div className="space-y-2">
+                            <Button
+                                variant="outline"
+                                className="w-full justify-start text-slate-700 border-slate-200 hover:border-slate-300"
+                                onClick={() => navigate('/profile')}
                             >
-                                <div className="flex flex-col sm:flex-row justify-between gap-6">
-                                    <div className="flex-1">
-                                        <div className="flex items-start justify-between mb-1">
-                                            <div>
-                                                <h3 className="text-lg font-bold text-jalanea-900 group-hover:text-jalanea-700 transition-colors">
-                                                    {job.title}
-                                                </h3>
-                                                <div className="flex items-center gap-2 mt-2">
-                                                    {job.logo ? (
-                                                        <img src={job.logo} className="w-8 h-8 rounded-lg object-cover shadow-sm border border-jalanea-100" alt="logo"
-                                                            onError={(e) => {
-                                                                e.currentTarget.style.display = 'none';
-                                                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                                                            }}
-                                                        />
-                                                    ) : null}
-                                                    <div className={`w-8 h-8 rounded-lg bg-jalanea-100 flex items-center justify-center border border-jalanea-200 ${job.logo ? 'hidden' : ''}`}>
-                                                        <Briefcase size={16} className="text-jalanea-400" />
-                                                    </div>
-                                                    <p className="text-sm font-bold text-jalanea-500 uppercase tracking-wide">{job.company}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Tags Row */}
-                                        <div className="flex flex-wrap gap-2 mt-3 mb-4">
-                                            <span className={`inline-flex items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide
-                                 ${job.experienceLevel === 'Internship' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'}
-                              `}>
-                                                {job.experienceLevel}
-                                            </span>
-                                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold bg-jalanea-50 text-jalanea-600 border border-jalanea-100">
-                                                <MapPin size={10} /> {job.location}
-                                            </span>
-                                        </div>
-
-                                        {/* Details Grid */}
-                                        <div className="grid grid-cols-2 gap-y-2 text-sm text-jalanea-600 max-w-md">
-                                            <div className="flex items-center gap-2">
-                                                <Briefcase size={14} className="text-jalanea-400" />
-                                                <span className="font-medium">{job.salaryRange}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Clock size={14} className="text-jalanea-400" />
-                                                <span className="font-medium">{job.postedAt}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Match Ring Visual (Desktop) */}
-                                    <div className="hidden sm:flex flex-col items-center justify-center pl-6 border-l border-jalanea-100 min-w-[100px]">
-                                        <div className="relative flex items-center justify-center w-14 h-14">
-                                            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                                                <path
-                                                    className="text-jalanea-100"
-                                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeWidth="3"
-                                                />
-                                                <path
-                                                    className="text-gold"
-                                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeWidth="3"
-                                                    strokeDasharray="80, 100" // Static since match score needs deep calculation, or pass quick logic
-                                                />
-                                            </svg>
-                                            <span className="absolute text-sm font-bold text-jalanea-900">80%</span>
-                                        </div>
-                                        <span className="text-[10px] font-bold text-jalanea-400 mt-1 uppercase tracking-wider">Match</span>
-                                    </div>
-                                </div>
-                            </Card>
-                        ))}
-                    </div>
-
-                    <div className="flex justify-center pt-4">
-                        <Button variant="ghost" className="text-jalanea-500 hover:text-jalanea-900" icon={<MoreHorizontal size={20} />} onClick={() => navigate('/jobs')}>
-                            Load More Roles
-                        </Button>
-                    </div>
-                </div>
-
-                {/* RIGHT COLUMN: Widgets */}
-                <div className="lg:col-span-1 space-y-6">
-
-                    {/* Credits Widget */}
-                    <CreditsWidget />
-
-                    {/* Active Application Context Widget */}
-                    <ActiveTracker navigate={navigate} />
-
-                    {/* Industry Pulse Widget - AI Generated */}
-                    <Card variant="solid-white" className="border-jalanea-200">
-                        <div className="flex items-center gap-2 mb-4">
-                            <div className="p-1.5 bg-gradient-to-br from-purple-100 to-blue-100 text-purple-600 rounded-md">
-                                <Sparkles size={16} />
-                            </div>
-                            <h3 className="font-bold text-jalanea-900">Industry Pulse</h3>
-                            <span className="ml-auto text-[10px] font-bold text-purple-500 bg-purple-50 px-2 py-0.5 rounded-full uppercase">AI Curated</span>
+                                ✏️ Edit Profile
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="w-full justify-start text-slate-700 border-slate-200 hover:border-slate-300"
+                                onClick={() => navigate('/resume')}
+                            >
+                                📄 Build Resume
+                            </Button>
                         </div>
-
-                        <div className="space-y-3">
-                            {isLoadingPulse ? (
-                                <div className="animate-pulse space-y-3">
-                                    {[1, 2, 3].map(i => (
-                                        <div key={i} className="bg-jalanea-50 rounded-xl p-3">
-                                            <div className="h-4 bg-jalanea-100 rounded w-3/4 mb-2"></div>
-                                            <div className="h-3 bg-jalanea-100 rounded w-1/2"></div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : industryPulse.length > 0 ? (
-                                industryPulse.map((item, i) => {
-                                    // Get icon and color based on type
-                                    const typeConfig = {
-                                        news: { icon: '📰', bg: 'bg-blue-50', text: 'text-blue-600', label: 'News' },
-                                        course: { icon: '📚', bg: 'bg-green-50', text: 'text-green-600', label: 'Course' },
-                                        trend: { icon: '📊', bg: 'bg-orange-50', text: 'text-orange-600', label: 'Trend' },
-                                    };
-                                    const config = typeConfig[item.type as keyof typeof typeConfig] || typeConfig.news;
-
-                                    return (
-                                        <div
-                                            key={item.id || i}
-                                            className="group bg-jalanea-50/50 hover:bg-jalanea-50 rounded-xl p-3 cursor-pointer transition-all hover:shadow-sm border border-transparent hover:border-jalanea-100"
-                                        >
-                                            <div className="flex items-start gap-3">
-                                                <span className="text-lg">{config.icon}</span>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${config.bg} ${config.text}`}>
-                                                            {config.label}
-                                                        </span>
-                                                        <span className="text-[10px] text-jalanea-400 font-medium truncate">{item.source}</span>
-                                                    </div>
-                                                    <p className="text-sm font-bold text-jalanea-900 group-hover:text-gold-dark transition-colors line-clamp-2">
-                                                        {item.title}
-                                                    </p>
-                                                </div>
-                                                <ExternalLink size={14} className="text-jalanea-300 group-hover:text-jalanea-600 shrink-0 mt-1 transition-colors" />
-                                            </div>
-                                        </div>
-                                    );
-                                })
-                            ) : (
-                                <div className="py-6 text-center">
-                                    <div className="w-10 h-10 bg-jalanea-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                                        <Sparkles size={18} className="text-jalanea-400" />
-                                    </div>
-                                    <p className="text-sm text-jalanea-500">Complete your profile for personalized recommendations.</p>
-                                </div>
-                            )}
-                        </div>
-                    </Card>
-
+                    </div>
                 </div>
             </div>
-
         </div>
     );
 };
+
+export default Dashboard;
