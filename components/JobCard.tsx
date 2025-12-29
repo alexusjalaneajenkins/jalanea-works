@@ -3,7 +3,7 @@ import { Card } from './Card';
 import { Button } from './Button';
 import {
     Heart, Briefcase, MapPin, DollarSign, Calendar, Sparkles,
-    Car, Bus, Bike, Footprints, Zap, Home, Wifi, Building2
+    Car, Bus, Bike, Footprints, Zap, Home, Wifi, Building2, AlertTriangle
 } from 'lucide-react';
 import { Job, TransportMode } from '../types';
 
@@ -104,6 +104,14 @@ export const JobCard: React.FC<JobCardProps> = ({ job, isSaved, onSave, onClick 
                                     job.locationType === 'Hybrid' ? <Home size={12} /> :
                                         <Building2 size={12} />}
                                 {job.locationType}
+                            </span>
+                        )}
+
+                        {/* Scam Warning Badge for MEDIUM risk jobs */}
+                        {job.scamLikelihood === 'MEDIUM' && (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide bg-amber-100 text-amber-700 border border-amber-200 animate-pulse">
+                                <AlertTriangle size={12} />
+                                Use Caution
                             </span>
                         )}
                     </div>
