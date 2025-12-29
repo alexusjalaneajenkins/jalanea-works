@@ -335,6 +335,163 @@ export const searchJobsWithGrounding = async (
     }
 };
 
+/**
+ * HYBRID SANDWICH: Clean and Score Jobs with Gemini
+ * Takes raw SerpAPI jobs and uses Gemini to:
+ * 1. Standardize data (salary format, company names)
+ * 2. Detect scams/low-quality listings  
+ * 3. Score relevance based on user profile
+ * 4. Add tags for filtering (Remote, Entry Level, etc.)
+ */
+export const cleanAndScoreJobs = async (
+    rawJobs: any[],
+    userProfile?: UserProfile,
+    userPreferences?: string
+): Promise<Job[]> => {
+    try {
+        if (!rawJobs || rawJobs.length === 0) {
+            return [];
+        }
+
+        console.log(`🧹 Cleaning ${rawJobs.length} jobs with Gemini...`);
+
+        // Build user context for scoring
+        const degreesContext = userProfile?.education?.map(e => {
+            const degreeType = (e as any).degreeType;
+            return degreeType ? `${degreeType} in ${e.degree}` : e.degree;
+        }).join(", ") || "";
+        const skillsContext = userProfile?.skills?.technical?.join(", ") || "";
+
+        const prompt = `
+            You are an expert Job Recruiter AI. 
+            Clean and score these raw job listings for a recent graduate.
+            
+            ${degreesContext ? `USER DEGREES: ${degreesContext}` : ''}
+            ${skillsContext ? `USER SKILLS: ${skillsContext}` : ''}
+            ${userPreferences ? `USER PREFERENCES: ${userPreferences}` : ''}
+            
+            For each job:
+            1. Clean up company name (remove extra characters)
+            2. Standardize salary to "Annual USD" format (e.g., "$50k - $70k")
+            3. Extract the apply URL from apply_options if available
+            4. Score match 0-100 based on user profile fit
+            5. Flag any scam indicators (bad grammar, asking for money, MLM)
+            
+            Return a JSON array with ONLY these fields for each job:
+            - id: unique string
+            - title: cleaned job title  
+            - company: company name only
+            - location: "City, State" format
+            - salaryRange: standardized salary or "Not specified"
+            - postedAt: when posted (e.g., "2 days ago")
+            - matchScore: 0-100 based on user fit
+            - applyUrl: direct application link
+            - description: 1-2 sentence summary
+            - type: "Full-time", "Part-time", "Contract", or "Internship"
+            - experienceLevel: "Entry Level", "Internship", "Associate", or "Mid-Senior"
+            - isScam: boolean (true if suspicious)
+            - skills: array of 3-5 required skills
+            
+            Raw Jobs Data:
+            ${JSON.stringify(rawJobs.slice(0, 15), null, 2)}
+        `;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt,
+            config: {
+                maxOutputTokens: 4096,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            id: { type: Type.STRING },
+                            title: { type: Type.STRING },
+                            company: { type: Type.STRING },
+                            location: { type: Type.STRING },
+                            salaryRange: { type: Type.STRING },
+                            postedAt: { type: Type.STRING },
+                            matchScore: { type: Type.NUMBER },
+                            applyUrl: { type: Type.STRING },
+                            description: { type: Type.STRING },
+                            type: { type: Type.STRING },
+                            experienceLevel: { type: Type.STRING },
+                            isScam: { type: Type.BOOLEAN },
+                            skills: { type: Type.ARRAY, items: { type: Type.STRING } }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (response.text) {
+            let cleanedJobs;
+            try {
+                cleanedJobs = JSON.parse(response.text);
+            } catch (parseError) {
+                console.error('❌ JSON Parse Error in Job Cleaning:', parseError);
+                // Return raw jobs as fallback
+                return rawJobs.map((job, i) => ({
+                    id: `serpapi-${i}`,
+                    title: job.title || 'Unknown',
+                    company: job.company_name || 'Company Hiring',
+                    location: job.location || 'Unknown',
+                    salaryRange: 'Not specified',
+                    postedAt: job.detected_extensions?.posted_at || 'Recently',
+                    matchScore: 50,
+                    applyUrl: job.apply_options?.[0]?.link || '#',
+                    description: job.description?.substring(0, 200) || '',
+                    type: 'Full-time' as const,
+                    experienceLevel: 'Entry Level',
+                    skills: []
+                }));
+            }
+
+            console.log(`✅ Cleaned ${cleanedJobs.length} jobs, filtering scams...`);
+
+            // Filter out scams and return
+            const goodJobs = cleanedJobs.filter((job: any) => !job.isScam);
+            console.log(`📋 ${goodJobs.length} quality jobs after scam filter`);
+
+            return goodJobs.map((job: any, index: number) => ({
+                id: job.id || `cleaned-${index}`,
+                title: job.title || 'Job Opening',
+                company: job.company || 'Company Hiring',
+                location: job.location || 'Unknown',
+                salaryRange: job.salaryRange || 'Not specified',
+                postedAt: job.postedAt || 'Recently',
+                matchScore: job.matchScore || 50,
+                applyUrl: job.applyUrl || '#',
+                description: job.description || '',
+                type: (job.type || 'Full-time') as Job['type'],
+                experienceLevel: job.experienceLevel || 'Entry Level',
+                skills: job.skills || []
+            }));
+        }
+
+        return [];
+    } catch (error) {
+        console.error("Job Cleaning Error:", error);
+        // Return raw jobs as basic fallback
+        return rawJobs.slice(0, 10).map((job, i) => ({
+            id: `fallback-${i}`,
+            title: job.title || 'Unknown',
+            company: job.company_name || 'Company Hiring',
+            location: job.location || 'Unknown',
+            salaryRange: 'Not specified',
+            postedAt: job.detected_extensions?.posted_at || 'Recently',
+            matchScore: 50,
+            applyUrl: job.apply_options?.[0]?.link || '#',
+            description: job.description?.substring(0, 200) || '',
+            type: 'Full-time' as const,
+            experienceLevel: 'Entry Level',
+            skills: []
+        }));
+    }
+};
+
 // LEGACY: Real-Time Job Search Simulation (generates fake jobs, kept for reference)
 export const findRealTimeJobs = async (userProfile: UserProfile): Promise<Job[]> => {
     try {

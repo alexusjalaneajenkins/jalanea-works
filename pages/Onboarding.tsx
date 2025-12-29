@@ -16,7 +16,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { searchJobs } from '../services/jobService';
 import { searchCareersEnriched, getRelatedCareers, mapToCareerPath, getCareerOutlook } from '../services/onetService';
-import { searchJobsWithGrounding } from '../services/geminiService';
+import { cleanAndScoreJobs } from '../services/geminiService';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../services/firebase';
 
@@ -989,20 +989,39 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                 try {
                     let fetchedJobs: Job[] = [];
 
-                    // Use ONLY Google Search Grounding for all job searches
-                    console.log(`🤖 Using Gemini Search Grounding for "${career.title}" in "${groundingLocation}"...`);
-                    const groundedJobs = await searchJobsWithGrounding(
+                    // HYBRID SANDWICH: Use SerpAPI for raw data + Gemini for cleaning
+                    console.log(`🔍 Fetching jobs from Google Jobs for "${career.title}" in "${groundingLocation}"...`);
+
+                    // Step 1: Fetch raw jobs from SerpAPI (Google Jobs widget)
+                    const rawResponse = await searchJobs(
                         `${career.title} entry level`,
-                        groundingLocation,
-                        jobWorkStyleFilter as 'On-site' | 'Remote' | 'Hybrid' | 'All',
-                        userProfile || undefined
+                        {
+                            location: groundingLocation,
+                            country: 'us',
+                            language: 'en'
+                        }
                     );
 
-                    if (groundedJobs && groundedJobs.length > 0) {
-                        console.log(`✅ Grounding found ${groundedJobs.length} live jobs!`);
-                        fetchedJobs = groundedJobs;
+                    if (rawResponse.jobs && rawResponse.jobs.length > 0) {
+                        console.log(`📦 SerpAPI found ${rawResponse.jobs.length} raw jobs from Google Jobs`);
+
+                        // Step 2: Clean and score jobs with Gemini
+                        const cleanedJobs = await cleanAndScoreJobs(
+                            rawResponse.jobs,
+                            userProfile || undefined,
+                            `Looking for ${jobWorkStyleFilter} positions in ${groundingLocation}`
+                        );
+
+                        if (cleanedJobs && cleanedJobs.length > 0) {
+                            console.log(`✅ Gemini cleaned ${cleanedJobs.length} quality jobs!`);
+                            fetchedJobs = cleanedJobs;
+                        } else {
+                            // Fallback: use raw jobs if Gemini cleaning fails
+                            console.log(`⚠️ Gemini cleaning failed, using raw jobs`);
+                            fetchedJobs = rawResponse.jobs;
+                        }
                     } else {
-                        console.log(`⚠️ Grounding returned no results for ${career.title}`);
+                        console.log(`⚠️ No jobs found for ${career.title} in ${groundingLocation}`);
                     }
 
                     if (fetchedJobs.length > 0) {
