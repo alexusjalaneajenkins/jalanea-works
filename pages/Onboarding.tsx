@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { VALENCIA_PROGRAMS_DB } from '../data/valenciaPrograms';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
+import { Combobox } from '../components/Combobox';
 import { SalaryRealityCheck } from '../components/SalaryRealityCheck';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, setDoc } from 'firebase/firestore';
@@ -404,30 +405,20 @@ export const Onboarding: React.FC = () => {
                                                 <label className="block text-sm font-medium text-jalanea-700 mb-2">
                                                     Major / Field of Study
                                                 </label>
-                                                <input
-                                                    type="text"
+                                                <Combobox
                                                     value={edu.major}
-                                                    onChange={(e) => updateEducation(edu.id, 'major', e.target.value)}
-                                                    placeholder="e.g. Graphic Design"
-                                                    list={`programs-${edu.id}`}
-                                                    className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none"
-                                                />
-                                                {/* Dynamic Suggestions for Valencia Programs */}
-                                                <datalist id={`programs-${edu.id}`}>
-                                                    {(() => {
-                                                        let options: string[] = [];
-                                                        if (edu.degreeType?.includes("Bachelor's")) options = VALENCIA_PROGRAMS_DB.Bachelor_Degrees;
-                                                        else if (edu.degreeType?.includes("Associate's")) options = VALENCIA_PROGRAMS_DB.AS_Degrees;
-                                                        else if (edu.degreeType?.includes("Certificate")) options = [
+                                                    onChange={(val) => updateEducation(edu.id, 'major', val)}
+                                                    options={(() => {
+                                                        if (edu.degreeType?.includes("Bachelor's")) return VALENCIA_PROGRAMS_DB.Bachelor_Degrees;
+                                                        if (edu.degreeType?.includes("Associate's")) return VALENCIA_PROGRAMS_DB.AS_Degrees;
+                                                        if (edu.degreeType?.includes("Certificate")) return [
                                                             ...VALENCIA_PROGRAMS_DB.Technical_Certificates,
                                                             ...VALENCIA_PROGRAMS_DB.Advanced_Technical_Certificates
                                                         ];
-
-                                                        return options.map((prog) => (
-                                                            <option key={prog} value={prog} />
-                                                        ));
+                                                        return [];
                                                     })()}
-                                                </datalist>
+                                                    placeholder="e.g. Graphic Design"
+                                                />
                                                 <p className="text-xs text-jalanea-400 mt-1.5">
                                                     Select your Valencia program or type manually for others.
                                                 </p>
