@@ -379,7 +379,10 @@ CRITICAL RULES:
 1. Output ONLY valid JSON - no markdown, no code blocks, no explanations
 2. Standardize ALL salaries to "Annual USD" format (e.g., "$50k - $70k")
 3. If salary is missing, set salaryRange to "Not specified"
-4. isScam = true for: MLM, asks for money, unrealistic pay. isScam = false otherwise.
+4. Detect scam indicators and set scam_likelihood:
+   - HIGH: Asks for money, MLM language, unrealistic pay ($5k/week easy work)
+   - MEDIUM: Vague company info, poor grammar, too good to be true
+   - LOW: Legitimate job posting
 5. Score match 0-100 based on user profile fit
 
 ${degreesContext ? `USER DEGREES: ${degreesContext}` : ''}
@@ -425,7 +428,7 @@ ${JSON.stringify(jobBatch.map(job => ({
                             description: { type: Type.STRING },
                             type: { type: Type.STRING },
                             experienceLevel: { type: Type.STRING },
-                            isScam: { type: Type.BOOLEAN },
+                            scam_likelihood: { type: Type.STRING, enum: ["LOW", "MEDIUM", "HIGH"] },
                             skills: { type: Type.ARRAY, items: { type: Type.STRING } }
                         }
                     }
@@ -456,14 +459,20 @@ ${JSON.stringify(jobBatch.map(job => ({
                 }));
             }
 
-            console.log(`✅ Cleaned ${cleanedJobs.length} jobs, filtering scams...`);
+            console.log(`✅ Cleaned ${cleanedJobs.length} jobs, filtering high-risk scams...`);
 
-            // Filter out scams and return
-            const goodJobs = cleanedJobs.filter((job: any) => !job.isScam);
-            console.log(`📋 ${goodJobs.length} quality jobs after scam filter`);
+            // Only filter HIGH-risk scams, keep LOW and MEDIUM
+            const goodJobs = cleanedJobs.filter((job: any) => job.scam_likelihood !== 'HIGH');
+            console.log(`📋 ${goodJobs.length} quality jobs after scam filter (blocked ${cleanedJobs.length - goodJobs.length} HIGH risk)`);
+
+            // Warn about MEDIUM risk jobs
+            const mediumRiskCount = cleanedJobs.filter((job: any) => job.scam_likelihood === 'MEDIUM').length;
+            if (mediumRiskCount > 0) {
+                console.log(`⚠️ ${mediumRiskCount} jobs marked as MEDIUM risk - will show with warning`);
+            }
 
             return goodJobs.map((job: any, index: number) => ({
-                id: job.id || `cleaned - ${index} `,
+                id: job.id || `cleaned-${index}`,
                 title: job.title || 'Job Opening',
                 company: job.company || 'Company Hiring',
                 location: job.location || 'Unknown',
@@ -474,7 +483,10 @@ ${JSON.stringify(jobBatch.map(job => ({
                 description: job.description || '',
                 type: (job.type || 'Full-time') as Job['type'],
                 experienceLevel: job.experienceLevel || 'Entry Level',
-                skills: job.skills || []
+                skills: job.skills || [],
+                // Pass both for backwards compatibility and new UI features
+                scamLikelihood: job.scam_likelihood || 'LOW',
+                isScam: job.scam_likelihood === 'HIGH'
             }));
         }
 

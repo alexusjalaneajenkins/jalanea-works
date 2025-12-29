@@ -45,6 +45,10 @@ export interface Job {
 
   // Source URL (from SerpApi)
   applyUrl?: string;
+
+  // Scam Detection (from Gemini analysis)
+  scamLikelihood?: 'LOW' | 'MEDIUM' | 'HIGH';
+  isScam?: boolean;
 }
 
 export interface JobAnalysis {
