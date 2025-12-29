@@ -206,6 +206,18 @@ export interface UserProfile {
   hasSetupSchedule?: boolean;
   savedJobs?: SavedJob[];
   updatedAt: string;
+
+  // NEW: Financial planning fields from Money Talk step
+  targetSalaryRange?: {
+    min: number;
+    max: number;
+  };
+  monthlyBudgetEstimate?: {
+    monthlyNet: number;
+    maxRent: number;
+  };
+  yearsOfExperience?: '0-1' | '1-3' | '3+';
+  currentRole?: string;
 }
 
 // Saved Job for tracking applications
