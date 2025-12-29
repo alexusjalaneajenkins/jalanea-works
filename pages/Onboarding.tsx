@@ -22,7 +22,7 @@ const YEARS = Array.from({ length: 30 }, (_, i) => (new Date().getFullYear() - i
 // NEW STREAMLINED ONBOARDING: 4-Step Wizard
 // ============================================
 
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3 | 4 | 5;
 
 // Individual entry types for arrays
 interface EducationEntry {
@@ -62,7 +62,8 @@ interface FormData {
     maxRent: number;
     maxCarPayment: number;
 
-    // Step 4: Preferences
+    // Step 4: Career Goals
+    targetRoles: string[];
     workStyles: WorkStyle[];
 }
 
@@ -81,6 +82,7 @@ const INITIAL_FORM: FormData = {
     monthlyNet: 0,
     maxRent: 0,
     maxCarPayment: 0,
+    targetRoles: [],
     workStyles: []
 };
 
@@ -97,10 +99,11 @@ export const Onboarding: React.FC = () => {
     const [step, setStep] = useState<Step>(1);
     const [form, setForm] = useState<FormData>(INITIAL_FORM);
     const [skillInput, setSkillInput] = useState('');
+    const [roleInput, setRoleInput] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Step navigation
-    const nextStep = () => setStep((s) => Math.min(4, s + 1) as Step);
+    const nextStep = () => setStep((s) => Math.min(5, s + 1) as Step);
     const prevStep = () => setStep((s) => Math.max(1, s - 1) as Step);
 
     // Form updates
@@ -182,10 +185,50 @@ export const Onboarding: React.FC = () => {
         }
     };
 
+    // Target Role management
+    const addRole = () => {
+        if (roleInput.trim() && form.targetRoles.length < 5 && !form.targetRoles.includes(roleInput.trim())) {
+            updateForm({ targetRoles: [...form.targetRoles, roleInput.trim()] });
+            setRoleInput('');
+        }
+    };
+
+    const removeRole = (role: string) => {
+        updateForm({ targetRoles: form.targetRoles.filter(r => r !== role) });
+    };
+
+    const addSuggestedRole = (role: string) => {
+        if (form.targetRoles.length < 5 && !form.targetRoles.includes(role)) {
+            updateForm({ targetRoles: [...form.targetRoles, role] });
+        }
+    };
+
+    // Get suggested roles based on major
+    const getSuggestedRoles = (): string[] => {
+        const major = form.educations[0]?.major?.toLowerCase() || '';
+        if (major.includes('graphic') || major.includes('design')) {
+            return ['Graphic Designer', 'Junior Designer', 'Visual Designer', 'Brand Designer', 'Marketing Coordinator'];
+        }
+        if (major.includes('web') || major.includes('software') || major.includes('computer')) {
+            return ['Web Developer', 'Junior Developer', 'Frontend Developer', 'Software Engineer', 'IT Support'];
+        }
+        if (major.includes('business') || major.includes('management')) {
+            return ['Business Analyst', 'Project Coordinator', 'Operations Assistant', 'Account Manager', 'Sales Representative'];
+        }
+        if (major.includes('nursing') || major.includes('health')) {
+            return ['Registered Nurse', 'CNA', 'Medical Assistant', 'Patient Care Tech', 'Home Health Aide'];
+        }
+        if (major.includes('accounting') || major.includes('finance')) {
+            return ['Staff Accountant', 'Bookkeeper', 'Financial Analyst', 'Accounts Payable Clerk', 'Tax Preparer'];
+        }
+        return ['Entry Level', 'Associate', 'Coordinator', 'Assistant', 'Specialist'];
+    };
+
     // Validation - at least one education with degree and school
     const isStep1Valid = form.name.trim() && form.location.trim();
     const isStep2Valid = form.educations.some(edu => edu.degreeType && edu.major.trim() && edu.school.trim());
     const isStep3Valid = form.salaryMin > 0 && form.salaryMax > form.salaryMin;
+    const isStep4Valid = form.targetRoles.length > 0;
 
     // Submit profile
     const submitProfile = async () => {
@@ -238,7 +281,7 @@ export const Onboarding: React.FC = () => {
                 certifications: [],
                 experience,
                 preferences: {
-                    targetRoles: [],
+                    targetRoles: form.targetRoles,
                     workStyles: form.workStyles,
                     learningStyle: 'Mixed',
                     salary: form.salaryMax,
@@ -282,7 +325,7 @@ export const Onboarding: React.FC = () => {
     // Step indicator
     const StepIndicator = () => (
         <div className="flex items-center justify-center gap-2 mb-8">
-            {[1, 2, 3, 4].map((s) => (
+            {[1, 2, 3, 4, 5].map((s) => (
                 <div
                     key={s}
                     className={`w-3 h-3 rounded-full transition-all duration-300 ${s === step
@@ -308,7 +351,7 @@ export const Onboarding: React.FC = () => {
                     <h1 className="text-3xl font-display font-bold text-jalanea-900">
                         Let's Build Your Profile
                     </h1>
-                    <p className="text-jalanea-600 mt-2">Step {step} of 4</p>
+                    <p className="text-jalanea-600 mt-2">Step {step} of 5</p>
                 </div>
 
                 <StepIndicator />
@@ -713,6 +756,88 @@ export const Onboarding: React.FC = () => {
                                 initialMax={form.salaryMax}
                                 onChange={handleSalaryChange}
                             />
+                        </div>
+                    )}
+
+                    {/* Step 4: Career Goals */}
+                    {step === 4 && (
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-3 bg-yellow-100 rounded-xl">
+                                    <Briefcase className="w-6 h-6 text-yellow-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-display font-bold text-jalanea-900">
+                                        Career Goals
+                                    </h2>
+                                    <p className="text-sm text-jalanea-500">What roles are you targeting?</p>
+                                </div>
+                            </div>
+
+                            {/* Suggested Roles */}
+                            <div>
+                                <label className="block text-sm font-medium text-jalanea-700 mb-2">
+                                    Suggested Roles for Your Major
+                                </label>
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                    {getSuggestedRoles().map((role) => (
+                                        <button
+                                            key={role}
+                                            onClick={() => addSuggestedRole(role)}
+                                            disabled={form.targetRoles.includes(role)}
+                                            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${form.targetRoles.includes(role)
+                                                    ? 'bg-jalanea-100 text-jalanea-400 border-jalanea-200 cursor-default'
+                                                    : 'bg-white text-jalanea-700 border-jalanea-200 hover:border-jalanea-400 hover:bg-jalanea-50'
+                                                }`}
+                                        >
+                                            + {role}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Selected Roles */}
+                            <div>
+                                <label className="block text-sm font-medium text-jalanea-700 mb-2">
+                                    Your Target Roles ({form.targetRoles.length}/5)
+                                </label>
+                                {form.targetRoles.length === 0 ? (
+                                    <p className="text-sm text-jalanea-400 italic">Click above to add roles or type your own below.</p>
+                                ) : (
+                                    <div className="flex flex-wrap gap-2 mb-3">
+                                        {form.targetRoles.map((role) => (
+                                            <span
+                                                key={role}
+                                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-jalanea-100 text-jalanea-700 rounded-full text-sm font-medium"
+                                            >
+                                                {role}
+                                                <button onClick={() => removeRole(role)} className="hover:text-red-500">
+                                                    <X className="w-3.5 h-3.5" />
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Custom Role Input */}
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={roleInput}
+                                    onChange={(e) => setRoleInput(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addRole())}
+                                    placeholder="Type a custom role..."
+                                    className="flex-1 px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 focus:ring-2 focus:ring-jalanea-100 outline-none transition-all"
+                                />
+                                <button
+                                    onClick={addRole}
+                                    disabled={form.targetRoles.length >= 5 || !roleInput.trim()}
+                                    className="px-4 py-3 bg-jalanea-100 text-jalanea-700 rounded-xl hover:bg-jalanea-200 disabled:opacity-50 transition-all"
+                                >
+                                    <Plus className="w-5 h-5" />
+                                </button>
+                            </div>
 
                             {/* Work Style Preferences */}
                             <div className="pt-6 border-t border-jalanea-100">
@@ -741,8 +866,8 @@ export const Onboarding: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Step 4: Complete */}
-                    {step === 4 && (
+                    {/* Step 5: Complete */}
+                    {step === 5 && (
                         <div className="text-center py-8 space-y-6">
                             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
                                 <Check className="w-10 h-10 text-green-600" />
@@ -799,14 +924,15 @@ export const Onboarding: React.FC = () => {
                             <div />
                         )}
 
-                        {step < 4 ? (
+                        {step < 5 ? (
                             <Button
                                 variant="primary"
                                 onClick={nextStep}
                                 disabled={
                                     (step === 1 && !isStep1Valid) ||
                                     (step === 2 && !isStep2Valid) ||
-                                    (step === 3 && !isStep3Valid)
+                                    (step === 3 && !isStep3Valid) ||
+                                    (step === 4 && !isStep4Valid)
                                 }
                             >
                                 Continue
