@@ -346,7 +346,8 @@ export const searchJobsWithGrounding = async (
 export const cleanAndScoreJobs = async (
     rawJobs: any[],
     userProfile?: UserProfile,
-    userPreferences?: string
+    userPreferences?: string,
+    targetLocation?: string  // NEW: User's target city for radius filtering
 ): Promise<Job[]> => {
     try {
         if (!rawJobs || rawJobs.length === 0) {
@@ -387,10 +388,16 @@ CRITICAL RULES:
 
 ${degreesContext ? `USER DEGREES: ${degreesContext}` : ''}
 ${skillsContext ? `USER SKILLS: ${skillsContext}` : ''}
-${userPreferences ? `USER PREFERENCES: ${userPreferences}` : ''}`;
+${userPreferences ? `USER PREFERENCES: ${userPreferences}` : ''}
+${targetLocation ? `
+6. STRICT LOCATION CHECK:
+   - User's target location: "${targetLocation}"
+   - Mark jobs farther than 50 miles from ${targetLocation} as isIrrelevant: true
+   - Jobs in distant cities (e.g., Miami for Orlando user) should be marked isIrrelevant
+   - Remote jobs are NEVER irrelevant regardless of location` : ''}`;
 
-        // Limit to 8 jobs to prevent truncation
-        const jobBatch = rawJobs.slice(0, 8);
+        // REDUCED: Limit to 5 jobs to prevent JSON truncation (was 8)
+        const jobBatch = rawJobs.slice(0, 5);
 
         const userPrompt = `Clean and score these job listings:
 
@@ -429,7 +436,8 @@ ${JSON.stringify(jobBatch.map(job => ({
                             type: { type: Type.STRING },
                             experienceLevel: { type: Type.STRING },
                             scam_likelihood: { type: Type.STRING, enum: ["LOW", "MEDIUM", "HIGH"] },
-                            skills: { type: Type.ARRAY, items: { type: Type.STRING } }
+                            skills: { type: Type.ARRAY, items: { type: Type.STRING } },
+                            isIrrelevant: { type: Type.BOOLEAN }  // NEW: true if job is > 50 miles from target
                         }
                     }
                 }
@@ -459,16 +467,24 @@ ${JSON.stringify(jobBatch.map(job => ({
                 }));
             }
 
-            console.log(`✅ Cleaned ${cleanedJobs.length} jobs, filtering high-risk scams...`);
+            console.log(`✅ Cleaned ${cleanedJobs.length} jobs, filtering...`);
 
-            // Only filter HIGH-risk scams, keep LOW and MEDIUM
-            const goodJobs = cleanedJobs.filter((job: any) => job.scam_likelihood !== 'HIGH');
-            console.log(`📋 ${goodJobs.length} quality jobs after scam filter (blocked ${cleanedJobs.length - goodJobs.length} HIGH risk)`);
+            // Filter out HIGH-risk scams AND irrelevant locations
+            const goodJobs = cleanedJobs.filter((job: any) =>
+                job.scam_likelihood !== 'HIGH' && !job.isIrrelevant
+            );
+
+            const scamCount = cleanedJobs.filter((job: any) => job.scam_likelihood === 'HIGH').length;
+            const irrelevantCount = cleanedJobs.filter((job: any) => job.isIrrelevant).length;
+
+            console.log(`📋 ${goodJobs.length} quality jobs after filtering:`);
+            if (scamCount > 0) console.log(`   ❌ Blocked ${scamCount} HIGH-risk scams`);
+            if (irrelevantCount > 0) console.log(`   📍 Blocked ${irrelevantCount} jobs > 50 miles away`);
 
             // Warn about MEDIUM risk jobs
-            const mediumRiskCount = cleanedJobs.filter((job: any) => job.scam_likelihood === 'MEDIUM').length;
+            const mediumRiskCount = goodJobs.filter((job: any) => job.scam_likelihood === 'MEDIUM').length;
             if (mediumRiskCount > 0) {
-                console.log(`⚠️ ${mediumRiskCount} jobs marked as MEDIUM risk - will show with warning`);
+                console.log(`   ⚠️ ${mediumRiskCount} jobs marked as MEDIUM risk - showing with warning`);
             }
 
             return goodJobs.map((job: any, index: number) => ({

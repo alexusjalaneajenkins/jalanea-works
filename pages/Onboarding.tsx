@@ -1009,7 +1009,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ setRoute }) => {
                         const cleanedJobs = await cleanAndScoreJobs(
                             rawResponse.jobs,
                             userProfile || undefined,
-                            `Looking for ${jobWorkStyleFilter} positions in ${groundingLocation}`
+                            `Looking for ${jobWorkStyleFilter} positions in ${groundingLocation}`,
+                            groundingLocation  // NEW: Pass target location for 50-mile radius filtering
                         );
 
                         if (cleanedJobs && cleanedJobs.length > 0) {
