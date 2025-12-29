@@ -93,7 +93,7 @@ const WORK_STYLE_OPTIONS: { value: WorkStyle; label: string; icon: string }[] = 
 
 export const Onboarding: React.FC = () => {
     const navigate = useNavigate();
-    const { user, updateUserProfile } = useAuth();
+    const { currentUser: user, saveUserProfile: updateUserProfile } = useAuth();
     const [step, setStep] = useState<Step>(1);
     const [form, setForm] = useState<FormData>(INITIAL_FORM);
     const [skillInput, setSkillInput] = useState('');

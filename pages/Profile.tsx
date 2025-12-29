@@ -72,8 +72,14 @@ export const ProfilePage: React.FC = () => {
   const [portfolioUrl, setPortfolioUrl] = useState('');
   const [education, setEducation] = useState<any[]>([]);
   const [experience, setExperience] = useState<any[]>([]);
+
+
   const [targetRoles, setTargetRoles] = useState<string[]>([]);
-  const [salary, setSalary] = useState(45000);
+  const [salaryMin, setSalaryMin] = useState(45000);
+  const [salaryMax, setSalaryMax] = useState(65000);
+  const [monthlyNet, setMonthlyNet] = useState(0);
+  const [maxRent, setMaxRent] = useState(0);
+  const [maxCarPayment, setMaxCarPayment] = useState(0);
   const [transportMode, setTransportMode] = useState('Car');
   const [learningStyle, setLearningStyle] = useState('Video');
 
@@ -87,7 +93,15 @@ export const ProfilePage: React.FC = () => {
       setEducation(userProfile.education || []);
       setExperience(userProfile.experience || []);
       setTargetRoles(userProfile.preferences?.targetRoles || []);
-      setSalary(userProfile.preferences?.salary || 45000);
+      setTargetRoles(userProfile.preferences?.targetRoles || []);
+
+      // Financials
+      setSalaryMin(userProfile.targetSalaryRange?.min || userProfile.preferences?.salary || 45000);
+      setSalaryMax(userProfile.targetSalaryRange?.max || (userProfile.preferences?.salary ? userProfile.preferences.salary + 10000 : 65000));
+      setMonthlyNet(userProfile.monthlyBudgetEstimate?.monthlyNet || 0);
+      setMaxRent(userProfile.monthlyBudgetEstimate?.maxRent || 0);
+      setMaxCarPayment(userProfile.monthlyBudgetEstimate?.maxCarPayment || 0);
+
       setTransportMode(userProfile.preferences?.transportMode || 'Car');
       setLearningStyle(userProfile.preferences?.learningStyle || 'Video');
     } else if (currentUser) {
@@ -108,10 +122,14 @@ export const ProfilePage: React.FC = () => {
         experience,
         preferences: {
           targetRoles,
-          salary,
+          salary: salaryMax,
           transportMode,
           learningStyle,
           workStyles: userProfile?.preferences?.workStyles || []
+        },
+        targetSalaryRange: {
+          min: salaryMin,
+          max: salaryMax
         },
         updatedAt: new Date().toISOString()
       });
@@ -439,10 +457,10 @@ export const ProfilePage: React.FC = () => {
                 ) : (
                   <div>
                     <h4 className="text-sm font-bold text-jalanea-900">
-                      {edu.degreeType || edu.degreeLevel} {edu.program && `in ${edu.program}`}
+                      {edu.degreeType || edu.degreeLevel} {(edu.program || edu.degree) && `in ${edu.program || edu.degree}`}
                     </h4>
-                    {edu.gradYear && (
-                      <p className="text-sm text-jalanea-500">Class of {edu.gradYear}</p>
+                    {(edu.gradYear || edu.year) && (
+                      <p className="text-sm text-jalanea-500">Class of {edu.gradYear || edu.year} • {edu.school}</p>
                     )}
                   </div>
                 )}
@@ -548,28 +566,53 @@ export const ProfilePage: React.FC = () => {
 
         <Card variant="solid-white" className="p-6">
           <h3 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider flex items-center gap-2 mb-4">
-            <Award size={14} /> Preferences
+            <Award size={14} /> Preferences & Budget
           </h3>
           <div className="space-y-4">
             <div>
-              <label className="text-xs font-bold text-jalanea-400 block mb-2">Minimum Salary Target</label>
+              <label className="text-xs font-bold text-jalanea-400 block mb-2">Target Salary Range</label>
               {isEditing ? (
-                <Input
-                  type="number"
-                  value={salary}
-                  onChange={e => setSalary(parseInt(e.target.value) || 0)}
-                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    value={salaryMin}
+                    onChange={e => setSalaryMin(parseInt(e.target.value) || 0)}
+                    placeholder="Min"
+                  />
+                  <span className="text-jalanea-400">-</span>
+                  <Input
+                    type="number"
+                    value={salaryMax}
+                    onChange={e => setSalaryMax(parseInt(e.target.value) || 0)}
+                    placeholder="Max"
+                  />
+                </div>
               ) : (
-                <p className="text-lg font-bold text-jalanea-900">${salary.toLocaleString()}/year</p>
+                <p className="text-lg font-bold text-jalanea-900">
+                  ${salaryMin.toLocaleString()} – ${salaryMax.toLocaleString()}/year
+                </p>
               )}
             </div>
+
+            {(monthlyNet > 0) && (
+              <div className="pt-2 border-t border-jalanea-100">
+                <label className="text-xs font-bold text-jalanea-400 block mb-2">Monthly Budget Reality</label>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-jalanea-500 block text-xs">Max Rent (3x Rule)</span>
+                    <span className="font-bold text-jalanea-900">${maxRent}</span>
+                  </div>
+                  <div>
+                    <span className="text-jalanea-500 block text-xs">Max Car Note (15%)</span>
+                    <span className="font-bold text-jalanea-900">${maxCarPayment}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="text-xs font-bold text-jalanea-400 block mb-2">Transport Mode</label>
               <p className="text-sm text-jalanea-700">{transportMode}</p>
-            </div>
-            <div>
-              <label className="text-xs font-bold text-jalanea-400 block mb-2">Learning Style</label>
-              <p className="text-sm text-jalanea-700">{learningStyle}</p>
             </div>
           </div>
         </Card>

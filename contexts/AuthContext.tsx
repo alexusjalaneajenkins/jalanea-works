@@ -64,6 +64,16 @@ interface UserProfileData {
     monthlyCreditsLimit?: number;
     trialEndsAt?: Date | null;
     subscriptionStatus?: string | null;
+    // New Financial Data
+    targetSalaryRange?: {
+        min: number;
+        max: number;
+    };
+    monthlyBudgetEstimate?: {
+        monthlyNet: number;
+        maxRent: number;
+        maxCarPayment: number;
+    };
 }
 
 interface AuthContextType {
