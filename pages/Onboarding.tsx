@@ -15,6 +15,9 @@ import {
 import type { UserProfile, Education, DegreeType, WorkStyle } from '../types';
 import { DEGREE_TYPE_OPTIONS } from '../types';
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const YEARS = Array.from({ length: 30 }, (_, i) => (new Date().getFullYear() - i).toString());
+
 // ============================================
 // NEW STREAMLINED ONBOARDING: 4-Step Wizard
 // ============================================
@@ -34,7 +37,11 @@ interface ExperienceEntry {
     id: string;
     role: string;
     company: string;
-    duration: string;
+    startMonth: string;
+    startYear: string;
+    endMonth: string;
+    endYear: string;
+    isCurrent: boolean;
 }
 
 interface FormData {
@@ -135,11 +142,20 @@ export const Onboarding: React.FC = () => {
 
     // Experience management
     const addExperience = () => {
-        const newEntry: ExperienceEntry = { id: generateId(), role: '', company: '', duration: '' };
-        updateForm({ experiences: [...form.experiences, newEntry] });
+        const newExp: ExperienceEntry = {
+            id: generateId(),
+            role: '',
+            company: '',
+            startMonth: '',
+            startYear: '',
+            endMonth: '',
+            endYear: '',
+            isCurrent: false
+        };
+        updateForm({ experiences: [...form.experiences, newExp] });
     };
 
-    const updateExperience = (id: string, field: keyof ExperienceEntry, value: string) => {
+    const updateExperience = (id: string, field: keyof ExperienceEntry, value: string | boolean) => {
         updateForm({
             experiences: form.experiences.map(exp =>
                 exp.id === id ? { ...exp, [field]: value } : exp
@@ -196,12 +212,18 @@ export const Onboarding: React.FC = () => {
             // Map experiences array to Experience[] format
             const experience = form.experiences
                 .filter(exp => exp.role.trim())
-                .map(exp => ({
-                    role: exp.role,
-                    company: exp.company || 'Company',
-                    duration: exp.duration || 'Present',
-                    description: []
-                }));
+                .map(exp => {
+                    const start = `${exp.startMonth} ${exp.startYear}`.trim();
+                    const end = exp.isCurrent ? 'Present' : `${exp.endMonth} ${exp.endYear}`.trim();
+                    const duration = start && end ? `${start} - ${end}` : start || end || '';
+
+                    return {
+                        role: exp.role,
+                        company: exp.company || 'Company',
+                        duration: duration || 'Present', // Fallback if duration is empty
+                        description: []
+                    };
+                });
 
             const profile: Partial<UserProfile> = {
                 name: form.name,
@@ -427,13 +449,16 @@ export const Onboarding: React.FC = () => {
                                                 <label className="block text-sm font-medium text-jalanea-700 mb-2">
                                                     School
                                                 </label>
-                                                <input
-                                                    type="text"
+                                                <select
                                                     value={edu.school}
                                                     onChange={(e) => updateEducation(edu.id, 'school', e.target.value)}
-                                                    placeholder="University of Central Florida"
-                                                    className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none"
-                                                />
+                                                    className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none bg-white"
+                                                >
+                                                    <option value="">Select School...</option>
+                                                    <option value="Valencia College">Valencia College</option>
+                                                    <option value="University of Central Florida (UCF)">University of Central Florida (UCF)</option>
+                                                    <option value="Other">Other</option>
+                                                </select>
                                             </div>
                                         </div>
                                     </div>
@@ -544,15 +569,62 @@ export const Onboarding: React.FC = () => {
                                                     </div>
                                                     <div className="col-span-2">
                                                         <label className="block text-xs font-bold text-jalanea-700 mb-1.5">
-                                                            Duration
+                                                            Time Period
                                                         </label>
-                                                        <input
-                                                            type="text"
-                                                            value={exp.duration}
-                                                            onChange={(e) => updateExperience(exp.id, 'duration', e.target.value)}
-                                                            placeholder="e.g. Summer 2024 or Jan 2023 - Present"
-                                                            className="w-full px-3 py-2.5 rounded-lg border border-jalanea-200 focus:border-jalanea-500 focus:ring-2 focus:ring-jalanea-50 outline-none text-sm transition-all"
-                                                        />
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            {/* Start Date */}
+                                                            <div className="flex gap-2">
+                                                                <select
+                                                                    value={exp.startMonth}
+                                                                    onChange={(e) => updateExperience(exp.id, 'startMonth', e.target.value)}
+                                                                    className="w-full px-3 py-2.5 rounded-lg border border-jalanea-200 text-sm bg-white"
+                                                                >
+                                                                    <option value="">Start Month</option>
+                                                                    {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+                                                                </select>
+                                                                <select
+                                                                    value={exp.startYear}
+                                                                    onChange={(e) => updateExperience(exp.id, 'startYear', e.target.value)}
+                                                                    className="w-full px-3 py-2.5 rounded-lg border border-jalanea-200 text-sm bg-white"
+                                                                >
+                                                                    <option value="">Year</option>
+                                                                    {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                                                                </select>
+                                                            </div>
+
+                                                            {/* End Date */}
+                                                            <div className="space-y-2">
+                                                                {!exp.isCurrent && (
+                                                                    <div className="flex gap-2">
+                                                                        <select
+                                                                            value={exp.endMonth}
+                                                                            onChange={(e) => updateExperience(exp.id, 'endMonth', e.target.value)}
+                                                                            className="w-full px-3 py-2.5 rounded-lg border border-jalanea-200 text-sm bg-white"
+                                                                        >
+                                                                            <option value="">End Month</option>
+                                                                            {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+                                                                        </select>
+                                                                        <select
+                                                                            value={exp.endYear}
+                                                                            onChange={(e) => updateExperience(exp.id, 'endYear', e.target.value)}
+                                                                            className="w-full px-3 py-2.5 rounded-lg border border-jalanea-200 text-sm bg-white"
+                                                                        >
+                                                                            <option value="">Year</option>
+                                                                            {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                                                                        </select>
+                                                                    </div>
+                                                                )}
+                                                                <label className="flex items-center gap-2 cursor-pointer">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={exp.isCurrent}
+                                                                        onChange={(e) => updateExperience(exp.id, 'isCurrent', e.target.checked as any)}
+                                                                        className="rounded border-jalanea-300 text-jalanea-600 focus:ring-jalanea-500"
+                                                                    />
+                                                                    <span className="text-sm text-jalanea-600">I currently work here</span>
+                                                                </label>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>

@@ -182,45 +182,43 @@ export const SalaryRealityCheck: React.FC<SalaryRealityCheckProps> = ({
                 </div>
 
                 {/* City comparison */}
-                <div className={`rounded-xl p-4 border ${isAffordable
-                    ? 'bg-green-50 border-green-200'
-                    : 'bg-amber-50 border-amber-200'
-                    }`}>
-                    <div className="flex items-start gap-3">
-                        <div className={`p-1.5 rounded-lg ${isAffordable ? 'bg-green-100' : 'bg-amber-100'
-                            }`}>
-                            {isAffordable ? (
-                                <CheckCircle className="w-4 h-4 text-green-600" />
-                            ) : (
-                                <AlertTriangle className="w-4 h-4 text-amber-600" />
-                            )}
-                        </div>
-                        <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                                <Home className="w-4 h-4 text-jalanea-400" />
-                                <span className="text-sm font-medium text-jalanea-700">
-                                    Average Rent in {city.charAt(0).toUpperCase() + city.slice(1)}
-                                </span>
-                            </div>
-                            <p className="text-lg font-bold text-jalanea-900 mb-2">
-                                {formatCurrency(cityRent)}/mo
-                            </p>
+                {/* Lifestyle Context (What this buys you) */}
+                <div className="bg-jalanea-50 rounded-xl p-5 border border-jalanea-200">
+                    <h4 className="font-bold text-jalanea-900 mb-4 flex items-center gap-2">
+                        <Home className="w-5 h-5 text-jalanea-600" />
+                        What this budget gets you in Orlando:
+                    </h4>
 
-                            {isAffordable ? (
-                                <p className="text-sm text-green-700">
-                                    ✓ Your target salary comfortably covers rent in this area.
+                    <div className="space-y-4">
+                        {/* Housing Context */}
+                        <div className="flex items-start gap-3">
+                            <div className="p-1.5 bg-white rounded-lg border border-jalanea-100 shadow-sm mt-0.5">
+                                <CheckCircle className="w-4 h-4 text-green-600" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-jalanea-900">Housing</p>
+                                <p className="text-sm text-jalanea-600">
+                                    {maxRent < 1000 ? "Room in shared house / Student housing" :
+                                        maxRent < 1400 ? "Studio apartment or older 1BR" :
+                                            maxRent < 1800 ? "Modern 1BR apartment" :
+                                                "Luxury 1BR or 2BR apartment"}
                                 </p>
-                            ) : (
-                                <div className="space-y-2">
-                                    <p className="text-sm text-amber-700">
-                                        This salary might be tight for {city.charAt(0).toUpperCase() + city.slice(1)}.
-                                        You'd be {formatCurrency(rentGap)} over the 30% rule.
-                                    </p>
-                                    <p className="text-sm font-medium text-amber-800">
-                                        💡 Recommended target: {formatK(recommendedSalary)}+
-                                    </p>
-                                </div>
-                            )}
+                            </div>
+                        </div>
+
+                        {/* Car Context */}
+                        <div className="flex items-start gap-3">
+                            <div className="p-1.5 bg-white rounded-lg border border-jalanea-100 shadow-sm mt-0.5">
+                                <CheckCircle className="w-4 h-4 text-green-600" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-jalanea-900">Transportation</p>
+                                <p className="text-sm text-jalanea-600">
+                                    {maxCarPayment < 350 ? "Reliable used car (Civic/Corolla)" :
+                                        maxCarPayment < 550 ? "New sedan or compact SUV" :
+                                            "Premium vehicle or truck"}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
