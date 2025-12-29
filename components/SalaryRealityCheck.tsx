@@ -213,10 +213,13 @@ export const SalaryRealityCheck: React.FC<SalaryRealityCheckProps> = ({
                             </div>
                             <div>
                                 <p className="text-sm font-bold text-jalanea-900">Transportation</p>
-                                <p className="text-sm text-jalanea-600">
-                                    {maxCarPayment < 350 ? "Reliable used car (Civic/Corolla)" :
-                                        maxCarPayment < 550 ? "New sedan or compact SUV" :
-                                            "Premium vehicle or truck"}
+                                <p className="text-sm text-jalanea-600 mb-1">
+                                    {maxCarPayment < 350 ? "2013-2016 Honda Civic or Toyota Corolla" :
+                                        maxCarPayment < 550 ? "2019-2021 Honda Civic, Mazda3, or VW Jetta" :
+                                            "New 2025 Toyota Camry, Honda Accord, or Tesla Model 3"}
+                                </p>
+                                <p className="text-xs text-jalanea-400">
+                                    + Est. Insurance: ${maxCarPayment < 350 ? "250" : maxCarPayment < 550 ? "280" : "300"}/mo (Full Coverage)
                                 </p>
                             </div>
                         </div>
