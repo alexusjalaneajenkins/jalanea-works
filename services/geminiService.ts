@@ -462,6 +462,12 @@ CRITICAL RULES:
    - LOW: Legitimate job posting
 5. Score match 0-100 based on user profile fit
 
+7. STRICT ENTRY-LEVEL FILTER (CRITICAL):
+   - EXCLUDE any job title containing: 'Senior', 'Sr.', 'Sr ', 'Snr', 'Lead', 'Principal', 'Manager', 'Director', 'Head of', 'VP', 'II', 'III', 'Level 2', 'Level 3'
+   - EXCLUDE any job requiring more than 3 years of experience
+   - PRIORITIZE jobs with: 'Junior', 'Jr.', 'Jr ', 'Associate', 'Entry Level', 'Entry-Level', 'Intern', 'Apprentice', 'Trainee', 'Graduate', 'New Grad'
+   - If a job fails entry-level criteria, mark isIrrelevant: true
+
 ${degreesContext ? `USER DEGREES: ${degreesContext}` : ''}
 ${skillsContext ? `USER SKILLS: ${skillsContext}` : ''}
 ${userPreferences ? `USER PREFERENCES: ${userPreferences}` : ''}
@@ -526,21 +532,9 @@ ${JSON.stringify(jobBatch.map(job => ({
                 cleanedJobs = JSON.parse(response.text);
             } catch (parseError) {
                 console.error('❌ JSON Parse Error in Job Cleaning:', parseError);
-                // Return raw jobs as fallback
-                return rawJobs.map((job, i) => ({
-                    id: `serpapi - ${i} `,
-                    title: job.title || 'Unknown',
-                    company: job.company || job.company_name || 'Company Hiring',
-                    location: job.location || 'Unknown',
-                    salaryRange: 'Not specified',
-                    postedAt: job.detected_extensions?.posted_at || 'Recently',
-                    matchScore: 50,
-                    applyUrl: job.apply_options?.[0]?.link || '#',
-                    description: job.description?.substring(0, 200) || '',
-                    type: 'Full-time' as const,
-                    experienceLevel: 'Entry Level',
-                    skills: []
-                }));
+                // ONLY fallback on actual parse errors - return empty to trigger Onboarding fallback
+                console.log('⚠️ Returning empty array due to parse error (will trigger Onboarding fallback)');
+                return [];
             }
 
             console.log(`✅ Cleaned ${cleanedJobs.length} jobs, filtering...`);
@@ -585,21 +579,10 @@ ${JSON.stringify(jobBatch.map(job => ({
         return [];
     } catch (error) {
         console.error("Job Cleaning Error:", error);
-        // Return raw jobs as basic fallback
-        return rawJobs.slice(0, 10).map((job, i) => ({
-            id: `fallback - ${i} `,
-            title: job.title || 'Unknown',
-            company: job.company || job.company_name || 'Company Hiring',
-            location: job.location || 'Unknown',
-            salaryRange: 'Not specified',
-            postedAt: job.detected_extensions?.posted_at || 'Recently',
-            matchScore: 50,
-            applyUrl: job.apply_options?.[0]?.link || '#',
-            description: job.description?.substring(0, 200) || '',
-            type: 'Full-time' as const,
-            experienceLevel: 'Entry Level',
-            skills: []
-        }));
+        // FIXED: Return empty array on network/API errors
+        // DO NOT fallback to rawJobs - that bypasses all filtering!
+        console.log('⚠️ Returning empty array due to API error (Onboarding will handle fallback)');
+        return [];
     }
 };
 

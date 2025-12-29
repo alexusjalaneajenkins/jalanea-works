@@ -30,8 +30,9 @@ export async function searchJobs(
     }
 ): Promise<TransformedJobSearchResponse> {
     try {
-        // Build query parameters - append 'entry level' to focus on career starters
-        const entryLevelQuery = `${query} entry level`.trim();
+        // Build query with entry-level focus AND exclusion terms for senior roles
+        // This pre-filters at Google's level before reaching Gemini
+        const entryLevelQuery = `${query} (entry level OR junior OR associate) -senior -lead -manager -director`.trim();
         const params = new URLSearchParams({ q: entryLevelQuery });
 
         if (options?.location) params.append('location', options.location);
