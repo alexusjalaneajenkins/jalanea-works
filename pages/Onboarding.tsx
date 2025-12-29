@@ -501,9 +501,9 @@ export const Onboarding: React.FC = () => {
                                                 >
                                                     <option value="">Select School...</option>
                                                     <option value="Valencia College">Valencia College</option>
-                                                    <option value="Seminole State College">Seminole State College</option>
-                                                    <option value="Lake-Sumter State College">Lake-Sumter State College</option>
-                                                    <option value="Other Community College">Other Community College</option>
+                                                    <option value="Seminole State College of Florida">Seminole State College of Florida</option>
+                                                    <option value="Orange Technical College">Orange Technical College</option>
+                                                    <option value="Other">Other</option>
                                                 </select>
                                             </div>
                                         </div>
