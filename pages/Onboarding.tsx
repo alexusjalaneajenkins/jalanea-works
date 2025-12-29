@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { VALENCIA_PROGRAMS_DB } from '../data/valenciaPrograms';
-import { UCF_DEGREES } from '../data/ucfDegrees';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Combobox } from '../components/Combobox';
@@ -475,10 +474,6 @@ export const Onboarding: React.FC = () => {
                                                     value={edu.major}
                                                     onChange={(val) => updateEducation(edu.id, 'major', val)}
                                                     options={(() => {
-                                                        // UCF degrees when UCF is selected
-                                                        if (edu.school?.includes('UCF') || edu.school?.includes('University of Central Florida')) {
-                                                            return UCF_DEGREES;
-                                                        }
                                                         // Valencia programs based on degree type
                                                         if (edu.degreeType?.includes("Bachelor's")) return VALENCIA_PROGRAMS_DB.Bachelor_Degrees;
                                                         if (edu.degreeType?.includes("Associate's")) return VALENCIA_PROGRAMS_DB.AS_Degrees;
@@ -486,13 +481,13 @@ export const Onboarding: React.FC = () => {
                                                             ...VALENCIA_PROGRAMS_DB.Technical_Certificates,
                                                             ...VALENCIA_PROGRAMS_DB.Advanced_Technical_Certificates
                                                         ];
-                                                        // Default: show all options
-                                                        return [...UCF_DEGREES, ...VALENCIA_PROGRAMS_DB.Bachelor_Degrees, ...VALENCIA_PROGRAMS_DB.AS_Degrees];
+                                                        // Default: show all Valencia options
+                                                        return [...VALENCIA_PROGRAMS_DB.Bachelor_Degrees, ...VALENCIA_PROGRAMS_DB.AS_Degrees];
                                                     })()}
                                                     placeholder="Search or type your major..."
                                                 />
                                                 <p className="text-xs text-jalanea-400 mt-1.5">
-                                                    {edu.school?.includes('UCF') ? 'Select from UCF degrees or type manually.' : 'Select your program or type manually.'}
+                                                    Select your program or type manually for others.
                                                 </p>
                                             </div>
                                             <div>
@@ -506,8 +501,9 @@ export const Onboarding: React.FC = () => {
                                                 >
                                                     <option value="">Select School...</option>
                                                     <option value="Valencia College">Valencia College</option>
-                                                    <option value="University of Central Florida (UCF)">University of Central Florida (UCF)</option>
-                                                    <option value="Other">Other</option>
+                                                    <option value="Seminole State College">Seminole State College</option>
+                                                    <option value="Lake-Sumter State College">Lake-Sumter State College</option>
+                                                    <option value="Other Community College">Other Community College</option>
                                                 </select>
                                             </div>
                                         </div>
