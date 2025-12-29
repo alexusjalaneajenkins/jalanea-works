@@ -8,7 +8,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db, auth } from '../services/firebase';
 import {
     User, MapPin, GraduationCap, Briefcase, DollarSign,
-    ChevronRight, ChevronLeft, Check, Sparkles, Plus, X
+    ChevronRight, ChevronLeft, Check, Sparkles, Plus, X, Trash2
 } from 'lucide-react';
 import type { UserProfile, Education, DegreeType, WorkStyle } from '../types';
 import { DEGREE_TYPE_OPTIONS } from '../types';
@@ -19,18 +19,31 @@ import { DEGREE_TYPE_OPTIONS } from '../types';
 
 type Step = 1 | 2 | 3 | 4;
 
+// Individual entry types for arrays
+interface EducationEntry {
+    id: string;
+    degreeType: DegreeType | '';
+    major: string;
+    school: string;
+    gradYear: string;
+}
+
+interface ExperienceEntry {
+    id: string;
+    role: string;
+    company: string;
+    duration: string;
+}
+
 interface FormData {
     // Step 1: Basics
     name: string;
     location: string;
 
-    // Step 2: Foundation
-    degreeType: DegreeType | '';
-    major: string;
-    school: string;
-    gradYear: string;
+    // Step 2: Foundation (NOW ARRAYS)
+    educations: EducationEntry[];
+    experiences: ExperienceEntry[];
     yearsOfExperience: '0-1' | '1-3' | '3+';
-    currentRole: string;
     skills: string[];
 
     // Step 3: Money Talk
@@ -43,15 +56,15 @@ interface FormData {
     workStyles: WorkStyle[];
 }
 
+// Helper to generate unique IDs
+const generateId = () => Math.random().toString(36).substr(2, 9);
+
 const INITIAL_FORM: FormData = {
     name: '',
     location: '',
-    degreeType: '',
-    major: '',
-    school: '',
-    gradYear: '',
+    educations: [{ id: generateId(), degreeType: '', major: '', school: '', gradYear: '' }],
+    experiences: [],  // Start empty, optional
     yearsOfExperience: '0-1',
-    currentRole: '',
     skills: [],
     salaryMin: 45000,
     salaryMax: 65000,
@@ -96,6 +109,44 @@ export const Onboarding: React.FC = () => {
         updateForm({ skills: form.skills.filter((_, i) => i !== index) });
     };
 
+    // Education management
+    const addEducation = () => {
+        const newEntry: EducationEntry = { id: generateId(), degreeType: '', major: '', school: '', gradYear: '' };
+        updateForm({ educations: [...form.educations, newEntry] });
+    };
+
+    const updateEducation = (id: string, field: keyof EducationEntry, value: string) => {
+        updateForm({
+            educations: form.educations.map(edu =>
+                edu.id === id ? { ...edu, [field]: value } : edu
+            )
+        });
+    };
+
+    const removeEducation = (id: string) => {
+        if (form.educations.length > 1) {
+            updateForm({ educations: form.educations.filter(edu => edu.id !== id) });
+        }
+    };
+
+    // Experience management
+    const addExperience = () => {
+        const newEntry: ExperienceEntry = { id: generateId(), role: '', company: '', duration: '' };
+        updateForm({ experiences: [...form.experiences, newEntry] });
+    };
+
+    const updateExperience = (id: string, field: keyof ExperienceEntry, value: string) => {
+        updateForm({
+            experiences: form.experiences.map(exp =>
+                exp.id === id ? { ...exp, [field]: value } : exp
+            )
+        });
+    };
+
+    const removeExperience = (id: string) => {
+        updateForm({ experiences: form.experiences.filter(exp => exp.id !== id) });
+    };
+
     // Salary callback from SalaryRealityCheck
     const handleSalaryChange = useCallback((min: number, max: number, monthlyNet: number, maxRent: number) => {
         updateForm({ salaryMin: min, salaryMax: max, monthlyNet, maxRent });
@@ -111,9 +162,9 @@ export const Onboarding: React.FC = () => {
         }
     };
 
-    // Validation
+    // Validation - at least one education with degree and school
     const isStep1Valid = form.name.trim() && form.location.trim();
-    const isStep2Valid = form.degreeType && form.major.trim() && form.school.trim();
+    const isStep2Valid = form.educations.some(edu => edu.degreeType && edu.major.trim() && edu.school.trim());
     const isStep3Valid = form.salaryMin > 0 && form.salaryMax > form.salaryMin;
 
     // Submit profile
@@ -123,13 +174,26 @@ export const Onboarding: React.FC = () => {
         setIsSubmitting(true);
 
         try {
-            const education: Education[] = [{
-                degreeType: form.degreeType as DegreeType,
-                degree: form.major,
-                school: form.school,
-                year: form.gradYear,
-                program: form.major
-            }];
+            // Map educations array to Education[] format
+            const education: Education[] = form.educations
+                .filter(edu => edu.degreeType && edu.major.trim())
+                .map(edu => ({
+                    degreeType: edu.degreeType as DegreeType,
+                    degree: edu.major,
+                    school: edu.school,
+                    year: edu.gradYear,
+                    program: edu.major
+                }));
+
+            // Map experiences array to Experience[] format
+            const experience = form.experiences
+                .filter(exp => exp.role.trim())
+                .map(exp => ({
+                    role: exp.role,
+                    company: exp.company || 'Company',
+                    duration: exp.duration || 'Present',
+                    description: []
+                }));
 
             const profile: Partial<UserProfile> = {
                 name: form.name,
@@ -142,12 +206,7 @@ export const Onboarding: React.FC = () => {
                     soft: []
                 },
                 certifications: [],
-                experience: form.currentRole ? [{
-                    role: form.currentRole,
-                    company: 'Current',
-                    duration: 'Present',
-                    description: []
-                }] : [],
+                experience,
                 preferences: {
                     targetRoles: [],
                     workStyles: form.workStyles,
@@ -286,97 +345,178 @@ export const Onboarding: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Education */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-jalanea-700 mb-2">
-                                        Degree Type
-                                    </label>
-                                    <select
-                                        value={form.degreeType}
-                                        onChange={(e) => updateForm({ degreeType: e.target.value as DegreeType })}
-                                        className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none"
-                                    >
-                                        <option value="">Select...</option>
-                                        {DEGREE_TYPE_OPTIONS.map((opt) => (
-                                            <option key={opt} value={opt}>{opt}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-jalanea-700 mb-2">
-                                        Graduation Year
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={form.gradYear}
-                                        onChange={(e) => updateForm({ gradYear: e.target.value })}
-                                        placeholder="2024"
-                                        className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none"
-                                    />
-                                </div>
+                            {/* Education Entries */}
+                            <div className="space-y-4">
+                                {form.educations.map((edu, index) => (
+                                    <div key={edu.id} className={`${index > 0 ? 'pt-4 border-t border-jalanea-100' : ''}`}>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className="text-xs font-medium text-jalanea-500 uppercase tracking-wide">
+                                                Degree {index + 1}
+                                            </span>
+                                            {form.educations.length > 1 && (
+                                                <button
+                                                    onClick={() => removeEducation(edu.id)}
+                                                    className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4 mb-3">
+                                            <div>
+                                                <label className="block text-sm font-medium text-jalanea-700 mb-2">
+                                                    Degree Type
+                                                </label>
+                                                <select
+                                                    value={edu.degreeType}
+                                                    onChange={(e) => updateEducation(edu.id, 'degreeType', e.target.value)}
+                                                    className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none"
+                                                >
+                                                    <option value="">Select...</option>
+                                                    {DEGREE_TYPE_OPTIONS.map((opt) => (
+                                                        <option key={opt} value={opt}>{opt}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-jalanea-700 mb-2">
+                                                    Graduation Year
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={edu.gradYear}
+                                                    onChange={(e) => updateEducation(edu.id, 'gradYear', e.target.value)}
+                                                    placeholder="2024"
+                                                    className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-jalanea-700 mb-2">
+                                                    Major / Field of Study
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={edu.major}
+                                                    onChange={(e) => updateEducation(edu.id, 'major', e.target.value)}
+                                                    placeholder="Marketing"
+                                                    className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-jalanea-700 mb-2">
+                                                    School
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={edu.school}
+                                                    onChange={(e) => updateEducation(edu.id, 'school', e.target.value)}
+                                                    placeholder="University of Central Florida"
+                                                    className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {/* Add Another Degree Button */}
+                                <button
+                                    onClick={addEducation}
+                                    className="flex items-center gap-2 text-sm font-medium text-jalanea-600 hover:text-jalanea-800 transition-colors"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    Add Another Degree
+                                </button>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-jalanea-700 mb-2">
-                                        Major / Field of Study
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={form.major}
-                                        onChange={(e) => updateForm({ major: e.target.value })}
-                                        placeholder="Marketing"
-                                        className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-jalanea-700 mb-2">
-                                        School
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={form.school}
-                                        onChange={(e) => updateForm({ school: e.target.value })}
-                                        placeholder="University of Central Florida"
-                                        className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Experience */}
-                            <div className="pt-4 border-t border-jalanea-100">
+                            {/* Experience Section */}
+                            <div className="pt-6 border-t border-jalanea-100">
                                 <div className="flex items-center gap-2 mb-4">
                                     <Briefcase className="w-4 h-4 text-jalanea-500" />
-                                    <span className="text-sm font-medium text-jalanea-700">Experience</span>
+                                    <span className="text-sm font-medium text-jalanea-700">Experience (Optional)</span>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-jalanea-700 mb-2">
-                                            Years of Experience
-                                        </label>
-                                        <select
-                                            value={form.yearsOfExperience}
-                                            onChange={(e) => updateForm({ yearsOfExperience: e.target.value as FormData['yearsOfExperience'] })}
-                                            className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none"
-                                        >
-                                            <option value="0-1">0-1 years (Student/New Grad)</option>
-                                            <option value="1-3">1-3 years</option>
-                                            <option value="3+">3+ years</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-jalanea-700 mb-2">
-                                            Current/Last Role (Optional)
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={form.currentRole}
-                                            onChange={(e) => updateForm({ currentRole: e.target.value })}
-                                            placeholder="Marketing Intern"
-                                            className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none"
-                                        />
-                                    </div>
+
+                                {/* Years of Experience */}
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-jalanea-700 mb-2">
+                                        Total Years of Experience
+                                    </label>
+                                    <select
+                                        value={form.yearsOfExperience}
+                                        onChange={(e) => updateForm({ yearsOfExperience: e.target.value as FormData['yearsOfExperience'] })}
+                                        className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none"
+                                    >
+                                        <option value="0-1">0-1 years (Student/New Grad)</option>
+                                        <option value="1-3">1-3 years</option>
+                                        <option value="3+">3+ years</option>
+                                    </select>
+                                </div>
+
+                                {/* Experience Entries */}
+                                <div className="space-y-4">
+                                    {form.experiences.map((exp, index) => (
+                                        <div key={exp.id} className="bg-jalanea-50 rounded-xl p-4">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <span className="text-xs font-medium text-jalanea-500 uppercase tracking-wide">
+                                                    Role {index + 1}
+                                                </span>
+                                                <button
+                                                    onClick={() => removeExperience(exp.id)}
+                                                    className="p-1 text-red-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-3">
+                                                <div>
+                                                    <label className="block text-xs font-medium text-jalanea-600 mb-1">
+                                                        Role/Title
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={exp.role}
+                                                        onChange={(e) => updateExperience(exp.id, 'role', e.target.value)}
+                                                        placeholder="Marketing Intern"
+                                                        className="w-full px-3 py-2 rounded-lg border border-jalanea-200 focus:border-jalanea-400 outline-none text-sm"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-medium text-jalanea-600 mb-1">
+                                                        Company
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={exp.company}
+                                                        onChange={(e) => updateExperience(exp.id, 'company', e.target.value)}
+                                                        placeholder="Acme Inc."
+                                                        className="w-full px-3 py-2 rounded-lg border border-jalanea-200 focus:border-jalanea-400 outline-none text-sm"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-medium text-jalanea-600 mb-1">
+                                                        Duration
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={exp.duration}
+                                                        onChange={(e) => updateExperience(exp.id, 'duration', e.target.value)}
+                                                        placeholder="2023 - Present"
+                                                        className="w-full px-3 py-2 rounded-lg border border-jalanea-200 focus:border-jalanea-400 outline-none text-sm"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {/* Add Another Role Button */}
+                                    <button
+                                        onClick={addExperience}
+                                        className="flex items-center gap-2 text-sm font-medium text-jalanea-600 hover:text-jalanea-800 transition-colors"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        Add a Role
+                                    </button>
                                 </div>
                             </div>
 
