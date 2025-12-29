@@ -568,61 +568,70 @@ export const Onboarding: React.FC = () => {
                                                         />
                                                     </div>
                                                     <div className="col-span-2">
-                                                        <label className="block text-xs font-bold text-jalanea-700 mb-1.5">
-                                                            Time Period
-                                                        </label>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            {/* Start Date */}
-                                                            <div className="flex gap-2">
-                                                                <select
-                                                                    value={exp.startMonth}
-                                                                    onChange={(e) => updateExperience(exp.id, 'startMonth', e.target.value)}
-                                                                    className="w-full px-3 py-2.5 rounded-lg border border-jalanea-200 text-sm bg-white"
-                                                                >
-                                                                    <option value="">Start Month</option>
-                                                                    {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
-                                                                </select>
-                                                                <select
-                                                                    value={exp.startYear}
-                                                                    onChange={(e) => updateExperience(exp.id, 'startYear', e.target.value)}
-                                                                    className="w-full px-3 py-2.5 rounded-lg border border-jalanea-200 text-sm bg-white"
-                                                                >
-                                                                    <option value="">Year</option>
-                                                                    {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-                                                                </select>
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div>
+                                                                <label className="block text-xs font-bold text-jalanea-700 mb-1.5">
+                                                                    Start Date
+                                                                </label>
+                                                                <div className="grid grid-cols-2 gap-2">
+                                                                    <select
+                                                                        value={exp.startMonth}
+                                                                        onChange={(e) => updateExperience(exp.id, 'startMonth', e.target.value)}
+                                                                        className="w-full px-3 py-2.5 rounded-lg border border-jalanea-200 text-sm bg-white focus:border-jalanea-500 outline-none"
+                                                                    >
+                                                                        <option value="">Month</option>
+                                                                        {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+                                                                    </select>
+                                                                    <select
+                                                                        value={exp.startYear}
+                                                                        onChange={(e) => updateExperience(exp.id, 'startYear', e.target.value)}
+                                                                        className="w-full px-3 py-2.5 rounded-lg border border-jalanea-200 text-sm bg-white focus:border-jalanea-500 outline-none"
+                                                                    >
+                                                                        <option value="">Year</option>
+                                                                        {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                                                                    </select>
+                                                                </div>
                                                             </div>
 
-                                                            {/* End Date */}
-                                                            <div className="space-y-2">
-                                                                {!exp.isCurrent && (
-                                                                    <div className="flex gap-2">
+                                                            <div>
+                                                                <div className="flex justify-between items-center mb-1.5">
+                                                                    <label className="block text-xs font-bold text-jalanea-700">
+                                                                        End Date
+                                                                    </label>
+                                                                    <label className="flex items-center gap-1.5 cursor-pointer">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={exp.isCurrent}
+                                                                            onChange={(e) => updateExperience(exp.id, 'isCurrent', e.target.checked as any)}
+                                                                            className="rounded border-jalanea-300 text-jalanea-600 focus:ring-jalanea-500 w-3.5 h-3.5"
+                                                                        />
+                                                                        <span className="text-xs text-jalanea-600">Current</span>
+                                                                    </label>
+                                                                </div>
+                                                                {exp.isCurrent ? (
+                                                                    <div className="w-full px-3 py-2.5 bg-jalanea-50 text-jalanea-500 text-center text-sm font-medium rounded-lg border border-jalanea-100">
+                                                                        Present
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="grid grid-cols-2 gap-2">
                                                                         <select
                                                                             value={exp.endMonth}
                                                                             onChange={(e) => updateExperience(exp.id, 'endMonth', e.target.value)}
-                                                                            className="w-full px-3 py-2.5 rounded-lg border border-jalanea-200 text-sm bg-white"
+                                                                            className="w-full px-3 py-2.5 rounded-lg border border-jalanea-200 text-sm bg-white focus:border-jalanea-500 outline-none"
                                                                         >
-                                                                            <option value="">End Month</option>
+                                                                            <option value="">Month</option>
                                                                             {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
                                                                         </select>
                                                                         <select
                                                                             value={exp.endYear}
                                                                             onChange={(e) => updateExperience(exp.id, 'endYear', e.target.value)}
-                                                                            className="w-full px-3 py-2.5 rounded-lg border border-jalanea-200 text-sm bg-white"
+                                                                            className="w-full px-3 py-2.5 rounded-lg border border-jalanea-200 text-sm bg-white focus:border-jalanea-500 outline-none"
                                                                         >
                                                                             <option value="">Year</option>
                                                                             {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
                                                                         </select>
                                                                     </div>
                                                                 )}
-                                                                <label className="flex items-center gap-2 cursor-pointer">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={exp.isCurrent}
-                                                                        onChange={(e) => updateExperience(exp.id, 'isCurrent', e.target.checked as any)}
-                                                                        className="rounded border-jalanea-300 text-jalanea-600 focus:ring-jalanea-500"
-                                                                    />
-                                                                    <span className="text-sm text-jalanea-600">I currently work here</span>
-                                                                </label>
                                                             </div>
                                                         </div>
                                                     </div>
