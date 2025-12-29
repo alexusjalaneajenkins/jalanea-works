@@ -51,6 +51,7 @@ interface FormData {
     salaryMax: number;
     monthlyNet: number;
     maxRent: number;
+    maxCarPayment: number;
 
     // Step 4: Preferences
     workStyles: WorkStyle[];
@@ -70,6 +71,7 @@ const INITIAL_FORM: FormData = {
     salaryMax: 65000,
     monthlyNet: 0,
     maxRent: 0,
+    maxCarPayment: 0,
     workStyles: []
 };
 
@@ -148,8 +150,8 @@ export const Onboarding: React.FC = () => {
     };
 
     // Salary callback from SalaryRealityCheck
-    const handleSalaryChange = useCallback((min: number, max: number, monthlyNet: number, maxRent: number) => {
-        updateForm({ salaryMin: min, salaryMax: max, monthlyNet, maxRent });
+    const handleSalaryChange = useCallback((min: number, max: number, monthlyNet: number, maxRent: number, maxCarPayment: number) => {
+        updateForm({ salaryMin: min, salaryMax: max, monthlyNet, maxRent, maxCarPayment });
     }, []);
 
     // Toggle work style
@@ -169,7 +171,11 @@ export const Onboarding: React.FC = () => {
 
     // Submit profile
     const submitProfile = async () => {
-        if (!user || !auth.currentUser) return;
+        if (!user || !auth.currentUser) {
+            console.error('No authenticated user found during submission');
+            alert('Authentication lost. Please try refreshing or logging in again.');
+            return;
+        }
 
         setIsSubmitting(true);
 
@@ -224,10 +230,10 @@ export const Onboarding: React.FC = () => {
                 },
                 monthlyBudgetEstimate: {
                     monthlyNet: form.monthlyNet,
-                    maxRent: form.maxRent
+                    maxRent: form.maxRent,
+                    maxCarPayment: form.maxCarPayment
                 },
                 yearsOfExperience: form.yearsOfExperience,
-                currentRole: form.currentRole,
                 onboardingCompleted: true,
                 updatedAt: new Date().toISOString()
             };
@@ -243,6 +249,7 @@ export const Onboarding: React.FC = () => {
             navigate('/dashboard');
         } catch (error) {
             console.error('Error saving profile:', error);
+            alert('Failed to save profile. Please try again.');
         } finally {
             setIsSubmitting(false);
         }
@@ -431,91 +438,124 @@ export const Onboarding: React.FC = () => {
                             </div>
 
                             {/* Experience Section */}
-                            <div className="pt-6 border-t border-jalanea-100">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <Briefcase className="w-4 h-4 text-jalanea-500" />
-                                    <span className="text-sm font-medium text-jalanea-700">Experience (Optional)</span>
-                                </div>
-
-                                {/* Years of Experience */}
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-jalanea-700 mb-2">
-                                        Total Years of Experience
-                                    </label>
-                                    <select
-                                        value={form.yearsOfExperience}
-                                        onChange={(e) => updateForm({ yearsOfExperience: e.target.value as FormData['yearsOfExperience'] })}
-                                        className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none"
-                                    >
-                                        <option value="0-1">0-1 years (Student/New Grad)</option>
-                                        <option value="1-3">1-3 years</option>
-                                        <option value="3+">3+ years</option>
-                                    </select>
-                                </div>
-
-                                {/* Experience Entries */}
-                                <div className="space-y-4">
-                                    {form.experiences.map((exp, index) => (
-                                        <div key={exp.id} className="bg-jalanea-50 rounded-xl p-4">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <span className="text-xs font-medium text-jalanea-500 uppercase tracking-wide">
-                                                    Role {index + 1}
-                                                </span>
-                                                <button
-                                                    onClick={() => removeExperience(exp.id)}
-                                                    className="p-1 text-red-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                            <div className="grid grid-cols-3 gap-3">
-                                                <div>
-                                                    <label className="block text-xs font-medium text-jalanea-600 mb-1">
-                                                        Role/Title
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={exp.role}
-                                                        onChange={(e) => updateExperience(exp.id, 'role', e.target.value)}
-                                                        placeholder="Marketing Intern"
-                                                        className="w-full px-3 py-2 rounded-lg border border-jalanea-200 focus:border-jalanea-400 outline-none text-sm"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-medium text-jalanea-600 mb-1">
-                                                        Company
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={exp.company}
-                                                        onChange={(e) => updateExperience(exp.id, 'company', e.target.value)}
-                                                        placeholder="Acme Inc."
-                                                        className="w-full px-3 py-2 rounded-lg border border-jalanea-200 focus:border-jalanea-400 outline-none text-sm"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-medium text-jalanea-600 mb-1">
-                                                        Duration
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={exp.duration}
-                                                        onChange={(e) => updateExperience(exp.id, 'duration', e.target.value)}
-                                                        placeholder="2023 - Present"
-                                                        className="w-full px-3 py-2 rounded-lg border border-jalanea-200 focus:border-jalanea-400 outline-none text-sm"
-                                                    />
-                                                </div>
-                                            </div>
+                            <div className="pt-6 border-t border-jalanea-100 space-y-8">
+                                {/* BLOCK A: Career Stage (Global Filter) */}
+                                <div className="p-5 bg-jalanea-50/50 rounded-2xl border border-jalanea-100">
+                                    <div className="flex items-start gap-3">
+                                        <div className="mt-1 p-1.5 bg-white rounded-lg border border-jalanea-100 shadow-sm">
+                                            <Briefcase className="w-4 h-4 text-jalanea-600" />
                                         </div>
-                                    ))}
+                                        <div className="flex-1">
+                                            <label className="block text-sm font-bold text-jalanea-900 mb-1">
+                                                Overall Career Level
+                                            </label>
+                                            <p className="text-xs text-jalanea-500 mb-4">
+                                                This helps us filter entry-level vs. senior jobs for you.
+                                            </p>
+                                            <select
+                                                value={form.yearsOfExperience}
+                                                onChange={(e) => updateForm({ yearsOfExperience: e.target.value as FormData['yearsOfExperience'] })}
+                                                className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none bg-white shadow-sm transition-all text-sm font-medium"
+                                            >
+                                                <option value="0-1">0-1 years (Student/New Grad)</option>
+                                                <option value="1-3">1-3 years (Junior/Associate)</option>
+                                                <option value="3+">3+ years (Mid-Level)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
 
-                                    {/* Add Another Role Button */}
+                                {/* BLOCK B: Work History (Detailed Roles) */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-4 px-1">
+                                        <h3 className="text-sm font-bold text-jalanea-900 flex items-center gap-2">
+                                            Work History / Internships
+                                            <span className="text-xs font-normal text-jalanea-400 bg-jalanea-50 px-2 py-0.5 rounded-full border border-jalanea-100">
+                                                {form.experiences.length} added
+                                            </span>
+                                        </h3>
+                                    </div>
+
+                                    {/* Empty State */}
+                                    {form.experiences.length === 0 && (
+                                        <div className="bg-white border border-dashed border-jalanea-300 rounded-xl p-6 text-center mb-4 transition-all hover:bg-jalanea-50/50">
+                                            <p className="text-sm font-medium text-jalanea-600 mb-1">
+                                                No roles added yet
+                                            </p>
+                                            <p className="text-xs text-jalanea-400">
+                                                Including internships or part-time work helps your resume score.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* Experience Entries */}
+                                    <div className="space-y-4 mb-4">
+                                        {form.experiences.map((exp, index) => (
+                                            <div key={exp.id} className="bg-white border border-jalanea-200 shadow-sm rounded-xl p-5 relative group transition-all hover:shadow-md hover:border-jalanea-300">
+                                                <div className="flex items-center justify-between mb-4 border-b border-jalanea-50 pb-3">
+                                                    <span className="text-xs font-bold text-jalanea-400 uppercase tracking-wide flex items-center gap-2">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-jalanea-400"></div>
+                                                        Position {index + 1}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => removeExperience(exp.id)}
+                                                        className="p-1.5 text-jalanea-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                                                        title="Remove role"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div className="col-span-2 sm:col-span-1">
+                                                        <label className="block text-xs font-bold text-jalanea-700 mb-1.5">
+                                                            Role Title
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            value={exp.role}
+                                                            onChange={(e) => updateExperience(exp.id, 'role', e.target.value)}
+                                                            placeholder="e.g. Graphic Design Intern"
+                                                            className="w-full px-3 py-2.5 rounded-lg border border-jalanea-200 focus:border-jalanea-500 focus:ring-2 focus:ring-jalanea-50 outline-none text-sm transition-all"
+                                                        />
+                                                    </div>
+                                                    <div className="col-span-2 sm:col-span-1">
+                                                        <label className="block text-xs font-bold text-jalanea-700 mb-1.5">
+                                                            Company
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            value={exp.company}
+                                                            onChange={(e) => updateExperience(exp.id, 'company', e.target.value)}
+                                                            placeholder="e.g. Studio X"
+                                                            className="w-full px-3 py-2.5 rounded-lg border border-jalanea-200 focus:border-jalanea-500 focus:ring-2 focus:ring-jalanea-50 outline-none text-sm transition-all"
+                                                        />
+                                                    </div>
+                                                    <div className="col-span-2">
+                                                        <label className="block text-xs font-bold text-jalanea-700 mb-1.5">
+                                                            Duration
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            value={exp.duration}
+                                                            onChange={(e) => updateExperience(exp.id, 'duration', e.target.value)}
+                                                            placeholder="e.g. Summer 2024 or Jan 2023 - Present"
+                                                            className="w-full px-3 py-2.5 rounded-lg border border-jalanea-200 focus:border-jalanea-500 focus:ring-2 focus:ring-jalanea-50 outline-none text-sm transition-all"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Add Position Button */}
                                     <button
                                         onClick={addExperience}
-                                        className="flex items-center gap-2 text-sm font-medium text-jalanea-600 hover:text-jalanea-800 transition-colors"
+                                        className="w-full py-3.5 border-2 border-dashed border-jalanea-200 rounded-xl text-sm font-bold text-jalanea-500 hover:border-jalanea-400 hover:text-jalanea-700 hover:bg-jalanea-50 transition-all flex items-center justify-center gap-2 group"
                                     >
-                                        <Plus className="w-4 h-4" />
-                                        Add a Role
+                                        <div className="p-0.5 bg-jalanea-100 rounded-md group-hover:bg-jalanea-200 transition-colors">
+                                            <Plus className="w-3.5 h-3.5" />
+                                        </div>
+                                        + Add Position
                                     </button>
                                 </div>
                             </div>
@@ -632,7 +672,14 @@ export const Onboarding: React.FC = () => {
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-jalanea-500">Degree</span>
-                                    <span className="font-medium text-jalanea-700">{form.degreeType}</span>
+                                    <span className="font-medium text-jalanea-700 text-right">
+                                        {(() => {
+                                            const validEdu = form.educations.find(e => e.degreeType && e.major);
+                                            return validEdu
+                                                ? `${validEdu.degreeType.split(' ')[0]} in ${validEdu.major}`
+                                                : form.educations[0]?.degreeType || 'Not specified';
+                                        })()}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-jalanea-500">Target Salary</span>

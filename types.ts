@@ -215,6 +215,7 @@ export interface UserProfile {
   monthlyBudgetEstimate?: {
     monthlyNet: number;
     maxRent: number;
+    maxCarPayment: number;
   };
   yearsOfExperience?: '0-1' | '1-3' | '3+';
   currentRole?: string;

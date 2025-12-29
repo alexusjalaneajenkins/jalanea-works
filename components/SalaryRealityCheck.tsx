@@ -5,7 +5,7 @@ interface SalaryRealityCheckProps {
     location: string;
     initialMin?: number;
     initialMax?: number;
-    onChange: (min: number, max: number, monthlyNet: number, maxRent: number) => void;
+    onChange: (min: number, max: number, monthlyNet: number, maxRent: number, maxCarPayment: number) => void;
 }
 
 // Average rent by Florida city (1BR apartment, 2024 estimates)
@@ -50,6 +50,9 @@ export const SalaryRealityCheck: React.FC<SalaryRealityCheckProps> = ({
     // 30% rent rule
     const maxRent = Math.round(monthlyNet * 0.30);
 
+    // 15% car note rule
+    const maxCarPayment = Math.round(monthlyNet * 0.15);
+
     // Is rent affordable?
     const isAffordable = maxRent >= cityRent;
     const rentGap = cityRent - maxRent;
@@ -59,8 +62,8 @@ export const SalaryRealityCheck: React.FC<SalaryRealityCheckProps> = ({
 
     // Notify parent of changes
     useEffect(() => {
-        onChange(minSalary, maxSalary, monthlyNet, maxRent);
-    }, [minSalary, maxSalary, monthlyNet, maxRent, onChange]);
+        onChange(minSalary, maxSalary, monthlyNet, maxRent, maxCarPayment);
+    }, [minSalary, maxSalary, monthlyNet, maxRent, maxCarPayment, onChange]);
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('en-US', {
@@ -148,7 +151,7 @@ export const SalaryRealityCheck: React.FC<SalaryRealityCheckProps> = ({
                 </div>
 
                 {/* Budget breakdown */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="grid grid-cols-3 gap-4 mb-6">
                     <div className="bg-white rounded-xl p-4 border border-jalanea-100">
                         <p className="text-xs font-medium text-jalanea-500 uppercase tracking-wide mb-1">
                             Est. Monthly Net
@@ -160,19 +163,28 @@ export const SalaryRealityCheck: React.FC<SalaryRealityCheckProps> = ({
                     </div>
                     <div className="bg-white rounded-xl p-4 border border-jalanea-100">
                         <p className="text-xs font-medium text-jalanea-500 uppercase tracking-wide mb-1">
-                            Max Rent (30% Rule)
+                            Max Rent
                         </p>
                         <p className="text-2xl font-display font-bold text-jalanea-900">
                             {formatCurrency(maxRent)}
                         </p>
-                        <p className="text-xs text-jalanea-400 mt-1">Per month</p>
+                        <p className="text-xs text-jalanea-400 mt-1">30% Rule</p>
+                    </div>
+                    <div className="bg-white rounded-xl p-4 border border-jalanea-100">
+                        <p className="text-xs font-medium text-jalanea-500 uppercase tracking-wide mb-1">
+                            Max Car Note
+                        </p>
+                        <p className="text-2xl font-display font-bold text-jalanea-900">
+                            {formatCurrency(maxCarPayment)}
+                        </p>
+                        <p className="text-xs text-jalanea-400 mt-1">15% Rule</p>
                     </div>
                 </div>
 
                 {/* City comparison */}
                 <div className={`rounded-xl p-4 border ${isAffordable
-                        ? 'bg-green-50 border-green-200'
-                        : 'bg-amber-50 border-amber-200'
+                    ? 'bg-green-50 border-green-200'
+                    : 'bg-amber-50 border-amber-200'
                     }`}>
                     <div className="flex items-start gap-3">
                         <div className={`p-1.5 rounded-lg ${isAffordable ? 'bg-green-100' : 'bg-amber-100'
