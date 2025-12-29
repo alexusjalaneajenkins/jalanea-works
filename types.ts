@@ -201,6 +201,14 @@ export interface UserProfile {
     isParent: boolean;
     childCount?: number;
     employmentStatus: EmploymentStatus;
+    // NEW: Extended logistics from 6-stage onboarding
+    transportMode?: 'car' | 'bus' | 'bike' | 'rideshare';
+    hardStopStart?: string;
+    hardStopEnd?: string;
+    weekendsAvailable?: boolean;
+    realityContext?: string;
+    selectedPrompts?: string[];
+    urgencyLevel?: 'emergency' | 'bridge' | 'career';
   };
   onboardingCompleted: boolean;
   hasSetupSchedule?: boolean;

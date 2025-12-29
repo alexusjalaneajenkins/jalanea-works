@@ -303,7 +303,7 @@ export const Onboarding: React.FC = () => {
                 },
                 logistics: {
                     isParent: state.selectedPrompts.includes('I am a single parent'),
-                    employmentStatus: state.urgency === 'emergency' ? 'Seeking' : 'Full-time',
+                    employmentStatus: state.urgency === 'emergency' ? 'Unemployed' : 'Full-time',
                     transportMode: state.transport,
                     hardStopStart: state.hardStopStart,
                     hardStopEnd: state.hardStopEnd,
@@ -312,8 +312,8 @@ export const Onboarding: React.FC = () => {
                     selectedPrompts: state.selectedPrompts,
                     urgencyLevel: state.urgency,
                 },
-                linkedIn: state.linkedIn,
-                portfolio: state.portfolio,
+                linkedinUrl: state.linkedIn,
+                portfolioUrl: state.portfolio,
                 onboardingCompleted: true,
                 updatedAt: new Date().toISOString(),
             };
@@ -337,10 +337,10 @@ export const Onboarding: React.FC = () => {
                 <div
                     key={s}
                     className={`w-3 h-3 rounded-full transition-all duration-300 ${s === state.stage
-                            ? 'bg-yellow-500 scale-125 ring-4 ring-yellow-200'
-                            : s < state.stage
-                                ? 'bg-green-500'
-                                : 'bg-slate-200'
+                        ? 'bg-yellow-500 scale-125 ring-4 ring-yellow-200'
+                        : s < state.stage
+                            ? 'bg-green-500'
+                            : 'bg-slate-200'
                         }`}
                 />
             ))}
@@ -563,8 +563,8 @@ export const Onboarding: React.FC = () => {
                                             key={opt.value}
                                             onClick={() => dispatch({ type: 'UPDATE_FIELD', field: 'transport', value: opt.value })}
                                             className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${state.transport === opt.value
-                                                    ? 'border-yellow-500 bg-yellow-50'
-                                                    : 'border-slate-200 hover:border-slate-300'
+                                                ? 'border-yellow-500 bg-yellow-50'
+                                                : 'border-slate-200 hover:border-slate-300'
                                                 }`}
                                         >
                                             <div className={`p-2 rounded-lg ${state.transport === opt.value ? 'bg-yellow-100 text-yellow-600' : 'bg-slate-100 text-slate-500'}`}>
@@ -646,8 +646,8 @@ export const Onboarding: React.FC = () => {
                                         key={prompt.label}
                                         onClick={() => dispatch({ type: 'TOGGLE_PROMPT', prompt: prompt.label })}
                                         className={`inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all ${state.selectedPrompts.includes(prompt.label)
-                                                ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
-                                                : 'bg-slate-100 text-slate-600 border-2 border-transparent hover:bg-slate-200'
+                                            ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                                            : 'bg-slate-100 text-slate-600 border-2 border-transparent hover:bg-slate-200'
                                             }`}
                                     >
                                         <span>{prompt.icon}</span>
@@ -764,17 +764,17 @@ export const Onboarding: React.FC = () => {
                                         key={opt.value}
                                         onClick={() => dispatch({ type: 'UPDATE_FIELD', field: 'urgency', value: opt.value })}
                                         className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${state.urgency === opt.value
-                                                ? opt.color === 'red' ? 'border-red-500 bg-red-50'
-                                                    : opt.color === 'yellow' ? 'border-yellow-500 bg-yellow-50'
-                                                        : 'border-green-500 bg-green-50'
-                                                : 'border-slate-200 hover:border-slate-300'
+                                            ? opt.color === 'red' ? 'border-red-500 bg-red-50'
+                                                : opt.color === 'yellow' ? 'border-yellow-500 bg-yellow-50'
+                                                    : 'border-green-500 bg-green-50'
+                                            : 'border-slate-200 hover:border-slate-300'
                                             }`}
                                     >
                                         <div className={`p-3 rounded-xl ${state.urgency === opt.value
-                                                ? opt.color === 'red' ? 'bg-red-100 text-red-600'
-                                                    : opt.color === 'yellow' ? 'bg-yellow-100 text-yellow-600'
-                                                        : 'bg-green-100 text-green-600'
-                                                : 'bg-slate-100 text-slate-500'
+                                            ? opt.color === 'red' ? 'bg-red-100 text-red-600'
+                                                : opt.color === 'yellow' ? 'bg-yellow-100 text-yellow-600'
+                                                    : 'bg-green-100 text-green-600'
+                                            : 'bg-slate-100 text-slate-500'
                                             }`}>
                                             {opt.icon}
                                         </div>
@@ -784,8 +784,8 @@ export const Onboarding: React.FC = () => {
                                         </div>
                                         {state.urgency === opt.value && (
                                             <Check className={`w-6 h-6 ${opt.color === 'red' ? 'text-red-500'
-                                                    : opt.color === 'yellow' ? 'text-yellow-500'
-                                                        : 'text-green-500'
+                                                : opt.color === 'yellow' ? 'text-yellow-500'
+                                                    : 'text-green-500'
                                                 }`} />
                                         )}
                                     </button>
