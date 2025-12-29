@@ -217,7 +217,7 @@ export interface UserProfile {
     maxRent: number;
     maxCarPayment: number;
   };
-  yearsOfExperience?: '0-1' | '1-3' | '3+';
+  yearsOfExperience?: 'student' | 'entry-level' | 'associate';
   currentRole?: string;
 }
 

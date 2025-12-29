@@ -157,8 +157,8 @@ const STATS = [
 const STEPS = [
   {
     number: "01",
-    title: "Enter Your Credentials",
-    description: "Our AI analyzes your unique qualifications, coursework, and skills from Valencia College programs.",
+    title: "Select Your Degree",
+    description: "We map your specific Valencia or UCF coursework directly to the skills Orlando employers are looking for.",
     icon: GraduationCap
   },
   {
@@ -169,8 +169,8 @@ const STEPS = [
   },
   {
     number: "03",
-    title: "Apply Smarter",
-    description: "We send 3 quality applications daily on your behalf, tailored to each opportunity.",
+    title: "Apply Locally",
+    description: "We send 3 quality applications daily to Orlando partners who want homegrown talent.",
     icon: Send
   }
 ];
@@ -421,11 +421,11 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
             {/* Left Content */}
             <div className="space-y-6 md:space-y-8 animate-in slide-in-from-left-4 duration-700 text-center lg:text-left">
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold leading-[0.95] tracking-tight text-white">
-                Get a job by the<br />
-                <span className="text-transparent bg-clip-text bg-gold-flow bg-200% animate-text-flow">end of the month.</span>
+                The Entry-Level Job Market, <span className="text-transparent bg-clip-text bg-gold-flow bg-200% animate-text-flow">Solved.</span><br />
+                <span className="text-2xl sm:text-3xl md:text-4xl text-slate-300 font-normal mt-2 block">For Valencia & UCF Grads.</span>
               </h1>
               <p className="text-lg md:text-xl lg:text-2xl text-slate-200 leading-relaxed max-w-xl mx-auto lg:mx-0">
-                Your credentials should pay off. <span className="text-white font-semibold">3 quality applications per day.</span> We turn your degree into a direct pipeline to the life you deserve.
+                Stop applying to "entry-level" jobs that want 3 years of experience. We match you with Orlando employers specifically looking for <span className="text-white font-semibold">your degree and fresh talent.</span>
               </p>
 
               {/* CTA Buttons */}
@@ -435,7 +435,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                   variant="primary"
                   className="w-full sm:w-auto bg-gold hover:bg-gold-light text-jalanea-950 font-bold border-none shadow-[0_0_30px_rgba(255,196,37,0.3)] hover:shadow-[0_0_40px_rgba(255,196,37,0.5)] transform hover:-translate-y-1 transition-all px-8 py-4 text-lg"
                 >
-                  <Zap className="mr-2 fill-current" size={20} />Match My Credentials
+                  <Zap className="mr-2 fill-current" size={20} />Match My Degree
                 </Button>
 
                 <Button

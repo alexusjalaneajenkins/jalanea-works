@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { VALENCIA_PROGRAMS_DB } from '../data/valenciaPrograms';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { SalaryRealityCheck } from '../components/SalaryRealityCheck';
@@ -43,7 +44,7 @@ interface FormData {
     // Step 2: Foundation (NOW ARRAYS)
     educations: EducationEntry[];
     experiences: ExperienceEntry[];
-    yearsOfExperience: '0-1' | '1-3' | '3+';
+    yearsOfExperience: 'student' | 'entry-level' | 'associate';
     skills: string[];
 
     // Step 3: Money Talk
@@ -65,7 +66,7 @@ const INITIAL_FORM: FormData = {
     location: '',
     educations: [{ id: generateId(), degreeType: '', major: '', school: '', gradYear: '' }],
     experiences: [],  // Start empty, optional
-    yearsOfExperience: '0-1',
+    yearsOfExperience: 'student',
     skills: [],
     salaryMin: 45000,
     salaryMax: 65000,
@@ -407,9 +408,29 @@ export const Onboarding: React.FC = () => {
                                                     type="text"
                                                     value={edu.major}
                                                     onChange={(e) => updateEducation(edu.id, 'major', e.target.value)}
-                                                    placeholder="Marketing"
+                                                    placeholder="e.g. Graphic Design"
+                                                    list={`programs-${edu.id}`}
                                                     className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none"
                                                 />
+                                                {/* Dynamic Suggestions for Valencia Programs */}
+                                                <datalist id={`programs-${edu.id}`}>
+                                                    {(() => {
+                                                        let options: string[] = [];
+                                                        if (edu.degreeType?.includes("Bachelor's")) options = VALENCIA_PROGRAMS_DB.Bachelor_Degrees;
+                                                        else if (edu.degreeType?.includes("Associate's")) options = VALENCIA_PROGRAMS_DB.AS_Degrees;
+                                                        else if (edu.degreeType?.includes("Certificate")) options = [
+                                                            ...VALENCIA_PROGRAMS_DB.Technical_Certificates,
+                                                            ...VALENCIA_PROGRAMS_DB.Advanced_Technical_Certificates
+                                                        ];
+
+                                                        return options.map((prog) => (
+                                                            <option key={prog} value={prog} />
+                                                        ));
+                                                    })()}
+                                                </datalist>
+                                                <p className="text-xs text-jalanea-400 mt-1.5">
+                                                    Select your Valencia program or type manually for others.
+                                                </p>
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium text-jalanea-700 mb-2">
@@ -457,9 +478,9 @@ export const Onboarding: React.FC = () => {
                                                 onChange={(e) => updateForm({ yearsOfExperience: e.target.value as FormData['yearsOfExperience'] })}
                                                 className="w-full px-4 py-3 rounded-xl border border-jalanea-200 focus:border-jalanea-400 outline-none bg-white shadow-sm transition-all text-sm font-medium"
                                             >
-                                                <option value="0-1">0-1 years (Student/New Grad)</option>
-                                                <option value="1-3">1-3 years (Junior/Associate)</option>
-                                                <option value="3+">3+ years (Mid-Level)</option>
+                                                <option value="student">Student / Looking for Internship</option>
+                                                <option value="entry-level">New Grad / Entry Level (0-2 years)</option>
+                                                <option value="associate">Junior / Associate (1-3 years)</option>
                                             </select>
                                         </div>
                                     </div>

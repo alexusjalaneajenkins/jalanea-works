@@ -1,4 +1,3 @@
-
 export const VALENCIA_PROGRAMS_DB = {
   "AS_Degrees": [
     "Accounting Technology",
