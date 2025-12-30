@@ -35,6 +35,7 @@ interface EducationEntry {
     degreeType: string;
     program: string;
     gradYear: string;
+    status?: string; // Alumni or Student
 }
 
 // Structured Bridge for Stage 5
@@ -115,8 +116,8 @@ const initialState: OnboardingState = {
     commuteStart: '',
     linkedIn: '',
     portfolio: '',
-    // Stage 2
-    education: [{ id: generateId(), school: '', degreeType: '', program: '', gradYear: '' }],
+    // Stage 2 - Start empty, Stage2_Education component handles empty state
+    education: [],
     // Stage 3
     transport: 'car',
     hardStopStart: '',
@@ -338,7 +339,7 @@ export const Onboarding: React.FC = () => {
 
     // Validation
     const isStage1Valid = state.name.trim() && state.commuteStart.trim();
-    const isStage2Valid = state.education.some(edu => edu.school && edu.degreeType && edu.program);
+    const isStage2Valid = state.education.some(edu => edu.school && edu.program);
     const isStage3Valid = state.transport !== null;
     const isStage4Valid = true; // Optional stage
     const isStage5Valid = true; // Just review
