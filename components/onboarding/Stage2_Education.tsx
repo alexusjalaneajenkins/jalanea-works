@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     GraduationCap, Hammer, BookOpen, Check,
-    ArrowRight, Search, Zap, X, CheckCircle2
+    ArrowRight, Search, Zap
 } from 'lucide-react';
 import { CENTRAL_FL_DATA, SchoolName } from '../../data/centralFloridaPrograms';
 
@@ -33,22 +33,6 @@ const getSkillAssets = (program: string): string[] => {
 export const Stage2_Education: React.FC<ValidationProps> = ({ data, onUpdate, onNext, onBack }) => {
     const [status, setStatus] = useState<'alumni' | 'student'>('alumni');
     const [searchTerm, setSearchTerm] = useState("");
-    const [isSearchOpen, setIsSearchOpen] = useState(false);
-    const searchInputRef = useRef<HTMLInputElement>(null);
-
-    // Sync input with external data changes
-    useEffect(() => {
-        if (data.program && data.program !== searchTerm) {
-            setSearchTerm(data.program);
-        }
-    }, [data.program]);
-
-    // Focus input when modal opens
-    useEffect(() => {
-        if (isSearchOpen && searchInputRef.current) {
-            setTimeout(() => searchInputRef.current?.focus(), 100);
-        }
-    }, [isSearchOpen]);
 
     // School Options Configuration
     const SCHOOLS: { name: SchoolName; color: string; bg: string; border: string; icon: React.ReactNode }[] = [
@@ -82,7 +66,7 @@ export const Stage2_Education: React.FC<ValidationProps> = ({ data, onUpdate, on
         }
     ];
 
-    // Flatten programs for the selected school to allow direct searching
+    // Flatten programs for the selected school
     const availablePrograms = useMemo(() => {
         if (!data.school || data.school === 'Other' || !CENTRAL_FL_DATA[data.school]) return [];
 
@@ -100,25 +84,33 @@ export const Stage2_Education: React.FC<ValidationProps> = ({ data, onUpdate, on
 
     // Filter Logic
     const filteredPrograms = useMemo(() => {
+        if (!searchTerm.trim()) return availablePrograms.slice(0, 10); // Show first 10 when empty
         return availablePrograms.filter(prog =>
             prog.label.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [availablePrograms, searchTerm]);
 
-    // Update both program and infer degree type
+    // Handle program selection
     const handleSelectProgram = (programName: string) => {
-        console.log("Selecting program:", programName); // Debug log
-        onUpdate('program', programName);
+        console.log("[Stage2] Selecting program:", programName);
 
         // Find and set the corresponding degree type
         const found = availablePrograms.find(p => p.label === programName);
-        if (found) {
-            onUpdate('degreeType', found.type);
-        } else {
-            onUpdate('degreeType', 'Other / Not Listed');
-        }
-        setSearchTerm(programName);
-        setIsSearchOpen(false);
+        const degreeType = found ? found.type : 'Other / Not Listed';
+
+        // Update both fields
+        onUpdate('program', programName);
+        onUpdate('degreeType', degreeType);
+
+        // Clear search
+        setSearchTerm("");
+    };
+
+    // Clear program selection to go back to search
+    const clearProgram = () => {
+        onUpdate('program', '');
+        onUpdate('degreeType', '');
+        setSearchTerm("");
     };
 
     return (
@@ -134,7 +126,7 @@ export const Stage2_Education: React.FC<ValidationProps> = ({ data, onUpdate, on
                 </div>
             </div>
 
-            {/* 1. School Selector (Always Visible) */}
+            {/* 1. School Selection (Always Visible) */}
             <div>
                 <label className="block text-lg font-bold text-gray-900 mb-4">
                     Where are you training?
@@ -144,11 +136,12 @@ export const Stage2_Education: React.FC<ValidationProps> = ({ data, onUpdate, on
                         const isSelected = data.school === school.name;
                         return (
                             <button
-                                type="button" // Ensuring these buttons don't submit the form
+                                type="button"
                                 key={school.name}
                                 onClick={() => {
+                                    console.log("[Stage2] Selecting school:", school.name);
                                     onUpdate('school', school.name);
-                                    onUpdate('program', ''); // Reset program on school change
+                                    onUpdate('program', '');
                                     onUpdate('degreeType', '');
                                     setSearchTerm('');
                                 }}
@@ -174,73 +167,129 @@ export const Stage2_Education: React.FC<ValidationProps> = ({ data, onUpdate, on
                 </div>
             </div>
 
-            {/* 2. Program Input ("The Skillset") - Conditionally Rendered */}
-            {data.school && (
-                <div className="animate-in fade-in slide-in-from-top-4 duration-500">
-                    <label className="block text-lg font-bold text-gray-900 mb-4">
-                        What is your program?
-                    </label>
+            {/* 2. Program Selection Logic - THE TICKET SWAP */}
+            {data.school && data.school !== 'Other' && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <h3 className="text-lg font-bold text-gray-900">What is your program?</h3>
 
-                    {/* FAKE INPUT TRIGGER REWRITTEN */}
-                    <button
-                        type="button" // Prevent form submission
-                        onClick={() => setIsSearchOpen(true)}
-                        className={`w-full p-4 border rounded-xl flex justify-between items-center text-left transition-all group ${data.program
-                            ? "bg-white border-green-500 ring-1 ring-green-500 shadow-sm" // Success State
-                            : "bg-gray-50 border-gray-200 hover:bg-white" // Empty State
-                            }`}
-                    >
-                        <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
-                                Selected Program
-                            </span>
-                            <span className={`text-lg font-medium truncate ${data.program ? "text-gray-900" : "text-gray-400"}`}>
-                                {data.program || "Tap to search..."}
-                            </span>
-                        </div>
+                    {/* CONDITIONAL SWAP */}
+                    {!data.program ? (
+                        // === VIEW A: SEARCH INTERFACE ===
+                        <div className="relative z-20">
+                            {/* Standard Input - No Fake Buttons */}
+                            <div className="relative">
+                                <Search className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
+                                <input
+                                    autoFocus
+                                    type="text"
+                                    id="program-search"
+                                    name="programSearch"
+                                    autoComplete="off"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    placeholder="Search programs (e.g. Welding, Nursing)..."
+                                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all text-lg"
+                                />
+                            </div>
 
-                        {/* Icon Swaps on Success */}
-                        {data.program ? (
-                            <CheckCircle2 className="h-6 w-6 text-green-500 shrink-0" />
-                        ) : (
-                            <Search className="h-5 w-5 text-gray-400 group-hover:text-green-500 shrink-0" />
-                        )}
-                    </button>
-
-                    {/* The "Magic" Interaction: Skill Prediction */}
-                    {data.program && (
-                        <div className="mt-4 p-5 bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl border border-slate-700 shadow-lg animate-in fade-in zoom-in-95 duration-500">
-                            <div className="flex items-start gap-3">
-                                <div className="p-2 bg-yellow-500/20 rounded-lg">
-                                    <Zap className="w-5 h-5 text-yellow-500" />
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold text-yellow-500 uppercase tracking-widest mb-1">
-                                        SKILLSET DETECTED
-                                    </div>
-                                    <div className="text-white font-medium mb-3">
-                                        Based on <span className="text-yellow-400">{data.program}</span>, we've equipped you with:
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {getSkillAssets(data.program).map((skill, i) => (
-                                            <span key={i} className="px-3 py-1 bg-white/10 text-white rounded-full text-xs font-medium border border-white/10 shadow-sm backdrop-blur-sm">
-                                                {skill}
-                                            </span>
+                            {/* Results List (Rendered Inline Below) */}
+                            <div className="mt-2 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                                {filteredPrograms.length > 0 ? (
+                                    <div className="p-2 space-y-1">
+                                        {filteredPrograms.map((prog) => (
+                                            <button
+                                                type="button"
+                                                key={prog.label}
+                                                onMouseDown={() => handleSelectProgram(prog.label)}
+                                                className="w-full text-left px-4 py-3 rounded-lg hover:bg-green-50 hover:text-green-900 transition-colors flex items-center justify-between group"
+                                            >
+                                                <div>
+                                                    <span className="font-medium text-slate-700 group-hover:text-green-900">{prog.label}</span>
+                                                    <span className="ml-2 text-xs text-slate-400">{prog.type}</span>
+                                                </div>
+                                            </button>
                                         ))}
                                     </div>
+                                ) : (
+                                    <div className="py-8 text-center text-slate-400">
+                                        No programs found matching "{searchTerm}"
+                                    </div>
+                                )}
+                            </div>
+
+                            <p className="mt-2 text-sm text-slate-400 text-center">
+                                Can't find it? Try keywords like "Nurse" or "Business"
+                            </p>
+                        </div>
+                    ) : (
+                        // === VIEW B: SUCCESS TICKET (Replaces Search) ===
+                        <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4 flex items-center justify-between animate-in fade-in zoom-in-95 duration-300">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-green-100 p-2.5 rounded-full">
+                                    <Check className="h-6 w-6 text-green-600" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-green-700 uppercase tracking-wider">Selected Program</p>
+                                    <p className="text-lg font-bold text-gray-900">{data.program}</p>
+                                    <p className="text-sm text-slate-500">{data.degreeType}</p>
                                 </div>
                             </div>
+                            <button
+                                type="button"
+                                onClick={clearProgram}
+                                className="text-sm text-gray-500 hover:text-gray-900 underline font-medium px-3 py-2 hover:bg-white/50 rounded-lg transition-colors"
+                            >
+                                Change
+                            </button>
                         </div>
                     )}
                 </div>
             )}
 
-            {/* 3. Status Toggle ("The Timeline") - Conditionally Rendered */}
+            {/* "Other" School - Manual Input */}
+            {data.school === 'Other' && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <h3 className="text-lg font-bold text-gray-900">Tell us about your program</h3>
+                    <input
+                        type="text"
+                        value={data.program}
+                        onChange={(e) => onUpdate('program', e.target.value)}
+                        placeholder="Enter your program name..."
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all text-lg"
+                    />
+                </div>
+            )}
+
+            {/* The "Magic" Interaction: Skill Prediction */}
             {data.program && (
-                <div className="animate-in fade-in slide-in-from-top-4 duration-500 border-t border-gray-100 pt-8">
-                    <label className="block text-lg font-bold text-gray-900 mb-4">
-                        When do you graduate?
-                    </label>
+                <div className="p-5 bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl border border-slate-700 shadow-lg animate-in fade-in zoom-in-95 duration-500">
+                    <div className="flex items-start gap-3">
+                        <div className="p-2 bg-yellow-500/20 rounded-lg">
+                            <Zap className="w-5 h-5 text-yellow-500" />
+                        </div>
+                        <div>
+                            <div className="text-xs font-bold text-yellow-500 uppercase tracking-widest mb-1">
+                                SKILLSET DETECTED
+                            </div>
+                            <div className="text-white font-medium mb-3">
+                                Based on <span className="text-yellow-400">{data.program}</span>, we've equipped you with:
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {getSkillAssets(data.program).map((skill, i) => (
+                                    <span key={i} className="px-3 py-1 bg-white/10 text-white rounded-full text-xs font-medium border border-white/10 shadow-sm backdrop-blur-sm">
+                                        {skill}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 3. The Reveal (Only visible if Ticket exists) */}
+            {data.program && (
+                <div className="animate-in slide-in-from-top-4 fade-in duration-500 pt-6 border-t border-gray-100">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">When do you graduate?</h3>
 
                     <div className="p-1 bg-slate-100 rounded-xl flex mb-4">
                         <button
@@ -298,71 +347,6 @@ export const Stage2_Education: React.FC<ValidationProps> = ({ data, onUpdate, on
                             Next Step: Logistics
                             <ArrowRight className="w-5 h-5" />
                         </button>
-                    </div>
-                </div>
-            )}
-
-            {/* THE SEARCH MODAL (Rendered at Root Level) */}
-            {isSearchOpen && (
-                <div className="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-sm flex items-start justify-center pt-20 p-4">
-                    {/* Modal Content */}
-                    <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
-                        {/* Modal Header / Search Bar */}
-                        <div className="p-4 border-b border-slate-100 flex items-center gap-3">
-                            <Search className="w-5 h-5 text-slate-400 shrink-0" />
-                            <label htmlFor="modal-program-search" className="sr-only">Search Programs</label>
-                            <input
-                                id="modal-program-search"    // Matching ID
-                                name="programSearch"         // Unique Name
-                                autoComplete="off"           // Disable autocomplete to stop browser fights
-                                autoFocus
-                                ref={searchInputRef}
-                                type="text"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder={`Search ${data.school ? data.school.split(' ')[0] : ''} programs...`}
-                                className="flex-1 text-lg outline-none placeholder:text-slate-300 text-slate-900"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setIsSearchOpen(false)}
-                                className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        {/* Results List */}
-                        <div className="flex-1 overflow-y-auto p-2">
-                            {filteredPrograms.length > 0 ? (
-                                <div className="space-y-1">
-                                    {filteredPrograms.map((prog) => (
-                                        <button
-                                            type="button"
-                                            key={prog.label}
-                                            onClick={() => handleSelectProgram(prog.label)}
-                                            className="w-full text-left px-4 py-3 rounded-xl hover:bg-green-50 hover:text-green-900 transition-colors flex items-center justify-between group"
-                                        >
-                                            <span className="font-medium text-slate-700 group-hover:text-green-900">{prog.label}</span>
-                                            {data.program === prog.label && <Check className="w-4 h-4 text-green-600" />}
-                                        </button>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="py-12 text-center text-slate-400">
-                                    {searchTerm ? (
-                                        <>No programs found matching "{searchTerm}"</>
-                                    ) : (
-                                        <>Start typing to find your program...</>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Footer Hint */}
-                        <div className="p-3 bg-slate-50 border-t border-slate-100 text-center text-xs text-slate-400">
-                            Can't find it? Try searching for keywords like "Nurse" or "Business"
-                        </div>
                     </div>
                 </div>
             )}
