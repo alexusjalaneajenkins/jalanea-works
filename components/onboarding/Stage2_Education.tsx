@@ -37,39 +37,29 @@ const getSchoolEmoji = (school: string): string => {
 };
 
 // ==================== COMPACT CREDENTIAL CARD ====================
-interface CompactCardProps {
+const CompactCredentialCard: React.FC<{
     entry: EducationEntry;
     onEdit: () => void;
     onRemove: () => void;
-}
-
-const CompactCredentialCard: React.FC<CompactCardProps> = ({ entry, onEdit, onRemove }) => (
+}> = ({ entry, onEdit, onRemove }) => (
     <div className="bg-white border border-gray-200 p-4 rounded-xl flex justify-between items-center shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-full bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center text-2xl shadow-inner">
                 {getSchoolEmoji(entry.school)}
             </div>
             <div>
-                <h4 className="font-bold text-gray-900">{entry.program || "No program selected"}</h4>
+                <h4 className="font-bold text-gray-900">{entry.program}</h4>
                 <p className="text-sm text-gray-500">
-                    {entry.school} • {entry.status} {entry.gradYear ? `(${entry.gradYear})` : ''}
+                    {entry.school} • {entry.status} ({entry.gradYear})
                 </p>
             </div>
         </div>
 
         <div className="flex gap-1">
-            <button
-                type="button"
-                onClick={onEdit}
-                className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
-            >
+            <button type="button" onClick={onEdit} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors">
                 <Pencil className="h-4 w-4" />
             </button>
-            <button
-                type="button"
-                onClick={onRemove}
-                className="p-2 hover:bg-red-50 rounded-full text-gray-400 hover:text-red-500 transition-colors"
-            >
+            <button type="button" onClick={onRemove} className="p-2 hover:bg-red-50 rounded-full text-gray-400 hover:text-red-500 transition-colors">
                 <Trash2 className="h-4 w-4" />
             </button>
         </div>
@@ -77,43 +67,40 @@ const CompactCredentialCard: React.FC<CompactCardProps> = ({ entry, onEdit, onRe
 );
 
 // ==================== CREDENTIAL BUILDER FORM ====================
-interface BuilderFormProps {
+const CredentialBuilderForm: React.FC<{
     entry: EducationEntry;
     onUpdate: (field: keyof EducationEntry, value: string) => void;
     onSave: () => void;
     onCancel: () => void;
     showCancel: boolean;
-    isEditing: boolean;
-}
-
-const CredentialBuilderForm: React.FC<BuilderFormProps> = ({
-    entry, onUpdate, onSave, onCancel, showCancel, isEditing
-}) => {
+}> = ({ entry, onUpdate, onSave, onCancel, showCancel }) => {
     const [searchTerm, setSearchTerm] = useState("");
-    const [localProgram, setLocalProgram] = useState<string | null>(entry.program || null);
 
-    // Sync from entry
-    useEffect(() => {
-        if (entry.program) setLocalProgram(entry.program);
-    }, [entry.program]);
+    // LOCAL optimistic state for instant UI
+    const [localSchool, setLocalSchool] = useState(entry.school || "");
+    const [localProgram, setLocalProgram] = useState(entry.program || "");
+    const [localStatus, setLocalStatus] = useState<'Alumni' | 'Student'>(entry.status || 'Alumni');
+    const [localYear, setLocalYear] = useState(entry.gradYear || "");
 
     // Program list
     const availablePrograms = useMemo(() => {
-        if (!entry.school || entry.school === 'Other' || !CENTRAL_FL_DATA[entry.school]) return [];
+        if (!localSchool || localSchool === 'Other' || !CENTRAL_FL_DATA[localSchool]) return [];
         const programs: { label: string; type: string }[] = [];
-        Object.entries(CENTRAL_FL_DATA[entry.school]).forEach(([type, progList]) => {
+        Object.entries(CENTRAL_FL_DATA[localSchool]).forEach(([type, progList]) => {
             progList.forEach(prog => programs.push({ label: prog, type }));
         });
         return programs;
-    }, [entry.school]);
+    }, [localSchool]);
 
     const filteredPrograms = useMemo(() => {
-        if (!searchTerm.trim()) return availablePrograms.slice(0, 6);
+        if (!searchTerm.trim()) return availablePrograms.slice(0, 8);
         return availablePrograms.filter(p => p.label.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [availablePrograms, searchTerm]);
 
+    // Handlers that update LOCAL state instantly, then sync to parent
     const handleSelectSchool = (schoolName: string) => {
-        setLocalProgram(null);
+        setLocalSchool(schoolName);
+        setLocalProgram("");
         setSearchTerm("");
         onUpdate('school', schoolName);
         onUpdate('program', '');
@@ -127,34 +114,46 @@ const CredentialBuilderForm: React.FC<BuilderFormProps> = ({
         onUpdate('degreeType', degreeType);
     };
 
-    const isComplete = entry.school && entry.program && entry.gradYear;
+    const handleStatusChange = (status: 'Alumni' | 'Student') => {
+        setLocalStatus(status);
+        onUpdate('status', status);
+    };
+
+    const handleYearChange = (year: string) => {
+        setLocalYear(year);
+        onUpdate('gradYear', year);
+    };
+
+    // Check if form is complete using LOCAL state
+    const isComplete = localSchool && localProgram && localYear;
+
+    const handleSaveClick = () => {
+        if (isComplete) {
+            console.log("✅ Saving credential:", { localSchool, localProgram, localYear });
+            onSave();
+        }
+    };
 
     return (
         <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 animate-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="flex justify-between items-center mb-5">
-                <h3 className="font-bold text-gray-900 text-lg">
-                    {isEditing ? 'Edit Credential' : 'Add Credential'}
-                </h3>
+                <h3 className="font-bold text-gray-900 text-lg">Add Credential</h3>
                 {showCancel && (
-                    <button
-                        type="button"
-                        onClick={onCancel}
-                        className="p-2 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
-                    >
+                    <button type="button" onClick={onCancel} className="p-2 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
                         <X className="h-5 w-5" />
                     </button>
                 )}
             </div>
 
-            {/* School Selection */}
+            {/* Step 1: School Selection */}
             <div className="mb-4">
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                     1. Select School
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                     {SCHOOLS.map((school) => {
-                        const isSelected = entry.school === school.name;
+                        const isSelected = localSchool === school.name;
                         return (
                             <button
                                 type="button"
@@ -176,8 +175,8 @@ const CredentialBuilderForm: React.FC<BuilderFormProps> = ({
                 </div>
             </div>
 
-            {/* Program Selection */}
-            {entry.school && entry.school !== 'Other' && (
+            {/* Step 2: Program Selection (only show after school) */}
+            {localSchool && localSchool !== 'Other' && (
                 <div className="mb-4 animate-in fade-in duration-200">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                         2. Select Program
@@ -203,7 +202,7 @@ const CredentialBuilderForm: React.FC<BuilderFormProps> = ({
                                             <button
                                                 type="button"
                                                 key={prog.label}
-                                                onMouseDown={() => handleSelectProgram(prog.label, prog.type)}
+                                                onClick={() => handleSelectProgram(prog.label, prog.type)}
                                                 className="w-full text-left px-3 py-2 rounded-lg hover:bg-green-50 text-sm transition-colors"
                                             >
                                                 <span className="font-medium text-slate-700">{prog.label}</span>
@@ -221,11 +220,7 @@ const CredentialBuilderForm: React.FC<BuilderFormProps> = ({
                                 <Check className="h-4 w-4 text-green-600" />
                                 <span className="font-semibold text-slate-900 text-sm">{localProgram}</span>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => { setLocalProgram(null); onUpdate('program', ''); }}
-                                className="text-xs text-slate-500 hover:text-slate-900 underline"
-                            >
+                            <button type="button" onClick={() => { setLocalProgram(""); onUpdate('program', ''); }} className="text-xs text-slate-500 hover:text-slate-900 underline">
                                 Change
                             </button>
                         </div>
@@ -234,14 +229,14 @@ const CredentialBuilderForm: React.FC<BuilderFormProps> = ({
             )}
 
             {/* Other School - Manual Input */}
-            {entry.school === 'Other' && (
+            {localSchool === 'Other' && (
                 <div className="mb-4">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                         2. Program Name
                     </label>
                     <input
                         type="text"
-                        value={entry.program}
+                        value={localProgram}
                         onChange={(e) => { setLocalProgram(e.target.value); onUpdate('program', e.target.value); }}
                         placeholder="Enter your program..."
                         className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none text-sm bg-white"
@@ -249,8 +244,8 @@ const CredentialBuilderForm: React.FC<BuilderFormProps> = ({
                 </div>
             )}
 
-            {/* Status & Year */}
-            {(localProgram || entry.school === 'Other') && entry.program && (
+            {/* Step 3 & 4: Status & Year - ALWAYS show after program is selected */}
+            {localProgram && (
                 <div className="grid grid-cols-2 gap-4 mb-5 animate-in fade-in duration-200">
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
@@ -261,8 +256,8 @@ const CredentialBuilderForm: React.FC<BuilderFormProps> = ({
                                 <button
                                     type="button"
                                     key={s}
-                                    onClick={() => onUpdate('status', s)}
-                                    className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${entry.status === s
+                                    onClick={() => handleStatusChange(s)}
+                                    className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${localStatus === s
                                         ? 'bg-slate-900 text-white'
                                         : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'
                                         }`}
@@ -278,9 +273,11 @@ const CredentialBuilderForm: React.FC<BuilderFormProps> = ({
                         </label>
                         <input
                             type="number"
-                            value={entry.gradYear}
-                            onChange={(e) => onUpdate('gradYear', e.target.value)}
+                            value={localYear}
+                            onChange={(e) => handleYearChange(e.target.value)}
                             placeholder="2024"
+                            min="1990"
+                            max="2030"
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-sm bg-white"
                         />
                     </div>
@@ -290,13 +287,22 @@ const CredentialBuilderForm: React.FC<BuilderFormProps> = ({
             {/* Save Button */}
             <button
                 type="button"
-                onClick={onSave}
+                onClick={handleSaveClick}
                 disabled={!isComplete}
                 className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
                 <Check className="h-5 w-5" />
-                {isEditing ? 'Save Changes' : 'Save & Collapse'}
+                Save & Collapse
             </button>
+
+            {/* Debug info - shows what's missing */}
+            {!isComplete && (
+                <p className="text-xs text-center text-slate-400 mt-2">
+                    {!localSchool && "Select a school → "}
+                    {localSchool && !localProgram && "Select a program → "}
+                    {localSchool && localProgram && !localYear && "Enter graduation year"}
+                </p>
+            )}
         </div>
     );
 };
@@ -310,20 +316,19 @@ export const Stage2_Education: React.FC<Stage2Props> = ({
     onNext,
     onBack
 }) => {
-    // Track if form is open and which entry is being edited
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
 
-    // Get the entry being edited (or the last empty one for new entries)
-    const activeEntry = editingId
-        ? educationStack.find(e => e.id === editingId)
-        : educationStack[educationStack.length - 1];
-
-    // Check if we have any complete entries
+    // Get completed entries
     const completedEntries = educationStack.filter(e => e.school && e.program && e.gradYear);
     const hasCompletedEntries = completedEntries.length > 0;
 
-    // Auto-open form if no completed entries
+    // Get current entry being worked on
+    const currentEntry = editingId
+        ? educationStack.find(e => e.id === editingId)
+        : educationStack.find(e => !e.program); // Find first incomplete entry
+
+    // Auto-open form if no completed entries and there's an entry to edit
     useEffect(() => {
         if (!hasCompletedEntries && educationStack.length > 0) {
             setIsFormOpen(true);
@@ -331,15 +336,15 @@ export const Stage2_Education: React.FC<Stage2Props> = ({
         }
     }, []);
 
-    // Handle adding a new entry
+    // Handle adding new entry
     const handleAddNew = () => {
         onAddEntry();
         setIsFormOpen(true);
-        // The new entry will be the last one after dispatch
-        setTimeout(() => {
-            const newEntry = educationStack[educationStack.length - 1];
-            if (newEntry) setEditingId(newEntry.id);
-        }, 50);
+        // Set editing ID to the newest entry after a tick
+        requestAnimationFrame(() => {
+            const lastEntry = educationStack[educationStack.length - 1];
+            if (lastEntry) setEditingId(lastEntry.id);
+        });
     };
 
     // Handle edit
@@ -348,23 +353,25 @@ export const Stage2_Education: React.FC<Stage2Props> = ({
         setIsFormOpen(true);
     };
 
-    // Handle save (collapse form)
+    // Handle save (collapse)
     const handleSave = () => {
+        console.log("💾 Collapsing form");
         setIsFormOpen(false);
         setEditingId(null);
     };
 
     // Handle cancel
     const handleCancel = () => {
-        // If this was a new entry with no data, remove it
-        if (editingId && activeEntry && !activeEntry.program) {
-            onRemoveEntry(editingId);
+        if (editingId) {
+            const entry = educationStack.find(e => e.id === editingId);
+            if (entry && !entry.program) {
+                onRemoveEntry(editingId);
+            }
         }
         setIsFormOpen(false);
         setEditingId(null);
     };
 
-    // Validation
     const isValid = hasCompletedEntries;
 
     return (
@@ -380,7 +387,7 @@ export const Stage2_Education: React.FC<Stage2Props> = ({
                 </div>
             </div>
 
-            {/* 1. LIST OF COMPACT CARDS (The Wallet) */}
+            {/* Completed Cards */}
             {completedEntries.length > 0 && (
                 <div className="space-y-3">
                     {completedEntries.map((entry) => (
@@ -394,19 +401,18 @@ export const Stage2_Education: React.FC<Stage2Props> = ({
                 </div>
             )}
 
-            {/* 2. THE BUILDER FORM (Conditionally Rendered) */}
-            {isFormOpen && activeEntry && (
+            {/* Builder Form */}
+            {isFormOpen && currentEntry && (
                 <CredentialBuilderForm
-                    entry={activeEntry}
-                    onUpdate={(field, value) => onUpdateEntry(activeEntry.id, field, value)}
+                    entry={currentEntry}
+                    onUpdate={(field, value) => onUpdateEntry(currentEntry.id, field, value)}
                     onSave={handleSave}
                     onCancel={handleCancel}
                     showCancel={hasCompletedEntries}
-                    isEditing={!!editingId && completedEntries.some(e => e.id === editingId)}
                 />
             )}
 
-            {/* 3. ADD ANOTHER BUTTON (Only when form is closed and we have entries) */}
+            {/* Add Another Button */}
             {!isFormOpen && hasCompletedEntries && (
                 <button
                     type="button"
@@ -440,11 +446,7 @@ export const Stage2_Education: React.FC<Stage2Props> = ({
             {/* Navigation */}
             {!isFormOpen && (
                 <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-slate-100 z-40 p-6 -mx-6 -mb-6 mt-8 rounded-b-2xl flex items-center gap-4">
-                    <button
-                        type="button"
-                        onClick={onBack}
-                        className="px-6 py-4 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors"
-                    >
+                    <button type="button" onClick={onBack} className="px-6 py-4 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors">
                         Back
                     </button>
                     <button
