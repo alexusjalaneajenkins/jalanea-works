@@ -15,7 +15,7 @@ interface EducationEntry {
     program: string;
     degreeType: string;
     status: string;
-    year: string;
+    gradYear: string;
 }
 
 export const Stage2_Education = ({ formData, updateFormData }: any) => {
@@ -32,7 +32,7 @@ export const Stage2_Education = ({ formData, updateFormData }: any) => {
         school: "",
         program: "",
         status: "Alumni",
-        year: new Date().getFullYear().toString()
+        gradYear: new Date().getFullYear().toString()
     });
 
     // --- HANDLERS ---
@@ -46,7 +46,7 @@ export const Stage2_Education = ({ formData, updateFormData }: any) => {
             program: draft.program,
             degreeType: "Certificate", // Default for now
             status: draft.status,
-            year: draft.year
+            gradYear: draft.gradYear
         };
 
         // Update UI Instantly
@@ -129,8 +129,8 @@ export const Stage2_Education = ({ formData, updateFormData }: any) => {
                         <input
                             type="number"
                             placeholder="2024"
-                            value={draft.year}
-                            onChange={(e) => setDraft({ ...draft, year: e.target.value })}
+                            value={draft.gradYear}
+                            onChange={(e) => setDraft({ ...draft, gradYear: e.target.value })}
                             className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
                         />
                     </div>
