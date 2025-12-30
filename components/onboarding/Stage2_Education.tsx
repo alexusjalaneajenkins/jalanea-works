@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     GraduationCap, Hammer, BookOpen, Check,
     ArrowRight, Search, Zap
@@ -33,6 +33,21 @@ const getSkillAssets = (program: string): string[] => {
 export const Stage2_Education: React.FC<ValidationProps> = ({ data, onUpdate, onNext, onBack }) => {
     const [status, setStatus] = useState<'alumni' | 'student'>('alumni');
     const [searchTerm, setSearchTerm] = useState("");
+
+    // ========== OPTIMISTIC UI STATE ==========
+    // Local state for INSTANT visual feedback (doesn't wait for parent)
+    const [localProgram, setLocalProgram] = useState<string | null>(data.program || null);
+    const [localDegreeType, setLocalDegreeType] = useState<string | null>(data.degreeType || null);
+
+    // Sync local state if parent updates later (for reload/edit scenarios)
+    useEffect(() => {
+        if (data.program) {
+            setLocalProgram(data.program);
+        }
+        if (data.degreeType) {
+            setLocalDegreeType(data.degreeType);
+        }
+    }, [data.program, data.degreeType]);
 
     // School Options Configuration
     const SCHOOLS: { name: SchoolName; color: string; bg: string; border: string; icon: React.ReactNode }[] = [
@@ -90,27 +105,44 @@ export const Stage2_Education: React.FC<ValidationProps> = ({ data, onUpdate, on
         );
     }, [availablePrograms, searchTerm]);
 
-    // Handle program selection
-    const handleSelectProgram = (programName: string) => {
-        console.log("[Stage2] Selecting program:", programName);
+    // ========== OPTIMISTIC SELECTION HANDLER ==========
+    const handleSelectProgram = (programName: string, degreeType: string) => {
+        // 1. INSTANTLY update UI (Optimistic update)
+        setLocalProgram(programName);
+        setLocalDegreeType(degreeType);
+        setSearchTerm(""); // Clear search
 
-        // Find and set the corresponding degree type
-        const found = availablePrograms.find(p => p.label === programName);
-        const degreeType = found ? found.type : 'Other / Not Listed';
-
-        // Update both fields
+        // 2. Persist to Parent (Background sync)
+        console.log("⚡ Optimistic Select:", programName, degreeType);
         onUpdate('program', programName);
         onUpdate('degreeType', degreeType);
-
-        // Clear search
-        setSearchTerm("");
     };
 
-    // Clear program selection to go back to search
+    // Clear program selection (optimistic reset)
     const clearProgram = () => {
+        // 1. INSTANT UI reset
+        setLocalProgram(null);
+        setLocalDegreeType(null);
+        setSearchTerm("");
+
+        // 2. Persist to Parent
         onUpdate('program', '');
         onUpdate('degreeType', '');
-        setSearchTerm("");
+    };
+
+    // Handle school change (resets program)
+    const handleSchoolChange = (schoolName: string) => {
+        console.log("[Stage2] Selecting school:", schoolName);
+
+        // Reset local state instantly
+        setLocalProgram(null);
+        setLocalDegreeType(null);
+        setSearchTerm('');
+
+        // Persist to parent
+        onUpdate('school', schoolName);
+        onUpdate('program', '');
+        onUpdate('degreeType', '');
     };
 
     return (
@@ -138,13 +170,7 @@ export const Stage2_Education: React.FC<ValidationProps> = ({ data, onUpdate, on
                             <button
                                 type="button"
                                 key={school.name}
-                                onClick={() => {
-                                    console.log("[Stage2] Selecting school:", school.name);
-                                    onUpdate('school', school.name);
-                                    onUpdate('program', '');
-                                    onUpdate('degreeType', '');
-                                    setSearchTerm('');
-                                }}
+                                onClick={() => handleSchoolChange(school.name)}
                                 className={`relative p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center gap-3 text-center ${isSelected
                                     ? `${school.bg} ${school.border} ring-2 ring-offset-1 ring-slate-200 shadow-md`
                                     : 'bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50'
@@ -167,16 +193,16 @@ export const Stage2_Education: React.FC<ValidationProps> = ({ data, onUpdate, on
                 </div>
             </div>
 
-            {/* 2. Program Selection Logic - THE TICKET SWAP */}
+            {/* 2. Program Selection - OPTIMISTIC UI SWAP */}
             {data.school && data.school !== 'Other' && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
                     <h3 className="text-lg font-bold text-gray-900">What is your program?</h3>
 
-                    {/* CONDITIONAL SWAP */}
-                    {!data.program ? (
+                    {/* CONDITIONAL SWAP: Check localProgram (fast) instead of data.program (slow) */}
+                    {!localProgram ? (
                         // === VIEW A: SEARCH INTERFACE ===
-                        <div className="relative z-20">
-                            {/* Standard Input - No Fake Buttons */}
+                        <div className="relative z-20 animate-in fade-in">
+                            {/* Standard Input */}
                             <div className="relative">
                                 <Search className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
                                 <input
@@ -200,7 +226,7 @@ export const Stage2_Education: React.FC<ValidationProps> = ({ data, onUpdate, on
                                             <button
                                                 type="button"
                                                 key={prog.label}
-                                                onMouseDown={() => handleSelectProgram(prog.label)}
+                                                onMouseDown={() => handleSelectProgram(prog.label, prog.type)}
                                                 className="w-full text-left px-4 py-3 rounded-lg hover:bg-green-50 hover:text-green-900 transition-colors flex items-center justify-between group"
                                             >
                                                 <div>
@@ -222,16 +248,18 @@ export const Stage2_Education: React.FC<ValidationProps> = ({ data, onUpdate, on
                             </p>
                         </div>
                     ) : (
-                        // === VIEW B: SUCCESS TICKET (Replaces Search) ===
-                        <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4 flex items-center justify-between animate-in fade-in zoom-in-95 duration-300">
+                        // === VIEW B: SUCCESS TICKET (Instant render via localProgram) ===
+                        <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4 flex items-center justify-between animate-in zoom-in-95 duration-200">
                             <div className="flex items-center gap-3">
                                 <div className="bg-green-100 p-2.5 rounded-full">
                                     <Check className="h-6 w-6 text-green-600" />
                                 </div>
                                 <div>
                                     <p className="text-xs font-bold text-green-700 uppercase tracking-wider">Selected Program</p>
-                                    <p className="text-lg font-bold text-gray-900">{data.program}</p>
-                                    <p className="text-sm text-slate-500">{data.degreeType}</p>
+                                    <p className="text-lg font-bold text-gray-900 leading-tight">{localProgram}</p>
+                                    {localDegreeType && (
+                                        <p className="text-sm text-slate-500">{localDegreeType}</p>
+                                    )}
                                 </div>
                             </div>
                             <button
@@ -253,15 +281,18 @@ export const Stage2_Education: React.FC<ValidationProps> = ({ data, onUpdate, on
                     <input
                         type="text"
                         value={data.program}
-                        onChange={(e) => onUpdate('program', e.target.value)}
+                        onChange={(e) => {
+                            setLocalProgram(e.target.value); // Optimistic
+                            onUpdate('program', e.target.value);
+                        }}
                         placeholder="Enter your program name..."
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all text-lg"
                     />
                 </div>
             )}
 
-            {/* The "Magic" Interaction: Skill Prediction */}
-            {data.program && (
+            {/* The "Magic" Interaction: Skill Prediction - Uses localProgram for instant feedback */}
+            {localProgram && (
                 <div className="p-5 bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl border border-slate-700 shadow-lg animate-in fade-in zoom-in-95 duration-500">
                     <div className="flex items-start gap-3">
                         <div className="p-2 bg-yellow-500/20 rounded-lg">
@@ -272,10 +303,10 @@ export const Stage2_Education: React.FC<ValidationProps> = ({ data, onUpdate, on
                                 SKILLSET DETECTED
                             </div>
                             <div className="text-white font-medium mb-3">
-                                Based on <span className="text-yellow-400">{data.program}</span>, we've equipped you with:
+                                Based on <span className="text-yellow-400">{localProgram}</span>, we've equipped you with:
                             </div>
                             <div className="flex flex-wrap gap-2">
-                                {getSkillAssets(data.program).map((skill, i) => (
+                                {getSkillAssets(localProgram).map((skill, i) => (
                                     <span key={i} className="px-3 py-1 bg-white/10 text-white rounded-full text-xs font-medium border border-white/10 shadow-sm backdrop-blur-sm">
                                         {skill}
                                     </span>
@@ -286,8 +317,8 @@ export const Stage2_Education: React.FC<ValidationProps> = ({ data, onUpdate, on
                 </div>
             )}
 
-            {/* 3. The Reveal (Only visible if Ticket exists) */}
-            {data.program && (
+            {/* 3. The Reveal - Linked to localProgram for instant visibility */}
+            {localProgram && (
                 <div className="animate-in slide-in-from-top-4 fade-in duration-500 pt-6 border-t border-gray-100">
                     <h3 className="text-lg font-bold text-gray-900 mb-4">When do you graduate?</h3>
 
@@ -341,7 +372,7 @@ export const Stage2_Education: React.FC<ValidationProps> = ({ data, onUpdate, on
                         <button
                             type="button"
                             onClick={onNext}
-                            disabled={!data.school || !data.program || !data.gradYear}
+                            disabled={!data.school || !localProgram || !data.gradYear}
                             className="flex-1 py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
                         >
                             Next Step: Logistics
