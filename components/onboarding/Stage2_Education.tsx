@@ -19,13 +19,14 @@ interface EducationEntry {
 }
 
 export const Stage2_Education = ({ formData, updateFormData }: any) => {
-    // 1. THE STACK (Initialize from Parent, fallback to empty array)
-    const [educationStack, setEducationStack] = useState<EducationEntry[]>(
-        formData.educationHistory || []
+    // 1. THE STACK - Filter out any empty/incomplete entries from stale state
+    const initialStack = (formData.educationHistory || []).filter(
+        (e: any) => e && e.school && e.program
     );
+    const [educationStack, setEducationStack] = useState<EducationEntry[]>(initialStack);
 
-    // 2. UI STATE
-    const [isFormOpen, setIsFormOpen] = useState(educationStack.length === 0);
+    // 2. UI STATE - Open form if no valid entries
+    const [isFormOpen, setIsFormOpen] = useState(initialStack.length === 0);
 
     // 3. BUILDER STATE (The Draft)
     const [draft, setDraft] = useState({
