@@ -473,23 +473,15 @@ export const Onboarding: React.FC = () => {
                     {/* ===== STAGE 2: EDUCATION ===== */}
                     {state.stage === 2 && (
                         <Stage2_Education
-                            educationStack={state.education.map(edu => ({
-                                ...edu,
-                                status: (edu as any).status || 'Alumni' // Default status if not set
-                            }))}
-                            onAddEntry={() => dispatch({ type: 'ADD_EDUCATION' })}
-                            onUpdateEntry={(id, field, value) => {
-                                console.log(`[Stage2] Updating ${field} to ${value} for ID ${id}`);
-                                dispatch({
-                                    type: 'UPDATE_EDUCATION',
-                                    id,
-                                    field: field as keyof EducationEntry,
-                                    value
-                                });
+                            formData={{
+                                educationHistory: state.education
                             }}
-                            onRemoveEntry={(id) => dispatch({ type: 'REMOVE_EDUCATION', id })}
-                            onNext={nextStage}
-                            onBack={prevStage}
+                            updateFormData={(field: string, value: any) => {
+                                if (field === 'educationHistory') {
+                                    // Replace the entire education array
+                                    dispatch({ type: 'UPDATE_FIELD', field: 'education', value });
+                                }
+                            }}
                         />
                     )}
 
