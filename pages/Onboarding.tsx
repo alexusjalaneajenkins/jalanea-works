@@ -4,13 +4,18 @@ import { CENTRAL_FL_SCHOOLS, getDegreeTypes, getPrograms } from '../data/central
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Combobox } from '../components/Combobox';
+import { Stage1_Identity } from '../components/onboarding/Stage1_Identity';
+import { Stage2_Education } from '../components/onboarding/Stage2_Education';
+import { Stage3_Logistics } from '../components/onboarding/Stage3_Logistics';
+import { Stage4_Reality } from '../components/onboarding/Stage4_Reality';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, setDoc } from 'firebase/firestore';
 import { db, auth } from '../services/firebase';
 import {
     User, MapPin, GraduationCap, Briefcase, Clock, Car, Bus, Bike,
     ChevronRight, ChevronLeft, Check, Sparkles, Plus, X, Trash2,
-    Mic, Unlock, Zap, Heart, Home, Calendar, Target, AlertCircle
+    Mic, Unlock, Zap, Heart, Home, Calendar, Target, AlertCircle,
+    Building, TrendingUp, Lightbulb, ExternalLink, Lock
 } from 'lucide-react';
 import type { UserProfile, Education, DegreeType, WorkStyle } from '../types';
 
@@ -32,11 +37,21 @@ interface EducationEntry {
     gradYear: string;
 }
 
-// Solution Card for Stage 5
+// Structured Bridge for Stage 5
+interface Bridge {
+    type: 'resource' | 'program' | 'strategy' | 'tip' | 'grant' | 'filter';
+    title: string;
+    description?: string;
+    metadata?: {
+        weeks?: number; // For timeline
+        savings?: string;
+        actionUrl?: string;
+    };
+}
+
 interface SolutionCard {
     challenge: string;
-    bridges: string[];
-    resourceLinks?: { label: string; url: string }[];
+    bridges: Bridge[];
 }
 
 // Complete State Shape
@@ -80,6 +95,18 @@ type OnboardingAction =
 // Helper to generate unique IDs
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
+const getBridgeIcon = (type: Bridge['type']) => {
+    switch (type) {
+        case 'grant': return <Unlock className="w-4 h-4" />;
+        case 'resource': return <Building className="w-4 h-4" />;
+        case 'program': return <Briefcase className="w-4 h-4" />;
+        case 'strategy': return <TrendingUp className="w-4 h-4" />;
+        case 'tip': return <Lightbulb className="w-4 h-4" />;
+        case 'filter': return <Target className="w-4 h-4" />;
+        default: return <Check className="w-4 h-4" />;
+    }
+};
+
 // Initial State
 const initialState: OnboardingState = {
     stage: 1,
@@ -100,7 +127,7 @@ const initialState: OnboardingState = {
     selectedPrompts: [],
     // Stage 5
     solutions: [],
-    solutionsAccepted: true,
+    solutionsAccepted: false, // Default to false to trigger animation on toggle
     // Stage 6
     urgency: 'career',
     // Meta
@@ -177,55 +204,115 @@ const generateSolutions = (context: string, prompts: string[]): SolutionCard[] =
 
     if (prompts.includes('I have a mobility challenge') || context.toLowerCase().includes('mobility') || context.toLowerCase().includes('standing')) {
         solutions.push({
-            challenge: 'Mobility or standing requirements',
+            challenge: 'Mobility / Standing',
             bridges: [
-                '🔓 Grant: Florida Vocational Rehabilitation for adaptive equipment',
-                '💡 Tip: Request anti-fatigue mats from employer',
-                '🎯 Filter: Desk-based or flexible-movement roles available',
+                {
+                    type: 'grant',
+                    title: 'Voc Rehab Equipment Grant',
+                    description: 'Funding for adaptive chairs & tools',
+                    metadata: { actionUrl: 'https://www.rehabworks.org/' }
+                },
+                {
+                    type: 'tip',
+                    title: 'Workplace Modification',
+                    description: 'Request anti-fatigue mats (ADA Right)'
+                },
+                {
+                    type: 'filter',
+                    title: 'Smart Job Match',
+                    description: 'Prioritizing desk-based & flexible roles'
+                },
             ],
         });
     }
 
     if (prompts.includes('I need housing support') || context.toLowerCase().includes('housing') || context.toLowerCase().includes('homeless')) {
         solutions.push({
-            challenge: 'Housing stability',
+            challenge: 'Housing Stability',
             bridges: [
-                '🏠 Resource: Coalition for the Homeless of Central Florida',
-                '💰 Program: Rapid Re-Housing Assistance (Orange County)',
-                '📍 Tip: Filter jobs with direct deposit for faster access to funds',
+                {
+                    type: 'resource',
+                    title: 'Coalition for the Homeless',
+                    description: 'Central Florida Housing Support',
+                    metadata: { actionUrl: 'https://www.centralfloridahomeless.org/' }
+                },
+                {
+                    type: 'program',
+                    title: 'Rapid Re-Housing',
+                    description: 'Orange County Assistance Program'
+                },
+                {
+                    type: 'tip',
+                    title: 'Pay Cycle Optimization',
+                    description: 'Targeting jobs with Daily/Weekly pay'
+                },
             ],
         });
     }
 
     if (prompts.includes('I have limited transportation') || context.toLowerCase().includes('bus') || context.toLowerCase().includes('no car')) {
         solutions.push({
-            challenge: 'Transportation gap',
+            challenge: 'Transportation Gap',
             bridges: [
-                '🚌 Strategy: 14-week bus grind → Save for car → 80% more jobs unlock',
-                '💳 Resource: LYNX Reduced Fare Program',
-                '🚗 Tip: Jobs along I-4 corridor have best bus routes',
+                {
+                    type: 'strategy',
+                    title: 'The 14-Week Bus Grind',
+                    description: 'Ride LYNX → Save $2.5k → Buy Car',
+                    metadata: { weeks: 14, savings: '$2,500' }
+                },
+                {
+                    type: 'resource',
+                    title: 'LYNX Reduced Fare',
+                    description: 'Discounted passes for eligible riders',
+                    metadata: { actionUrl: 'https://www.golynx.com/' }
+                },
+                {
+                    type: 'tip',
+                    title: 'I-4 Corridor Priority',
+                    description: 'Focusing on high-access transit routes'
+                },
             ],
         });
     }
 
     if (prompts.includes('I care for a family member') || context.toLowerCase().includes('caregiver')) {
         solutions.push({
-            challenge: 'Caregiving responsibilities',
+            challenge: 'Caregiver Schedule',
             bridges: [
-                '⏰ Filter: Flexible schedule or shift-based roles',
-                '🏠 Tip: Remote work options allow care during breaks',
-                '💡 Resource: Respite care programs in Orange County',
+                {
+                    type: 'filter',
+                    title: 'Schedule Defender',
+                    description: 'Matching shifts around your care hours'
+                },
+                {
+                    type: 'tip',
+                    title: 'Remote Options',
+                    description: 'Work from home roles allow breaks'
+                },
+                {
+                    type: 'resource',
+                    title: 'Respite Care Orange County',
+                    description: 'Support for caregiver relief',
+                    metadata: { actionUrl: 'https://www.seniorsfirstinc.org/' }
+                },
             ],
         });
     }
 
     if (solutions.length === 0 && (context.trim() || prompts.length > 0)) {
         solutions.push({
-            challenge: 'Your unique situation',
+            challenge: 'Your Context',
             bridges: [
-                '🔓 We analyze your context to find the best-fit opportunities',
-                '💡 No barriers—only bridges to your success',
-                '🎯 AI-powered matching based on YOUR reality',
+                {
+                    type: 'strategy',
+                    title: 'Personalized Matching',
+                    description: 'We analyze your needs to find the best fit'
+                },
+                {
+                    type: 'filter',
+                    title: 'Bridge Builder AI',
+                    description: 'Removing barriers, highlighting support'
+                },
             ],
         });
     }
@@ -371,309 +458,93 @@ export const Onboarding: React.FC = () => {
                 <Card variant="solid-white" className="max-w-2xl mx-auto">
                     {/* ===== STAGE 1: IDENTITY ===== */}
                     {state.stage === 1 && (
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-3 bg-yellow-100 rounded-xl">
-                                    <MapPin className="w-6 h-6 text-yellow-600" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-slate-900">Identity & Location</h2>
-                                    <p className="text-sm text-slate-500">Your starting point for the journey</p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-2">Full Name</label>
-                                    <input
-                                        type="text"
-                                        value={state.name}
-                                        onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'name', value: e.target.value })}
-                                        placeholder="Your name"
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100 outline-none"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                                        <MapPin className="w-4 h-4 inline mr-1" />
-                                        Where does your commute start?
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={state.commuteStart}
-                                        onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'commuteStart', value: e.target.value })}
-                                        placeholder="Address or Zip Code (e.g., 32801)"
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-yellow-400 focus:ring-2 focus:ring-yellow-100 outline-none"
-                                    />
-                                    <p className="text-xs text-slate-400 mt-1">Used to calculate commute times for job matches</p>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-2">LinkedIn (Optional)</label>
-                                        <input
-                                            type="url"
-                                            value={state.linkedIn}
-                                            onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'linkedIn', value: e.target.value })}
-                                            placeholder="linkedin.com/in/..."
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-yellow-400 outline-none"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-2">Portfolio (Optional)</label>
-                                        <input
-                                            type="url"
-                                            value={state.portfolio}
-                                            onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'portfolio', value: e.target.value })}
-                                            placeholder="yourportfolio.com"
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-yellow-400 outline-none"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <Stage1_Identity
+                            data={{
+                                name: state.name,
+                                commuteStart: state.commuteStart,
+                                linkedinUrl: state.linkedIn,
+                                portfolioUrl: state.portfolio
+                            }}
+                            onUpdate={(field, value) => dispatch({ type: 'UPDATE_FIELD', field: field as any, value })}
+                            onNext={nextStage}
+                        />
                     )}
 
                     {/* ===== STAGE 2: EDUCATION ===== */}
                     {state.stage === 2 && (
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-3 bg-green-100 rounded-xl">
-                                    <GraduationCap className="w-6 h-6 text-green-600" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-slate-900">Education</h2>
-                                    <p className="text-sm text-slate-500">Your credentials from the Central FL ecosystem</p>
-                                </div>
-                            </div>
+                        <Stage2_Education
+                            data={{
+                                school: state.education[0]?.school || '',
+                                degreeType: state.education[0]?.degreeType || '',
+                                program: state.education[0]?.program || '',
+                                gradYear: state.education[0]?.gradYear || ''
+                            }}
+                            onUpdate={(field, value) => {
+                                // CRITICAL FIX: Get the ID of the first education entry.
+                                // If no entry exists, dispatch ADD_EDUCATION first, then update.
+                                const firstEduId = state.education[0]?.id;
 
-                            <div className="space-y-4">
-                                {state.education.map((edu, index) => (
-                                    <div key={edu.id} className={`${index > 0 ? 'pt-4 border-t border-slate-100' : ''}`}>
-                                        <div className="flex items-center justify-between mb-3">
-                                            <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                                                Credential {index + 1}
-                                            </span>
-                                            {state.education.length > 1 && (
-                                                <button
-                                                    onClick={() => dispatch({ type: 'REMOVE_EDUCATION', id: edu.id })}
-                                                    className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            )}
-                                        </div>
+                                if (!firstEduId) {
+                                    // No entry exists yet. Add one, then immediately update.
+                                    // Note: This should rarely happen if initialState is correct.
+                                    dispatch({ type: 'ADD_EDUCATION' });
+                                    // Since ADD_EDUCATION creates a new entry with a random ID,
+                                    // we can't reliably get that ID here synchronously.
+                                    // The safest approach is to store directly in a top-level field.
+                                    // For now, we will log the error.
+                                    console.error('Education entry missing during update. Adding new entry.');
+                                    return; // Skip this update, user will re-interact
+                                }
 
-                                        <div className="grid grid-cols-2 gap-4 mb-3">
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">School</label>
-                                                <select
-                                                    value={edu.school}
-                                                    onChange={(e) => dispatch({ type: 'UPDATE_EDUCATION', id: edu.id, field: 'school', value: e.target.value })}
-                                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-yellow-400 outline-none bg-white"
-                                                >
-                                                    <option value="">Select School...</option>
-                                                    {CENTRAL_FL_SCHOOLS.map((school) => (
-                                                        <option key={school} value={school}>{school}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">Graduation Year</label>
-                                                <input
-                                                    type="text"
-                                                    value={edu.gradYear}
-                                                    onChange={(e) => dispatch({ type: 'UPDATE_EDUCATION', id: edu.id, field: 'gradYear', value: e.target.value })}
-                                                    placeholder="2024"
-                                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-yellow-400 outline-none"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">Credential Type</label>
-                                                <select
-                                                    value={edu.degreeType}
-                                                    onChange={(e) => dispatch({ type: 'UPDATE_EDUCATION', id: edu.id, field: 'degreeType', value: e.target.value })}
-                                                    disabled={!edu.school}
-                                                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-yellow-400 outline-none bg-white disabled:bg-slate-50"
-                                                >
-                                                    <option value="">{edu.school ? 'Select Type...' : 'Select school first'}</option>
-                                                    {edu.school && getDegreeTypes(edu.school).map((type) => (
-                                                        <option key={type} value={type}>{type}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">Program</label>
-                                                {edu.school && edu.degreeType && edu.degreeType !== 'Other / Not Listed' ? (
-                                                    <Combobox
-                                                        value={edu.program}
-                                                        onChange={(val) => dispatch({ type: 'UPDATE_EDUCATION', id: edu.id, field: 'program', value: val })}
-                                                        options={getPrograms(edu.school, edu.degreeType)}
-                                                        placeholder="Search program..."
-                                                    />
-                                                ) : (
-                                                    <input
-                                                        type="text"
-                                                        value={edu.program}
-                                                        onChange={(e) => dispatch({ type: 'UPDATE_EDUCATION', id: edu.id, field: 'program', value: e.target.value })}
-                                                        placeholder={edu.degreeType ? 'Enter program...' : 'Select type first'}
-                                                        disabled={!edu.degreeType}
-                                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-yellow-400 outline-none disabled:bg-slate-50"
-                                                    />
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-
-                                <button
-                                    onClick={() => dispatch({ type: 'ADD_EDUCATION' })}
-                                    className="flex items-center gap-2 text-sm font-medium text-yellow-600 hover:text-yellow-700"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    Add Another Credential
-                                </button>
-                            </div>
-                        </div>
+                                console.log(`[Stage2] Updating ${field} to ${value} for ID ${firstEduId}`);
+                                dispatch({
+                                    type: 'UPDATE_EDUCATION',
+                                    id: firstEduId,
+                                    field: field as keyof EducationEntry,
+                                    value
+                                });
+                            }}
+                            onNext={nextStage}
+                            onBack={prevStage}
+                        />
                     )}
+
+
 
                     {/* ===== STAGE 3: LOGISTICS ===== */}
                     {state.stage === 3 && (
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-3 bg-blue-100 rounded-xl">
-                                    <Car className="w-6 h-6 text-blue-600" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-slate-900">Logistics</h2>
-                                    <p className="text-sm text-slate-500">Your transport & schedule strategy</p>
-                                </div>
-                            </div>
-
-                            {/* Transport Mode */}
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-3">How do you get around?</label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    {TRANSPORT_OPTIONS.map((opt) => (
-                                        <button
-                                            key={opt.value}
-                                            onClick={() => dispatch({ type: 'UPDATE_FIELD', field: 'transport', value: opt.value })}
-                                            className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${state.transport === opt.value
-                                                ? 'border-yellow-500 bg-yellow-50'
-                                                : 'border-slate-200 hover:border-slate-300'
-                                                }`}
-                                        >
-                                            <div className={`p-2 rounded-lg ${state.transport === opt.value ? 'bg-yellow-100 text-yellow-600' : 'bg-slate-100 text-slate-500'}`}>
-                                                {opt.icon}
-                                            </div>
-                                            <div className="text-left">
-                                                <div className="font-medium text-slate-900">{opt.label}</div>
-                                                <div className="text-xs text-slate-500">{opt.desc}</div>
-                                            </div>
-                                            {state.transport === opt.value && (
-                                                <Check className="w-5 h-5 text-yellow-500 ml-auto" />
-                                            )}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Time Constraints */}
-                            <div className="pt-4 border-t border-slate-100">
-                                <label className="block text-sm font-medium text-slate-700 mb-3">
-                                    <Clock className="w-4 h-4 inline mr-1" />
-                                    Hard Stop Times (When you CANNOT work)
-                                </label>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs text-slate-500 mb-1">Must be free by:</label>
-                                        <input
-                                            type="time"
-                                            value={state.hardStopStart}
-                                            onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'hardStopStart', value: e.target.value })}
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-yellow-400 outline-none"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-slate-500 mb-1">Cannot start before:</label>
-                                        <input
-                                            type="time"
-                                            value={state.hardStopEnd}
-                                            onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'hardStopEnd', value: e.target.value })}
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-yellow-400 outline-none"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Weekends */}
-                            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
-                                <div>
-                                    <div className="font-medium text-slate-900">Weekends Available?</div>
-                                    <div className="text-sm text-slate-500">Can you work Saturdays/Sundays?</div>
-                                </div>
-                                <button
-                                    onClick={() => dispatch({ type: 'UPDATE_FIELD', field: 'weekendsAvailable', value: !state.weekendsAvailable })}
-                                    className={`w-14 h-8 rounded-full transition-all ${state.weekendsAvailable ? 'bg-green-500' : 'bg-slate-300'}`}
-                                >
-                                    <div className={`w-6 h-6 bg-white rounded-full shadow transition-transform ${state.weekendsAvailable ? 'translate-x-7' : 'translate-x-1'}`} />
-                                </button>
-                            </div>
-                        </div>
+                        <Stage3_Logistics
+                            data={{
+                                transport: state.transport,
+                                hardStopStart: state.hardStopStart,
+                                hardStopEnd: state.hardStopEnd,
+                                weekendsAvailable: state.weekendsAvailable,
+                                // Cast explicitly if type isn't updated in OnboardingState yet, 
+                                // or assume we will store them in existing state if flexible.
+                                // For now, we'll cast to any or add them to OnboardingState in a separate step if strict.
+                                // Let's use flexible assignment for new fields until we update the interface.
+                                commuteTolerance: (state as any).commuteTolerance,
+                                constraintReason: (state as any).constraintReason
+                            }}
+                            onUpdate={(field, value) => dispatch({ type: 'UPDATE_FIELD', field: field as any, value })}
+                            onNext={nextStage}
+                            onBack={prevStage}
+                        />
                     )}
+
+
 
                     {/* ===== STAGE 4: OPEN MIC ===== */}
                     {state.stage === 4 && (
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-3 bg-purple-100 rounded-xl">
-                                    <Heart className="w-6 h-6 text-purple-600" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-slate-900">What is your reality?</h2>
-                                    <p className="text-sm text-slate-500">We use this to find tools that help you succeed</p>
-                                </div>
-                            </div>
-
-                            {/* Prompt Chips */}
-                            <div className="flex flex-wrap gap-2 mb-4">
-                                {REALITY_PROMPTS.map((prompt) => (
-                                    <button
-                                        key={prompt.label}
-                                        onClick={() => dispatch({ type: 'TOGGLE_PROMPT', prompt: prompt.label })}
-                                        className={`inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all ${state.selectedPrompts.includes(prompt.label)
-                                            ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
-                                            : 'bg-slate-100 text-slate-600 border-2 border-transparent hover:bg-slate-200'
-                                            }`}
-                                    >
-                                        <span>{prompt.icon}</span>
-                                        {prompt.label}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Text Area */}
-                            <div className="relative">
-                                <textarea
-                                    value={state.realityContext}
-                                    onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'realityContext', value: e.target.value })}
-                                    placeholder="Tell us about any health, family, or housing situations. This helps us find resources and match you with the right opportunities..."
-                                    rows={5}
-                                    className="w-full px-4 py-3 pr-12 rounded-xl border border-slate-200 focus:border-purple-400 focus:ring-2 focus:ring-purple-100 outline-none resize-none"
-                                />
-                                <button className="absolute right-3 top-3 p-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-colors">
-                                    <Mic className="w-5 h-5" />
-                                </button>
-                            </div>
-
-                            <p className="text-xs text-slate-400 text-center">
-                                💡 This information helps us BUILD BRIDGES, not barriers. We never disqualify—we find solutions.
-                            </p>
-                        </div>
+                        <Stage4_Reality
+                            data={{
+                                realityContext: state.realityContext,
+                                selectedPrompts: state.selectedPrompts
+                            }}
+                            onUpdate={(field, value) => dispatch({ type: 'UPDATE_FIELD', field: field as any, value })}
+                            onNext={nextStage}
+                            onBack={prevStage}
+                        />
                     )}
 
                     {/* ===== STAGE 5: STRATEGY REVEAL ===== */}
@@ -690,48 +561,106 @@ export const Onboarding: React.FC = () => {
                             </div>
 
                             {state.solutions.length > 0 ? (
-                                <div className="space-y-4">
+                                <div className="space-y-6">
                                     {state.solutions.map((solution, idx) => (
-                                        <div key={idx} className="bg-gradient-to-r from-slate-50 to-green-50 rounded-xl p-4 border border-green-100">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">The Challenge</div>
-                                                    <div className="font-medium text-slate-700">{solution.challenge}</div>
+                                        <Card key={idx} variant="solid-white" className="p-0 overflow-hidden border-slate-100 shadow-sm">
+                                            <div className="grid grid-cols-1 md:grid-cols-[25%_75%]">
+                                                {/* Left: Challenge */}
+                                                <div className="p-5 bg-slate-50 border-b md:border-b-0 md:border-r border-slate-100">
+                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                                                        The Challenge
+                                                    </div>
+                                                    <div className="font-semibold text-slate-800 leading-tight">
+                                                        {solution.challenge}
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <div className="text-xs font-medium text-green-600 uppercase tracking-wide mb-2">The Jalanea Bridge</div>
-                                                    <ul className="space-y-1">
+
+                                                {/* Right: Bridges */}
+                                                <div className="p-5 bg-green-50/30">
+                                                    <div className="text-[10px] font-bold text-green-600 uppercase tracking-wider mb-3">
+                                                        The Jalanea Bridge
+                                                    </div>
+                                                    <div className="space-y-3">
                                                         {solution.bridges.map((bridge, i) => (
-                                                            <li key={i} className="text-sm text-slate-600">{bridge}</li>
+                                                            <div key={i} className="flex gap-3 items-start group">
+                                                                <div className={`mt-0.5 p-1.5 rounded-lg shrink-0 ${bridge.type === 'grant' ? 'bg-purple-100 text-purple-600' :
+                                                                    bridge.type === 'resource' ? 'bg-blue-100 text-blue-600' :
+                                                                        bridge.type === 'strategy' ? 'bg-amber-100 text-amber-600' :
+                                                                            'bg-green-100 text-green-600'
+                                                                    }`}>
+                                                                    {getBridgeIcon(bridge.type)}
+                                                                </div>
+                                                                <div className="flex-1">
+                                                                    <div className="font-bold text-slate-900 text-sm">
+                                                                        {bridge.title}
+                                                                        {bridge.metadata?.actionUrl && (
+                                                                            <a href={bridge.metadata.actionUrl} target="_blank" rel="noreferrer" className="ml-2 inline-flex items-center text-xs text-blue-600 hover:text-blue-700 hover:underline">
+                                                                                Open <ExternalLink className="w-3 h-3 ml-0.5" />
+                                                                            </a>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="text-sm text-slate-500 leading-relaxed">
+                                                                        {bridge.description}
+                                                                    </div>
+                                                                    {bridge.metadata?.weeks && (
+                                                                        <div className="mt-2 w-full max-w-xs p-2 bg-white rounded-lg border border-slate-100">
+                                                                            <div className="flex justify-between text-[10px] font-bold text-slate-400 mb-1">
+                                                                                <span>START</span>
+                                                                                <span>{bridge.metadata.weeks} WEEKS</span>
+                                                                            </div>
+                                                                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                                                                <div className="h-full bg-amber-400 w-2/3 rounded-full animate-pulse" />
+                                                                            </div>
+                                                                            <div className="mt-1 text-[10px] text-amber-600 font-medium">
+                                                                                Goal: {bridge.metadata.savings} Saved
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
                                                         ))}
-                                                    </ul>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </Card>
                                     ))}
 
-                                    {/* Acceptance Toggle */}
-                                    <div className="flex items-center justify-between p-4 bg-green-50 rounded-xl border-2 border-green-200">
-                                        <div>
-                                            <div className="font-medium text-slate-900">With these solutions, I'm ready to work!</div>
-                                            <div className="text-sm text-slate-500">We'll match you with all compatible opportunities</div>
-                                        </div>
-                                        <button
-                                            onClick={() => dispatch({ type: 'UPDATE_FIELD', field: 'solutionsAccepted', value: !state.solutionsAccepted })}
-                                            className={`w-14 h-8 rounded-full transition-all ${state.solutionsAccepted ? 'bg-green-500' : 'bg-slate-300'}`}
-                                        >
-                                            <div className={`w-6 h-6 bg-white rounded-full shadow transition-transform ${state.solutionsAccepted ? 'translate-x-7' : 'translate-x-1'}`} />
-                                        </button>
-                                    </div>
-
-                                    {state.solutionsAccepted && (
-                                        <div className="text-center p-4 bg-green-100 rounded-xl">
-                                            <div className="inline-flex items-center gap-2 text-green-700 font-bold text-lg">
-                                                <Unlock className="w-6 h-6" />
-                                                500+ Jobs Unlocked
+                                    {/* Payoff Section (Animation) */}
+                                    <div className="mt-8 pt-6 border-t border-slate-100">
+                                        {/* Toggle */}
+                                        <div className={`p-5 rounded-2xl border-2 transition-all duration-300 ease-out ${state.solutionsAccepted ? 'bg-green-50 border-green-200 shadow-inner' : 'bg-white border-slate-200'}`}>
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <div className="font-bold text-slate-900">With these solutions, I'm ready to work!</div>
+                                                    <div className="text-sm text-slate-500">We'll match you with all compatible opportunities</div>
+                                                </div>
+                                                <button
+                                                    onClick={() => dispatch({ type: 'UPDATE_FIELD', field: 'solutionsAccepted', value: !state.solutionsAccepted })}
+                                                    className={`relative w-14 h-8 rounded-full transition-colors duration-300 ${state.solutionsAccepted ? 'bg-green-500' : 'bg-slate-300'}`}
+                                                >
+                                                    <div className={`absolute top-1 left-1 bg-white w-6 h-6 rounded-full shadow-sm transition-transform duration-300 ${state.solutionsAccepted ? 'translate-x-6' : 'translate-x-0'}`} />
+                                                </button>
                                             </div>
                                         </div>
-                                    )}
+
+                                        {/* Animation Card */}
+                                        <div className={`transform transition-all duration-700 ease-out origin-top ${state.solutionsAccepted ? 'max-h-60 opacity-100 translate-y-0 mt-4' : 'max-h-0 opacity-0 -translate-y-4 mt-0'}`}>
+                                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 text-center border border-green-100 shadow-sm relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 p-12 bg-green-200/20 rounded-full blur-3xl -mr-10 -mt-10" />
+                                                <div className="relative z-10 flex flex-col items-center justify-center gap-3">
+                                                    <div className="p-4 bg-white rounded-full shadow-md mb-1 animate-bounce">
+                                                        <Unlock className="w-8 h-8 text-green-600" />
+                                                    </div>
+                                                    <div className="text-4xl font-extrabold text-green-700 tracking-tight">
+                                                        500+ Jobs Unlocked
+                                                    </div>
+                                                    <div className="text-sm font-medium text-green-600">
+                                                        Your personalized bridge is built.
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="text-center py-8">
@@ -826,8 +755,8 @@ export const Onboarding: React.FC = () => {
                         )}
                     </div>
                 </Card>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

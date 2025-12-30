@@ -49,7 +49,7 @@ export const Combobox: React.FC<ComboboxProps> = ({ value, onChange, options, pl
             </div>
 
             {isOpen && (filtered.length > 0) && (
-                <div className="absolute z-50 w-full mt-1.5 bg-white border border-jalanea-100 rounded-xl shadow-xl max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+                <div className="absolute z-50 w-full mt-1.5 bg-white border border-gray-100 rounded-xl shadow-xl max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
                     {/* Helper label if filtered results exist */}
                     {value && filtered.length > 0 && (
                         <div className="px-3 py-2 text-[10px] font-bold text-jalanea-400 uppercase tracking-wider bg-jalanea-50/50 border-b border-jalanea-50 sticky top-0 backdrop-blur-sm">
