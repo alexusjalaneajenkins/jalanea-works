@@ -473,37 +473,21 @@ export const Onboarding: React.FC = () => {
                     {/* ===== STAGE 2: EDUCATION ===== */}
                     {state.stage === 2 && (
                         <Stage2_Education
-                            data={{
-                                school: state.education[0]?.school || '',
-                                degreeType: state.education[0]?.degreeType || '',
-                                program: state.education[0]?.program || '',
-                                gradYear: state.education[0]?.gradYear || ''
-                            }}
-                            onUpdate={(field, value) => {
-                                // CRITICAL FIX: Get the ID of the first education entry.
-                                // If no entry exists, dispatch ADD_EDUCATION first, then update.
-                                const firstEduId = state.education[0]?.id;
-
-                                if (!firstEduId) {
-                                    // No entry exists yet. Add one, then immediately update.
-                                    // Note: This should rarely happen if initialState is correct.
-                                    dispatch({ type: 'ADD_EDUCATION' });
-                                    // Since ADD_EDUCATION creates a new entry with a random ID,
-                                    // we can't reliably get that ID here synchronously.
-                                    // The safest approach is to store directly in a top-level field.
-                                    // For now, we will log the error.
-                                    console.error('Education entry missing during update. Adding new entry.');
-                                    return; // Skip this update, user will re-interact
-                                }
-
-                                console.log(`[Stage2] Updating ${field} to ${value} for ID ${firstEduId}`);
+                            educationStack={state.education.map(edu => ({
+                                ...edu,
+                                status: (edu as any).status || 'Alumni' // Default status if not set
+                            }))}
+                            onAddEntry={() => dispatch({ type: 'ADD_EDUCATION' })}
+                            onUpdateEntry={(id, field, value) => {
+                                console.log(`[Stage2] Updating ${field} to ${value} for ID ${id}`);
                                 dispatch({
                                     type: 'UPDATE_EDUCATION',
-                                    id: firstEduId,
+                                    id,
                                     field: field as keyof EducationEntry,
                                     value
                                 });
                             }}
+                            onRemoveEntry={(id) => dispatch({ type: 'REMOVE_EDUCATION', id })}
                             onNext={nextStage}
                             onBack={prevStage}
                         />

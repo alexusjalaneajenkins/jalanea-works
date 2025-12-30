@@ -1,272 +1,221 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     GraduationCap, Hammer, BookOpen, Check,
-    ArrowRight, Search, Zap
+    ArrowRight, Search, Zap, Plus, Trash2, X
 } from 'lucide-react';
 import { CENTRAL_FL_DATA, SchoolName } from '../../data/centralFloridaPrograms';
 
-// Type Definitions
-interface ValidationProps {
-    data: {
-        school: string;
-        degreeType: string;
-        program: string;
-        gradYear: string;
-    };
-    onUpdate: (field: string, value: string) => void;
+// ==================== TYPE DEFINITIONS ====================
+interface EducationEntry {
+    id: string;
+    school: string;
+    degreeType: string;
+    program: string;
+    gradYear: string;
+    status: 'Alumni' | 'Student';
+}
+
+interface Stage2Props {
+    // Now receives the FULL education array
+    educationStack: EducationEntry[];
+    onAddEntry: () => void;
+    onUpdateEntry: (id: string, field: keyof EducationEntry, value: string) => void;
+    onRemoveEntry: (id: string) => void;
     onNext: () => void;
     onBack: () => void;
 }
 
-// Mock Skill Generator
+// ==================== SKILL GENERATOR ====================
 const getSkillAssets = (program: string): string[] => {
     const p = program.toLowerCase();
-    if (p.includes('nursing') || p.includes('medical') || p.includes('health')) return ['Patient Care', 'Medical Terminology', 'Clinical Safety', 'Empathy'];
-    if (p.includes('business') || p.includes('management') || p.includes('admin')) return ['Leadership', 'Project Management', 'Communication', 'Strategic Planning'];
-    if (p.includes('it') || p.includes('tech') || p.includes('cyber') || p.includes('software')) return ['Problem Solving', 'Technical Support', 'Systems Analysis', 'Coding'];
-    if (p.includes('welding') || p.includes('construction') || p.includes('manufacturing')) return ['Blueprints', 'Safety Compliance', 'Fabrication', 'Quality Control'];
-    if (p.includes('culinary') || p.includes('baking') || p.includes('hospitality')) return ['Food Safety', 'Team Coordination', 'Inventory Mgmt', 'Customer Service'];
-    if (p.includes('design') || p.includes('media') || p.includes('arts')) return ['Creative Suite', 'Visual Communication', 'UX Principles', 'Portfolio Development'];
-    return ['Critical Thinking', 'Adaptability', 'Time Management', 'Professionalism'];
+    if (p.includes('nursing') || p.includes('medical') || p.includes('health')) return ['Patient Care', 'Medical Terminology', 'Clinical Safety'];
+    if (p.includes('business') || p.includes('management') || p.includes('admin')) return ['Leadership', 'Project Management', 'Communication'];
+    if (p.includes('it') || p.includes('tech') || p.includes('cyber') || p.includes('software')) return ['Problem Solving', 'Technical Support', 'Systems Analysis'];
+    if (p.includes('welding') || p.includes('construction') || p.includes('manufacturing')) return ['Blueprints', 'Safety Compliance', 'Fabrication'];
+    if (p.includes('culinary') || p.includes('baking') || p.includes('hospitality')) return ['Food Safety', 'Team Coordination', 'Customer Service'];
+    return ['Critical Thinking', 'Adaptability', 'Professionalism'];
 };
 
-export const Stage2_Education: React.FC<ValidationProps> = ({ data, onUpdate, onNext, onBack }) => {
-    const [status, setStatus] = useState<'alumni' | 'student'>('alumni');
+// ==================== SCHOOL CONFIG ====================
+const SCHOOLS: { name: SchoolName; color: string; bg: string; border: string; icon: React.ReactNode }[] = [
+    { name: "Valencia College", color: "text-red-600", bg: "bg-red-50", border: "border-red-200", icon: <BookOpen className="w-6 h-6" /> },
+    { name: "Seminole State College", color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200", icon: <GraduationCap className="w-6 h-6" /> },
+    { name: "Orange Technical College", color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200", icon: <Hammer className="w-6 h-6" /> },
+    { name: "Other", color: "text-slate-600", bg: "bg-slate-50", border: "border-slate-200", icon: <Zap className="w-6 h-6" /> }
+];
+
+// ==================== SINGLE CREDENTIAL CARD ====================
+interface CredentialCardProps {
+    entry: EducationEntry;
+    index: number;
+    canRemove: boolean;
+    onUpdate: (field: keyof EducationEntry, value: string) => void;
+    onRemove: () => void;
+}
+
+const CredentialCard: React.FC<CredentialCardProps> = ({ entry, index, canRemove, onUpdate, onRemove }) => {
     const [searchTerm, setSearchTerm] = useState("");
+    const [isSearching, setIsSearching] = useState(!entry.program);
 
-    // ========== OPTIMISTIC UI STATE ==========
-    // Local state for INSTANT visual feedback (doesn't wait for parent)
-    const [localProgram, setLocalProgram] = useState<string | null>(data.program || null);
-    const [localDegreeType, setLocalDegreeType] = useState<string | null>(data.degreeType || null);
+    // Local optimistic state
+    const [localProgram, setLocalProgram] = useState<string | null>(entry.program || null);
+    const [localDegreeType, setLocalDegreeType] = useState<string | null>(entry.degreeType || null);
 
-    // Sync local state if parent updates later (for reload/edit scenarios)
+    // Sync from parent
     useEffect(() => {
-        if (data.program) {
-            setLocalProgram(data.program);
-        }
-        if (data.degreeType) {
-            setLocalDegreeType(data.degreeType);
-        }
-    }, [data.program, data.degreeType]);
+        if (entry.program) setLocalProgram(entry.program);
+        if (entry.degreeType) setLocalDegreeType(entry.degreeType);
+    }, [entry.program, entry.degreeType]);
 
-    // School Options Configuration
-    const SCHOOLS: { name: SchoolName; color: string; bg: string; border: string; icon: React.ReactNode }[] = [
-        {
-            name: "Valencia College",
-            color: "text-red-600",
-            bg: "bg-red-50",
-            border: "border-red-200",
-            icon: <BookOpen className="w-8 h-8" />
-        },
-        {
-            name: "Seminole State College",
-            color: "text-blue-600",
-            bg: "bg-blue-50",
-            border: "border-blue-200",
-            icon: <GraduationCap className="w-8 h-8" />
-        },
-        {
-            name: "Orange Technical College",
-            color: "text-orange-600",
-            bg: "bg-orange-50",
-            border: "border-orange-200",
-            icon: <Hammer className="w-8 h-8" />
-        },
-        {
-            name: "Other",
-            color: "text-slate-600",
-            bg: "bg-slate-50",
-            border: "border-slate-200",
-            icon: <Zap className="w-8 h-8" />
-        }
-    ];
-
-    // Flatten programs for the selected school
+    // Program list for selected school
     const availablePrograms = useMemo(() => {
-        if (!data.school || data.school === 'Other' || !CENTRAL_FL_DATA[data.school]) return [];
-
+        if (!entry.school || entry.school === 'Other' || !CENTRAL_FL_DATA[entry.school]) return [];
         const programs: { label: string; type: string }[] = [];
-        const schoolData = CENTRAL_FL_DATA[data.school];
-
+        const schoolData = CENTRAL_FL_DATA[entry.school];
         Object.entries(schoolData).forEach(([type, progList]) => {
-            progList.forEach(prog => {
-                programs.push({ label: prog, type });
-            });
+            progList.forEach(prog => programs.push({ label: prog, type }));
         });
-
         return programs;
-    }, [data.school]);
+    }, [entry.school]);
 
-    // Filter Logic
+    // Filter
     const filteredPrograms = useMemo(() => {
-        if (!searchTerm.trim()) return availablePrograms.slice(0, 10); // Show first 10 when empty
-        return availablePrograms.filter(prog =>
-            prog.label.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        if (!searchTerm.trim()) return availablePrograms.slice(0, 8);
+        return availablePrograms.filter(p => p.label.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [availablePrograms, searchTerm]);
 
-    // ========== OPTIMISTIC SELECTION HANDLER ==========
-    const handleSelectProgram = (programName: string, degreeType: string) => {
-        // 1. INSTANTLY update UI (Optimistic update)
-        setLocalProgram(programName);
-        setLocalDegreeType(degreeType);
-        setSearchTerm(""); // Clear search
-
-        // 2. Persist to Parent (Background sync)
-        console.log("⚡ Optimistic Select:", programName, degreeType);
-        onUpdate('program', programName);
-        onUpdate('degreeType', degreeType);
-    };
-
-    // Clear program selection (optimistic reset)
-    const clearProgram = () => {
-        // 1. INSTANT UI reset
+    // Handlers
+    const handleSelectSchool = (schoolName: string) => {
         setLocalProgram(null);
         setLocalDegreeType(null);
+        setIsSearching(true);
         setSearchTerm("");
-
-        // 2. Persist to Parent
-        onUpdate('program', '');
-        onUpdate('degreeType', '');
-    };
-
-    // Handle school change (resets program)
-    const handleSchoolChange = (schoolName: string) => {
-        console.log("[Stage2] Selecting school:", schoolName);
-
-        // Reset local state instantly
-        setLocalProgram(null);
-        setLocalDegreeType(null);
-        setSearchTerm('');
-
-        // Persist to parent
         onUpdate('school', schoolName);
         onUpdate('program', '');
         onUpdate('degreeType', '');
     };
 
+    const handleSelectProgram = (programName: string, degreeType: string) => {
+        setLocalProgram(programName);
+        setLocalDegreeType(degreeType);
+        setIsSearching(false);
+        setSearchTerm("");
+        onUpdate('program', programName);
+        onUpdate('degreeType', degreeType);
+    };
+
+    const clearProgram = () => {
+        setLocalProgram(null);
+        setLocalDegreeType(null);
+        setIsSearching(true);
+        setSearchTerm("");
+        onUpdate('program', '');
+        onUpdate('degreeType', '');
+    };
+
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="relative bg-white border border-slate-200 rounded-2xl p-5 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
             {/* Header */}
-            <div className="flex items-center gap-4">
-                <div className="p-4 bg-green-50 rounded-full">
-                    <GraduationCap className="w-8 h-8 text-green-600" />
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                        {index + 1}
+                    </div>
+                    <span className="font-bold text-slate-700">
+                        {entry.program ? entry.program : 'Add Credential'}
+                    </span>
                 </div>
-                <div>
-                    <h2 className="text-2xl font-bold text-slate-900">Equip your foundation.</h2>
-                    <p className="text-slate-500">Your training unlocks specific career bridges.</p>
-                </div>
+                {canRemove && (
+                    <button
+                        type="button"
+                        onClick={onRemove}
+                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                )}
             </div>
 
-            {/* 1. School Selection (Always Visible) */}
-            <div>
-                <label className="block text-lg font-bold text-gray-900 mb-4">
-                    Where are you training?
+            {/* School Selection */}
+            <div className="mb-4">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    School
                 </label>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                     {SCHOOLS.map((school) => {
-                        const isSelected = data.school === school.name;
+                        const isSelected = entry.school === school.name;
                         return (
                             <button
                                 type="button"
                                 key={school.name}
-                                onClick={() => handleSchoolChange(school.name)}
-                                className={`relative p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center gap-3 text-center ${isSelected
-                                    ? `${school.bg} ${school.border} ring-2 ring-offset-1 ring-slate-200 shadow-md`
-                                    : 'bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50'
+                                onClick={() => handleSelectSchool(school.name)}
+                                className={`p-3 rounded-xl border transition-all flex flex-col items-center gap-2 text-center ${isSelected
+                                    ? `${school.bg} ${school.border} ring-1 ring-offset-1 ring-slate-200`
+                                    : 'bg-slate-50 border-slate-100 hover:bg-white'
                                     }`}
                             >
-                                <div className={`p-3 rounded-full bg-white shadow-sm ${school.color}`}>
-                                    {school.icon}
-                                </div>
-                                <span className={`text-sm font-bold ${isSelected ? 'text-slate-900' : 'text-slate-500'}`}>
+                                <div className={`${school.color}`}>{school.icon}</div>
+                                <span className={`text-xs font-semibold ${isSelected ? 'text-slate-900' : 'text-slate-500'}`}>
                                     {school.name.replace(' College', '')}
                                 </span>
-                                {isSelected && (
-                                    <div className="absolute top-2 right-2 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white shadow-sm">
-                                        <Check className="w-3 h-3" />
-                                    </div>
-                                )}
                             </button>
                         );
                     })}
                 </div>
             </div>
 
-            {/* 2. Program Selection - OPTIMISTIC UI SWAP */}
-            {data.school && data.school !== 'Other' && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
-                    <h3 className="text-lg font-bold text-gray-900">What is your program?</h3>
+            {/* Program Selection - Ticket Swap with Optimistic UI */}
+            {entry.school && entry.school !== 'Other' && (
+                <div className="mb-4">
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        Program
+                    </label>
 
-                    {/* CONDITIONAL SWAP: Check localProgram (fast) instead of data.program (slow) */}
                     {!localProgram ? (
-                        // === VIEW A: SEARCH INTERFACE ===
-                        <div className="relative z-20 animate-in fade-in">
-                            {/* Standard Input */}
-                            <div className="relative">
-                                <Search className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
-                                <input
-                                    autoFocus
-                                    type="text"
-                                    id="program-search"
-                                    name="programSearch"
-                                    autoComplete="off"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    placeholder="Search programs (e.g. Welding, Nursing)..."
-                                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all text-lg"
-                                />
-                            </div>
-
-                            {/* Results List (Rendered Inline Below) */}
-                            <div className="mt-2 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                        // Search Interface
+                        <div className="relative">
+                            <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                            <input
+                                type="text"
+                                autoComplete="off"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder="Search programs..."
+                                className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none text-sm"
+                            />
+                            <div className="mt-2 bg-white border border-slate-200 rounded-xl shadow max-h-48 overflow-y-auto">
                                 {filteredPrograms.length > 0 ? (
-                                    <div className="p-2 space-y-1">
+                                    <div className="p-1">
                                         {filteredPrograms.map((prog) => (
                                             <button
                                                 type="button"
                                                 key={prog.label}
                                                 onMouseDown={() => handleSelectProgram(prog.label, prog.type)}
-                                                className="w-full text-left px-4 py-3 rounded-lg hover:bg-green-50 hover:text-green-900 transition-colors flex items-center justify-between group"
+                                                className="w-full text-left px-3 py-2 rounded-lg hover:bg-green-50 text-sm transition-colors"
                                             >
-                                                <div>
-                                                    <span className="font-medium text-slate-700 group-hover:text-green-900">{prog.label}</span>
-                                                    <span className="ml-2 text-xs text-slate-400">{prog.type}</span>
-                                                </div>
+                                                <span className="font-medium text-slate-700">{prog.label}</span>
+                                                <span className="ml-2 text-xs text-slate-400">{prog.type}</span>
                                             </button>
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="py-8 text-center text-slate-400">
-                                        No programs found matching "{searchTerm}"
-                                    </div>
+                                    <div className="py-4 text-center text-slate-400 text-sm">No programs found</div>
                                 )}
                             </div>
-
-                            <p className="mt-2 text-sm text-slate-400 text-center">
-                                Can't find it? Try keywords like "Nurse" or "Business"
-                            </p>
                         </div>
                     ) : (
-                        // === VIEW B: SUCCESS TICKET (Instant render via localProgram) ===
-                        <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4 flex items-center justify-between animate-in zoom-in-95 duration-200">
-                            <div className="flex items-center gap-3">
-                                <div className="bg-green-100 p-2.5 rounded-full">
-                                    <Check className="h-6 w-6 text-green-600" />
+                        // Success Ticket
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="bg-green-100 p-1.5 rounded-full">
+                                    <Check className="h-4 w-4 text-green-600" />
                                 </div>
                                 <div>
-                                    <p className="text-xs font-bold text-green-700 uppercase tracking-wider">Selected Program</p>
-                                    <p className="text-lg font-bold text-gray-900 leading-tight">{localProgram}</p>
-                                    {localDegreeType && (
-                                        <p className="text-sm text-slate-500">{localDegreeType}</p>
-                                    )}
+                                    <p className="font-semibold text-slate-900 text-sm">{localProgram}</p>
+                                    <p className="text-xs text-slate-500">{localDegreeType}</p>
                                 </div>
                             </div>
-                            <button
-                                type="button"
-                                onClick={clearProgram}
-                                className="text-sm text-gray-500 hover:text-gray-900 underline font-medium px-3 py-2 hover:bg-white/50 rounded-lg transition-colors"
-                            >
+                            <button type="button" onClick={clearProgram} className="text-xs text-slate-500 hover:text-slate-900 underline">
                                 Change
                             </button>
                         </div>
@@ -274,113 +223,167 @@ export const Stage2_Education: React.FC<ValidationProps> = ({ data, onUpdate, on
                 </div>
             )}
 
-            {/* "Other" School - Manual Input */}
-            {data.school === 'Other' && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
-                    <h3 className="text-lg font-bold text-gray-900">Tell us about your program</h3>
+            {/* Other School - Manual Input */}
+            {entry.school === 'Other' && (
+                <div className="mb-4">
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        Program Name
+                    </label>
                     <input
                         type="text"
-                        value={data.program}
+                        value={entry.program}
                         onChange={(e) => {
-                            setLocalProgram(e.target.value); // Optimistic
+                            setLocalProgram(e.target.value);
                             onUpdate('program', e.target.value);
                         }}
-                        placeholder="Enter your program name..."
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all text-lg"
+                        placeholder="Enter your program..."
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none text-sm"
                     />
                 </div>
             )}
 
-            {/* The "Magic" Interaction: Skill Prediction - Uses localProgram for instant feedback */}
+            {/* Status & Year (Only show when program is selected) */}
             {localProgram && (
-                <div className="p-5 bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl border border-slate-700 shadow-lg animate-in fade-in zoom-in-95 duration-500">
-                    <div className="flex items-start gap-3">
-                        <div className="p-2 bg-yellow-500/20 rounded-lg">
-                            <Zap className="w-5 h-5 text-yellow-500" />
-                        </div>
-                        <div>
-                            <div className="text-xs font-bold text-yellow-500 uppercase tracking-widest mb-1">
-                                SKILLSET DETECTED
-                            </div>
-                            <div className="text-white font-medium mb-3">
-                                Based on <span className="text-yellow-400">{localProgram}</span>, we've equipped you with:
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {getSkillAssets(localProgram).map((skill, i) => (
-                                    <span key={i} className="px-3 py-1 bg-white/10 text-white rounded-full text-xs font-medium border border-white/10 shadow-sm backdrop-blur-sm">
-                                        {skill}
-                                    </span>
-                                ))}
-                            </div>
+                <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-300">
+                    {/* Status */}
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                            Status
+                        </label>
+                        <div className="flex gap-2">
+                            {(['Alumni', 'Student'] as const).map((s) => (
+                                <button
+                                    type="button"
+                                    key={s}
+                                    onClick={() => onUpdate('status', s)}
+                                    className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${entry.status === s
+                                        ? 'bg-slate-900 text-white'
+                                        : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                        }`}
+                                >
+                                    {s}
+                                </button>
+                            ))}
                         </div>
                     </div>
-                </div>
-            )}
 
-            {/* 3. The Reveal - Linked to localProgram for instant visibility */}
-            {localProgram && (
-                <div className="animate-in slide-in-from-top-4 fade-in duration-500 pt-6 border-t border-gray-100">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4">When do you graduate?</h3>
-
-                    <div className="p-1 bg-slate-100 rounded-xl flex mb-4">
-                        <button
-                            type="button"
-                            onClick={() => setStatus('alumni')}
-                            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${status === 'alumni' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                                }`}
-                        >
-                            Graduated / Alumni
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setStatus('student')}
-                            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${status === 'student' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                                }`}
-                        >
-                            Current Student
-                        </button>
-                    </div>
-
-                    <div className="relative group animate-in fade-in">
-                        <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wide">
-                            {status === 'alumni' ? 'Graduation Year' : 'Expected Grad Year'}
+                    {/* Year */}
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                            {entry.status === 'Student' ? 'Expected Year' : 'Grad Year'}
                         </label>
                         <input
                             type="number"
-                            value={data.gradYear}
+                            value={entry.gradYear}
                             onChange={(e) => onUpdate('gradYear', e.target.value)}
-                            placeholder="e.g. 2024"
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-4 focus:ring-green-500/10 outline-none transition-all"
+                            placeholder="2024"
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-sm"
                         />
-                        {status === 'student' && (
-                            <div className="mt-3 flex items-center gap-2 p-3 bg-green-50 text-green-700 text-sm font-medium rounded-lg border border-green-200">
-                                <Check className="w-4 h-4" />
-                                <span>Internship Mode Unlocked</span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 z-40 p-6 -mx-6 -mb-6 mt-8 rounded-b-2xl flex items-center gap-4">
-                        <button
-                            type="button"
-                            onClick={onBack}
-                            className="px-6 py-4 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors"
-                        >
-                            Back
-                        </button>
-                        <button
-                            type="button"
-                            onClick={onNext}
-                            disabled={!data.school || !localProgram || !data.gradYear}
-                            className="flex-1 py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
-                        >
-                            Next Step: Logistics
-                            <ArrowRight className="w-5 h-5" />
-                        </button>
                     </div>
                 </div>
             )}
+
+            {/* Skills Preview */}
+            {localProgram && (
+                <div className="mt-4 pt-3 border-t border-slate-100">
+                    <div className="flex flex-wrap gap-1">
+                        {getSkillAssets(localProgram).map((skill, i) => (
+                            <span key={i} className="px-2 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-medium">
+                                {skill}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ==================== MAIN COMPONENT ====================
+export const Stage2_Education: React.FC<Stage2Props> = ({
+    educationStack,
+    onAddEntry,
+    onUpdateEntry,
+    onRemoveEntry,
+    onNext,
+    onBack
+}) => {
+    // Validation: At least one complete entry
+    const isValid = educationStack.some(e => e.school && e.program && e.gradYear);
+
+    return (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Header */}
+            <div className="flex items-center gap-4">
+                <div className="p-4 bg-green-50 rounded-full">
+                    <GraduationCap className="w-8 h-8 text-green-600" />
+                </div>
+                <div>
+                    <h2 className="text-2xl font-bold text-slate-900">Build Your Education Stack</h2>
+                    <p className="text-slate-500">Add all your credentials - degrees, certificates, training</p>
+                </div>
+            </div>
+
+            {/* Credential Cards */}
+            <div className="space-y-4">
+                {educationStack.map((entry, index) => (
+                    <CredentialCard
+                        key={entry.id}
+                        entry={entry}
+                        index={index}
+                        canRemove={educationStack.length > 1}
+                        onUpdate={(field, value) => onUpdateEntry(entry.id, field, value)}
+                        onRemove={() => onRemoveEntry(entry.id)}
+                    />
+                ))}
+            </div>
+
+            {/* Add Another */}
+            <button
+                type="button"
+                onClick={onAddEntry}
+                className="w-full py-4 border-2 border-dashed border-slate-200 rounded-xl text-slate-500 hover:border-green-500 hover:text-green-600 hover:bg-green-50/50 transition-all flex items-center justify-center gap-2 font-semibold"
+            >
+                <Plus className="w-5 h-5" />
+                Add Another Credential
+            </button>
+
+            {/* Summary */}
+            {educationStack.filter(e => e.program).length > 0 && (
+                <div className="p-4 bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl text-white">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Zap className="w-5 h-5 text-yellow-400" />
+                        <span className="text-sm font-bold text-yellow-400 uppercase tracking-wider">Your Stack</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {educationStack.filter(e => e.program).map((e) => (
+                            <span key={e.id} className="px-3 py-1 bg-white/10 rounded-full text-sm font-medium border border-white/20">
+                                {e.program}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Navigation */}
+            <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-slate-100 z-40 p-6 -mx-6 -mb-6 mt-8 rounded-b-2xl flex items-center gap-4">
+                <button
+                    type="button"
+                    onClick={onBack}
+                    className="px-6 py-4 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors"
+                >
+                    Back
+                </button>
+                <button
+                    type="button"
+                    onClick={onNext}
+                    disabled={!isValid}
+                    className="flex-1 py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
+                >
+                    Next Step: Logistics
+                    <ArrowRight className="w-5 h-5" />
+                </button>
+            </div>
         </div>
     );
 };
