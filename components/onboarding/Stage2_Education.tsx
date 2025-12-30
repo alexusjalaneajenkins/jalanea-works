@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
     GraduationCap, Hammer, BookOpen, Check,
-    ArrowRight, Search, Zap, Plus, Trash2, Pencil, X
+    Search, Zap, Plus, Trash2, Pencil, X, PlusCircle
 } from 'lucide-react';
 import { CENTRAL_FL_DATA, SchoolName } from '../../data/centralFloridaPrograms';
 
@@ -42,7 +42,7 @@ const SCHOOLS: { name: SchoolName; emoji: string; bg: string; border: string }[]
 
 const getSchoolEmoji = (school: string): string => SCHOOLS.find(s => s.name === school)?.emoji || "🎓";
 
-// ==================== COMPACT CARD (View Mode) ====================
+// ==================== COMPACT CARD ====================
 const CompactCredentialCard: React.FC<{
     entry: EducationEntry;
     onEdit: () => void;
@@ -77,15 +77,15 @@ export const Stage2_Education: React.FC<Stage2Props> = ({
     onAddEntry,
     onUpdateEntry,
     onRemoveEntry,
-    onNext,
-    onBack
+    // onNext and onBack are NOT used - parent handles navigation
 }) => {
     // === STATE ===
-    const [isFormOpen, setIsFormOpen] = useState(educationStack.length === 0);
+    // Form starts OPEN if no completed entries exist
+    const completedEntries = educationStack.filter(e => e.school && e.program && e.gradYear);
+    const [isFormOpen, setIsFormOpen] = useState(completedEntries.length === 0);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
 
-    // The Builder: Self-contained local state for the form
     const [builder, setBuilder] = useState<BuilderState>({
         school: '',
         degreeType: '',
@@ -95,10 +95,8 @@ export const Stage2_Education: React.FC<Stage2Props> = ({
     });
 
     // === DERIVED STATE ===
-    const completedEntries = educationStack.filter(e => e.school && e.program && e.gradYear);
     const isBuilderComplete = builder.school && builder.program && builder.gradYear;
 
-    // Programs list based on selected school
     const availablePrograms = useMemo(() => {
         if (!builder.school || builder.school === 'Other' || !CENTRAL_FL_DATA[builder.school]) return [];
         const programs: { label: string; type: string }[] = [];
@@ -113,7 +111,7 @@ export const Stage2_Education: React.FC<Stage2Props> = ({
         return availablePrograms.filter(p => p.label.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [availablePrograms, searchTerm]);
 
-    // === BUILDER HANDLERS ===
+    // === HANDLERS ===
     const updateBuilder = (field: keyof BuilderState, value: string) => {
         setBuilder(prev => ({ ...prev, [field]: value }));
     };
@@ -123,7 +121,7 @@ export const Stage2_Education: React.FC<Stage2Props> = ({
             school: schoolName,
             degreeType: '',
             program: '',
-            gradYear: builder.gradYear, // Keep year if already entered
+            gradYear: builder.gradYear,
             status: builder.status
         });
         setSearchTerm("");
@@ -134,28 +132,22 @@ export const Stage2_Education: React.FC<Stage2Props> = ({
         setSearchTerm("");
     };
 
-    // === THE SAVE HANDLER (Self-Contained, No Arguments) ===
     const handleSave = () => {
-        // 1. Validation
         if (!builder.school || !builder.program || !builder.gradYear) {
-            console.warn("❌ Missing data, cannot save:", builder);
+            console.warn("❌ Missing data:", builder);
             return;
         }
 
-        console.log("✅ Saving credential:", builder);
+        console.log("✅ Saving:", builder);
 
         if (editingId) {
-            // EDITING: Update existing entry field by field
             onUpdateEntry(editingId, 'school', builder.school);
             onUpdateEntry(editingId, 'program', builder.program);
             onUpdateEntry(editingId, 'degreeType', builder.degreeType || 'Certificate');
             onUpdateEntry(editingId, 'status', builder.status);
             onUpdateEntry(editingId, 'gradYear', builder.gradYear);
         } else {
-            // NEW ENTRY: First add a new entry, then update it
-            onAddEntry(); // Creates new entry in parent state
-
-            // Wait a tick for the new entry to be added, then update it
+            onAddEntry();
             requestAnimationFrame(() => {
                 const newEntry = educationStack[educationStack.length - 1];
                 if (newEntry) {
@@ -168,14 +160,12 @@ export const Stage2_Education: React.FC<Stage2Props> = ({
             });
         }
 
-        // 3. Clear & Collapse
         setBuilder({ school: '', degreeType: '', program: '', gradYear: '', status: 'Alumni' });
         setSearchTerm("");
         setIsFormOpen(false);
         setEditingId(null);
     };
 
-    // === OTHER HANDLERS ===
     const handleAddNew = () => {
         setBuilder({ school: '', degreeType: '', program: '', gradYear: '', status: 'Alumni' });
         setSearchTerm("");
@@ -216,25 +206,23 @@ export const Stage2_Education: React.FC<Stage2Props> = ({
                 </div>
             </div>
 
-            {/* === CARD LIST === */}
-            <div className="space-y-3">
-                {completedEntries.length === 0 && !isFormOpen && (
-                    <p className="text-gray-400 text-sm text-center py-4">No credentials added yet.</p>
-                )}
-                {completedEntries.map((entry) => (
-                    <CompactCredentialCard
-                        key={entry.id}
-                        entry={entry}
-                        onEdit={() => handleEdit(entry)}
-                        onRemove={() => onRemoveEntry(entry.id)}
-                    />
-                ))}
-            </div>
+            {/* 1. THE STACK (List of cards) */}
+            {completedEntries.length > 0 && (
+                <div className="space-y-3">
+                    {completedEntries.map((entry) => (
+                        <CompactCredentialCard
+                            key={entry.id}
+                            entry={entry}
+                            onEdit={() => handleEdit(entry)}
+                            onRemove={() => onRemoveEntry(entry.id)}
+                        />
+                    ))}
+                </div>
+            )}
 
-            {/* === THE BUILDER FORM === */}
-            {isFormOpen && (
+            {/* 2. THE BUILDER FORM (Collapsible) */}
+            {isFormOpen ? (
                 <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 animate-in zoom-in-95 duration-200">
-                    {/* Header */}
                     <div className="flex justify-between items-center mb-5">
                         <h3 className="font-bold text-gray-900 text-lg">
                             {editingId ? 'Edit Credential' : 'Add Credential'}
@@ -320,7 +308,7 @@ export const Stage2_Education: React.FC<Stage2Props> = ({
                         </div>
                     )}
 
-                    {/* Other School - Manual Input */}
+                    {/* Other School */}
                     {builder.school === 'Other' && (
                         <div className="mb-4">
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">2. Program Name</label>
@@ -334,7 +322,7 @@ export const Stage2_Education: React.FC<Stage2Props> = ({
                         </div>
                     )}
 
-                    {/* Step 3 & 4: Status & Year */}
+                    {/* Step 3 & 4 */}
                     {builder.program && (
                         <div className="grid grid-cols-2 gap-4 mb-5 animate-in fade-in duration-200">
                             <div>
@@ -370,40 +358,53 @@ export const Stage2_Education: React.FC<Stage2Props> = ({
                         </div>
                     )}
 
-                    {/* Save Button */}
-                    <button
-                        type="button"
-                        onClick={handleSave}
-                        disabled={!isBuilderComplete}
-                        className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                        <Check className="h-5 w-5" />
-                        {editingId ? 'Save Changes' : 'Save & Collapse'}
-                    </button>
+                    {/* Form Buttons */}
+                    <div className="flex gap-3 mt-6">
+                        {completedEntries.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={handleCancel}
+                                className="px-4 py-3 text-slate-500 hover:text-slate-900 font-medium hover:bg-slate-100 rounded-xl transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            onClick={handleSave}
+                            disabled={!isBuilderComplete}
+                            className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                            <Check className="h-5 w-5" />
+                            Save Credential
+                        </button>
+                    </div>
 
                     {!isBuilderComplete && (
-                        <p className="text-xs text-center text-slate-400 mt-2">
+                        <p className="text-xs text-center text-slate-400 mt-3">
                             {!builder.school && "Select a school → "}
                             {builder.school && !builder.program && "Select a program → "}
                             {builder.school && builder.program && !builder.gradYear && "Enter graduation year"}
                         </p>
                     )}
                 </div>
-            )}
-
-            {/* === ADD ANOTHER BUTTON === */}
-            {!isFormOpen && completedEntries.length > 0 && (
+            ) : (
+                /* 3. THE TRIGGER BUTTON (Always visible when form is closed) */
                 <button
                     type="button"
                     onClick={handleAddNew}
-                    className="w-full py-4 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 font-medium hover:border-green-500 hover:text-green-600 hover:bg-green-50/50 transition-all flex items-center justify-center gap-2"
+                    className="w-full py-8 border-2 border-dashed border-slate-300 rounded-2xl text-slate-500 font-medium hover:border-green-500 hover:text-green-600 hover:bg-green-50/50 transition-all flex flex-col items-center justify-center gap-2"
                 >
-                    <Plus className="h-5 w-5" />
-                    Add Another Credential
+                    <div className="bg-white p-3 rounded-full shadow-sm border border-slate-100">
+                        <PlusCircle className="h-6 w-6" />
+                    </div>
+                    <span className="text-base">
+                        {completedEntries.length === 0 ? "Add Your First Credential" : "Add Another Credential"}
+                    </span>
                 </button>
             )}
 
-            {/* === STACK SUMMARY === */}
+            {/* Stack Summary */}
             {completedEntries.length > 0 && !isFormOpen && (
                 <div className="p-4 bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl text-white">
                     <div className="flex items-center gap-2 mb-2">
@@ -422,23 +423,7 @@ export const Stage2_Education: React.FC<Stage2Props> = ({
                 </div>
             )}
 
-            {/* === NAVIGATION === */}
-            {!isFormOpen && (
-                <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-slate-100 z-40 p-6 -mx-6 -mb-6 mt-8 rounded-b-2xl flex items-center gap-4">
-                    <button type="button" onClick={onBack} className="px-6 py-4 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors">
-                        Back
-                    </button>
-                    <button
-                        type="button"
-                        onClick={onNext}
-                        disabled={completedEntries.length === 0}
-                        className="flex-1 py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
-                    >
-                        Next Step: Logistics
-                        <ArrowRight className="w-5 h-5" />
-                    </button>
-                </div>
-            )}
+            {/* NO NAVIGATION BUTTONS - Parent handles this via the main "Continue" button */}
         </div>
     );
 };
