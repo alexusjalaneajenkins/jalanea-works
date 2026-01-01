@@ -22,10 +22,10 @@ export const Card: React.FC<CardProps> = ({
         'glass-light': "glass-panel text-jalanea-900 bg-white/60",
 
         // Dark Glass: For overlays on dark backgrounds
-        'glass-dark': "glass-panel-dark text-white",
+        'glass-dark': "bg-slate-800/50 backdrop-blur-sm border border-slate-700 text-white shadow-xl",
 
-        // Solid White: High contrast, clean
-        'solid-white': "bg-white border border-jalanea-200 shadow-sm text-jalanea-900",
+        // Solid White: High contrast, clean - for dark page backgrounds
+        'solid-white': "bg-white border border-slate-200 shadow-xl text-slate-900",
 
         // Solid Forest/Slate: Deep brand background (Primary Dark Card)
         'solid-forest': "bg-jalanea-900 text-white border border-jalanea-800 shadow-xl",

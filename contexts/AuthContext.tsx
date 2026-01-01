@@ -74,6 +74,57 @@ interface UserProfileData {
         maxRent: number;
         maxCarPayment: number;
     };
+    // Power Hour Integration
+    powerHour?: {
+        scheduledTime: string; // "18:00"
+        scheduledDays: string[]; // ["mon", "tue", "wed", "thu", "fri"]
+        currentStreak: number;
+        longestStreak: number;
+        lastCompletedDate: string | null;
+        totalPowerHours: number;
+        dailyGoal: number;
+    };
+    // Networking Hour Integration
+    networkingHour?: {
+        scheduledDay: string; // "wednesday"
+        scheduledTime: string; // "12:00"
+        weeklyGoal: number; // 5
+        currentWeekConnections: number;
+        totalConnections: number;
+        lastNetworkingDate: string | null;
+    };
+    // Work Schedule Import
+    workSchedule?: {
+        jobName?: string;
+        shifts: Array<{
+            day: string;        // "monday", "tuesday", etc.
+            startTime: string;  // "09:00"
+            endTime: string;    // "17:00"
+        }>;
+    };
+    // Class Schedule Import
+    classSchedule?: Array<{
+        className: string;
+        days: string[];       // ["monday", "wednesday"]
+        startTime: string;
+        endTime: string;
+    }>;
+    // Interview Prep Tracking
+    interviewPrep?: {
+        sessions: Array<{
+            id: string;
+            jobId: string;
+            company: string;
+            role: string;
+            date: string;
+            overallScore: number;
+            questionsAnswered: number;
+            strengths: string[];
+            improvements: string[];
+        }>;
+        totalSessions: number;
+        averageScore: number;
+    };
 }
 
 interface AuthContextType {

@@ -7,7 +7,7 @@ export enum NavRoute {
   RESUME = 'resume',
   SCHEDULE = 'schedule',
   AI_ASSISTANT = 'ai-assistant',
-  PROFILE = 'profile',
+  ACCOUNT = 'account',
   ONBOARDING = 'onboarding',
 }
 
@@ -169,6 +169,7 @@ export interface UserProfile {
   email?: string; // Added to match Onboarding usage
   fullName: string;
   location: string;
+  commuteCoords?: string; // lat,lon for distance calculations
   linkedinUrl?: string; // Keep for backward compatibility or map to 'linkedin'
   portfolioUrl?: string; // Keep for backward compatibility or map to 'portfolio'
   photoURL?: string;
@@ -201,11 +202,14 @@ export interface UserProfile {
     isParent: boolean;
     childCount?: number;
     employmentStatus: EmploymentStatus;
-    // NEW: Extended logistics from 6-stage onboarding
-    transportMode?: 'car' | 'bus' | 'bike' | 'rideshare';
-    hardStopStart?: string;
-    hardStopEnd?: string;
-    weekendsAvailable?: boolean;
+    // Transport & Commute
+    transportMode?: string | string[];
+    commuteTolerance?: 'local' | 'standard' | 'extended';
+    // Availability & Schedule
+    availability?: 'open' | 'weekdays' | 'weekends' | 'flexible' | 'limited';
+    selectedDays?: string[];
+    shiftPreference?: string[];
+    // Reality/Context
     realityContext?: string;
     selectedPrompts?: string[];
     urgencyLevel?: 'emergency' | 'bridge' | 'career';
@@ -225,8 +229,31 @@ export interface UserProfile {
     maxRent: number;
     maxCarPayment: number;
   };
+  // Detailed budget breakdown from onboarding
+  budgetData?: {
+    grossAnnual: number;
+    netAnnual: number;
+    monthlyGross: number;
+    monthlyNet: number;
+    housing: number;
+    utilities: number;
+    carPayment: number;
+    carInsurance: number;
+    food: number;
+    wants: number;
+    savings: number;
+    housingPercent: number;
+    utilitiesPercent: number;
+    transportPercent: number;
+    foodPercent: number;
+    wantsPercent: number;
+    savingsPercent: number;
+    maxQualifyingRent: number;
+  };
   yearsOfExperience?: 'student' | 'entry-level' | 'associate';
   currentRole?: string;
+  // Track onboarding progress
+  onboardingStage?: number;
 }
 
 // Saved Job for tracking applications
@@ -308,6 +335,8 @@ export interface ScheduleBlock {
   description?: string;
   isAiSuggested?: boolean;
   linkedTaskId?: string;
+  isPowerHour?: boolean; // Power Hour block for job applications
+  isNetworkingHour?: boolean; // Networking Hour block for connections
 }
 
 // TimeBlock is ScheduleBlock with date (used by Schedule.tsx)
@@ -481,4 +510,94 @@ export interface ChatMessage {
   role?: 'user' | 'model'; // Added to match AIChat.tsx usage
   timestamp: Date;
   isTyping?: boolean;
+}
+
+// ===== Web Speech API Types =====
+// TypeScript declarations for the Web Speech API (browser native)
+
+export interface SpeechRecognitionEvent extends Event {
+  readonly resultIndex: number;
+  readonly results: SpeechRecognitionResultList;
+}
+
+export interface SpeechRecognitionResultList {
+  readonly length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+export interface SpeechRecognitionResult {
+  readonly length: number;
+  readonly isFinal: boolean;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+export interface SpeechRecognitionAlternative {
+  readonly transcript: string;
+  readonly confidence: number;
+}
+
+export interface SpeechRecognitionErrorEvent extends Event {
+  readonly error: SpeechRecognitionErrorCode;
+  readonly message: string;
+}
+
+export type SpeechRecognitionErrorCode =
+  | 'no-speech'
+  | 'aborted'
+  | 'audio-capture'
+  | 'network'
+  | 'not-allowed'
+  | 'service-not-allowed'
+  | 'bad-grammar'
+  | 'language-not-supported';
+
+export interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  grammars: SpeechGrammarList;
+  interimResults: boolean;
+  lang: string;
+  maxAlternatives: number;
+
+  onaudioend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onaudiostart: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
+  onnomatch: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
+  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
+  onsoundend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onsoundstart: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onspeechend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onspeechstart: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onstart: ((this: SpeechRecognition, ev: Event) => any) | null;
+
+  abort(): void;
+  start(): void;
+  stop(): void;
+}
+
+export interface SpeechGrammarList {
+  readonly length: number;
+  addFromString(string: string, weight?: number): void;
+  addFromURI(src: string, weight?: number): void;
+  item(index: number): SpeechGrammar;
+  [index: number]: SpeechGrammar;
+}
+
+export interface SpeechGrammar {
+  src: string;
+  weight: number;
+}
+
+export interface SpeechRecognitionConstructor {
+  new(): SpeechRecognition;
+}
+
+// Extend Window interface to include SpeechRecognition
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  }
 }

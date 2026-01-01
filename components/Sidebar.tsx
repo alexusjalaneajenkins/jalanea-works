@@ -23,7 +23,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRoute, setRoute, isMobi
     { id: NavRoute.JOBS, label: 'Explore Jobs', icon: <Compass size={20} />, path: '/jobs' },
     { id: NavRoute.RESUME, label: 'AI Resume Studio', icon: <FileText size={20} />, path: '/resume' },
     { id: NavRoute.AI_ASSISTANT, label: 'AI Career Coach', icon: <Sparkles size={20} />, path: '/ai-assistant' },
-    { id: NavRoute.PROFILE, label: 'Profile', icon: <User size={20} />, path: '/profile' },
+    { id: NavRoute.ACCOUNT, label: 'Account', icon: <User size={20} />, path: '/account' },
   ];
 
   // External links (open in new context or navigate)

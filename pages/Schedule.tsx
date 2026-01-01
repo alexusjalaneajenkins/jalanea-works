@@ -1,34 +1,47 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
-import { Card } from '../components/Card';
-import { Button } from '../components/Button';
-import { Input } from '../components/Input';
 import {
-    Calendar, Clock, CheckCircle2, RefreshCw, Zap,
-    Briefcase, BookOpen, UserPlus, PenTool, Coffee, ExternalLink,
-    Mail, CalendarClock, Plus, Trash2, ListChecks, ArrowRight, X, Edit2, Link as LinkIcon, CalendarPlus,
-    Battery, BatteryCharging, Moon, Sun, Activity, Sparkles, Brain, Heart, CheckSquare, Square,
-    ChevronLeft, ChevronRight, Settings, Palette, AlignLeft, Circle, Loader2
+    Calendar, Clock, CheckCircle2, Zap,
+    Briefcase, UserPlus, Plus, Trash2, ListChecks, X,
+    CalendarClock, CalendarPlus, Sparkles, Circle, Loader2, Flame, Target, Play,
+    Users, Linkedin, Upload, ChevronLeft, ChevronRight, Settings, Palette, ExternalLink
 } from 'lucide-react';
-import { generateWellnessInsights, generateScheduleSuggestions, WellnessInsight, ScheduleSuggestion } from '../services/geminiService';
+import { useNavigate } from 'react-router-dom';
+import { generateScheduleSuggestions, ScheduleSuggestion } from '../services/geminiService';
 import { TaskCategory, TimeBlock, ToDoItem } from '../types';
+import { PowerHourSetup, PowerHourSettings } from '../components/PowerHourSetup';
+import { NetworkingHourSetup, NetworkingHourSettings } from '../components/NetworkingHourSetup';
+import { WorkScheduleImportModal } from '../components/WorkScheduleImportModal';
+import { FreeWindowsCard, FreeWindowsSummary } from '../components/FreeWindowsCard';
+import { analyzeFreeWindows, FreeWindow } from '../services/scheduleAnalysisService';
+
+// Animation variants
+const fadeUp = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } }
+};
+
+const stagger = {
+    visible: { transition: { staggerChildren: 0.08 } }
+};
 
 // --- Default Data ---
-
 const DEFAULT_CATEGORIES: TaskCategory[] = [
-    { id: 'work', label: 'Work', color: '#64748b' }, // slate-500
-    { id: 'personal', label: 'Personal', color: '#f59e0b' }, // amber-500
-    { id: 'learning', label: 'Learning', color: '#3b82f6' }, // blue-500
-    { id: 'wellness', label: 'Wellness', color: '#10b981' }, // emerald-500
-    { id: 'interview', label: 'Interview Prep', color: '#8b5cf6' }, // violet-500
+    { id: 'work', label: 'Work', color: '#64748b' },
+    { id: 'personal', label: 'Personal', color: '#f59e0b' },
+    { id: 'learning', label: 'Learning', color: '#3b82f6' },
+    { id: 'wellness', label: 'Wellness', color: '#10b981' },
+    { id: 'interview', label: 'Interview Prep', color: '#8b5cf6' },
+    { id: 'job_search', label: 'Power Hour', color: '#FFC425' },
+    { id: 'networking', label: 'Networking', color: '#3B82F6' },
 ];
 
 const getTodayString = () => new Date().toISOString().split('T')[0];
 
 const INITIAL_SCHEDULE: TimeBlock[] = [
     { id: '1', date: getTodayString(), startTime: '07:00', endTime: '08:00', title: 'Wake Up / Routine', categoryId: 'personal', description: 'Morning hygiene and breakfast.' },
-    { id: '2', date: getTodayString(), startTime: '09:00', endTime: '17:00', title: 'Work Shift', categoryId: 'work', description: 'Regular shift at the studio.' },
+    { id: '2', date: getTodayString(), startTime: '09:00', endTime: '17:00', title: 'Work Shift', categoryId: 'work', description: 'Regular shift.' },
 ];
 
 const INITIAL_TASKS: ToDoItem[] = [
@@ -37,7 +50,6 @@ const INITIAL_TASKS: ToDoItem[] = [
 ];
 
 // --- Helper Functions ---
-
 const addDays = (date: Date, days: number): Date => {
     const result = new Date(date);
     result.setDate(result.getDate() + days);
@@ -48,11 +60,9 @@ const addMonths = (date: Date, months: number): Date => {
     const result = new Date(date);
     result.setMonth(result.getMonth() + months);
     return result;
-}
-
-const formatDate = (date: Date): string => {
-    return date.toISOString().split('T')[0];
 };
+
+const formatDate = (date: Date): string => date.toISOString().split('T')[0];
 
 const getDayName = (dateStr: string) => {
     const date = new Date(dateStr + 'T00:00:00');
@@ -64,48 +74,118 @@ const getDisplayDate = (dateStr: string) => {
     return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
 };
 
-const getFullDisplayDate = (dateStr: string) => {
-    const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+const formatPowerHourTime = (time: string): string => {
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+};
+
+const getDayId = (): string => {
+    const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    return days[new Date().getDay()];
+};
+
+const isPowerHourActive = (scheduledTime: string): boolean => {
+    const now = new Date();
+    const [hours, minutes] = scheduledTime.split(':').map(Number);
+    const start = new Date();
+    start.setHours(hours, minutes, 0, 0);
+    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    return now >= start && now < end;
+};
+
+type CalendarViewMode = 'day' | 'multi' | 'month';
+
+// --- Glass Card Component ---
+const GlassCard: React.FC<{ children: React.ReactNode; className?: string; glow?: boolean }> = ({ children, className = '', glow }) => (
+    <motion.div
+        variants={fadeUp}
+        className={`rounded-2xl bg-gradient-to-br from-slate-800/60 to-slate-900/60 border border-white/10 backdrop-blur-xl ${glow ? 'shadow-[0_0_30px_rgba(255,196,37,0.15)]' : ''} ${className}`}
+    >
+        {children}
+    </motion.div>
+);
+
+// --- Glass Button Component ---
+const GlassButton: React.FC<{
+    children: React.ReactNode;
+    onClick?: () => void;
+    variant?: 'default' | 'gold' | 'outline';
+    size?: 'sm' | 'md';
+    icon?: React.ReactNode;
+    disabled?: boolean;
+    className?: string;
+}> = ({ children, onClick, variant = 'default', size = 'md', icon, disabled, className = '' }) => {
+    const baseClasses = 'inline-flex items-center justify-center gap-2 font-medium rounded-xl transition-all';
+    const sizeClasses = size === 'sm' ? 'px-3 py-2 text-sm' : 'px-4 py-2.5 text-sm';
+    const variantClasses = {
+        default: 'bg-slate-800/50 border border-white/10 text-slate-300 hover:bg-slate-700/50 hover:border-white/20',
+        gold: 'bg-gold hover:bg-gold-light text-black font-bold shadow-[0_0_20px_rgba(255,196,37,0.3)]',
+        outline: 'border border-white/20 text-slate-300 hover:border-gold/50 hover:text-gold'
+    };
+
+    return (
+        <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={onClick}
+            disabled={disabled}
+            className={`${baseClasses} ${sizeClasses} ${variantClasses[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+        >
+            {icon}
+            {children}
+        </motion.button>
+    );
 };
 
 export const Schedule: React.FC = () => {
     const { userProfile, saveUserProfile } = useAuth();
+    const navigate = useNavigate();
     const [viewMode, setViewMode] = useState<'calendar' | 'tasks'>('calendar');
     const [calendarView, setCalendarView] = useState<CalendarViewMode>('multi');
     const [isInitialized, setIsInitialized] = useState(false);
 
-    // Calendar View State
+    // Power Hour state
+    const [showPowerHourSetup, setShowPowerHourSetup] = useState(false);
+    const powerHourSettings = userProfile?.powerHour || null;
+
+    // Networking Hour state
+    const [showNetworkingHourSetup, setShowNetworkingHourSetup] = useState(false);
+    const networkingHourSettings = userProfile?.networkingHour || null;
+
+    // Work Schedule Import state
+    const [showScheduleImport, setShowScheduleImport] = useState(false);
+    const [showFreeWindowsSummary, setShowFreeWindowsSummary] = useState(false);
+    const workSchedule = userProfile?.workSchedule;
+    const classSchedule = userProfile?.classSchedule;
+
+    const freeWindows = useMemo(() => {
+        if (!workSchedule && !classSchedule) return [];
+        return analyzeFreeWindows(workSchedule, classSchedule, []);
+    }, [workSchedule, classSchedule]);
+
     const [currentDate, setCurrentDate] = useState(getTodayString());
     const [daysToShow, setDaysToShow] = useState(3);
-
-    // Data State
     const [schedule, setSchedule] = useState<TimeBlock[]>(INITIAL_SCHEDULE);
     const [tasks, setTasks] = useState<ToDoItem[]>(INITIAL_TASKS);
     const [categories, setCategories] = useState<TaskCategory[]>(DEFAULT_CATEGORIES);
 
-    // Load data from Firebase on mount
+    // Load data from Firebase
     useEffect(() => {
         if (userProfile && !isInitialized) {
-            if (userProfile.scheduleBlocks && userProfile.scheduleBlocks.length > 0) {
-                setSchedule(userProfile.scheduleBlocks);
-            }
-            if (userProfile.tasks && userProfile.tasks.length > 0) {
-                setTasks(userProfile.tasks);
-            }
+            if (userProfile.scheduleBlocks?.length > 0) setSchedule(userProfile.scheduleBlocks);
+            if (userProfile.tasks?.length > 0) setTasks(userProfile.tasks);
             setIsInitialized(true);
         }
     }, [userProfile, isInitialized]);
 
-    // Auto-save schedule to Firebase when changed
+    // Auto-save
     useEffect(() => {
         if (isInitialized && userProfile) {
             const saveTimer = setTimeout(() => {
-                saveUserProfile({
-                    scheduleBlocks: schedule,
-                    tasks: tasks
-                }).catch(err => console.error('Failed to save schedule:', err));
-            }, 1000); // Debounce saves by 1 second
+                saveUserProfile({ scheduleBlocks: schedule, tasks }).catch(console.error);
+            }, 1000);
             return () => clearTimeout(saveTimer);
         }
     }, [schedule, tasks, isInitialized]);
@@ -115,34 +195,21 @@ export const Schedule: React.FC = () => {
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
     const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
     const [newBlock, setNewBlock] = useState<Partial<TimeBlock>>({
-        date: getTodayString(),
-        startTime: '09:00',
-        endTime: '10:00',
-        categoryId: 'work',
-        description: ''
+        date: getTodayString(), startTime: '09:00', endTime: '10:00', categoryId: 'work', description: ''
     });
 
-    // Category Manager State
     const [newCatName, setNewCatName] = useState('');
-    const [newCatColor, setNewCatColor] = useState('#000000');
-
-    // Task State
+    const [newCatColor, setNewCatColor] = useState('#FFC425');
     const [newTaskText, setNewTaskText] = useState('');
-    const [schedulingTask, setSchedulingTask] = useState<ToDoItem | null>(null);
 
-    // Suggestion State
+    // Suggestions
     const [suggestions, setSuggestions] = useState<ScheduleSuggestion[]>([]);
     const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
     const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
     const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set());
     const [customDurations, setCustomDurations] = useState<Record<string, number>>({});
 
-    // Wellness State
-    const [wellness, setWellness] = useState<WellnessInsight | null>(null);
-    const [isAnalyzingWellness, setIsAnalyzingWellness] = useState(false);
-
-    // --- COMPUTED VALUES ---
-
+    // Computed values
     const visibleDays = useMemo(() => {
         const start = new Date(currentDate);
         const count = calendarView === 'day' ? 1 : daysToShow;
@@ -164,88 +231,59 @@ export const Schedule: React.FC = () => {
         return Array.from({ length: 42 }, (_, i) => {
             const d = new Date(gridStart);
             d.setDate(gridStart.getDate() + i);
-            return {
-                dateStr: formatDate(d),
-                dayNum: d.getDate(),
-                isCurrentMonth: d.getMonth() === month
-            };
+            return { dateStr: formatDate(d), dayNum: d.getDate(), isCurrentMonth: d.getMonth() === month };
         });
     }, [currentDate]);
 
     const currentMonthLabel = useMemo(() => {
-        const d = new Date(currentDate);
-        return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        return new Date(currentDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     }, [currentDate]);
 
-    // --- NAVIGATION ---
-
+    // Navigation
     const handleNextPeriod = () => {
-        if (calendarView === 'month') {
-            setCurrentDate(formatDate(addMonths(new Date(currentDate), 1)));
-        } else {
-            const jump = calendarView === 'day' ? 1 : daysToShow;
-            setCurrentDate(formatDate(addDays(new Date(currentDate), jump)));
-        }
+        if (calendarView === 'month') setCurrentDate(formatDate(addMonths(new Date(currentDate), 1)));
+        else setCurrentDate(formatDate(addDays(new Date(currentDate), calendarView === 'day' ? 1 : daysToShow)));
     };
 
     const handlePrevPeriod = () => {
-        if (calendarView === 'month') {
-            setCurrentDate(formatDate(addMonths(new Date(currentDate), -1)));
-        } else {
-            const jump = calendarView === 'day' ? 1 : daysToShow;
-            setCurrentDate(formatDate(addDays(new Date(currentDate), -jump)));
-        }
+        if (calendarView === 'month') setCurrentDate(formatDate(addMonths(new Date(currentDate), -1)));
+        else setCurrentDate(formatDate(addDays(new Date(currentDate), calendarView === 'day' ? -1 : -daysToShow)));
     };
 
-    const handleToday = () => {
-        setCurrentDate(getTodayString());
-    };
+    const handleToday = () => setCurrentDate(getTodayString());
 
-    // --- TASK MANAGEMENT ---
-
+    // Task Management
     const handleAddTask = () => {
         if (!newTaskText.trim()) return;
         setTasks(prev => [...prev, { id: Date.now().toString(), text: newTaskText, completed: false, priority: 'medium' }]);
         setNewTaskText('');
     };
 
-    const toggleTask = (id: string) => {
-        setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
-    };
+    const toggleTask = (id: string) => setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+    const deleteTask = (id: string) => setTasks(prev => prev.filter(t => t.id !== id));
 
-    const deleteTask = (id: string) => {
-        setTasks(prev => prev.filter(t => t.id !== id));
-    };
-
-    // Schedule a task as a time block
     const scheduleTaskAsBlock = (task: ToDoItem) => {
         const now = new Date();
         const startHour = now.getHours().toString().padStart(2, '0');
         const startMin = (Math.ceil(now.getMinutes() / 15) * 15 % 60).toString().padStart(2, '0');
-        const startTime = `${startHour}:${startMin}`;
-
         const endDate = new Date(now.getTime() + 30 * 60000);
         const endHour = endDate.getHours().toString().padStart(2, '0');
         const endMin = endDate.getMinutes().toString().padStart(2, '0');
-        const endTime = `${endHour}:${endMin}`;
 
-        const newBlock: TimeBlock = {
+        setSchedule(prev => [...prev, {
             id: Date.now().toString(),
             title: task.text,
             categoryId: 'work',
-            startTime,
-            endTime,
+            startTime: `${startHour}:${startMin}`,
+            endTime: `${endHour}:${endMin}`,
             date: getTodayString(),
             description: 'From To-Do List'
-        };
-        setSchedule(prev => [...prev, newBlock]);
+        }]);
         deleteTask(task.id);
-        setSchedulingTask(null);
         setViewMode('calendar');
     };
 
-    // --- CRUD ---
-
+    // CRUD
     const handleSaveBlock = () => {
         if (newBlock.title && newBlock.startTime && newBlock.endTime && newBlock.date) {
             if (editingBlockId) {
@@ -266,14 +304,7 @@ export const Schedule: React.FC = () => {
 
     const openAddModal = (date?: string) => {
         setEditingBlockId(null);
-        setNewBlock({
-            date: date || currentDate,
-            startTime: '09:00',
-            endTime: '10:00',
-            categoryId: categories[0].id,
-            title: '',
-            description: ''
-        });
+        setNewBlock({ date: date || currentDate, startTime: '09:00', endTime: '10:00', categoryId: categories[0].id, title: '', description: '' });
         setIsAddModalOpen(true);
     };
 
@@ -283,25 +314,20 @@ export const Schedule: React.FC = () => {
         setIsAddModalOpen(true);
     };
 
-    // --- CATEGORY MANAGEMENT ---
-
+    // Category Management
     const addCategory = () => {
         if (newCatName && newCatColor) {
-            const id = newCatName.toLowerCase().replace(/\s+/g, '-');
-            setCategories([...categories, { id, label: newCatName, color: newCatColor }]);
+            setCategories([...categories, { id: newCatName.toLowerCase().replace(/\s+/g, '-'), label: newCatName, color: newCatColor }]);
             setNewCatName('');
         }
     };
 
-    const deleteCategory = (id: string) => {
-        setCategories(categories.filter(c => c.id !== id));
-    };
+    const deleteCategory = (id: string) => setCategories(categories.filter(c => c.id !== id));
 
-    // --- AI LOGIC ---
+    // AI Suggestions
     const handleGetSuggestions = async () => {
         setIsLoadingSuggestions(true);
-        const contextSchedule = schedule.filter(s => s.date === getTodayString());
-        const results = await generateScheduleSuggestions(contextSchedule);
+        const results = await generateScheduleSuggestions(schedule.filter(s => s.date === getTodayString()));
         setSuggestions(results);
         setSelectedSuggestions(new Set(results.map(r => r.id)));
         const durations: Record<string, number> = {};
@@ -332,21 +358,15 @@ export const Schedule: React.FC = () => {
             const dateObj = new Date();
             dateObj.setHours(hours, mins + duration);
 
-            const endHours = dateObj.getHours().toString().padStart(2, '0');
-            const endMins = dateObj.getMinutes().toString().padStart(2, '0');
-            const endTime = `${endHours}:${endMins}`;
-
-            let catId = 'personal';
-            if (s.category === 'Career') catId = 'work';
-            if (s.category === 'Learning') catId = 'learning';
-            if (s.category === 'Wellness') catId = 'wellness';
+            const endTime = `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+            const catId = s.category === 'Career' ? 'work' : s.category === 'Learning' ? 'learning' : s.category === 'Wellness' ? 'wellness' : 'personal';
 
             newBlocks.push({
                 id: Date.now().toString() + Math.random().toString(),
                 title: s.title,
                 categoryId: catId,
                 startTime: currentTime,
-                endTime: endTime,
+                endTime,
                 date: getTodayString(),
                 description: s.reasoning,
                 isAiSuggested: true
@@ -358,575 +378,878 @@ export const Schedule: React.FC = () => {
         setIsSuggestionsOpen(false);
     };
 
-    const getCatColor = (catId: string) => {
-        const cat = categories.find(c => c.id === catId);
-        return cat ? cat.color : '#cbd5e1';
+    const getCatColor = (catId: string) => categories.find(c => c.id === catId)?.color || '#cbd5e1';
+
+    // Power Hour
+    const handleSavePowerHour = async (settings: PowerHourSettings) => {
+        await saveUserProfile({ powerHour: settings });
+        const today = new Date();
+        const newBlocks: TimeBlock[] = [];
+        const dayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(today);
+            date.setDate(today.getDate() + i);
+            const dateStr = formatDate(date);
+            const dayId = dayNames[date.getDay()];
+
+            if (settings.scheduledDays.includes(dayId)) {
+                const existingBlock = schedule.find(b => b.date === dateStr && b.categoryId === 'job_search');
+                if (!existingBlock) {
+                    const [hours, mins] = settings.scheduledTime.split(':').map(Number);
+                    newBlocks.push({
+                        id: `ph-${dateStr}`,
+                        title: 'Power Hour',
+                        categoryId: 'job_search',
+                        startTime: settings.scheduledTime,
+                        endTime: `${(hours + 1).toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`,
+                        date: dateStr,
+                        description: `Apply to ${settings.dailyGoal} jobs`,
+                        isPowerHour: true
+                    });
+                }
+            }
+        }
+        if (newBlocks.length > 0) setSchedule(prev => [...prev, ...newBlocks]);
     };
 
-    // --- CALENDAR EXPORT FUNCTIONS ---
+    const todayDayId = getDayId();
+    const isPowerHourToday = powerHourSettings?.scheduledDays?.includes(todayDayId);
+    const isPowerHourNow = powerHourSettings && isPowerHourActive(powerHourSettings.scheduledTime);
+
+    // Networking Hour
+    const handleSaveNetworkingHour = async (settings: NetworkingHourSettings) => {
+        await saveUserProfile({ networkingHour: settings });
+        const today = new Date();
+        const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        const targetDayIndex = dayNames.indexOf(settings.scheduledDay);
+        const newBlocks: TimeBlock[] = [];
+
+        for (let week = 0; week < 4; week++) {
+            const date = new Date(today);
+            let daysUntilTarget = targetDayIndex - date.getDay();
+            if (daysUntilTarget < 0) daysUntilTarget += 7;
+            date.setDate(date.getDate() + daysUntilTarget + (week * 7));
+            const dateStr = formatDate(date);
+
+            const existingBlock = schedule.find(b => b.date === dateStr && b.categoryId === 'networking');
+            if (!existingBlock) {
+                const [hours, mins] = settings.scheduledTime.split(':').map(Number);
+                newBlocks.push({
+                    id: `net-${dateStr}`,
+                    title: 'Networking Hour',
+                    categoryId: 'networking',
+                    startTime: settings.scheduledTime,
+                    endTime: `${(hours + 1).toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`,
+                    date: dateStr,
+                    description: `Connect with ${settings.weeklyGoal} people`,
+                    isNetworkingHour: true
+                });
+            }
+        }
+        if (newBlocks.length > 0) setSchedule(prev => [...prev, ...newBlocks]);
+    };
+
+    const todayFullDayName = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][new Date().getDay()];
+    const isNetworkingToday = networkingHourSettings?.scheduledDay === todayFullDayName;
+    const isNetworkingNow = networkingHourSettings && isNetworkingToday && isPowerHourActive(networkingHourSettings.scheduledTime);
+
+    // Work Schedule Import
+    const handleSaveWorkSchedule = async (data: any) => {
+        await saveUserProfile({ workSchedule: data.workSchedule, classSchedule: data.classSchedule });
+
+        if (data.workSchedule?.shifts) {
+            const today = new Date();
+            const newBlocks: TimeBlock[] = [];
+            const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+            for (let i = 0; i < 14; i++) {
+                const date = new Date(today);
+                date.setDate(today.getDate() + i);
+                const dateStr = formatDate(date);
+                const dayName = dayNames[date.getDay()];
+
+                data.workSchedule.shifts
+                    .filter((shift: any) => shift.day.toLowerCase() === dayName)
+                    .forEach((shift: any) => {
+                        if (!schedule.find(b => b.date === dateStr && b.categoryId === 'work' && b.startTime === shift.startTime)) {
+                            newBlocks.push({
+                                id: `work-${dateStr}-${shift.startTime}`,
+                                title: data.workSchedule?.jobName || 'Work',
+                                categoryId: 'work',
+                                startTime: shift.startTime,
+                                endTime: shift.endTime,
+                                date: dateStr,
+                                description: 'Regular work shift'
+                            });
+                        }
+                    });
+            }
+            if (newBlocks.length > 0) setSchedule(prev => [...prev, ...newBlocks]);
+        }
+
+        if (data.classSchedule) {
+            const today = new Date();
+            const newBlocks: TimeBlock[] = [];
+            const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+            for (let i = 0; i < 14; i++) {
+                const date = new Date(today);
+                date.setDate(today.getDate() + i);
+                const dateStr = formatDate(date);
+                const dayName = dayNames[date.getDay()];
+
+                data.classSchedule
+                    .filter((cls: any) => cls.days.map((d: string) => d.toLowerCase()).includes(dayName))
+                    .forEach((cls: any) => {
+                        if (!schedule.find(b => b.date === dateStr && b.categoryId === 'learning' && b.title === cls.className)) {
+                            newBlocks.push({
+                                id: `class-${dateStr}-${cls.className}`,
+                                title: cls.className,
+                                categoryId: 'learning',
+                                startTime: cls.startTime,
+                                endTime: cls.endTime,
+                                date: dateStr,
+                                description: 'Class session'
+                            });
+                        }
+                    });
+            }
+            if (newBlocks.length > 0) setSchedule(prev => [...prev, ...newBlocks]);
+        }
+
+        setShowFreeWindowsSummary(true);
+    };
+
+    const handleSetPowerHourFromWindow = (window: FreeWindow) => {
+        const dayMap: Record<string, string> = {
+            'monday': 'mon', 'tuesday': 'tue', 'wednesday': 'wed', 'thursday': 'thu',
+            'friday': 'fri', 'saturday': 'sat', 'sunday': 'sun'
+        };
+        handleSavePowerHour({
+            scheduledTime: window.startTime,
+            scheduledDays: [dayMap[window.day]],
+            currentStreak: 0, longestStreak: 0, lastCompletedDate: null, totalPowerHours: 0, dailyGoal: 3
+        });
+        setShowFreeWindowsSummary(false);
+    };
+
+    // Calendar Export
     const exportToGoogleCalendar = (block: TimeBlock) => {
         const dateStr = block.date.replace(/-/g, '');
         const startStr = `${dateStr}T${block.startTime.replace(':', '')}00`;
         const endStr = `${dateStr}T${block.endTime.replace(':', '')}00`;
-        const url = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(block.title)}&dates=${startStr}/${endStr}&details=${encodeURIComponent(block.description || '')}&sf=true&output=xml`;
-        window.open(url, '_blank');
+        window.open(`https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(block.title)}&dates=${startStr}/${endStr}&details=${encodeURIComponent(block.description || '')}`, '_blank');
     };
 
     const downloadICS = (block: TimeBlock) => {
-        const formatICSDate = (date: string, time: string) => {
-            return `${date.replace(/-/g, '')}T${time.replace(':', '')}00`;
-        };
-
-        const icsContent = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//JalaneaWorks//Schedule//EN
-BEGIN:VEVENT
-DTSTART:${formatICSDate(block.date, block.startTime)}
-DTEND:${formatICSDate(block.date, block.endTime)}
-SUMMARY:${block.title}
-DESCRIPTION:${block.description || ''}
-END:VEVENT
-END:VCALENDAR`;
-
+        const icsContent = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTART:${block.date.replace(/-/g, '')}T${block.startTime.replace(':', '')}00\nDTEND:${block.date.replace(/-/g, '')}T${block.endTime.replace(':', '')}00\nSUMMARY:${block.title}\nEND:VEVENT\nEND:VCALENDAR`;
         const blob = new Blob([icsContent], { type: 'text/calendar' });
-        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url;
+        a.href = URL.createObjectURL(blob);
         a.download = `${block.title.replace(/[^a-z0-9]/gi, '_')}.ics`;
-        document.body.appendChild(a);
         a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
     };
 
-    // Type for CalendarViewMode local to component since not exported
-    type CalendarViewMode = 'day' | 'multi' | 'month';
-
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 pb-12 h-full flex flex-col">
+        <div className="min-h-screen bg-[#020617] pb-16">
+            {/* Background */}
+            <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-[#020617] to-slate-900 pointer-events-none" />
+            <div className="fixed top-0 right-1/4 w-96 h-96 bg-gold/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="fixed bottom-0 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
-            {/* Header Controls */}
-            <div className="flex flex-col xl:flex-row justify-between xl:items-end gap-4 shrink-0">
-                <div>
-                    <h1 className="text-3xl font-display font-bold text-jalanea-900">Smart Schedule</h1>
-                    <div className="flex flex-wrap items-center gap-4 mt-2">
-                        {/* Primary View Toggle */}
-                        <div className="flex bg-white rounded-lg border border-jalanea-200 p-1">
-                            <button onClick={() => setViewMode('calendar')} className={`px-3 py-1 rounded text-sm font-bold transition-all ${viewMode === 'calendar' ? 'bg-jalanea-900 text-gold' : 'text-jalanea-500'}`}>Calendar</button>
-                            <button onClick={() => setViewMode('tasks')} className={`px-3 py-1 rounded text-sm font-bold transition-all ${viewMode === 'tasks' ? 'bg-jalanea-900 text-gold' : 'text-jalanea-500'}`}>To-Do</button>
+            <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={stagger}
+                className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6"
+            >
+                {/* Header */}
+                <motion.div variants={fadeUp} className="flex flex-col lg:flex-row justify-between lg:items-end gap-4">
+                    <div>
+                        <h1 className="text-3xl md:text-4xl font-bold text-white">Smart Schedule</h1>
+                        <div className="flex flex-wrap items-center gap-3 mt-3">
+                            {/* View Toggle */}
+                            <div className="flex bg-slate-800/50 rounded-xl border border-white/10 p-1">
+                                {['calendar', 'tasks'].map((mode) => (
+                                    <button
+                                        key={mode}
+                                        onClick={() => setViewMode(mode as any)}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === mode ? 'bg-gold text-black' : 'text-slate-400 hover:text-white'}`}
+                                    >
+                                        {mode === 'calendar' ? 'Calendar' : 'To-Do'}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {viewMode === 'calendar' && (
+                                <div className="flex bg-slate-800/50 rounded-xl border border-white/10 p-1">
+                                    {['day', 'multi', 'month'].map((mode) => (
+                                        <button
+                                            key={mode}
+                                            onClick={() => setCalendarView(mode as CalendarViewMode)}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wide transition-all ${calendarView === mode ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                                        >
+                                            {mode}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
+                    </div>
 
-                        {/* Calendar Mode Toggles */}
-                        {viewMode === 'calendar' && (
-                            <>
-                                <div className="flex bg-white rounded-lg border border-jalanea-200 p-1">
-                                    <button onClick={() => setCalendarView('day')} className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-wider transition-all ${calendarView === 'day' ? 'bg-jalanea-100 text-jalanea-900' : 'text-jalanea-400'}`}>Day</button>
-                                    <button onClick={() => setCalendarView('multi')} className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-wider transition-all ${calendarView === 'multi' ? 'bg-jalanea-100 text-jalanea-900' : 'text-jalanea-400'}`}>Multi</button>
-                                    <button onClick={() => setCalendarView('month')} className={`px-3 py-1 rounded text-xs font-bold uppercase tracking-wider transition-all ${calendarView === 'month' ? 'bg-jalanea-100 text-jalanea-900' : 'text-jalanea-400'}`}>Month</button>
+                    {viewMode === 'calendar' && (
+                        <div className="flex flex-wrap gap-3 items-center">
+                            {/* Navigation */}
+                            <div className="flex items-center bg-slate-800/50 rounded-xl border border-white/10 p-1">
+                                <button onClick={handlePrevPeriod} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-400 hover:text-white"><ChevronLeft size={20} /></button>
+                                <div className="px-4 text-center min-w-[120px]">
+                                    <span className="text-xs text-slate-500 block">
+                                        {calendarView === 'day' ? 'Day' : calendarView === 'multi' ? `${daysToShow} Days` : 'Month'}
+                                    </span>
+                                    <span className="text-sm font-medium text-white">
+                                        {calendarView === 'day' ? getDisplayDate(currentDate) : currentMonthLabel}
+                                    </span>
+                                </div>
+                                <button onClick={handleNextPeriod} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-400 hover:text-white"><ChevronRight size={20} /></button>
+                            </div>
+
+                            <div className="flex gap-2">
+                                <GlassButton size="sm" onClick={handleToday}>Today</GlassButton>
+                                <GlassButton size="sm" onClick={() => setIsCategoryModalOpen(true)} icon={<Settings size={16} />}>Types</GlassButton>
+                                <GlassButton
+                                    size="sm"
+                                    onClick={() => setShowScheduleImport(true)}
+                                    icon={<Upload size={16} />}
+                                    className={workSchedule || classSchedule ? 'border-green-500/50 text-green-400' : ''}
+                                >
+                                    Import
+                                </GlassButton>
+                                <GlassButton
+                                    size="sm"
+                                    variant="gold"
+                                    onClick={handleGetSuggestions}
+                                    disabled={isLoadingSuggestions}
+                                    icon={isLoadingSuggestions ? <Sparkles className="animate-spin" size={16} /> : <Sparkles size={16} />}
+                                >
+                                    Ask JW
+                                </GlassButton>
+                            </div>
+                        </div>
+                    )}
+                </motion.div>
+
+                {/* Power Hour Card */}
+                {viewMode === 'calendar' && (
+                    <motion.div variants={fadeUp}>
+                        <GlassCard glow={isPowerHourNow} className={`p-4 ${isPowerHourNow ? 'bg-gradient-to-r from-gold/20 to-amber-500/10 border-gold/30' : ''}`}>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-2.5 rounded-xl ${isPowerHourNow ? 'bg-gold/30' : 'bg-gold/10'} border border-gold/30`}>
+                                        <Zap size={20} className="text-gold" />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="font-bold text-white">{isPowerHourNow ? "Power Hour Active!" : "Today's Power Hour"}</h3>
+                                            {powerHourSettings?.currentStreak > 0 && (
+                                                <span className="flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                                                    <Flame size={12} />{powerHourSettings.currentStreak}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-sm text-slate-400">
+                                            {powerHourSettings && isPowerHourToday
+                                                ? `${formatPowerHourTime(powerHourSettings.scheduledTime)} • Goal: ${powerHourSettings.dailyGoal} applications`
+                                                : powerHourSettings
+                                                    ? 'Not scheduled today'
+                                                    : 'Set up your daily job search routine'}
+                                        </p>
+                                    </div>
                                 </div>
 
-                                {calendarView === 'multi' && (
-                                    <div className="flex items-center gap-2 bg-white px-3 py-1 rounded-lg border border-jalanea-200 animate-in fade-in zoom-in-95 duration-200">
-                                        <span className="text-xs font-bold text-jalanea-500 uppercase whitespace-nowrap">Days: {daysToShow}</span>
-                                        <input
-                                            type="range" min="2" max="7" step="1"
-                                            value={daysToShow}
-                                            onChange={(e) => setDaysToShow(parseInt(e.target.value))}
-                                            className="w-20 accent-gold cursor-pointer"
-                                        />
+                                <div className="flex items-center gap-2">
+                                    {isPowerHourNow ? (
+                                        <GlassButton variant="gold" size="sm" onClick={() => navigate('/jobs')} icon={<Play size={14} />}>
+                                            Start Applying
+                                        </GlassButton>
+                                    ) : powerHourSettings ? (
+                                        <>
+                                            <GlassButton size="sm" onClick={() => setShowPowerHourSetup(true)}>Reschedule</GlassButton>
+                                            {isPowerHourToday && (
+                                                <GlassButton variant="gold" size="sm" onClick={() => navigate('/jobs')} icon={<Target size={14} />}>
+                                                    Start Now
+                                                </GlassButton>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <GlassButton variant="gold" size="sm" onClick={() => setShowPowerHourSetup(true)} icon={<Zap size={14} />}>
+                                            Set Up Power Hour
+                                        </GlassButton>
+                                    )}
+                                </div>
+                            </div>
+                        </GlassCard>
+                    </motion.div>
+                )}
+
+                {/* Networking Hour Card */}
+                {viewMode === 'calendar' && (
+                    <motion.div variants={fadeUp}>
+                        <GlassCard glow={isNetworkingNow} className={`p-4 ${isNetworkingNow ? 'bg-gradient-to-r from-blue-500/20 to-indigo-500/10 border-blue-500/30' : ''}`}>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-2.5 rounded-xl ${isNetworkingNow ? 'bg-blue-500/30' : 'bg-blue-500/10'} border border-blue-500/30`}>
+                                        <Users size={20} className="text-blue-400" />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="font-bold text-white">{isNetworkingNow ? "Networking Hour Active!" : "Weekly Networking Hour"}</h3>
+                                            {networkingHourSettings?.currentWeekConnections > 0 && (
+                                                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                                                    {networkingHourSettings.currentWeekConnections}/{networkingHourSettings.weeklyGoal}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-sm text-slate-400">
+                                            {networkingHourSettings
+                                                ? `${networkingHourSettings.scheduledDay.charAt(0).toUpperCase() + networkingHourSettings.scheduledDay.slice(1)} at ${formatPowerHourTime(networkingHourSettings.scheduledTime)}`
+                                                : 'Set up weekly networking time'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    {isNetworkingNow ? (
+                                        <GlassButton size="sm" onClick={() => window.open('https://linkedin.com', '_blank')} icon={<Linkedin size={14} />} className="bg-blue-500 text-white border-blue-400">
+                                            Open LinkedIn
+                                        </GlassButton>
+                                    ) : networkingHourSettings ? (
+                                        <>
+                                            <GlassButton size="sm" onClick={() => setShowNetworkingHourSetup(true)}>Reschedule</GlassButton>
+                                            {isNetworkingToday && (
+                                                <GlassButton size="sm" onClick={() => window.open('https://linkedin.com', '_blank')} icon={<Linkedin size={14} />} className="bg-blue-500 text-white border-blue-400">
+                                                    Start
+                                                </GlassButton>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <GlassButton size="sm" onClick={() => setShowNetworkingHourSetup(true)} icon={<Users size={14} />} className="bg-blue-500 text-white border-blue-400">
+                                            Set Up Networking Hour
+                                        </GlassButton>
+                                    )}
+                                </div>
+                            </div>
+                        </GlassCard>
+                    </motion.div>
+                )}
+
+                {/* Free Windows */}
+                {viewMode === 'calendar' && freeWindows.length > 0 && (
+                    <FreeWindowsCard
+                        windows={freeWindows}
+                        onSetPowerHour={handleSetPowerHourFromWindow}
+                        onOptimize={() => setShowPowerHourSetup(true)}
+                    />
+                )}
+
+                {/* Month View */}
+                {viewMode === 'calendar' && calendarView === 'month' && (
+                    <motion.div variants={fadeUp}>
+                        <GlassCard className="overflow-hidden">
+                            <div className="grid grid-cols-7 border-b border-white/10 bg-slate-800/30">
+                                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                                    <div key={d} className="p-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wide">{d}</div>
+                                ))}
+                            </div>
+                            <div className="grid grid-cols-7 grid-rows-6">
+                                {monthGridDays.map((cell, idx) => {
+                                    const dayBlocks = schedule.filter(b => b.date === cell.dateStr);
+                                    const isToday = cell.dateStr === getTodayString();
+
+                                    return (
+                                        <div
+                                            key={idx}
+                                            onClick={() => { setCurrentDate(cell.dateStr); setCalendarView('day'); }}
+                                            className={`border-b border-r border-white/5 p-2 min-h-[80px] transition-colors cursor-pointer hover:bg-slate-800/30 ${!cell.isCurrentMonth ? 'opacity-30' : ''}`}
+                                        >
+                                            <span className={`text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-gold text-black' : 'text-slate-400'}`}>
+                                                {cell.dayNum}
+                                            </span>
+                                            <div className="mt-1 space-y-1">
+                                                {dayBlocks.slice(0, 2).map(block => (
+                                                    <div key={block.id} className="flex items-center gap-1">
+                                                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: getCatColor(block.categoryId) }} />
+                                                        <span className="text-[10px] text-slate-500 truncate">{block.title}</span>
+                                                    </div>
+                                                ))}
+                                                {dayBlocks.length > 2 && <span className="text-[10px] text-slate-600">+{dayBlocks.length - 2}</span>}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </GlassCard>
+                    </motion.div>
+                )}
+
+                {/* Day/Multi View */}
+                {viewMode === 'calendar' && (calendarView === 'multi' || calendarView === 'day') && (
+                    <motion.div variants={fadeUp}>
+                        <GlassCard className="overflow-hidden">
+                            <div
+                                className="grid divide-x divide-white/5"
+                                style={{ gridTemplateColumns: `repeat(${visibleDays.length}, minmax(200px, 1fr))` }}
+                            >
+                                {visibleDays.map((dayDate) => {
+                                    const isToday = dayDate === getTodayString();
+                                    const dayBlocks = schedule.filter(b => b.date === dayDate).sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+                                    return (
+                                        <div key={dayDate} className="flex flex-col">
+                                            <div className={`p-4 text-center border-b border-white/5 ${isToday ? 'bg-gold/10' : ''}`}>
+                                                <div className="text-xs font-medium text-slate-500 uppercase mb-1">{getDayName(dayDate)}</div>
+                                                <div className={`text-xl font-bold ${isToday ? 'text-gold' : 'text-white'}`}>{getDisplayDate(dayDate)}</div>
+                                            </div>
+
+                                            <div className="flex-1 p-3 space-y-2 min-h-[400px] group/col">
+                                                {dayBlocks.map(block => {
+                                                    const isPowerHourBlock = block.categoryId === 'job_search' || block.isPowerHour;
+                                                    const isNetworkingBlock = block.categoryId === 'networking' || block.isNetworkingHour;
+
+                                                    return (
+                                                        <motion.div
+                                                            key={block.id}
+                                                            whileHover={{ scale: 1.02 }}
+                                                            onClick={() => openEditModal(block)}
+                                                            className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                                                                isPowerHourBlock
+                                                                    ? 'bg-gradient-to-r from-gold/10 to-amber-500/5 border-gold/30 hover:border-gold/50'
+                                                                    : isNetworkingBlock
+                                                                        ? 'bg-gradient-to-r from-blue-500/10 to-indigo-500/5 border-blue-500/30 hover:border-blue-500/50'
+                                                                        : 'bg-slate-800/30 border-white/5 hover:border-white/20'
+                                                            }`}
+                                                            style={{ borderLeftWidth: '4px', borderLeftColor: getCatColor(block.categoryId) }}
+                                                        >
+                                                            <div className="flex justify-between items-start">
+                                                                <span className="text-xs font-medium text-slate-500">{block.startTime}</span>
+                                                                <div className="flex items-center gap-1">
+                                                                    {isPowerHourBlock && <Zap size={12} className="text-gold" />}
+                                                                    {isNetworkingBlock && <Users size={12} className="text-blue-400" />}
+                                                                    {block.isAiSuggested && <Sparkles size={10} className="text-gold" />}
+                                                                </div>
+                                                            </div>
+                                                            <div className={`font-medium text-sm mt-1 ${
+                                                                isPowerHourBlock ? 'text-gold' : isNetworkingBlock ? 'text-blue-400' : 'text-white'
+                                                            }`}>{block.title}</div>
+                                                            {block.description && <div className="text-xs text-slate-500 mt-1 line-clamp-1">{block.description}</div>}
+                                                        </motion.div>
+                                                    );
+                                                })}
+
+                                                <button
+                                                    onClick={() => openAddModal(dayDate)}
+                                                    className="w-full py-3 border-2 border-dashed border-slate-700 rounded-xl text-slate-600 font-medium text-sm hover:border-gold/50 hover:text-gold transition-all opacity-0 group-hover/col:opacity-100"
+                                                >
+                                                    <Plus size={16} className="mx-auto" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </GlassCard>
+                    </motion.div>
+                )}
+
+                {/* Tasks View */}
+                {viewMode === 'tasks' && (
+                    <motion.div variants={fadeUp} className="max-w-3xl mx-auto">
+                        <GlassCard className="overflow-hidden">
+                            <div className="p-4 border-b border-white/10 flex gap-3">
+                                <input
+                                    className="flex-1 bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-gold/50 text-white placeholder:text-slate-500"
+                                    placeholder="Add a new task..."
+                                    value={newTaskText}
+                                    onChange={(e) => setNewTaskText(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
+                                />
+                                <GlassButton variant="gold" onClick={handleAddTask} icon={<Plus size={18} />}>Add</GlassButton>
+                            </div>
+                            <div className="p-4 space-y-2 max-h-[60vh] overflow-y-auto">
+                                {tasks.map(task => (
+                                    <motion.div
+                                        key={task.id}
+                                        variants={fadeUp}
+                                        className="group flex items-center gap-3 p-4 bg-slate-800/30 border border-white/5 rounded-xl hover:border-white/20 transition-all"
+                                    >
+                                        <button
+                                            onClick={() => toggleTask(task.id)}
+                                            className={`shrink-0 ${task.completed ? 'text-green-400' : 'text-slate-600 hover:text-gold'}`}
+                                        >
+                                            {task.completed ? <CheckCircle2 size={24} /> : <Circle size={24} />}
+                                        </button>
+                                        <p className={`flex-1 text-sm ${task.completed ? 'text-slate-600 line-through' : 'text-white'}`}>{task.text}</p>
+                                        {!task.completed && (
+                                            <button
+                                                onClick={() => scheduleTaskAsBlock(task)}
+                                                className="text-slate-600 hover:text-gold opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                <CalendarPlus size={18} />
+                                            </button>
+                                        )}
+                                        <button onClick={() => deleteTask(task.id)} className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </motion.div>
+                                ))}
+                                {tasks.length === 0 && (
+                                    <div className="text-center py-12 text-slate-600">
+                                        <ListChecks size={48} className="mx-auto mb-4 opacity-20" />
+                                        <p>No tasks yet. Add one above!</p>
                                     </div>
                                 )}
-                            </>
-                        )}
-                    </div>
-                </div>
-
-                {viewMode === 'calendar' && (
-                    <div className="flex flex-wrap gap-3 items-center">
-                        <div className="flex items-center bg-white rounded-xl border border-jalanea-200 shadow-sm p-1">
-                            <button onClick={handlePrevPeriod} className="p-2 hover:bg-jalanea-50 rounded-lg text-jalanea-600"><ChevronLeft size={20} /></button>
-                            <div className="px-4 text-center min-w-[140px] flex-1">
-                                <span className="block text-xs font-bold text-jalanea-400 uppercase">
-                                    {calendarView === 'day' ? 'Current Day' : calendarView === 'multi' ? `${daysToShow} Days View` : 'Current Month'}
-                                </span>
-                                <span className="block text-sm font-bold text-jalanea-900 whitespace-nowrap">
-                                    {calendarView === 'day' ? getDisplayDate(currentDate) : currentMonthLabel}
-                                </span>
                             </div>
-                            <button onClick={handleNextPeriod} className="p-2 hover:bg-jalanea-50 rounded-lg text-jalanea-600"><ChevronRight size={20} /></button>
-                        </div>
-
-                        <div className="flex gap-2">
-                            <Button size="sm" variant="outline" onClick={handleToday}>Today</Button>
-                            <Button size="sm" variant="ghost" onClick={() => setIsCategoryModalOpen(true)} icon={<Settings size={16} />}>Types</Button>
-                            <Button
-                                size="sm"
-                                variant="glass-dark"
-                                className="bg-jalanea-900 text-gold border-jalanea-800 hover:bg-jalanea-800"
-                                icon={isLoadingSuggestions ? <Sparkles className="animate-spin" size={16} /> : <Sparkles size={16} />}
-                                onClick={handleGetSuggestions}
-                                disabled={isLoadingSuggestions}
-                            >
-                                Ask JW
-                            </Button>
-                        </div>
-                    </div>
+                        </GlassCard>
+                    </motion.div>
                 )}
-            </div>
 
-            {/* --- MONTH GRID VIEW --- */}
-            {viewMode === 'calendar' && calendarView === 'month' && (
-                <div className="flex-1 bg-white/50 rounded-2xl border border-jalanea-200 overflow-hidden flex flex-col">
-                    <div className="grid grid-cols-7 border-b border-jalanea-200 bg-jalanea-50">
-                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                            <div key={d} className="p-3 text-center text-xs font-bold text-jalanea-400 uppercase tracking-widest">
-                                {d}
-                            </div>
-                        ))}
-                    </div>
-                    <div className="grid grid-cols-7 grid-rows-6 flex-1 bg-white">
-                        {monthGridDays.map((cell, idx) => {
-                            const dayBlocks = schedule.filter(b => b.date === cell.dateStr);
-                            const isToday = cell.dateStr === getTodayString();
-
-                            return (
-                                <div
-                                    key={idx}
-                                    onClick={() => { setCurrentDate(cell.dateStr); setCalendarView('day'); }}
-                                    className={`
-                                        border-b border-r border-jalanea-100 p-1 md:p-2 min-h-[60px] md:min-h-[100px] transition-colors cursor-pointer hover:bg-jalanea-50
-                                        ${!cell.isCurrentMonth ? 'bg-jalanea-50/30 text-jalanea-300' : 'text-jalanea-900'}
-                                    `}
-                                >
-                                    <div className="flex justify-between items-start">
-                                        <span className={`text-xs md:text-sm font-bold w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-jalanea-900 text-white' : ''}`}>
-                                            {cell.dayNum}
-                                        </span>
+                {/* Add/Edit Modal */}
+                <AnimatePresence>
+                    {isAddModalOpen && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                        >
+                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsAddModalOpen(false)} />
+                            <motion.div
+                                initial={{ scale: 0.95, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.95, opacity: 0 }}
+                                className="relative w-full max-w-md z-10"
+                            >
+                                <GlassCard className="p-5">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="font-bold text-lg text-white">{editingBlockId ? 'Edit Block' : 'Add Block'}</h3>
+                                        <button onClick={() => setIsAddModalOpen(false)} className="text-slate-500 hover:text-white"><X size={18} /></button>
                                     </div>
-                                    <div className="mt-1 md:mt-2 space-y-1">
-                                        {dayBlocks.slice(0, 3).map(block => (
-                                            <div key={block.id} className="flex items-center gap-1">
-                                                <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full" style={{ backgroundColor: getCatColor(block.categoryId) }}></div>
-                                                <span className="text-[8px] md:text-[10px] font-medium truncate text-jalanea-600 hidden md:inline">{block.title}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
 
-            {/* --- DAY / MULTI GRID VIEW --- */}
-            {viewMode === 'calendar' && (calendarView === 'multi' || calendarView === 'day') && (
-                <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar bg-white/50 rounded-2xl border border-jalanea-200 relative">
-                    <div
-                        className="h-full grid divide-x divide-jalanea-200"
-                        style={{
-                            gridTemplateColumns: `repeat(${visibleDays.length}, minmax(200px, 1fr))`,
-                            minWidth: visibleDays.length > 2 ? '100%' : 'auto'
-                        }}
-                    >
-                        {visibleDays.map((dayDate) => {
-                            const isToday = dayDate === getTodayString();
-                            const dayBlocks = schedule
-                                .filter(b => b.date === dayDate)
-                                .sort((a, b) => a.startTime.localeCompare(b.startTime));
-
-                            return (
-                                <div key={dayDate} className={`flex flex-col h-full ${isToday ? 'bg-white' : 'bg-jalanea-50/30'}`}>
-                                    <div className={`p-4 text-center border-b border-jalanea-100 ${isToday ? 'bg-gold/10' : ''} w-full`}>
-                                        <div className="text-xs font-bold text-jalanea-400 uppercase mb-1">{getDayName(dayDate)}</div>
-                                        <div className={`text-xl font-display font-bold ${isToday ? 'text-jalanea-900' : 'text-jalanea-600'}`}>
-                                            {getDisplayDate(dayDate)}
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-500 mb-1">Title</label>
+                                            <input
+                                                type="text"
+                                                value={newBlock.title || ''}
+                                                onChange={e => setNewBlock({ ...newBlock, title: e.target.value })}
+                                                placeholder="What's this block for?"
+                                                className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 outline-none focus:border-gold/50"
+                                            />
                                         </div>
+
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-500 mb-1">Notes</label>
+                                            <textarea
+                                                className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 outline-none focus:border-gold/50 resize-none"
+                                                placeholder="Optional notes..."
+                                                rows={2}
+                                                value={newBlock.description || ''}
+                                                onChange={e => setNewBlock({ ...newBlock, description: e.target.value })}
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-3 gap-3">
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-500 mb-1">Start</label>
+                                                <input
+                                                    type="time"
+                                                    value={newBlock.startTime}
+                                                    onChange={e => setNewBlock({ ...newBlock, startTime: e.target.value })}
+                                                    className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:border-gold/50"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-500 mb-1">End</label>
+                                                <input
+                                                    type="time"
+                                                    value={newBlock.endTime}
+                                                    onChange={e => setNewBlock({ ...newBlock, endTime: e.target.value })}
+                                                    className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:border-gold/50"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-500 mb-1">Date</label>
+                                                <input
+                                                    type="date"
+                                                    value={newBlock.date}
+                                                    onChange={e => setNewBlock({ ...newBlock, date: e.target.value })}
+                                                    className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:border-gold/50"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-500 mb-2">Category</label>
+                                            <div className="flex gap-2 flex-wrap">
+                                                {categories.map(cat => (
+                                                    <button
+                                                        key={cat.id}
+                                                        onClick={() => setNewBlock({ ...newBlock, categoryId: cat.id })}
+                                                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border transition-all ${
+                                                            newBlock.categoryId === cat.id
+                                                                ? 'bg-white/10 border-white/20 text-white'
+                                                                : 'bg-slate-800/30 border-white/5 text-slate-400 hover:border-white/20'
+                                                        }`}
+                                                    >
+                                                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }} />
+                                                        {cat.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {editingBlockId && (
+                                            <div className="flex gap-2 pt-2">
+                                                <button
+                                                    onClick={() => exportToGoogleCalendar(newBlock as TimeBlock)}
+                                                    className="flex-1 flex items-center justify-center gap-2 py-2 bg-slate-800/30 rounded-xl text-xs text-slate-400 hover:text-white transition-colors"
+                                                >
+                                                    <ExternalLink size={12} /> Google Cal
+                                                </button>
+                                                <button
+                                                    onClick={() => downloadICS(newBlock as TimeBlock)}
+                                                    className="flex-1 flex items-center justify-center gap-2 py-2 bg-slate-800/30 rounded-xl text-xs text-slate-400 hover:text-white transition-colors"
+                                                >
+                                                    <CalendarClock size={12} /> Download .ics
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
 
-                                    <div className="flex-1 p-2 space-y-2 overflow-y-auto custom-scrollbar relative group/col">
-                                        {dayBlocks.map(block => {
-                                            const catColor = getCatColor(block.categoryId);
+                                    <div className="flex gap-2 mt-5 pt-4 border-t border-white/10">
+                                        {editingBlockId && (
+                                            <button
+                                                onClick={() => handleDeleteBlock(editingBlockId)}
+                                                className="p-2 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        )}
+                                        <GlassButton variant="gold" className="flex-1" onClick={handleSaveBlock}>
+                                            {editingBlockId ? 'Save Changes' : 'Add Block'}
+                                        </GlassButton>
+                                    </div>
+                                </GlassCard>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Suggestions Modal */}
+                <AnimatePresence>
+                    {isSuggestionsOpen && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                        >
+                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsSuggestionsOpen(false)} />
+                            <motion.div
+                                initial={{ scale: 0.95, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.95, opacity: 0 }}
+                                className="relative w-full max-w-lg z-10 max-h-[85vh] overflow-hidden"
+                            >
+                                <GlassCard className="p-5 flex flex-col max-h-[85vh]">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="font-bold text-xl text-white flex items-center gap-2">
+                                            <Sparkles className="text-gold" size={20} /> JW Suggestions
+                                        </h3>
+                                        <button onClick={() => setIsSuggestionsOpen(false)} className="text-slate-500 hover:text-white"><X size={20} /></button>
+                                    </div>
+
+                                    <div className="p-4 bg-gold/10 border border-gold/30 rounded-xl mb-4">
+                                        <p className="text-sm text-slate-300">
+                                            <span className="font-bold text-gold">JW</span> suggests optimal blocks based on your schedule.
+                                        </p>
+                                    </div>
+
+                                    <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                                        {suggestions.length === 0 ? (
+                                            <div className="text-center py-8 text-slate-500">
+                                                <Loader2 className="animate-spin mx-auto mb-2" size={24} />
+                                                <p>Loading suggestions...</p>
+                                            </div>
+                                        ) : suggestions.map(s => {
+                                            const isSelected = selectedSuggestions.has(s.id);
+                                            const catColors: Record<string, string> = { 'Wellness': '#10b981', 'Learning': '#3b82f6', 'Career': '#8b5cf6' };
+
                                             return (
                                                 <div
-                                                    key={block.id}
-                                                    onClick={() => openEditModal(block)}
-                                                    className="p-3 rounded-xl border border-black/5 shadow-sm hover:shadow-md transition-all cursor-pointer relative overflow-hidden group"
-                                                    style={{ borderLeft: `4px solid ${catColor}`, backgroundColor: 'white' }}
+                                                    key={s.id}
+                                                    onClick={() => toggleSuggestion(s.id)}
+                                                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                                                        isSelected ? 'border-gold bg-gold/5' : 'border-white/10 hover:border-white/20'
+                                                    }`}
                                                 >
-                                                    <div className="flex justify-between items-start">
-                                                        <span className="text-xs font-bold text-jalanea-400">{block.startTime}</span>
-                                                        {block.isAiSuggested && <Sparkles size={10} className="text-gold" />}
-                                                    </div>
-                                                    <div className="font-bold text-sm text-jalanea-900 mt-1 line-clamp-2">{block.title}</div>
-                                                    {block.description && <div className="text-xs text-jalanea-500 mt-1 line-clamp-1">{block.description}</div>}
-                                                    <div className="text-[10px] text-jalanea-500 mt-1 uppercase tracking-wide opacity-70">
-                                                        {categories.find(c => c.id === block.categoryId)?.label}
+                                                    <div className="flex items-start gap-3">
+                                                        <div className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center mt-0.5 ${
+                                                            isSelected ? 'bg-gold border-gold text-black' : 'border-slate-600'
+                                                        }`}>
+                                                            {isSelected && <CheckCircle2 size={14} />}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="font-medium text-white">{s.title}</span>
+                                                                <span
+                                                                    className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full text-white"
+                                                                    style={{ backgroundColor: catColors[s.category] || '#64748b' }}
+                                                                >
+                                                                    {s.category}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-xs text-slate-500">{s.reasoning}</p>
+                                                            {isSelected && (
+                                                                <div className="flex items-center gap-3 mt-3 pt-3 border-t border-white/10">
+                                                                    <span className="text-xs font-medium text-slate-500">Duration:</span>
+                                                                    <input
+                                                                        type="range"
+                                                                        min="10"
+                                                                        max="60"
+                                                                        step="5"
+                                                                        value={customDurations[s.id] || s.suggestedDurationMinutes}
+                                                                        onChange={(e) => { e.stopPropagation(); setCustomDurations(prev => ({ ...prev, [s.id]: parseInt(e.target.value) })); }}
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                        className="flex-1 accent-gold"
+                                                                    />
+                                                                    <span className="text-sm font-bold text-gold min-w-[40px] text-right">
+                                                                        {customDurations[s.id] || s.suggestedDurationMinutes}m
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             );
                                         })}
-
-                                        <button
-                                            onClick={() => openAddModal(dayDate)}
-                                            className="w-full py-3 border-2 border-dashed border-jalanea-200 rounded-xl text-jalanea-400 font-bold text-sm hover:border-gold hover:text-gold hover:bg-gold/5 transition-all opacity-0 group-hover/col:opacity-100"
-                                        >
-                                            <Plus size={16} className="mx-auto" />
-                                        </button>
                                     </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
 
-            {/* --- TASK VIEW --- */}
-            {viewMode === 'tasks' && (
-                <div className="max-w-3xl mx-auto w-full h-full flex flex-col">
-                    <Card variant="solid-white" className="p-0 overflow-hidden flex-1 flex flex-col">
-                        <div className="p-6 bg-jalanea-50 border-b border-jalanea-100 flex gap-4">
-                            <input
-                                className="flex-1 bg-white border border-jalanea-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-gold"
-                                placeholder="Add a new task..."
-                                value={newTaskText}
-                                onChange={(e) => setNewTaskText(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
-                            />
-                            <Button onClick={handleAddTask} icon={<Plus size={18} />}>Add</Button>
-                        </div>
-                        <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-2">
-                            {tasks.map(task => (
-                                <div key={task.id} className="group flex items-center gap-3 p-4 bg-white border border-jalanea-100 rounded-xl hover:border-jalanea-300 hover:shadow-sm transition-all">
-                                    <button
-                                        onClick={() => toggleTask(task.id)}
-                                        className={`shrink-0 ${task.completed ? 'text-green-500' : 'text-jalanea-300 hover:text-gold'}`}
-                                    >
-                                        {task.completed ? <CheckCircle2 size={24} fill="currentColor" className="text-white bg-green-500 rounded-full" /> : <Circle size={24} />}
-                                    </button>
-                                    <div className="flex-1">
-                                        <p className={`text-sm font-medium ${task.completed ? 'text-jalanea-400 line-through' : 'text-jalanea-900'}`}>
-                                            {task.text}
-                                        </p>
+                                    <div className="pt-4 mt-4 border-t border-white/10">
+                                        <GlassButton
+                                            variant="gold"
+                                            className="w-full"
+                                            onClick={addSuggestionsToSchedule}
+                                            disabled={selectedSuggestions.size === 0}
+                                            icon={<CalendarPlus size={18} />}
+                                        >
+                                            Add {selectedSuggestions.size} Block{selectedSuggestions.size !== 1 ? 's' : ''} to Schedule
+                                        </GlassButton>
                                     </div>
-                                    {!task.completed && (
-                                        <button
-                                            onClick={() => scheduleTaskAsBlock(task)}
-                                            className="text-jalanea-300 hover:text-gold opacity-0 group-hover:opacity-100 transition-opacity"
-                                            title="Add to Schedule"
-                                        >
-                                            <CalendarPlus size={18} />
-                                        </button>
-                                    )}
-                                    <button onClick={() => deleteTask(task.id)} className="text-jalanea-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Trash2 size={18} />
-                                    </button>
-                                </div>
-                            ))}
-                            {tasks.length === 0 && (
-                                <div className="text-center py-12 text-jalanea-400">
-                                    <ListChecks size={48} className="mx-auto mb-4 opacity-20" />
-                                    <p>No tasks yet. Add one above!</p>
-                                </div>
-                            )}
-                        </div>
-                    </Card>
-                </div>
-            )}
+                                </GlassCard>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
-            {/* --- MODALS (Add/Edit, Categories, Suggestions) --- */}
-            {isAddModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-jalanea-950/50 backdrop-blur-sm" onClick={() => setIsAddModalOpen(false)}></div>
-                    <Card variant="solid-white" className="relative w-full max-w-sm z-10 shadow-2xl animate-in zoom-in-95 duration-200 p-5">
-                        {/* Header - Compact */}
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-bold text-lg">{editingBlockId ? 'Edit Block' : 'Add Block'}</h3>
-                            <button onClick={() => setIsAddModalOpen(false)} className="text-jalanea-400 hover:text-jalanea-600">
-                                <X size={18} />
-                            </button>
-                        </div>
+                {/* Category Modal */}
+                <AnimatePresence>
+                    {isCategoryModalOpen && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                        >
+                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsCategoryModalOpen(false)} />
+                            <motion.div
+                                initial={{ scale: 0.95, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.95, opacity: 0 }}
+                                className="relative w-full max-w-md z-10"
+                            >
+                                <GlassCard className="p-5">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="font-bold text-xl text-white flex items-center gap-2">
+                                            <Palette size={20} className="text-slate-400" /> Manage Categories
+                                        </h3>
+                                        <button onClick={() => setIsCategoryModalOpen(false)} className="text-slate-500 hover:text-white"><X size={20} /></button>
+                                    </div>
 
-                        <div className="space-y-3">
-                            {/* Title */}
-                            <div>
-                                <label className="block text-xs font-bold text-jalanea-500 mb-1">Title</label>
-                                <input
-                                    type="text"
-                                    value={newBlock.title || ''}
-                                    onChange={e => setNewBlock({ ...newBlock, title: e.target.value })}
-                                    placeholder="What's this block for?"
-                                    className="w-full border border-jalanea-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-gold focus:border-gold outline-none"
-                                />
-                            </div>
-
-                            {/* Details - Smaller */}
-                            <div>
-                                <label className="block text-xs font-bold text-jalanea-500 mb-1">Notes</label>
-                                <textarea
-                                    className="w-full border border-jalanea-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-gold focus:border-gold outline-none resize-none"
-                                    placeholder="Optional notes..."
-                                    rows={2}
-                                    value={newBlock.description || ''}
-                                    onChange={e => setNewBlock({ ...newBlock, description: e.target.value })}
-                                />
-                            </div>
-
-                            {/* Time & Date - All in one row */}
-                            <div className="grid grid-cols-3 gap-2">
-                                <div>
-                                    <label className="block text-xs font-bold text-jalanea-500 mb-1">Start</label>
-                                    <input
-                                        type="time"
-                                        value={newBlock.startTime}
-                                        onChange={e => setNewBlock({ ...newBlock, startTime: e.target.value })}
-                                        className="w-full border border-jalanea-200 rounded-lg px-2 py-1.5 text-sm focus:ring-1 focus:ring-gold outline-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-jalanea-500 mb-1">End</label>
-                                    <input
-                                        type="time"
-                                        value={newBlock.endTime}
-                                        onChange={e => setNewBlock({ ...newBlock, endTime: e.target.value })}
-                                        className="w-full border border-jalanea-200 rounded-lg px-2 py-1.5 text-sm focus:ring-1 focus:ring-gold outline-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-jalanea-500 mb-1">Date</label>
-                                    <input
-                                        type="date"
-                                        className="w-full border border-jalanea-200 rounded-lg px-2 py-1.5 text-sm focus:ring-1 focus:ring-gold outline-none"
-                                        value={newBlock.date}
-                                        onChange={e => setNewBlock({ ...newBlock, date: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Category - Horizontal scroll */}
-                            <div>
-                                <label className="block text-xs font-bold text-jalanea-500 mb-1.5">Category</label>
-                                <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
-                                    {categories.map(cat => (
-                                        <button
-                                            key={cat.id}
-                                            onClick={() => setNewBlock({ ...newBlock, categoryId: cat.id })}
-                                            className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-bold border transition-all
-                                                ${newBlock.categoryId === cat.id
-                                                    ? 'bg-jalanea-900 text-white border-jalanea-900'
-                                                    : 'bg-white text-jalanea-600 border-jalanea-200 hover:border-jalanea-300'
-                                                }`}
-                                        >
-                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: newBlock.categoryId === cat.id ? 'white' : cat.color }}></div>
-                                            {cat.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Export - Only when editing, compact */}
-                            {editingBlockId && (
-                                <div className="flex gap-2 pt-1">
-                                    <button
-                                        onClick={() => exportToGoogleCalendar(newBlock as TimeBlock)}
-                                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-jalanea-50 rounded-lg text-xs font-medium text-jalanea-500 hover:bg-jalanea-100 transition-colors"
-                                    >
-                                        <ExternalLink size={12} />
-                                        Google Cal
-                                    </button>
-                                    <button
-                                        onClick={() => downloadICS(newBlock as TimeBlock)}
-                                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-jalanea-50 rounded-lg text-xs font-medium text-jalanea-500 hover:bg-jalanea-100 transition-colors"
-                                    >
-                                        <CalendarClock size={12} />
-                                        Download .ics
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Footer Actions */}
-                        <div className="flex gap-2 mt-4 pt-3 border-t border-jalanea-100">
-                            {editingBlockId && (
-                                <button
-                                    onClick={() => handleDeleteBlock(editingBlockId)}
-                                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                            )}
-                            <Button fullWidth size="sm" onClick={handleSaveBlock}>
-                                {editingBlockId ? 'Save Changes' : 'Add Block'}
-                            </Button>
-                        </div>
-                    </Card>
-                </div>
-            )}
-
-            {/* --- SUGGESTIONS MODAL (Ask JW) --- */}
-            {isSuggestionsOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-jalanea-950/50 backdrop-blur-sm" onClick={() => setIsSuggestionsOpen(false)}></div>
-                    <Card variant="solid-white" className="relative w-full max-w-lg z-10 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[85vh] overflow-hidden flex flex-col">
-                        <div className="flex justify-between items-center mb-4 shrink-0">
-                            <h3 className="font-bold text-xl flex items-center gap-2">
-                                <Sparkles className="text-gold" size={20} />
-                                JW Suggestions
-                            </h3>
-                            <button onClick={() => setIsSuggestionsOpen(false)}><X size={20} /></button>
-                        </div>
-
-                        {/* JW Explanation */}
-                        <div className="bg-gold/10 border border-gold/30 rounded-xl p-4 mb-4 shrink-0">
-                            <p className="text-sm text-jalanea-600">
-                                <span className="font-bold text-jalanea-900">JW</span> (Jalanea Works AI) suggests optimal blocks for
-                                <span className="font-medium text-emerald-600"> wellness</span>,
-                                <span className="font-medium text-blue-600"> learning</span>, and
-                                <span className="font-medium text-violet-600"> career prep</span> based on your current schedule.
-                            </p>
-                        </div>
-
-                        {/* Suggestions List */}
-                        <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
-                            {suggestions.length === 0 ? (
-                                <div className="text-center py-8 text-jalanea-400">
-                                    <Loader2 className="animate-spin mx-auto mb-2" size={24} />
-                                    <p>Loading suggestions...</p>
-                                </div>
-                            ) : suggestions.map(s => {
-                                const isSelected = selectedSuggestions.has(s.id);
-                                const catColors: Record<string, string> = {
-                                    'Wellness': '#10b981',
-                                    'Learning': '#3b82f6',
-                                    'Career': '#8b5cf6'
-                                };
-                                return (
-                                    <div
-                                        key={s.id}
-                                        onClick={() => toggleSuggestion(s.id)}
-                                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${isSelected
-                                            ? 'border-gold bg-gold/5 shadow-sm'
-                                            : 'border-jalanea-100 hover:border-jalanea-200'
-                                            }`}
-                                    >
-                                        <div className="flex items-start gap-3">
-                                            <div className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center mt-0.5 ${isSelected ? 'bg-gold border-gold text-white' : 'border-jalanea-300'
-                                                }`}>
-                                                {isSelected && <CheckCircle2 size={14} />}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="font-bold text-jalanea-900">{s.title}</span>
-                                                    <span
-                                                        className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full text-white"
-                                                        style={{ backgroundColor: catColors[s.category] || '#64748b' }}
-                                                    >
-                                                        {s.category}
-                                                    </span>
-                                                </div>
-                                                <p className="text-xs text-jalanea-500 mb-2">{s.reasoning}</p>
-                                                {isSelected && (
-                                                    <div className="flex items-center gap-3 mt-2 pt-2 border-t border-jalanea-100">
-                                                        <span className="text-xs font-bold text-jalanea-400">Duration:</span>
-                                                        <input
-                                                            type="range"
-                                                            min="10"
-                                                            max="60"
-                                                            step="5"
-                                                            value={customDurations[s.id] || s.suggestedDurationMinutes}
-                                                            onChange={(e) => {
-                                                                e.stopPropagation();
-                                                                setCustomDurations(prev => ({ ...prev, [s.id]: parseInt(e.target.value) }));
-                                                            }}
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            className="flex-1 accent-gold"
-                                                        />
-                                                        <span className="text-sm font-bold text-gold min-w-[50px] text-right">
-                                                            {customDurations[s.id] || s.suggestedDurationMinutes}m
-                                                        </span>
-                                                    </div>
+                                    <div className="space-y-2 mb-4 max-h-[40vh] overflow-y-auto">
+                                        {categories.map(cat => (
+                                            <div key={cat.id} className="flex items-center gap-3 p-3 bg-slate-800/30 rounded-xl group">
+                                                <div className="w-6 h-6 rounded-lg" style={{ backgroundColor: cat.color }} />
+                                                <span className="flex-1 font-medium text-white">{cat.label}</span>
+                                                {!['work', 'personal', 'learning', 'wellness', 'interview', 'job_search', 'networking'].includes(cat.id) && (
+                                                    <button onClick={() => deleteCategory(cat.id)} className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100">
+                                                        <Trash2 size={16} />
+                                                    </button>
                                                 )}
                                             </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="pt-4 border-t border-white/10">
+                                        <p className="text-xs font-medium text-slate-500 uppercase mb-3">Add New Category</p>
+                                        <div className="flex gap-3">
+                                            <input
+                                                type="color"
+                                                value={newCatColor}
+                                                onChange={(e) => setNewCatColor(e.target.value)}
+                                                className="w-12 h-12 rounded-xl cursor-pointer bg-transparent border border-white/10"
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="Category name..."
+                                                value={newCatName}
+                                                onChange={(e) => setNewCatName(e.target.value)}
+                                                className="flex-1 bg-slate-800/50 border border-white/10 rounded-xl px-4 py-2 text-white outline-none focus:border-gold/50"
+                                                onKeyDown={(e) => e.key === 'Enter' && addCategory()}
+                                            />
+                                            <GlassButton onClick={addCategory} disabled={!newCatName.trim()} icon={<Plus size={18} />} />
                                         </div>
                                     </div>
-                                );
-                            })}
-                        </div>
+                                </GlassCard>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
-                        {/* Add Button */}
-                        <div className="pt-4 mt-4 border-t border-jalanea-100 shrink-0">
-                            <Button
-                                fullWidth
-                                onClick={addSuggestionsToSchedule}
-                                disabled={selectedSuggestions.size === 0}
-                                icon={<CalendarPlus size={18} />}
-                            >
-                                Add {selectedSuggestions.size} Block{selectedSuggestions.size !== 1 ? 's' : ''} to Schedule
-                            </Button>
-                        </div>
-                    </Card>
-                </div>
-            )}
+                {/* Power Hour Setup */}
+                <PowerHourSetup
+                    isOpen={showPowerHourSetup}
+                    onClose={() => setShowPowerHourSetup(false)}
+                    onSave={handleSavePowerHour}
+                    existingSchedule={schedule.filter(s => s.date === getTodayString()).map(s => ({ startTime: s.startTime, endTime: s.endTime }))}
+                    existingSettings={powerHourSettings}
+                />
 
-            {/* --- CATEGORY MODAL (Types) --- */}
-            {isCategoryModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-jalanea-950/50 backdrop-blur-sm" onClick={() => setIsCategoryModalOpen(false)}></div>
-                    <Card variant="solid-white" className="relative w-full max-w-md z-10 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[85vh] overflow-hidden flex flex-col">
-                        <div className="flex justify-between items-center mb-4 shrink-0">
-                            <h3 className="font-bold text-xl flex items-center gap-2">
-                                <Palette size={20} className="text-jalanea-600" />
-                                Manage Categories
-                            </h3>
-                            <button onClick={() => setIsCategoryModalOpen(false)}><X size={20} /></button>
-                        </div>
+                {/* Networking Hour Setup */}
+                <NetworkingHourSetup
+                    isOpen={showNetworkingHourSetup}
+                    onClose={() => setShowNetworkingHourSetup(false)}
+                    onSave={handleSaveNetworkingHour}
+                    existingSettings={networkingHourSettings}
+                />
 
-                        {/* Existing Categories */}
-                        <div className="flex-1 overflow-y-auto space-y-2 mb-4 custom-scrollbar">
-                            {categories.map(cat => (
-                                <div key={cat.id} className="flex items-center gap-3 p-3 bg-jalanea-50 rounded-xl group">
-                                    <div
-                                        className="w-6 h-6 rounded-lg shrink-0 shadow-inner"
-                                        style={{ backgroundColor: cat.color }}
-                                    />
-                                    <span className="flex-1 font-medium text-jalanea-900">{cat.label}</span>
-                                    {!['work', 'personal', 'learning', 'wellness', 'interview'].includes(cat.id) && (
-                                        <button
-                                            onClick={() => deleteCategory(cat.id)}
-                                            className="text-jalanea-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
+                {/* Work Schedule Import */}
+                <WorkScheduleImportModal
+                    isOpen={showScheduleImport}
+                    onClose={() => setShowScheduleImport(false)}
+                    onSave={handleSaveWorkSchedule}
+                    initialWorkSchedule={workSchedule}
+                    initialClassSchedule={classSchedule}
+                />
 
-                        {/* Add New Category */}
-                        <div className="pt-4 border-t border-jalanea-100 shrink-0">
-                            <p className="text-xs font-bold text-jalanea-400 uppercase mb-3">Add New Category</p>
-                            <div className="flex gap-3">
-                                <input
-                                    type="color"
-                                    value={newCatColor}
-                                    onChange={(e) => setNewCatColor(e.target.value)}
-                                    className="w-12 h-12 rounded-xl cursor-pointer border-2 border-jalanea-200"
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Category name..."
-                                    value={newCatName}
-                                    onChange={(e) => setNewCatName(e.target.value)}
-                                    className="flex-1 border border-jalanea-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-gold"
-                                    onKeyDown={(e) => e.key === 'Enter' && addCategory()}
-                                />
-                                <Button onClick={addCategory} disabled={!newCatName.trim()}>
-                                    <Plus size={18} />
-                                </Button>
-                            </div>
-                        </div>
-                    </Card>
-                </div>
-            )}
+                {/* Free Windows Summary */}
+                <FreeWindowsSummary
+                    isOpen={showFreeWindowsSummary}
+                    onClose={() => setShowFreeWindowsSummary(false)}
+                    windows={freeWindows}
+                    onSetPowerHour={handleSetPowerHourFromWindow}
+                />
+            </motion.div>
         </div>
     );
 };

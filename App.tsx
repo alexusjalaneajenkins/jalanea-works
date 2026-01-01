@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Home } from './pages/Home';
 import { Dashboard } from './pages/Dashboard';
-import { ProfilePage } from './pages/Profile';
+import { AccountPage } from './pages/Account';
 import { Jobs } from './pages/Jobs';
 import { ResumeBuilder } from './pages/ResumeBuilder';
 import { Onboarding } from './pages/Onboarding';
@@ -18,18 +18,24 @@ import { Schedule } from './pages/Schedule';
 import { AIAssistant } from './pages/AIAssistant';
 import { AuthPage } from './pages/Auth';
 import { Sidebar } from './components/Sidebar';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { AIChat } from './components/AIChat';
 import { FeedbackModal } from './components/FeedbackModal';
 import { NavRoute } from './types';
-import { Menu, Loader } from 'lucide-react';
+import { Menu, Loader, Zap } from 'lucide-react';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-jalanea-50">
-        <Loader className="animate-spin text-jalanea-600 w-12 h-12" />
+      <div className="flex items-center justify-center min-h-screen bg-[#020617]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-gold/20 border border-gold/30 flex items-center justify-center animate-pulse">
+            <Zap size={24} className="text-gold" />
+          </div>
+          <Loader className="animate-spin text-gold w-6 h-6" />
+        </div>
       </div>
     );
   }
@@ -63,7 +69,7 @@ const AppLayout: React.FC = () => {
 
   const getNavRoute = (path: string): NavRoute => {
     if (path.includes('dashboard')) return NavRoute.DASHBOARD;
-    if (path.includes('profile')) return NavRoute.PROFILE;
+    if (path.includes('account')) return NavRoute.ACCOUNT;
     if (path.includes('jobs')) return NavRoute.JOBS;
     if (path.includes('resume')) return NavRoute.RESUME;
     if (path.includes('schedule')) return NavRoute.SCHEDULE;
@@ -88,8 +94,8 @@ const AppLayout: React.FC = () => {
       navigate('/schedule');
     } else if (route === NavRoute.AI_ASSISTANT) {
       navigate('/ai-assistant');
-    } else if (route === NavRoute.PROFILE) {
-      navigate('/profile');
+    } else if (route === NavRoute.ACCOUNT) {
+      navigate('/account');
     } else if (route === NavRoute.ONBOARDING) {
       navigate('/onboarding');
     } else {
@@ -102,38 +108,63 @@ const AppLayout: React.FC = () => {
   const { currentUser } = useAuth(); // Need currentUser for Home redirection logic
 
   return (
-    <div className="flex h-screen bg-jalanea-50 overflow-hidden">
-      <Sidebar
-        currentRoute={currentRoute}
-        setRoute={handleSetRoute}
-        isMobileOpen={isMobileOpen}
-        setIsMobileOpen={setIsMobileOpen}
-        onOpenFeedback={() => setIsFeedbackOpen(true)}
-      />
+    <div className="flex h-screen bg-[#020617] overflow-hidden">
+      {/* Desktop Sidebar - Hidden on mobile */}
+      <div className="hidden md:block">
+        <Sidebar
+          currentRoute={currentRoute}
+          setRoute={handleSetRoute}
+          isMobileOpen={isMobileOpen}
+          setIsMobileOpen={setIsMobileOpen}
+          onOpenFeedback={() => setIsFeedbackOpen(true)}
+        />
+      </div>
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        <header className="md:hidden bg-white border-b border-jalanea-200 p-4 flex items-center justify-between shrink-0">
-          <button onClick={() => setIsMobileOpen(true)} className="text-jalanea-600">
-            <Menu size={24} />
+        {/* Mobile Header - Compact app-like header */}
+        <header className="md:hidden bg-[#0f172a]/95 backdrop-blur-xl border-b border-white/10 px-4 py-3 flex items-center justify-between shrink-0 sticky top-0 z-40">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-gold/20 border border-gold/30 flex items-center justify-center">
+              <Zap size={16} className="text-gold" />
+            </div>
+            <span className="font-bold text-white text-lg">Jalanea<span className="text-gold font-medium">Works</span></span>
+          </div>
+          <button
+            onClick={() => setIsMobileOpen(true)}
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-800/50 border border-white/10 text-slate-400 hover:text-white transition-colors"
+          >
+            <Menu size={20} />
           </button>
-          <span className="font-display font-bold text-jalanea-900">Jalanea Works</span>
-          <div className="w-6"></div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
-          <div className="max-w-7xl mx-auto">
-            <Routes>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/jobs" element={<Jobs setRoute={handleSetRoute} />} />
-              <Route path="/resume" element={<ResumeBuilder />} />
-              <Route path="/schedule" element={<Schedule />} />
-              <Route path="/ai-assistant" element={<AIAssistant />} />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </div>
+        {/* Main Content - with bottom padding for mobile nav */}
+        <main className="flex-1 overflow-y-auto scroll-smooth pb-20 md:pb-0">
+          <Routes>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/account" element={<AccountPage />} />
+            <Route path="/jobs" element={<Jobs setRoute={handleSetRoute} />} />
+            <Route path="/resume" element={<ResumeBuilder />} />
+            <Route path="/schedule" element={<Schedule />} />
+            <Route path="/ai-assistant" element={<AIAssistant />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav currentRoute={currentRoute} />
+
+      {/* Mobile Sidebar Drawer (for additional options) */}
+      <div className="md:hidden">
+        <Sidebar
+          currentRoute={currentRoute}
+          setRoute={handleSetRoute}
+          isMobileOpen={isMobileOpen}
+          setIsMobileOpen={setIsMobileOpen}
+          onOpenFeedback={() => setIsFeedbackOpen(true)}
+        />
+      </div>
+
       <AIChat />
       <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
     </div>

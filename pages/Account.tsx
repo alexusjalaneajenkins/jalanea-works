@@ -55,7 +55,7 @@ export const MOCK_PROFILE: any = { // Typed as any temporarily to allow flexibil
   updatedAt: new Date().toISOString()
 };
 
-export const ProfilePage: React.FC = () => {
+export const AccountPage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, userProfile, userCredits, refreshCredits, saveUserProfile, profileLoading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
@@ -86,23 +86,41 @@ export const ProfilePage: React.FC = () => {
   // Sync state with Firebase profile
   useEffect(() => {
     if (userProfile) {
-      setFullName(userProfile.fullName || currentUser?.displayName || '');
+      setFullName(userProfile.fullName || userProfile.name || currentUser?.displayName || '');
       setLocation(userProfile.location || '');
       setLinkedinUrl(userProfile.linkedinUrl || '');
       setPortfolioUrl(userProfile.portfolioUrl || '');
-      setEducation(userProfile.education || []);
+
+      // Education: Check both 'credentials' (new onboarding) and 'education' (old format)
+      const credentials = (userProfile as any).credentials || [];
+      const legacyEducation = userProfile.education || [];
+      // Convert credentials to education format if needed
+      const normalizedCredentials = credentials.map((cred: any) => ({
+        school: cred.school,
+        program: cred.program,
+        degreeType: cred.degreeType || 'Certificate',
+        gradYear: cred.graduationYear || cred.gradYear,
+        status: cred.status || 'Alumni',
+      }));
+      setEducation(normalizedCredentials.length > 0 ? normalizedCredentials : legacyEducation);
+
       setExperience(userProfile.experience || []);
       setTargetRoles(userProfile.preferences?.targetRoles || []);
-      setTargetRoles(userProfile.preferences?.targetRoles || []);
 
-      // Financials
-      setSalaryMin(userProfile.targetSalaryRange?.min || userProfile.preferences?.salary || 45000);
-      setSalaryMax(userProfile.targetSalaryRange?.max || (userProfile.preferences?.salary ? userProfile.preferences.salary + 10000 : 65000));
+      // Financials - check both flat fields (new) and nested (old)
+      setSalaryMin((userProfile as any).salaryMin || userProfile.targetSalaryRange?.min || userProfile.preferences?.salary || 45000);
+      setSalaryMax((userProfile as any).salaryMax || userProfile.targetSalaryRange?.max || (userProfile.preferences?.salary ? userProfile.preferences.salary + 10000 : 65000));
       setMonthlyNet(userProfile.monthlyBudgetEstimate?.monthlyNet || 0);
       setMaxRent(userProfile.monthlyBudgetEstimate?.maxRent || 0);
       setMaxCarPayment(userProfile.monthlyBudgetEstimate?.maxCarPayment || 0);
 
-      setTransportMode(userProfile.preferences?.transportMode || 'Car');
+      // Transport - check both flat (new) and nested (old) formats
+      const commuteMethod = (userProfile as any).commuteMethod;
+      if (Array.isArray(commuteMethod) && commuteMethod.length > 0) {
+        setTransportMode(commuteMethod.join(', '));
+      } else {
+        setTransportMode(userProfile.preferences?.transportMode || 'Not set');
+      }
       setLearningStyle(userProfile.preferences?.learningStyle || 'Video');
     } else if (currentUser) {
       // Default from Firebase Auth
@@ -270,39 +288,46 @@ export const ProfilePage: React.FC = () => {
 
   if (profileLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-[400px] bg-[#020617]">
         <Loader2 className="animate-spin text-gold w-8 h-8" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500 pb-12">
+    <div className="min-h-screen bg-[#020617] pb-16 relative">
+      {/* Background */}
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-[#020617] to-slate-900 pointer-events-none" />
+      <div className="fixed top-0 right-1/3 w-96 h-96 bg-gold/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="fixed bottom-0 left-1/3 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-jalanea-200 pb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-6">
         <div>
-          <h1 className="text-3xl font-display font-bold text-jalanea-900">My Profile</h1>
-          <p className="text-jalanea-600 font-medium mt-1">Manage your career data for better job matching</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-white">My Account</h1>
+          <p className="text-slate-400 font-medium mt-1">Manage your career data for better job matching</p>
         </div>
       </div>
 
       {/* Edit Controls */}
-      <div className="flex items-center justify-between sticky top-4 z-30 bg-jalanea-50/90 backdrop-blur-sm p-2 rounded-xl border border-jalanea-200 shadow-sm">
-        <h2 className="text-xl font-bold text-jalanea-900 pl-2">Career Data</h2>
+      <div className="flex items-center justify-between sticky top-4 z-30 bg-[#020617]/90 backdrop-blur-xl p-3 rounded-2xl border border-white/10">
+        <h2 className="text-xl font-bold text-white pl-2">Career Data</h2>
         {isEditing ? (
           <div className="flex gap-2">
-            <Button size="sm" variant="ghost" onClick={handleCancel} icon={<X size={16} />} disabled={isSaving}>
-              Cancel
-            </Button>
-            <Button size="sm" variant="primary" onClick={handleSave} icon={isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} disabled={isSaving}>
+            <button onClick={handleCancel} disabled={isSaving} className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-400 hover:text-white rounded-xl transition-colors disabled:opacity-50">
+              <X size={16} /> Cancel
+            </button>
+            <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-2 px-4 py-2 text-sm font-bold bg-gold hover:bg-gold-light text-black rounded-xl shadow-[0_0_20px_rgba(255,196,37,0.3)] transition-all disabled:opacity-50">
+              {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
               {isSaving ? 'Saving...' : 'Save Changes'}
-            </Button>
+            </button>
           </div>
         ) : (
-          <Button size="sm" onClick={() => setIsEditing(true)} icon={<Edit3 size={16} />}>
-            Edit Profile
-          </Button>
+          <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-slate-800/50 border border-white/10 text-slate-300 hover:text-white hover:border-white/20 rounded-xl transition-all">
+            <Edit3 size={16} /> Edit Profile
+          </button>
         )}
       </div>
 
@@ -470,6 +495,126 @@ export const ProfilePage: React.FC = () => {
         </div>
       </Card>
 
+      {/* Skills Section - from onboarding */}
+      {(() => {
+        const skills = (userProfile as any)?.skills;
+        const hasSkills = skills && (
+          (skills.technical?.length > 0) ||
+          (skills.soft?.length > 0) ||
+          (skills.design?.length > 0)
+        );
+        return hasSkills ? (
+          <Card variant="solid-white" className="overflow-hidden">
+            <div className="border-b border-jalanea-100 p-6 bg-jalanea-50/50">
+              <h3 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider flex items-center gap-2">
+                <Award size={16} /> Skills
+              </h3>
+            </div>
+            <div className="p-6 space-y-4">
+              {skills.technical?.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-jalanea-400 uppercase mb-2">Technical Skills</p>
+                  <div className="flex flex-wrap gap-2">
+                    {skills.technical.map((skill: string, idx: number) => (
+                      <span key={idx} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium border border-blue-100">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {skills.soft?.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-jalanea-400 uppercase mb-2">Soft Skills</p>
+                  <div className="flex flex-wrap gap-2">
+                    {skills.soft.map((skill: string, idx: number) => (
+                      <span key={idx} className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm font-medium border border-green-100">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {skills.design?.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-jalanea-400 uppercase mb-2">Design Skills</p>
+                  <div className="flex flex-wrap gap-2">
+                    {skills.design.map((skill: string, idx: number) => (
+                      <span key={idx} className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm font-medium border border-purple-100">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+        ) : null;
+      })()}
+
+      {/* Work Preferences Section - from onboarding */}
+      {(() => {
+        const profile = userProfile as any;
+        const hasPrefs = profile?.availability || profile?.commuteWillingness || profile?.shiftPreference?.length > 0;
+        return hasPrefs ? (
+          <Card variant="solid-white" className="overflow-hidden">
+            <div className="border-b border-jalanea-100 p-6 bg-jalanea-50/50">
+              <h3 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider flex items-center gap-2">
+                <Briefcase size={16} /> Work Preferences
+              </h3>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {profile?.availability && (
+                  <div>
+                    <p className="text-xs font-bold text-jalanea-400 uppercase mb-1">Availability</p>
+                    <p className="text-sm font-medium text-jalanea-900 capitalize">
+                      {profile.availability === 'open' ? 'Open to anything' :
+                       profile.availability === 'weekdays' ? 'Weekdays preferred' :
+                       profile.availability === 'weekends' ? 'Weekends preferred' :
+                       profile.availability === 'flexible' ? 'Flexible hours' :
+                       profile.availability === 'limited' ? 'Specific days only' :
+                       profile.availability}
+                    </p>
+                  </div>
+                )}
+                {profile?.commuteWillingness && (
+                  <div>
+                    <p className="text-xs font-bold text-jalanea-400 uppercase mb-1">Commute Willingness</p>
+                    <p className="text-sm font-medium text-jalanea-900 capitalize">
+                      {profile.commuteWillingness === 'local' ? 'Local (< 30 min)' :
+                       profile.commuteWillingness === 'standard' ? 'Standard (< 60 min)' :
+                       profile.commuteWillingness === 'extended' ? 'Any Distance (60+ min)' :
+                       profile.commuteWillingness}
+                    </p>
+                  </div>
+                )}
+                {profile?.shiftPreference?.length > 0 && (
+                  <div>
+                    <p className="text-xs font-bold text-jalanea-400 uppercase mb-1">Shift Preference</p>
+                    <p className="text-sm font-medium text-jalanea-900 capitalize">
+                      {profile.shiftPreference.join(', ')}
+                    </p>
+                  </div>
+                )}
+              </div>
+              {profile?.selectedDays?.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-jalanea-100">
+                  <p className="text-xs font-bold text-jalanea-400 uppercase mb-2">Available Days</p>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.selectedDays.map((day: string, idx: number) => (
+                      <span key={idx} className="px-3 py-1 bg-gold/10 text-jalanea-800 rounded-full text-sm font-medium border border-gold/20 capitalize">
+                        {day}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+        ) : null;
+      })()}
+
       {/* Experience Section */}
       <Card variant="solid-white" className="overflow-hidden">
         <div className="border-b border-jalanea-100 p-6 bg-jalanea-50/50 flex justify-between items-center">
@@ -569,6 +714,20 @@ export const ProfilePage: React.FC = () => {
             <Award size={14} /> Preferences & Budget
           </h3>
           <div className="space-y-4">
+            {/* Salary Tier Badge */}
+            {(userProfile as any)?.salaryTier && (
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 bg-gold/10 text-gold rounded-full text-sm font-bold border border-gold/20 capitalize">
+                  {(userProfile as any).salaryTier === 'entry' ? 'Entry Level' :
+                   (userProfile as any).salaryTier === 'growing' ? 'Growing' :
+                   (userProfile as any).salaryTier === 'comfortable' ? 'Comfortable' :
+                   (userProfile as any).salaryTier === 'established' ? 'Established' :
+                   (userProfile as any).salaryTier === 'thriving' ? 'Thriving' :
+                   (userProfile as any).salaryTier === 'advanced' ? 'Advanced' :
+                   (userProfile as any).salaryTier}
+                </span>
+              </div>
+            )}
             <div>
               <label className="text-xs font-bold text-jalanea-400 block mb-2">Target Salary Range</label>
               {isEditing ? (
@@ -802,12 +961,13 @@ export const ProfilePage: React.FC = () => {
               })}
             </div>
 
-            <p className="text-[10px] md:text-xs text-jalanea-400 mt-3 md:mt-4 text-center">
+            <p className="text-[10px] md:text-xs text-slate-500 mt-3 md:mt-4 text-center">
               {isSwitchingTier ? 'Switching tier...' : 'Tap a tier to test. Changes take effect immediately.'}
             </p>
           </div>
         </Card>
       )}
+      </div>
     </div>
   );
 };

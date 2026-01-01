@@ -5,8 +5,8 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { UpgradeModal } from '../components/UpgradeModal';
 import { ResumeType } from '../types';
-import { FileText, Download, Copy, Sparkles, ChevronDown, ChevronUp, Bot, ArrowRight, Settings, AlertCircle, Save, History, Trash2, Edit3, X, Database } from 'lucide-react';
-import { generateResume, recommendResumeStrategy } from '../services/geminiService';
+import { FileText, Download, Copy, Sparkles, ChevronDown, ChevronUp, Bot, ArrowRight, Settings, AlertCircle, Save, History, Trash2, Edit3, X, Database, Heart, Loader2, CheckCircle, AlertTriangle, XCircle, Smile } from 'lucide-react';
+import { generateResume, recommendResumeStrategy, analyzeReadability, ReadabilityAnalysisResult } from '../services/geminiService';
 import { saveResume, getUserResumes, deleteResume, SavedResume } from '../services/resumeService';
 
 export const ResumeBuilder: React.FC = () => {
@@ -127,6 +127,11 @@ export const ResumeBuilder: React.FC = () => {
     // Credit enforcement state
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
+    // Human Readability Score state
+    const [readabilityResult, setReadabilityResult] = useState<ReadabilityAnalysisResult | null>(null);
+    const [isAnalyzingReadability, setIsAnalyzingReadability] = useState(false);
+    const [showReadabilityPanel, setShowReadabilityPanel] = useState(false);
+
     // Build user data from Firebase profile
     const userData = {
         name: userProfile?.fullName || currentUser?.displayName || 'User',
@@ -209,6 +214,72 @@ export const ResumeBuilder: React.FC = () => {
                 setSelectedType(ResumeType.TARGETED);
             }
             setRecommendation(null);
+        }
+    };
+
+    // Human Readability Analysis
+    const handleReadabilityCheck = async () => {
+        if (!generatedContent) return;
+
+        // Credit check - Readability analysis costs 2 credits
+        if (!isTrialActive() && !canUseCredits('readabilityAnalysis')) {
+            setShowUpgradeModal(true);
+            return;
+        }
+
+        setIsAnalyzingReadability(true);
+        setShowReadabilityPanel(true);
+
+        try {
+            const result = await analyzeReadability(generatedContent);
+            if (result) {
+                setReadabilityResult(result);
+                // Deduct credits after successful analysis
+                await useCredit('readabilityAnalysis');
+            }
+        } catch (error) {
+            console.error('Readability analysis failed:', error);
+        } finally {
+            setIsAnalyzingReadability(false);
+        }
+    };
+
+    // Helper functions for readability display
+    const getReadabilityEmoji = (score: number) => {
+        if (score >= 90) return '🌟';
+        if (score >= 70) return '✨';
+        if (score >= 50) return '😐';
+        return '🤖';
+    };
+
+    const getReadabilityLabel = (score: number) => {
+        if (score >= 90) return 'Sounds like YOU';
+        if (score >= 70) return 'Mostly authentic';
+        if (score >= 50) return 'Getting generic';
+        return 'Robot detected';
+    };
+
+    const getReadabilityColor = (score: number) => {
+        if (score >= 90) return 'text-green-500';
+        if (score >= 70) return 'text-blue-500';
+        if (score >= 50) return 'text-yellow-500';
+        return 'text-red-500';
+    };
+
+    const getReadabilityBg = (score: number) => {
+        if (score >= 90) return 'bg-green-50 border-green-200';
+        if (score >= 70) return 'bg-blue-50 border-blue-200';
+        if (score >= 50) return 'bg-yellow-50 border-yellow-200';
+        return 'bg-red-50 border-red-200';
+    };
+
+    const getToneBadgeColor = (tone: string) => {
+        switch (tone) {
+            case 'Authentic': return 'bg-green-100 text-green-700 border-green-200';
+            case 'Professional': return 'bg-blue-100 text-blue-700 border-blue-200';
+            case 'Generic': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+            case 'Robotic': return 'bg-red-100 text-red-700 border-red-200';
+            default: return 'bg-gray-100 text-gray-700 border-gray-200';
         }
     };
 
@@ -302,52 +373,56 @@ export const ResumeBuilder: React.FC = () => {
     const displayedTypes = showAllTypes ? resumeTypes : resumeTypes.slice(0, 3);
 
     return (
-        <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 pb-12">
+        <div className="min-h-screen bg-[#020617] pb-16 relative">
+            {/* Background */}
+            <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-[#020617] to-slate-900 pointer-events-none" />
+            <div className="fixed top-0 right-1/4 w-96 h-96 bg-gold/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="fixed bottom-0 left-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
                 <div>
-                    <h1 className="text-3xl font-display font-bold text-jalanea-900">AI Resume Studio</h1>
-                    <p className="text-jalanea-600 font-medium mt-1">Generate tailored resumes based on your Valencia degree.</p>
+                    <h1 className="text-3xl md:text-4xl font-bold text-white">AI Resume Studio</h1>
+                    <p className="text-slate-400 font-medium mt-1">Generate tailored resumes based on your Valencia degree.</p>
                 </div>
 
                 <div className="flex items-center gap-2 w-full md:w-auto">
                     {/* Debug Restore Button */}
-                    <Button
-                        variant="outline"
+                    <button
                         onClick={handleRestoreData}
                         disabled={isRestoring}
-                        className="text-orange-600 border-orange-200 hover:bg-orange-50 bg-white"
-                        icon={isRestoring ? <div className="animate-spin h-3 w-3 border-2 border-orange-600 border-t-transparent rounded-full" /> : <Database size={16} />}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800/50 border border-orange-500/30 text-orange-400 hover:bg-orange-500/10 transition-all text-sm font-medium disabled:opacity-50"
                         title="Restore Missing Profile Data"
                     >
+                        {isRestoring ? <div className="animate-spin h-3 w-3 border-2 border-orange-400 border-t-transparent rounded-full" /> : <Database size={16} />}
                         Fix Data
-                    </Button>
+                    </button>
                     <div className="relative flex-1 md:flex-none">
                         <input
                             type="text"
                             placeholder="Resume Title..."
                             value={resumeTitle}
                             onChange={(e) => setResumeTitle(e.target.value)}
-                            className="w-full md:w-64 px-4 py-2 rounded-lg border border-jalanea-200 focus:ring-2 focus:ring-gold focus:border-transparent text-sm font-bold text-jalanea-900"
+                            className="w-full md:w-64 px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 focus:border-gold/50 focus:ring-2 focus:ring-gold/20 outline-none text-sm font-bold text-white placeholder:text-slate-500"
                         />
                     </div>
 
-                    <Button
-                        variant="secondary"
+                    <button
                         onClick={handleSave}
                         disabled={!generatedContent || isSaving}
-                        icon={isSaving ? <div className="animate-spin h-3 w-3 border-2 border-jalanea-900 border-t-transparent rounded-full" /> : <Save size={16} />}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-slate-300 hover:bg-slate-700/50 hover:border-white/20 transition-all text-sm font-medium disabled:opacity-50"
                     >
+                        {isSaving ? <div className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full" /> : <Save size={16} />}
                         {isSaving ? 'Saving' : 'Save'}
-                    </Button>
+                    </button>
 
-                    <Button
-                        variant="outline"
+                    <button
                         onClick={() => setShowHistory(!showHistory)}
-                        icon={<History size={16} />}
-                        className={showHistory ? 'bg-jalanea-100 border-jalanea-300' : ''}
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${showHistory ? 'bg-gold/20 border-gold/30 text-gold' : 'bg-slate-800/50 border-white/10 text-slate-300 hover:border-white/20'}`}
                     >
+                        <History size={16} />
                         History
-                    </Button>
+                    </button>
                 </div>
             </div>
 
@@ -575,6 +650,16 @@ export const ResumeBuilder: React.FC = () => {
                                 </button>
                             </div>
                             <div className="flex gap-2">
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    icon={isAnalyzingReadability ? <Loader2 size={14} className="animate-spin" /> : <Heart size={14} />}
+                                    onClick={handleReadabilityCheck}
+                                    disabled={!generatedContent || isAnalyzingReadability}
+                                    className="text-pink-600 border-pink-200 hover:bg-pink-50"
+                                >
+                                    Human Score
+                                </Button>
                                 <Button size="sm" variant="outline" icon={<Copy size={14} />}>Copy</Button>
                                 <Button size="sm" variant="primary" icon={<Download size={14} />} onClick={handlePrint}>Print/PDF</Button>
                             </div>
@@ -638,11 +723,173 @@ export const ResumeBuilder: React.FC = () => {
                 </div>
             </div>
 
+            {/* Human Readability Score Panel */}
+            {showReadabilityPanel && (
+                <div className="fixed inset-0 z-50 flex justify-end print:hidden">
+                    <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowReadabilityPanel(false)}></div>
+                    <div className="relative w-full max-w-lg bg-white h-full shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300">
+                        {/* Header */}
+                        <div className="sticky top-0 bg-white border-b border-jalanea-200 p-4 flex justify-between items-center z-10">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg text-white">
+                                    <Heart size={20} />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-bold text-jalanea-900">Human Readability Score</h2>
+                                    <p className="text-xs text-jalanea-500">Does your resume sound like YOU?</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowReadabilityPanel(false)} className="p-2 hover:bg-jalanea-100 rounded-full text-jalanea-500 hover:text-jalanea-900">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6 space-y-6">
+                            {/* Loading State */}
+                            {isAnalyzingReadability && (
+                                <div className="flex flex-col items-center justify-center py-16 text-center">
+                                    <div className="relative">
+                                        <div className="w-20 h-20 rounded-full bg-pink-100 flex items-center justify-center">
+                                            <Loader2 className="text-pink-500 animate-spin" size={40} />
+                                        </div>
+                                        <div className="absolute inset-0 rounded-full border-4 border-pink-300 animate-ping opacity-20" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-jalanea-900 mt-6">Analyzing authenticity...</h3>
+                                    <p className="text-sm text-jalanea-500 mt-1">Checking for robotic language patterns</p>
+                                </div>
+                            )}
+
+                            {/* Results */}
+                            {!isAnalyzingReadability && readabilityResult && (
+                                <>
+                                    {/* Score Header */}
+                                    <div className={`rounded-2xl p-6 border ${getReadabilityBg(readabilityResult.score)}`}>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <span className="text-5xl">{getReadabilityEmoji(readabilityResult.score)}</span>
+                                                <div>
+                                                    <div className={`text-4xl font-bold ${getReadabilityColor(readabilityResult.score)}`}>
+                                                        {readabilityResult.score}
+                                                    </div>
+                                                    <div className="text-sm font-medium text-jalanea-600">
+                                                        {getReadabilityLabel(readabilityResult.score)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className={`px-3 py-1.5 rounded-full text-xs font-bold border ${getToneBadgeColor(readabilityResult.tone)}`}>
+                                                {readabilityResult.tone}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* What's Working (Strengths) */}
+                                    {readabilityResult.strengths.length > 0 && (
+                                        <div>
+                                            <h3 className="text-sm font-bold text-green-600 flex items-center gap-2 mb-3">
+                                                <CheckCircle size={16} /> What Sounds Authentic
+                                            </h3>
+                                            <div className="space-y-2">
+                                                {readabilityResult.strengths.map((strength, i) => (
+                                                    <div key={i} className="flex items-start gap-2 text-sm text-jalanea-700 bg-green-50 p-3 rounded-lg border border-green-100">
+                                                        <span className="text-green-500 mt-0.5">✓</span>
+                                                        {strength}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Robotic Phrases */}
+                                    {readabilityResult.roboticPhrases.length > 0 && (
+                                        <div>
+                                            <h3 className="text-sm font-bold text-red-600 flex items-center gap-2 mb-3">
+                                                <XCircle size={16} /> Robot Language Detected
+                                            </h3>
+                                            <div className="space-y-3">
+                                                {readabilityResult.roboticPhrases.map((item, i) => (
+                                                    <div key={i} className="bg-red-50 rounded-xl p-4 border border-red-100">
+                                                        <div className="flex items-start gap-2">
+                                                            <span className="text-red-400 mt-0.5">🤖</span>
+                                                            <div className="flex-1">
+                                                                <p className="text-sm font-medium text-red-700 line-through">
+                                                                    "{item.phrase}"
+                                                                </p>
+                                                                <div className="mt-2 flex items-start gap-2">
+                                                                    <span className="text-green-500 shrink-0">→</span>
+                                                                    <p className="text-sm text-green-700 font-medium">
+                                                                        "{item.suggestion}"
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Tips */}
+                                    {readabilityResult.tips.length > 0 && (
+                                        <div>
+                                            <h3 className="text-sm font-bold text-jalanea-700 flex items-center gap-2 mb-3">
+                                                <Smile size={16} className="text-gold" /> Tips to Sound More Human
+                                            </h3>
+                                            <ul className="space-y-2">
+                                                {readabilityResult.tips.map((tip, i) => (
+                                                    <li key={i} className="flex items-start gap-2 text-sm text-jalanea-600 bg-jalanea-50 p-3 rounded-lg border border-jalanea-100">
+                                                        <span className="text-gold font-bold">{i + 1}.</span>
+                                                        {tip}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+
+                                    {/* Action Buttons */}
+                                    <div className="pt-4 border-t border-jalanea-200 flex gap-3">
+                                        <Button
+                                            variant="outline"
+                                            fullWidth
+                                            onClick={handleReadabilityCheck}
+                                            disabled={isAnalyzingReadability}
+                                            icon={<Loader2 size={14} className={isAnalyzingReadability ? 'animate-spin' : 'hidden'} />}
+                                        >
+                                            Re-analyze
+                                        </Button>
+                                        <Button
+                                            variant="primary"
+                                            fullWidth
+                                            onClick={() => {
+                                                setViewMode('edit');
+                                                setShowReadabilityPanel(false);
+                                            }}
+                                        >
+                                            Edit Resume
+                                        </Button>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* No Results Yet */}
+                            {!isAnalyzingReadability && !readabilityResult && (
+                                <div className="text-center py-12 text-jalanea-400">
+                                    <Heart size={48} className="mx-auto mb-3 opacity-20" />
+                                    <p>Click "Human Score" to analyze your resume</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Upgrade Modal */}
             <UpgradeModal
                 isOpen={showUpgradeModal}
                 onClose={() => setShowUpgradeModal(false)}
+                reason="no_credits"
             />
+            </div>
         </div>
     );
 };
