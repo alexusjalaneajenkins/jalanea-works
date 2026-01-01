@@ -6,7 +6,7 @@ import { Button } from '../components/Button';
 import {
     Rocket, Target, TrendingUp, CheckCircle, AlertCircle,
     ExternalLink, Briefcase, DollarSign, Home, Search,
-    Linkedin, Building2, Zap, Sparkles
+    Linkedin, Building2, Zap, Sparkles, Lightbulb, ArrowRight
 } from 'lucide-react';
 
 // Helper: Get time-based greeting
@@ -150,7 +150,8 @@ export const Dashboard: React.FC = () => {
 
     // Derived data
     const userName = userProfile?.fullName?.split(' ')[0] || userProfile?.displayName?.split(' ')[0] || 'there';
-    const applications = userProfile?.savedJobs?.filter(j => j.status !== 'saved') || [];
+    // Show ALL saved jobs in Active Missions (including status "saved")
+    const applications = userProfile?.savedJobs || [];
     const salaryMin = userProfile?.targetSalaryRange?.min || 45000;
     const salaryMax = userProfile?.targetSalaryRange?.max || 65000;
     const maxRent = userProfile?.monthlyBudgetEstimate?.maxRent || 0;
@@ -381,13 +382,50 @@ export const Dashboard: React.FC = () => {
                             </div>
                         </div>
 
+                        {/* Card 3: Start a Business (Light) */}
+                        <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50 border border-yellow-200 shadow-sm">
+                            <div className="flex items-center gap-2 mb-3">
+                                <div className="p-1.5 bg-yellow-100 rounded-lg">
+                                    <Lightbulb size={16} className="text-yellow-600" />
+                                </div>
+                                <h4 className="font-bold text-slate-900">Start a Business</h4>
+                            </div>
+                            <p className="text-sm text-slate-600 mb-4">
+                                Not finding the right job? Create your own opportunity.
+                            </p>
+
+                            {/* Orlando Entrepreneurship Stats */}
+                            <div className="space-y-2 mb-4">
+                                <div className="flex items-center gap-2 text-xs text-slate-600">
+                                    <CheckCircle size={12} className="text-green-500 flex-shrink-0" />
+                                    <span>150+ local small business resources</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-slate-600">
+                                    <CheckCircle size={12} className="text-green-500 flex-shrink-0" />
+                                    <span>Free SBDC consultations available</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-slate-600">
+                                    <CheckCircle size={12} className="text-green-500 flex-shrink-0" />
+                                    <span>Orlando ranked #3 for startups</span>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => navigate('/start-business')}
+                                className="w-full flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-4 py-2.5 rounded-xl shadow-md shadow-yellow-500/20 transition-all text-sm"
+                            >
+                                Explore Resources
+                                <ArrowRight size={14} />
+                            </button>
+                        </div>
+
                         {/* Quick Actions (Light) */}
                         <div className="space-y-2">
                             <button
-                                onClick={() => navigate('/profile')}
+                                onClick={() => navigate('/account')}
                                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-white hover:border-yellow-400 hover:shadow-md hover:shadow-yellow-500/5 text-slate-700 font-medium transition-all text-left"
                             >
-                                ✏️ Edit Profile
+                                ✏️ My Account
                             </button>
                             <button
                                 onClick={() => navigate('/resume')}

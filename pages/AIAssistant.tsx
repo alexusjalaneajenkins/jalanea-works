@@ -1,15 +1,71 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { UpgradeModal } from '../components/UpgradeModal';
+import { OutreachScriptGenerator } from '../components/OutreachScriptGenerator';
+import { InterviewPrepModal } from '../components/InterviewPrepModal';
+import { OrlandoMarketInsights } from '../components/OrlandoMarketInsights';
+import { SavedConversations } from '../components/SavedConversations';
+import { SocialPostAssistant } from '../components/SocialPostAssistant';
+import { ScheduleConnection } from '../components/ScheduleConnection';
 import { useAuth } from '../contexts/AuthContext';
+import { useUserProfile } from '../hooks/useUserProfile';
 import { getCareerAdvice } from '../services/geminiService';
 import { ChatMessage } from '../types';
 import {
     Send, Sparkles, Bot, User, Trash2,
     Briefcase, FileText, Target,
-    TrendingUp, Lightbulb
+    TrendingUp, Lightbulb, Users, Mic, MapPin, FolderOpen, Save, Linkedin, CalendarClock
 } from 'lucide-react';
+
+// Conversation thread interface
+interface ConversationThread {
+    id: string;
+    title: string;
+    topic: string;
+    messages: ChatMessage[];
+    createdAt: Date;
+    updatedAt: Date;
+    preview: string;
+}
+
+// Topic detection based on conversation content
+const detectTopic = (messages: ChatMessage[]): string => {
+    const allText = messages.map(m => m.text.toLowerCase()).join(' ');
+
+    if (allText.includes('resume') || allText.includes('cv') || allText.includes('cover letter')) {
+        return 'resume';
+    }
+    if (allText.includes('interview') || allText.includes('behavioral') || allText.includes('star method')) {
+        return 'interview';
+    }
+    if (allText.includes('job search') || allText.includes('apply') || allText.includes('application') || allText.includes('hiring')) {
+        return 'job-search';
+    }
+    if (allText.includes('network') || allText.includes('linkedin') || allText.includes('connect') || allText.includes('outreach')) {
+        return 'networking';
+    }
+    if (allText.includes('skill') || allText.includes('learn') || allText.includes('course') || allText.includes('certification')) {
+        return 'skills';
+    }
+    if (allText.includes('career') || allText.includes('path') || allText.includes('growth') || allText.includes('promotion')) {
+        return 'career-advice';
+    }
+    return 'general';
+};
+
+// Generate a title from the first user message
+const generateTitle = (messages: ChatMessage[]): string => {
+    const firstUserMsg = messages.find(m => m.role === 'user');
+    if (!firstUserMsg) return 'New Conversation';
+
+    // Truncate to first 50 chars
+    const text = firstUserMsg.text;
+    if (text.length <= 50) return text;
+    return text.substring(0, 47) + '...';
+};
+
+const STORAGE_KEY = 'jalanea_saved_conversations';
 
 // Markdown parser for chat messages - cleaner inline styling
 const formatMessage = (text: string): string => {
@@ -31,23 +87,59 @@ const formatMessage = (text: string): string => {
         .replace(/\n/g, '<br/>');
 };
 
-// Quick prompts for common actions
+// Quick prompts for common actions (Interview Prep is handled separately via modal)
 const QUICK_PROMPTS = [
     { icon: Briefcase, label: 'Job Search', prompt: 'Help me create a job search strategy for finding an entry-level position' },
     { icon: FileText, label: 'Resume Tips', prompt: 'Give me tips to improve my resume for tech roles' },
-    { icon: Target, label: 'Interview Prep', prompt: 'Help me prepare for a behavioral interview' },
     { icon: TrendingUp, label: 'Market Trends', prompt: 'Research current job market trends in tech for 2024' },
     { icon: Lightbulb, label: 'Career Path', prompt: 'Suggest career paths for someone with a computing technology degree' },
 ];
 
 export const AIAssistant: React.FC = () => {
     const { currentUser, userProfile, useCredit, canUseCredits, isTrialActive } = useAuth();
+    const {
+        name,
+        primarySchool,
+        primaryProgram,
+        skills,
+        hasSkills,
+        salaryMin,
+        salaryMax,
+        availability,
+        challenges,
+        location,
+        commuteMethod,
+        commuteWillingness,
+        getAIContext
+    } = useUserProfile();
+
+    // Build personalized welcome message
+    const buildWelcomeMessage = (): string => {
+        const firstName = name?.split(' ')[0] || '';
+        let intro = `Hi${firstName ? ` ${firstName}` : ''}! 👋\n\nI'm your AI Career Coach.`;
+
+        // Add personalized context if available
+        if (primaryProgram && primarySchool) {
+            intro += ` I see you're studying **${primaryProgram}** at **${primarySchool}** - great choice!`;
+        }
+
+        intro += `\n\nI can help you with:\n\n`;
+        intro += `- **Job search strategies** tailored to your background\n`;
+        intro += `- **Resume and cover letter** advice\n`;
+        intro += `- **Interview preparation** and practice questions\n`;
+        intro += `- **Career research** with real-time market data\n`;
+        intro += `- **Skill development** recommendations\n\n`;
+        intro += `What would you like to work on today?`;
+
+        return intro;
+    };
+
     const [messages, setMessages] = useState<ChatMessage[]>([
         {
             id: '1',
             role: 'model',
             sender: 'ai',
-            text: `Hi${userProfile?.fullName ? ` ${userProfile.fullName.split(' ')[0]}` : ''}! 👋\n\nI'm your AI Career Coach. I can help you with:\n\n- **Job search strategies** tailored to your background\n- **Resume and cover letter** advice\n- **Interview preparation** and practice questions\n- **Career research** with real-time market data\n- **Skill development** recommendations\n\nWhat would you like to work on today?`,
+            text: buildWelcomeMessage(),
             timestamp: new Date()
         }
     ]);
@@ -55,8 +147,120 @@ export const AIAssistant: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const [upgradeReason, setUpgradeReason] = useState<'no_credits' | 'trial_expired'>('no_credits');
+    const [showOutreachScripts, setShowOutreachScripts] = useState(false);
+    const [showInterviewPrep, setShowInterviewPrep] = useState(false);
+    const [showMarketInsights, setShowMarketInsights] = useState(false);
+    const [showSavedConversations, setShowSavedConversations] = useState(false);
+    const [showSocialPost, setShowSocialPost] = useState(false);
+    const [showScheduleConnection, setShowScheduleConnection] = useState(false);
+    const [savedThreads, setSavedThreads] = useState<ConversationThread[]>([]);
+    const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
+
+    // Load saved conversations from localStorage
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                // Convert date strings back to Date objects
+                const threads = parsed.map((t: any) => ({
+                    ...t,
+                    createdAt: new Date(t.createdAt),
+                    updatedAt: new Date(t.updatedAt),
+                    messages: t.messages.map((m: any) => ({
+                        ...m,
+                        timestamp: new Date(m.timestamp)
+                    }))
+                }));
+                setSavedThreads(threads);
+            }
+        } catch (err) {
+            console.error('Error loading saved conversations:', err);
+        }
+    }, []);
+
+    // Save current conversation to a thread
+    const saveCurrentConversation = useCallback(() => {
+        // Only save if there are user messages
+        const hasUserMessages = messages.some(m => m.role === 'user');
+        if (!hasUserMessages) return;
+
+        const now = new Date();
+        const topic = detectTopic(messages);
+        const title = generateTitle(messages);
+        const preview = messages.filter(m => m.role === 'model').slice(-1)[0]?.text.substring(0, 100) || '';
+
+        if (currentThreadId) {
+            // Update existing thread
+            setSavedThreads(prev => {
+                const updated = prev.map(t =>
+                    t.id === currentThreadId
+                        ? { ...t, messages, updatedAt: now, topic, preview }
+                        : t
+                );
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+                return updated;
+            });
+        } else {
+            // Create new thread
+            const newThread: ConversationThread = {
+                id: Date.now().toString(),
+                title,
+                topic,
+                messages,
+                createdAt: now,
+                updatedAt: now,
+                preview
+            };
+            setCurrentThreadId(newThread.id);
+            setSavedThreads(prev => {
+                const updated = [newThread, ...prev];
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+                return updated;
+            });
+        }
+    }, [messages, currentThreadId]);
+
+    // Load a saved thread
+    const handleLoadThread = (thread: ConversationThread) => {
+        setMessages(thread.messages);
+        setCurrentThreadId(thread.id);
+        setShowSavedConversations(false);
+    };
+
+    // Delete a thread
+    const handleDeleteThread = (threadId: string) => {
+        setSavedThreads(prev => {
+            const updated = prev.filter(t => t.id !== threadId);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+            return updated;
+        });
+        if (currentThreadId === threadId) {
+            setCurrentThreadId(null);
+        }
+    };
+
+    // Start a new conversation
+    const handleNewThread = () => {
+        // Save current conversation first if it has content
+        const hasUserMessages = messages.some(m => m.role === 'user');
+        if (hasUserMessages) {
+            saveCurrentConversation();
+        }
+
+        // Reset to fresh state
+        setMessages([{
+            id: Date.now().toString(),
+            role: 'model',
+            sender: 'ai',
+            text: buildWelcomeMessage(),
+            timestamp: new Date()
+        }]);
+        setCurrentThreadId(null);
+        setShowSavedConversations(false);
+    };
 
     // Auto-scroll to bottom on new messages
     useEffect(() => {
@@ -115,7 +319,9 @@ export const AIAssistant: React.FC = () => {
                 return;
             }
 
-            const responseText = await getCareerAdvice(messageToSend);
+            // Build user context for personalized AI responses
+            const userContext = getAIContext();
+            const responseText = await getCareerAdvice(messageToSend, userContext);
             const modelMsg: ChatMessage = {
                 id: (Date.now() + 1).toString(),
                 role: 'model',
@@ -171,13 +377,40 @@ export const AIAssistant: React.FC = () => {
                         <p className="text-xs md:text-sm text-jalanea-500 hidden sm:block">Your personal career intelligence assistant</p>
                     </div>
                 </div>
-                <button
-                    onClick={handleClearChat}
-                    className="flex items-center gap-1.5 px-2 py-1.5 text-xs md:text-sm text-jalanea-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                    <Trash2 size={14} />
-                    <span className="hidden sm:inline">Clear</span>
-                </button>
+                <div className="flex items-center gap-2">
+                    {/* Save Current Conversation */}
+                    <button
+                        onClick={saveCurrentConversation}
+                        disabled={!messages.some(m => m.role === 'user')}
+                        className="flex items-center gap-1.5 px-2 py-1.5 text-xs md:text-sm text-jalanea-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Save conversation"
+                    >
+                        <Save size={14} />
+                        <span className="hidden sm:inline">Save</span>
+                    </button>
+                    {/* Open Saved Conversations */}
+                    <button
+                        onClick={() => setShowSavedConversations(true)}
+                        className="flex items-center gap-1.5 px-2 py-1.5 text-xs md:text-sm text-jalanea-400 hover:text-jalanea-600 hover:bg-jalanea-100 rounded-lg transition-colors"
+                        title="Saved conversations"
+                    >
+                        <FolderOpen size={14} />
+                        <span className="hidden sm:inline">History</span>
+                        {savedThreads.length > 0 && (
+                            <span className="bg-gold text-jalanea-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                {savedThreads.length}
+                            </span>
+                        )}
+                    </button>
+                    {/* Clear Chat */}
+                    <button
+                        onClick={handleClearChat}
+                        className="flex items-center gap-1.5 px-2 py-1.5 text-xs md:text-sm text-jalanea-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                        <Trash2 size={14} />
+                        <span className="hidden sm:inline">Clear</span>
+                    </button>
+                </div>
             </div>
 
             {/* Main Chat Area */}
@@ -259,6 +492,46 @@ export const AIAssistant: React.FC = () => {
                                     <span className="truncate">{prompt.label}</span>
                                 </button>
                             ))}
+                            {/* Interview Prep - Opens Modal */}
+                            <button
+                                onClick={() => setShowInterviewPrep(true)}
+                                className="flex items-center gap-1.5 px-2.5 py-1.5 md:px-3 md:py-2 bg-violet-50 border border-violet-200 hover:border-violet-400 hover:bg-violet-100 rounded-lg text-xs md:text-sm font-medium text-violet-600 hover:text-violet-800 transition-all shadow-sm"
+                            >
+                                <Target size={12} className="text-violet-500 md:w-3.5 md:h-3.5" />
+                                <span className="truncate">Interview Prep</span>
+                            </button>
+                            {/* Outreach Scripts - Opens Modal */}
+                            <button
+                                onClick={() => setShowOutreachScripts(true)}
+                                className="flex items-center gap-1.5 px-2.5 py-1.5 md:px-3 md:py-2 bg-blue-50 border border-blue-200 hover:border-blue-400 hover:bg-blue-100 rounded-lg text-xs md:text-sm font-medium text-blue-600 hover:text-blue-800 transition-all shadow-sm"
+                            >
+                                <Users size={12} className="text-blue-500 md:w-3.5 md:h-3.5" />
+                                <span className="truncate">Outreach Scripts</span>
+                            </button>
+                            {/* Market Insights - Opens Modal */}
+                            <button
+                                onClick={() => setShowMarketInsights(true)}
+                                className="flex items-center gap-1.5 px-2.5 py-1.5 md:px-3 md:py-2 bg-emerald-50 border border-emerald-200 hover:border-emerald-400 hover:bg-emerald-100 rounded-lg text-xs md:text-sm font-medium text-emerald-600 hover:text-emerald-800 transition-all shadow-sm"
+                            >
+                                <MapPin size={12} className="text-emerald-500 md:w-3.5 md:h-3.5" />
+                                <span className="truncate">Market Insights</span>
+                            </button>
+                            {/* Social Post Assistant - Opens Modal */}
+                            <button
+                                onClick={() => setShowSocialPost(true)}
+                                className="flex items-center gap-1.5 px-2.5 py-1.5 md:px-3 md:py-2 bg-sky-50 border border-sky-200 hover:border-sky-400 hover:bg-sky-100 rounded-lg text-xs md:text-sm font-medium text-sky-600 hover:text-sky-800 transition-all shadow-sm"
+                            >
+                                <Linkedin size={12} className="text-sky-500 md:w-3.5 md:h-3.5" />
+                                <span className="truncate">Social Posts</span>
+                            </button>
+                            {/* Schedule Connection - Opens Modal */}
+                            <button
+                                onClick={() => setShowScheduleConnection(true)}
+                                className="flex items-center gap-1.5 px-2.5 py-1.5 md:px-3 md:py-2 bg-orange-50 border border-orange-200 hover:border-orange-400 hover:bg-orange-100 rounded-lg text-xs md:text-sm font-medium text-orange-600 hover:text-orange-800 transition-all shadow-sm"
+                            >
+                                <CalendarClock size={12} className="text-orange-500 md:w-3.5 md:h-3.5" />
+                                <span className="truncate">Schedule</span>
+                            </button>
                         </div>
                     </div>
                 )}
@@ -298,6 +571,68 @@ export const AIAssistant: React.FC = () => {
                 onClose={() => setShowUpgradeModal(false)}
                 reason={upgradeReason}
                 action="aiChatMessage"
+            />
+
+            {/* Outreach Script Generator Modal */}
+            <OutreachScriptGenerator
+                isOpen={showOutreachScripts}
+                onClose={() => setShowOutreachScripts(false)}
+                userProfile={{
+                    fullName: userProfile?.fullName,
+                    targetRoles: userProfile?.preferences?.targetRoles,
+                    education: userProfile?.education,
+                    experience: userProfile?.experience
+                }}
+            />
+
+            {/* Interview Prep Modal */}
+            <InterviewPrepModal
+                isOpen={showInterviewPrep}
+                onClose={() => setShowInterviewPrep(false)}
+                savedJobs={userProfile?.savedJobs}
+                userProfile={{
+                    fullName: userProfile?.fullName,
+                    education: userProfile?.education,
+                    experience: userProfile?.experience,
+                    preferences: userProfile?.preferences
+                }}
+            />
+
+            {/* Orlando Market Insights Modal */}
+            <OrlandoMarketInsights
+                isOpen={showMarketInsights}
+                onClose={() => setShowMarketInsights(false)}
+            />
+
+            {/* Saved Conversations Modal */}
+            <SavedConversations
+                isOpen={showSavedConversations}
+                onClose={() => setShowSavedConversations(false)}
+                threads={savedThreads}
+                onLoadThread={handleLoadThread}
+                onDeleteThread={handleDeleteThread}
+                onNewThread={handleNewThread}
+                currentThreadId={currentThreadId || undefined}
+            />
+
+            {/* Social Post Assistant Modal */}
+            <SocialPostAssistant
+                isOpen={showSocialPost}
+                onClose={() => setShowSocialPost(false)}
+                userProfile={{
+                    fullName: userProfile?.fullName,
+                    education: userProfile?.education,
+                    experience: userProfile?.experience
+                }}
+            />
+
+            {/* Schedule Connection Modal */}
+            <ScheduleConnection
+                isOpen={showScheduleConnection}
+                onClose={() => setShowScheduleConnection(false)}
+                workSchedule={userProfile?.workSchedule}
+                classSchedule={userProfile?.classSchedule}
+                availability={availability}
             />
         </div>
     );

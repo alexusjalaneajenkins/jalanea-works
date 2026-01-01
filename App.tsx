@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Home } from './pages/Home';
 import { Dashboard } from './pages/Dashboard';
-import { ProfilePage } from './pages/Profile';
+import { AccountPage } from './pages/Account';
 import { Jobs } from './pages/Jobs';
 import { ResumeBuilder } from './pages/ResumeBuilder';
 import { Onboarding } from './pages/Onboarding';
@@ -63,7 +63,7 @@ const AppLayout: React.FC = () => {
 
   const getNavRoute = (path: string): NavRoute => {
     if (path.includes('dashboard')) return NavRoute.DASHBOARD;
-    if (path.includes('profile')) return NavRoute.PROFILE;
+    if (path.includes('account')) return NavRoute.ACCOUNT;
     if (path.includes('jobs')) return NavRoute.JOBS;
     if (path.includes('resume')) return NavRoute.RESUME;
     if (path.includes('schedule')) return NavRoute.SCHEDULE;
@@ -88,8 +88,8 @@ const AppLayout: React.FC = () => {
       navigate('/schedule');
     } else if (route === NavRoute.AI_ASSISTANT) {
       navigate('/ai-assistant');
-    } else if (route === NavRoute.PROFILE) {
-      navigate('/profile');
+    } else if (route === NavRoute.ACCOUNT) {
+      navigate('/account');
     } else if (route === NavRoute.ONBOARDING) {
       navigate('/onboarding');
     } else {
@@ -124,7 +124,7 @@ const AppLayout: React.FC = () => {
           <div className="max-w-7xl mx-auto">
             <Routes>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/account" element={<AccountPage />} />
               <Route path="/jobs" element={<Jobs setRoute={handleSetRoute} />} />
               <Route path="/resume" element={<ResumeBuilder />} />
               <Route path="/schedule" element={<Schedule />} />

@@ -9,14 +9,33 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
 
-// System prompt for career coaching with research capabilities
-const SYSTEM_PROMPT = `You are an expert career coach and research assistant for Jalanea Works, a platform helping entry-level and transitioning professionals.
+// User context interface
+interface UserContext {
+  name?: string | null;
+  school?: string | null;
+  program?: string | null;
+  skills?: {
+    technical?: string[];
+    soft?: string[];
+    design?: string[];
+  } | null;
+  targetSalary?: string;
+  availability?: string | null;
+  challenges?: string[];
+  location?: string | null;
+  commuteMethod?: string[];
+  commuteWillingness?: string | null;
+}
+
+// Build personalized system prompt based on user context
+function buildSystemPrompt(userContext?: UserContext | null): string {
+  const base = `You are an expert career coach and research assistant for Jalanea Works, a platform helping Orlando-area community college graduates launch their careers.
 
 Your capabilities:
 - Provide personalized career advice
 - Research current job market trends using Google Search
 - Find relevant industry news and insights
-- Recommend specific companies and opportunities
+- Recommend specific companies and opportunities in Orlando
 - Answer questions about salaries, skills, and career paths
 
 Your personality:
@@ -30,6 +49,47 @@ Your personality:
 When the user asks for research or current information, use your search capabilities to find real, up-to-date data.
 
 Always be supportive and empowering!`;
+
+  // Add user context if available
+  if (userContext && Object.keys(userContext).some(key => (userContext as any)[key])) {
+    let contextSection = '\n\n--- CURRENT USER CONTEXT (use this to personalize your advice) ---';
+
+    if (userContext.name) {
+      contextSection += `\nName: ${userContext.name}`;
+    }
+    if (userContext.school) {
+      contextSection += `\nSchool: ${userContext.school}`;
+    }
+    if (userContext.program) {
+      contextSection += `\nProgram: ${userContext.program}`;
+    }
+    if (userContext.skills?.technical?.length) {
+      contextSection += `\nTechnical Skills: ${userContext.skills.technical.join(', ')}`;
+    }
+    if (userContext.skills?.soft?.length) {
+      contextSection += `\nSoft Skills: ${userContext.skills.soft.join(', ')}`;
+    }
+    if (userContext.targetSalary) {
+      contextSection += `\nTarget Salary: ${userContext.targetSalary}`;
+    }
+    if (userContext.location) {
+      contextSection += `\nLocation: ${userContext.location}`;
+    }
+    if (userContext.availability) {
+      contextSection += `\nAvailability: ${userContext.availability}`;
+    }
+    if (userContext.challenges?.length) {
+      contextSection += `\nCurrent Challenges: ${userContext.challenges.join(', ')}`;
+    }
+
+    contextSection += '\n\nUse this context to personalize your advice. Reference their specific program, skills, and situation when relevant. Don\'t ask for information you already have.';
+    contextSection += '\n--- END USER CONTEXT ---';
+
+    return base + contextSection;
+  }
+
+  return base;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Handle CORS
@@ -46,11 +106,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { message } = req.body;
+    const { message, userContext } = req.body;
 
     if (!message || typeof message !== 'string') {
       return res.status(400).json({ error: 'Message is required' });
     }
+
+    // Build personalized system prompt with user context
+    const systemPrompt = buildSystemPrompt(userContext as UserContext | null);
 
     // Check for API key - try both possible env var names
     const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
@@ -70,8 +133,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Initialize Gemini AI
     const ai = new GoogleGenAI({ apiKey });
 
-    // Create the prompt with system context
-    const fullPrompt = `${SYSTEM_PROMPT}
+    // Create the prompt with personalized system context
+    const fullPrompt = `${systemPrompt}
 
 User question: ${message}
 

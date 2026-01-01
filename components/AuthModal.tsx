@@ -672,6 +672,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
         }
 
         // For signup, we MUST create the account first
+        if (!fullName.trim()) {
+            setSignupError({ message: 'Please enter your full name', isEmailExists: false });
+            return;
+        }
+
         if (!signupEmail || !signupPassword) {
             setSignupError({ message: 'Please enter both email and password', isEmailExists: false });
             return;
@@ -954,6 +959,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
 
             {/* Email/Password Inputs - Enhanced */}
             <div className="space-y-3">
+                {/* Full Name Input */}
+                <div className="relative group">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-jalanea-500 group-focus-within:text-gold transition-colors">
+                        <User size={18} />
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Your full name"
+                        autoComplete="name"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-jalanea-500 focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 transition-all font-medium"
+                    />
+                </div>
+
                 {/* Email Input */}
                 <div className="relative group">
                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-jalanea-500 group-focus-within:text-gold transition-colors">

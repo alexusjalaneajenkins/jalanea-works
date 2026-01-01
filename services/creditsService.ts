@@ -8,6 +8,8 @@ export const CREDIT_COSTS = {
   smartScheduleTask: 1,
   outreachDraft: 2,
   careerPathMatch: 2,
+  atsAnalysis: 2,
+  readabilityAnalysis: 2,
   resumeTailoring: 3,
   coverLetter: 3,
   companyResearch: 3,

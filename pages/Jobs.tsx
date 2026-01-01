@@ -6,16 +6,18 @@ import { generateJobIntel, searchJobsWithGrounding } from '../services/geminiSer
 import { searchJobsWithGemini } from '../services/jobService';
 import { useAuth } from '../contexts/AuthContext';
 import { UpgradeModal } from '../components/UpgradeModal';
+import { ATSScoreModal } from '../components/ATSScoreModal';
 import {
     Search, MapPin, Sparkles, FileText,
-    GraduationCap, Clock, Zap, Heart, X,
+    GraduationCap, Clock, Zap, Heart, X, XCircle,
     Users, TrendingUp, Wand2, Briefcase, DollarSign, Calendar,
     ArrowRight, CheckCircle2, UserPlus, Target, Microscope, Share2, Linkedin,
     BookOpen, MessageSquare, ExternalLink, Mail, Copy, CalendarPlus,
-    Library, Hammer, RefreshCw, Coffee, Car, Bus, Bike, Footprints, Info, Headphones, AlertCircle, Loader2, Building2, Home
+    Library, Hammer, RefreshCw, Coffee, Car, Bus, Bike, Footprints, Info, Headphones, AlertCircle, Loader2, Building2, Home,
+    Lightbulb, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { NavRoute, Job, JobAnalysis, TransportMode } from '../types';
-import { MOCK_PROFILE } from './Profile';
+import { MOCK_PROFILE } from './Account';
 import { CommuteCostBadge } from '../components/CommuteCostBadge';
 
 interface JobsProps {
@@ -141,6 +143,165 @@ const CommuteBadge: React.FC<{ options: { mode: TransportMode, minutes: number }
     );
 };
 
+// Orlando metro area zip codes and cities for "Orlando First" filtering
+const ORLANDO_METRO_CITIES = [
+    'orlando', 'lake buena vista', 'kissimmee', 'sanford', 'winter park',
+    'altamonte springs', 'casselberry', 'maitland', 'oviedo', 'winter garden',
+    'apopka', 'clermont', 'daytona beach', 'deltona', 'melbourne', 'ocala',
+    'lakeland', 'port orange', 'palm bay', 'titusville', 'cocoa'
+];
+const ORLANDO_METRO_ZIPS = ['32801', '32802', '32803', '32804', '32805', '32806', '32807', '32808', '32809', '32810',
+    '32811', '32812', '32814', '32816', '32817', '32818', '32819', '32820', '32821', '32822',
+    '32824', '32825', '32826', '32827', '32828', '32829', '32830', '32831', '32832', '32833',
+    '32834', '32835', '32836', '32837', '32839', '34734', '34760', '34761', '34786', '34787'];
+
+// Helper to check if a job is in Orlando metro area
+const isOrlandoMetroJob = (job: Job): boolean => {
+    const location = (job.location || '').toLowerCase();
+
+    // Check if location matches Orlando metro cities
+    if (ORLANDO_METRO_CITIES.some(city => location.includes(city))) {
+        return true;
+    }
+
+    // Check if location contains Florida and is in central FL
+    if (location.includes('fl') || location.includes('florida')) {
+        // Check for Orlando metro zip codes
+        const zipMatch = location.match(/\b(\d{5})\b/);
+        if (zipMatch && ORLANDO_METRO_ZIPS.includes(zipMatch[1])) {
+            return true;
+        }
+        // Check for specific cities
+        if (ORLANDO_METRO_CITIES.some(city => location.includes(city))) {
+            return true;
+        }
+    }
+
+    return false;
+};
+
+// ============================================
+// ORLANDO LOCAL BUSINESSES - "Light the Block"
+// Orlando-headquartered or major Orlando employers
+// ============================================
+const ORLANDO_LOCAL_BUSINESSES = [
+    // Major Orlando Employers
+    'darden restaurants', 'darden',
+    'adventhealth',
+    'orlando health',
+    'tupperware', 'tupperware brands',
+    'full sail university', 'full sail',
+    'valencia college',
+    'seaworld parks', 'seaworld',
+    'universal orlando', 'universal studios', 'universal creative', 'universal parks',
+    'walt disney world', 'disney', 'disney parks',
+    'lockheed martin',
+    'siemens energy', 'siemens',
+    'electronic arts', 'ea sports', 'ea tiburon',
+    'kpmg', 'deloitte', 'pwc', 'ernst & young', 'ey ',
+    // Orlando Tech Companies
+    'crosscomm',
+    'fattmerchant', 'stax',
+    'zero hash',
+    'luminar technologies', 'luminar',
+    'izea',
+    'mastery logistics',
+    'voxx international',
+    // Healthcare
+    'nemours', "nemours children's",
+    'hca florida',
+    'centra care',
+    // Hospitality
+    'marriott vacations',
+    'hilton grand vacations',
+    'westgate resorts',
+    'rosen hotels', 'rosen ',
+    // Local Agencies & Companies
+    'net conversion',
+    "falcon's creative", 'falcons creative',
+    'creative circle',
+    'tews company',
+    // Education
+    'ucf', 'university of central florida',
+    'rollins college',
+    'stetson university',
+    // City & County
+    'city of orlando',
+    'orange county',
+    'osceola county',
+    'seminole county',
+];
+
+// Helper to check if a company is an Orlando-based business
+const isOrlandoLocalBusiness = (companyName: string): boolean => {
+    if (!companyName) return false;
+    const normalizedName = companyName.toLowerCase().trim();
+    return ORLANDO_LOCAL_BUSINESSES.some(business =>
+        normalizedName.includes(business) || business.includes(normalizedName)
+    );
+};
+
+// ============================================
+// GAP ANALYSIS - Match Analysis Interface
+// ============================================
+interface MatchAnalysis {
+    score: number;
+    matchingSkills: string[];
+    missingSkills: string[];
+    suggestions: string[];
+}
+
+// Valencia College course recommendations for skill gaps
+const SKILL_TO_COURSE: Record<string, { course: string; code: string; url?: string }> = {
+    // Design & Creative
+    'autocad': { course: 'Computer-Aided Design', code: 'DIG 1030', url: 'https://valenciacollege.edu/academics/programs/digital-media/' },
+    'revit': { course: 'BIM Fundamentals', code: 'BCN 1251' },
+    '3d modeling': { course: '3D Computer Animation', code: 'DIG 2500' },
+    'after effects': { course: 'Motion Graphics', code: 'DIG 2109' },
+    'premiere': { course: 'Digital Video Production', code: 'DIG 2030' },
+    'illustrator': { course: 'Digital Illustration', code: 'GRA 1129' },
+    'photoshop': { course: 'Digital Imaging', code: 'GRA 1120' },
+    'indesign': { course: 'Publication Design', code: 'GRA 2151' },
+    // Development
+    'javascript': { course: 'Web Programming', code: 'COP 2830' },
+    'python': { course: 'Python Programming', code: 'COP 1000' },
+    'java': { course: 'Java Programming', code: 'COP 2800' },
+    'sql': { course: 'Database Concepts', code: 'COP 2700' },
+    'react': { course: 'Web Development Frameworks', code: 'COP 2840' },
+    'node': { course: 'Server-Side Development', code: 'COP 2840' },
+    // Business & Management
+    'project management': { course: 'Project Management', code: 'MAN 2749' },
+    'agile': { course: 'Agile Project Management', code: 'MAN 2749' },
+    'scrum': { course: 'Agile Project Management', code: 'MAN 2749' },
+    'excel': { course: 'Business Computer Applications', code: 'CGS 1060' },
+    'data analysis': { course: 'Data Analytics', code: 'QMB 2100' },
+    'marketing': { course: 'Marketing Principles', code: 'MAR 2011' },
+    // Communication & Soft Skills
+    'public speaking': { course: 'Public Speaking', code: 'SPC 1608' },
+    'technical writing': { course: 'Technical Writing', code: 'ENC 2210' },
+    'customer service': { course: 'Customer Service Management', code: 'MAN 2300' },
+};
+
+// Common job keywords to extract from descriptions
+const EXTRACTABLE_SKILLS = [
+    // Technical
+    'javascript', 'typescript', 'python', 'java', 'c++', 'c#', 'ruby', 'php', 'swift', 'kotlin',
+    'react', 'angular', 'vue', 'node', 'express', 'django', 'flask', 'spring', 'laravel',
+    'html', 'css', 'sass', 'tailwind', 'bootstrap', 'jquery',
+    'sql', 'mysql', 'postgresql', 'mongodb', 'firebase', 'redis', 'graphql',
+    'aws', 'azure', 'gcp', 'docker', 'kubernetes', 'jenkins', 'git', 'github',
+    'figma', 'sketch', 'adobe xd', 'photoshop', 'illustrator', 'indesign', 'after effects', 'premiere',
+    'autocad', 'revit', 'solidworks', '3d modeling', 'blender', 'maya',
+    // Business
+    'excel', 'powerpoint', 'word', 'google sheets', 'salesforce', 'hubspot', 'jira', 'confluence',
+    'project management', 'agile', 'scrum', 'kanban', 'lean', 'six sigma',
+    'data analysis', 'tableau', 'power bi', 'google analytics',
+    'marketing', 'seo', 'sem', 'social media', 'content marketing', 'email marketing',
+    // Soft Skills
+    'communication', 'teamwork', 'leadership', 'problem solving', 'critical thinking',
+    'time management', 'customer service', 'public speaking', 'presentation',
+];
+
 export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
     const [isSearching, setIsSearching] = useState(false);
     const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -150,6 +311,18 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
     const [isRemote, setIsRemote] = useState(false); // Explicit remote toggle
     const [isOnsite, setIsOnsite] = useState(false); // Explicit on-site toggle
     const [activeTab, setActiveTab] = useState<'overview' | 'strategy' | 'content'>('overview');
+
+    // Orlando First - defaults to true, persists in localStorage
+    const [orlandoFirst, setOrlandoFirst] = useState<boolean>(() => {
+        const saved = localStorage.getItem('jalanea_orlando_first');
+        return saved !== null ? saved === 'true' : true; // Default to true
+    });
+
+    // Orlando HQ Only - filter to show only jobs from Orlando-based companies
+    const [orlandoHQOnly, setOrlandoHQOnly] = useState<boolean>(() => {
+        const saved = localStorage.getItem('jalanea_orlando_hq_only');
+        return saved === 'true'; // Default to false
+    });
 
     // Real job data state
     const [jobs, setJobs] = useState<Job[]>([]);
@@ -164,6 +337,20 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
     // Credit enforcement state
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
+    // User skills for gap analysis (from profile or mock)
+    const userSkills = React.useMemo(() => [
+        ...(userProfile?.skills?.technical || MOCK_PROFILE.skills?.technical || []),
+        ...(userProfile?.skills?.design || MOCK_PROFILE.skills?.design || []),
+        ...(userProfile?.skills?.soft || MOCK_PROFILE.skills?.soft || []),
+    ], [userProfile]);
+
+    // Gap analysis expand state (per job)
+    const [expandedGapJobs, setExpandedGapJobs] = useState<Set<string>>(new Set());
+
+    // ATS Score Modal state
+    const [showATSModal, setShowATSModal] = useState(false);
+    const [atsJobDescription, setATSJobDescription] = useState('');
+
     // Loading State Tracking
     const [loadingTime, setLoadingTime] = useState(0);
     const [retryCount, setRetryCount] = useState(0);
@@ -174,6 +361,9 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
 
     // Career path filter - when set, searches for jobs matching this career title
     const [careerFilter, setCareerFilter] = useState<string | null>(null);
+
+    // Toast notification state for save feedback
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
     // Fetch jobs on mount and when search changes
     const fetchJobs = async (query?: string, location?: string) => {
@@ -379,11 +569,44 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
 
                 console.log(`🎓 Entry-level filter: ${beforeEntryFilter} -> ${filteredJobs.length} jobs`);
 
-                const jobsWithScores = filteredJobs.map(job => ({
+                // Add match scores, Orlando metro flag, and Orlando HQ flag
+                let jobsWithScores = filteredJobs.map(job => ({
                     ...job,
                     matchScore: job.matchScore || calculateQuickMatchScore(job, userSkills),
                     matchReason: job.matchReason || generateMatchReason(job, userSkills),
+                    isOrlandoMetro: isOrlandoMetroJob(job),
+                    isOrlandoHQ: isOrlandoLocalBusiness(job.company),
                 }));
+
+                // ORLANDO FIRST FILTERING & SORTING
+                if (orlandoFirst && !isRemoteSearch) {
+                    const beforeOrlandoFilter = jobsWithScores.length;
+
+                    // Separate Orlando jobs from others
+                    const orlandoJobs = jobsWithScores.filter(job => job.isOrlandoMetro);
+                    const remoteJobs = jobsWithScores.filter(job =>
+                        !job.isOrlandoMetro &&
+                        ((job.location || '').toLowerCase().includes('remote') ||
+                            job.locationType?.toLowerCase() === 'remote')
+                    );
+                    const otherJobs = jobsWithScores.filter(job =>
+                        !job.isOrlandoMetro &&
+                        !((job.location || '').toLowerCase().includes('remote') ||
+                            job.locationType?.toLowerCase() === 'remote')
+                    );
+
+                    // Sort order: Orlando first, then remote (accessible to Orlando), then others
+                    jobsWithScores = [...orlandoJobs, ...remoteJobs, ...otherJobs];
+
+                    console.log(`🍊 Orlando First: ${orlandoJobs.length} local, ${remoteJobs.length} remote, ${otherJobs.length} other`);
+                }
+
+                // ORLANDO HQ ONLY FILTER - Only show jobs from Orlando-based companies
+                if (orlandoHQOnly) {
+                    const beforeHQFilter = jobsWithScores.length;
+                    jobsWithScores = jobsWithScores.filter(job => job.isOrlandoHQ);
+                    console.log(`🏠 Orlando HQ Only: ${jobsWithScores.length}/${beforeHQFilter} jobs from Orlando-based companies`);
+                }
 
                 setJobs(jobsWithScores);
                 console.log(`✅ Loaded ${jobsWithScores.length} jobs after filtering`);
@@ -400,33 +623,95 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
         }
     };
 
-    // Quick match score calculation
-    const calculateQuickMatchScore = (job: Job, userSkills: string[]): number => {
+    // Enhanced match analysis - returns detailed breakdown for gap analysis
+    const analyzeJobMatch = (job: Job, userSkills: string[]): MatchAnalysis => {
         const description = (job.description || '').toLowerCase();
+        const title = (job.title || '').toLowerCase();
+        const combinedText = `${description} ${title}`;
+
+        // Normalize user skills for comparison
+        const normalizedUserSkills = userSkills.map(s => s.toLowerCase().trim());
+
+        // Find matching skills (user skills found in job)
         const matchingSkills = userSkills.filter(skill =>
-            description.includes(skill.toLowerCase())
+            combinedText.includes(skill.toLowerCase())
         );
-        const baseScore = 70;
-        const skillBonus = Math.min(matchingSkills.length * 8, 25);
-        return Math.min(baseScore + skillBonus + Math.floor(Math.random() * 5), 99);
+
+        // Extract required skills from job description
+        const jobRequiredSkills = EXTRACTABLE_SKILLS.filter(skill =>
+            combinedText.includes(skill.toLowerCase())
+        );
+
+        // Find missing skills (in job but not in user's skills)
+        const missingSkills = jobRequiredSkills.filter(skill =>
+            !normalizedUserSkills.some(userSkill =>
+                userSkill.includes(skill) || skill.includes(userSkill)
+            )
+        );
+
+        // Generate suggestions for missing skills
+        const suggestions = missingSkills.slice(0, 3).map(skill => {
+            const course = SKILL_TO_COURSE[skill];
+            if (course) {
+                return `Learn ${skill} via Valencia's ${course.code}`;
+            }
+            return `Add "${skill}" to your skills`;
+        });
+
+        // Calculate score based on match quality
+        const baseScore = 65;
+        const matchBonus = Math.min(matchingSkills.length * 10, 30);
+        const gapPenalty = Math.min(missingSkills.length * 3, 15);
+        const score = Math.min(Math.max(baseScore + matchBonus - gapPenalty + Math.floor(Math.random() * 5), 40), 99);
+
+        return {
+            score,
+            matchingSkills,
+            missingSkills: missingSkills.slice(0, 6), // Limit to 6 for UI
+            suggestions
+        };
+    };
+
+    // Quick match score calculation (for backwards compatibility)
+    const calculateQuickMatchScore = (job: Job, userSkills: string[]): number => {
+        return analyzeJobMatch(job, userSkills).score;
     };
 
     // Generate match reason
     const generateMatchReason = (job: Job, userSkills: string[]): string => {
-        const description = (job.description || '').toLowerCase();
-        const matchingSkills = userSkills.filter(skill =>
-            description.includes(skill.toLowerCase())
-        );
-        if (matchingSkills.length > 0) {
-            return `Matches your ${matchingSkills.slice(0, 2).join(' & ')} skills`;
+        const analysis = analyzeJobMatch(job, userSkills);
+        if (analysis.matchingSkills.length > 0) {
+            return `Matches your ${analysis.matchingSkills.slice(0, 2).join(' & ')} skills`;
         }
         return 'Good fit for your experience level';
     };
 
-    // Initial fetch on mount
+    // Toggle Orlando First and persist to localStorage
+    const toggleOrlandoFirst = () => {
+        const newValue = !orlandoFirst;
+        setOrlandoFirst(newValue);
+        localStorage.setItem('jalanea_orlando_first', String(newValue));
+        // Re-fetch jobs with new filter
+        fetchJobs(searchQuery, searchLocation);
+    };
+
+    // Toggle Orlando HQ Only and persist to localStorage
+    const toggleOrlandoHQOnly = () => {
+        const newValue = !orlandoHQOnly;
+        setOrlandoHQOnly(newValue);
+        localStorage.setItem('jalanea_orlando_hq_only', String(newValue));
+        // Re-fetch jobs with new filter
+        fetchJobs(searchQuery, searchLocation);
+    };
+
+    // Initial fetch on mount - only re-fetch when search-relevant profile fields change
+    // NOT when savedJobs changes (that's just bookmarking, shouldn't trigger re-search)
+    const userTargetRoles = userProfile?.preferences?.targetRoles?.join(',');
+    const userLocation = userProfile?.location;
     useEffect(() => {
         fetchJobs();
-    }, [userProfile]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userTargetRoles, userLocation]);
 
     // Research when filter changes
     useEffect(() => {
@@ -594,6 +879,12 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
         if (setRoute) setRoute(NavRoute.RESUME);
     };
 
+    const handleATSCheck = (job: Job) => {
+        setPathSelectionOpen(false);
+        setATSJobDescription(job.description || '');
+        setShowATSModal(true);
+    };
+
     const closeJobModal = () => {
         setSelectedJob(null);
         setPathSelectionOpen(false);
@@ -693,6 +984,28 @@ Make it engaging and easy to absorb while commuting!`;
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500 pb-12 relative">
+
+            {/* Toast Notification */}
+            {toast && (
+                <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-right duration-300 ${
+                    toast.type === 'success'
+                        ? 'bg-green-50 border border-green-200 text-green-800'
+                        : 'bg-red-50 border border-red-200 text-red-800'
+                }`}>
+                    {toast.type === 'success' ? (
+                        <CheckCircle2 size={18} className="text-green-600" />
+                    ) : (
+                        <AlertCircle size={18} className="text-red-600" />
+                    )}
+                    <span className="text-sm font-medium">{toast.message}</span>
+                    <button
+                        onClick={() => setToast(null)}
+                        className="ml-2 text-gray-400 hover:text-gray-600"
+                    >
+                        <X size={16} />
+                    </button>
+                </div>
+            )}
 
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 px-1">
@@ -818,6 +1131,32 @@ Make it engaging and easy to absorb while commuting!`;
                     <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-bold text-jalanea-500 uppercase tracking-wider mr-1">Filters:</span>
 
+                        {/* Orlando First Toggle - Prominent, ON by default */}
+                        <button
+                            onClick={toggleOrlandoFirst}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all
+                                ${orlandoFirst
+                                    ? 'bg-orange-500 text-white border-orange-500 shadow-md shadow-orange-200'
+                                    : 'bg-white text-jalanea-600 border-jalanea-200 hover:border-orange-400 hover:text-orange-600'
+                                }`}
+                            title={orlandoFirst ? 'Showing Orlando-area jobs first' : 'Click to prioritize Orlando jobs'}
+                        >
+                            <span className="text-sm">🍊</span> Orlando First
+                        </button>
+
+                        {/* Orlando HQ Only Toggle - Show only Orlando-based companies */}
+                        <button
+                            onClick={toggleOrlandoHQOnly}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all
+                                ${orlandoHQOnly
+                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200'
+                                    : 'bg-white text-jalanea-600 border-jalanea-200 hover:border-emerald-400 hover:text-emerald-600'
+                                }`}
+                            title={orlandoHQOnly ? 'Only showing Orlando-based companies' : 'Click to show only Orlando-headquartered companies'}
+                        >
+                            <span className="text-sm">🏠</span> Orlando HQ Only
+                        </button>
+
                         {/* Remote Toggle */}
                         <button
                             onClick={() => {
@@ -932,8 +1271,67 @@ Make it engaging and easy to absorb while commuting!`;
                     ${job.isPartner ? 'border-l-gold' : 'border-l-transparent hover:border-l-jalanea-200'}
                 `}
                     >
+                        {/* Save Button Container - Isolated from card click events */}
+                        <div
+                            className="absolute top-4 right-4 z-20"
+                            data-save-button="true"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onMouseUp={(e) => e.stopPropagation()}
+                            onPointerDown={(e) => e.stopPropagation()}
+                        >
+                            <button
+                                type="button"
+                                onClick={async (e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    if (!currentUser) {
+                                        setToast({ message: 'Please sign in to save jobs', type: 'error' });
+                                        setTimeout(() => setToast(null), 3000);
+                                        return;
+                                    }
+                                    try {
+                                        if (isJobSaved(job.id)) {
+                                            await removeJob(job.id);
+                                            setToast({ message: 'Removed from your missions', type: 'success' });
+                                        } else {
+                                            await saveJob(job);
+                                            setToast({ message: 'Added to your missions!', type: 'success' });
+                                        }
+                                        setTimeout(() => setToast(null), 3000);
+                                    } catch (error) {
+                                        setToast({ message: 'Failed to save job. Try again.', type: 'error' });
+                                        setTimeout(() => setToast(null), 3000);
+                                    }
+                                }}
+                                className={`p-2 rounded-full transition-all pointer-events-auto ${isJobSaved(job.id)
+                                    ? 'text-red-500 bg-red-50 hover:bg-red-100'
+                                    : 'text-jalanea-300 hover:text-red-500 hover:bg-red-50'
+                                    }`}
+                                title={isJobSaved(job.id) ? 'Remove from missions' : 'Save to missions'}
+                            >
+                                <Heart size={20} fill={isJobSaved(job.id) ? 'currentColor' : 'none'} />
+                            </button>
+                        </div>
+
                         {/* Click Handler Wrapper */}
-                        <div onClick={() => initiateJobClick(job)} className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+                        <div
+                            onClick={(e) => {
+                                // Find the card container (parent of both save wrapper and clickable div)
+                                const card = (e.currentTarget as HTMLElement).parentElement;
+                                const saveBtn = card?.querySelector('[data-save-button]');
+                                if (saveBtn) {
+                                    const rect = saveBtn.getBoundingClientRect();
+                                    // Check if click coordinates fall within save button area
+                                    if (e.clientX >= rect.left && e.clientX <= rect.right &&
+                                        e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                                        return; // Click is in save button area - don't trigger job click
+                                    }
+                                }
+                                initiateJobClick(job);
+                            }}
+                            className="flex flex-col lg:flex-row gap-6 lg:gap-8"
+                        >
 
                             {/* LEFT COLUMN: Job Details */}
                             <div className="flex-1 space-y-4">
@@ -1017,6 +1415,22 @@ Make it engaging and easy to absorb while commuting!`;
                                         }
                                     })()}
 
+                                    {/* Orlando HQ Badge - Company is Orlando-based */}
+                                    {(job as any).isOrlandoHQ && (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-600 text-white border border-emerald-700 shadow-sm"
+                                            title="🏠 Orlando-Based Company - This company is headquartered in Orlando or is a major Orlando employer. Support local jobs and Light the Block!">
+                                            <span>🏠</span> Orlando HQ
+                                        </span>
+                                    )}
+
+                                    {/* Orlando Local Badge - Job location is Orlando metro */}
+                                    {(job as any).isOrlandoMetro && !(job as any).isOrlandoHQ && (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-orange-500 text-white border border-orange-600 shadow-sm"
+                                            title="This job is in the Orlando metro area">
+                                            <span>🍊</span> Local
+                                        </span>
+                                    )}
+
                                     {/* Experience Required */}
                                     {job.experienceYears && (
                                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-100">
@@ -1049,47 +1463,157 @@ Make it engaging and easy to absorb while commuting!`;
                                         <p className="text-sm text-jalanea-600 font-medium">{job.matchReason}</p>
                                     </div>
                                 </div>
+
+                                {/* Gap Analysis Section - Shows when match < 80% */}
+                                {(() => {
+                                    const analysis = analyzeJobMatch(job, userSkills);
+                                    const isExpanded = expandedGapJobs.has(job.id);
+                                    const hasGaps = analysis.missingSkills.length > 0;
+
+                                    if (analysis.score >= 80 || !hasGaps) return null;
+
+                                    return (
+                                        <div className="mt-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-200 overflow-hidden max-w-xl">
+                                            {/* Header - Always Visible */}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setExpandedGapJobs(prev => {
+                                                        const next = new Set(prev);
+                                                        if (next.has(job.id)) {
+                                                            next.delete(job.id);
+                                                        } else {
+                                                            next.add(job.id);
+                                                        }
+                                                        return next;
+                                                    });
+                                                }}
+                                                className="w-full p-4 flex items-center justify-between hover:bg-amber-100/50 transition-colors"
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <div className="p-1.5 bg-amber-100 rounded-lg">
+                                                        <AlertCircle size={14} className="text-amber-600" />
+                                                    </div>
+                                                    <div className="text-left">
+                                                        <p className="text-xs font-bold text-amber-800 uppercase tracking-wide">Skill Gaps Detected</p>
+                                                        <p className="text-xs text-amber-600">{analysis.missingSkills.length} skills to develop for stronger match</p>
+                                                    </div>
+                                                </div>
+                                                {isExpanded ? <ChevronUp size={16} className="text-amber-600" /> : <ChevronDown size={16} className="text-amber-600" />}
+                                            </button>
+
+                                            {/* Expanded Content */}
+                                            {isExpanded && (
+                                                <div className="px-4 pb-4 space-y-4 border-t border-amber-200">
+                                                    {/* Missing Skills */}
+                                                    <div className="pt-4">
+                                                        <p className="text-xs font-bold text-red-700 flex items-center gap-1.5 mb-2">
+                                                            <XCircle size={12} /> Missing Skills
+                                                        </p>
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            {analysis.missingSkills.map((skill, i) => (
+                                                                <span
+                                                                    key={i}
+                                                                    className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-medium border border-red-200"
+                                                                >
+                                                                    {skill}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Matching Skills */}
+                                                    {analysis.matchingSkills.length > 0 && (
+                                                        <div>
+                                                            <p className="text-xs font-bold text-green-700 flex items-center gap-1.5 mb-2">
+                                                                <CheckCircle2 size={12} /> Your Matching Skills
+                                                            </p>
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                {analysis.matchingSkills.slice(0, 5).map((skill, i) => (
+                                                                    <span
+                                                                        key={i}
+                                                                        className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium border border-green-200"
+                                                                    >
+                                                                        {skill}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Course Recommendations */}
+                                                    {analysis.missingSkills.some(skill => SKILL_TO_COURSE[skill.toLowerCase()]) && (
+                                                        <div>
+                                                            <p className="text-xs font-bold text-blue-700 flex items-center gap-1.5 mb-2">
+                                                                <GraduationCap size={12} /> Valencia College Courses
+                                                            </p>
+                                                            <div className="space-y-1">
+                                                                {analysis.missingSkills
+                                                                    .filter(skill => SKILL_TO_COURSE[skill.toLowerCase()])
+                                                                    .slice(0, 3)
+                                                                    .map((skill, i) => {
+                                                                        const course = SKILL_TO_COURSE[skill.toLowerCase()];
+                                                                        return (
+                                                                            <div key={i} className="flex items-center gap-2 text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100">
+                                                                                <BookOpen size={10} />
+                                                                                <span className="font-medium">{course.code}</span>
+                                                                                <span className="text-blue-600">- {course.course}</span>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Quick Suggestions */}
+                                                    {analysis.suggestions.length > 0 && (
+                                                        <div>
+                                                            <p className="text-xs font-bold text-amber-700 flex items-center gap-1.5 mb-2">
+                                                                <Lightbulb size={12} /> Quick Fixes
+                                                            </p>
+                                                            <ul className="space-y-1">
+                                                                {analysis.suggestions.map((suggestion, i) => (
+                                                                    <li key={i} className="text-xs text-amber-700 flex items-start gap-1.5">
+                                                                        <span className="text-amber-400 mt-0.5">•</span>
+                                                                        {suggestion}
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    )}
+
+                                                    {/* CTA Button */}
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (setRoute) setRoute('resume');
+                                                        }}
+                                                        className="w-full mt-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-bold rounded-lg hover:from-amber-600 hover:to-orange-600 transition-all flex items-center justify-center gap-2 shadow-md"
+                                                    >
+                                                        <Wand2 size={14} />
+                                                        Fix Gaps in Resume Studio
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
                             </div>
 
                             {/* RIGHT COLUMN: Stats & Actions */}
                             <div className="lg:w-72 flex flex-col justify-between border-t lg:border-t-0 lg:border-l border-jalanea-100 pt-6 lg:pt-0 lg:pl-8">
                                 {/* Top: Score */}
-                                <div className="flex justify-between items-start">
-                                    <div className="flex flex-col items-center">
-                                        <div className="relative w-20 h-20">
-                                            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                                                <path className="text-jalanea-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="2.5" />
-                                                <path className="text-gold" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="2.5" strokeDasharray={`${job.matchScore}, 100`} />
-                                            </svg>
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                <span className="text-xl font-display font-bold text-jalanea-900">{job.matchScore}%</span>
-                                            </div>
+                                <div className="flex flex-col items-center">
+                                    <div className="relative w-20 h-20">
+                                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                            <path className="text-jalanea-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="2.5" />
+                                            <path className="text-gold" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="2.5" strokeDasharray={`${job.matchScore}, 100`} />
+                                        </svg>
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <span className="text-xl font-display font-bold text-jalanea-900">{job.matchScore}%</span>
                                         </div>
-                                        <span className="text-[10px] font-bold text-jalanea-400 mt-2 uppercase tracking-wider">Match Score</span>
                                     </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (!currentUser) {
-                                                    alert('Please sign in to save jobs');
-                                                    return;
-                                                }
-                                                if (isJobSaved(job.id)) {
-                                                    removeJob(job.id);
-                                                } else {
-                                                    saveJob(job);
-                                                }
-                                            }}
-                                            className={`p-2 rounded-full transition-all ${isJobSaved(job.id)
-                                                ? 'text-red-500 bg-red-50 hover:bg-red-100'
-                                                : 'text-jalanea-300 hover:text-red-500 hover:bg-red-50'
-                                                }`}
-                                            title={isJobSaved(job.id) ? 'Remove from saved' : 'Save job'}
-                                        >
-                                            <Heart size={20} fill={isJobSaved(job.id) ? 'currentColor' : 'none'} />
-                                        </button>
-                                    </div>
+                                    <span className="text-[10px] font-bold text-jalanea-400 mt-2 uppercase tracking-wider">Match Score</span>
                                 </div>
 
                                 {/* Bottom: Buttons */}
@@ -1175,13 +1699,21 @@ Make it engaging and easy to absorb while commuting!`;
                                 </button>
                             </div>
 
+                            {/* ATS Score Checker Option */}
+                            <button
+                                onClick={() => handleATSCheck(selectedJob)}
+                                className="w-full mt-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/20"
+                            >
+                                <Target size={18} /> Check ATS Score
+                            </button>
+
                             {/* Apply Now - Direct link to job application */}
                             {selectedJob.applyUrl && selectedJob.applyUrl !== '#' && (
                                 <a
                                     href={selectedJob.applyUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="mt-4 flex items-center justify-center gap-2 px-6 py-3 bg-gold text-jalanea-950 font-bold rounded-xl hover:bg-gold/90 transition-all shadow-lg shadow-gold/20"
+                                    className="mt-2 flex items-center justify-center gap-2 px-6 py-3 bg-gold text-jalanea-950 font-bold rounded-xl hover:bg-gold/90 transition-all shadow-lg shadow-gold/20"
                                     onClick={() => closeJobModal()}
                                 >
                                     <ExternalLink size={18} />
@@ -1593,6 +2125,14 @@ Make it engaging and easy to absorb while commuting!`;
             <UpgradeModal
                 isOpen={showUpgradeModal}
                 onClose={() => setShowUpgradeModal(false)}
+                reason="no_credits"
+            />
+
+            {/* ATS Score Modal */}
+            <ATSScoreModal
+                isOpen={showATSModal}
+                onClose={() => setShowATSModal(false)}
+                initialJobDescription={atsJobDescription}
             />
         </div >
     );

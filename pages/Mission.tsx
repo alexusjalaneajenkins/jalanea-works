@@ -99,7 +99,7 @@ export const Mission: React.FC<MissionProps> = ({ setRoute }) => {
                                 Brain Drain
                             </h3>
                             <p className="text-jalanea-600 leading-relaxed">
-                                Every year, Valencia College graduates brilliant minds from communities that never had much.
+                                Every year, community colleges graduate brilliant minds from communities that never had much.
                                 And what happens? <span className="font-bold text-jalanea-900">The best of us get shipped off.</span>
                             </p>
                             <p className="text-jalanea-600 leading-relaxed mt-3">

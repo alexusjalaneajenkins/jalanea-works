@@ -9,10 +9,17 @@ import {
     Briefcase, BookOpen, UserPlus, PenTool, Coffee, ExternalLink,
     Mail, CalendarClock, Plus, Trash2, ListChecks, ArrowRight, X, Edit2, Link as LinkIcon, CalendarPlus,
     Battery, BatteryCharging, Moon, Sun, Activity, Sparkles, Brain, Heart, CheckSquare, Square,
-    ChevronLeft, ChevronRight, Settings, Palette, AlignLeft, Circle, Loader2
+    ChevronLeft, ChevronRight, Settings, Palette, AlignLeft, Circle, Loader2, Flame, Target, Play,
+    Users, Linkedin, Upload
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { generateWellnessInsights, generateScheduleSuggestions, WellnessInsight, ScheduleSuggestion } from '../services/geminiService';
 import { TaskCategory, TimeBlock, ToDoItem } from '../types';
+import { PowerHourSetup, PowerHourSettings } from '../components/PowerHourSetup';
+import { NetworkingHourSetup, NetworkingHourSettings } from '../components/NetworkingHourSetup';
+import { WorkScheduleImportModal } from '../components/WorkScheduleImportModal';
+import { FreeWindowsCard, FreeWindowsSummary } from '../components/FreeWindowsCard';
+import { analyzeFreeWindows, FreeWindow } from '../services/scheduleAnalysisService';
 
 // --- Default Data ---
 
@@ -22,6 +29,8 @@ const DEFAULT_CATEGORIES: TaskCategory[] = [
     { id: 'learning', label: 'Learning', color: '#3b82f6' }, // blue-500
     { id: 'wellness', label: 'Wellness', color: '#10b981' }, // emerald-500
     { id: 'interview', label: 'Interview Prep', color: '#8b5cf6' }, // violet-500
+    { id: 'job_search', label: 'Power Hour', color: '#EAB308' }, // yellow-500
+    { id: 'networking', label: 'Networking', color: '#3B82F6' }, // blue-500 (distinct shade)
 ];
 
 const getTodayString = () => new Date().toISOString().split('T')[0];
@@ -69,11 +78,54 @@ const getFullDisplayDate = (dateStr: string) => {
     return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 };
 
+// Helper for Power Hour time formatting
+const formatPowerHourTime = (time: string): string => {
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+};
+
+const getDayId = (): string => {
+    const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    return days[new Date().getDay()];
+};
+
+const isPowerHourActive = (scheduledTime: string): boolean => {
+    const now = new Date();
+    const [hours, minutes] = scheduledTime.split(':').map(Number);
+    const start = new Date();
+    start.setHours(hours, minutes, 0, 0);
+    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    return now >= start && now < end;
+};
+
 export const Schedule: React.FC = () => {
     const { userProfile, saveUserProfile } = useAuth();
+    const navigate = useNavigate();
     const [viewMode, setViewMode] = useState<'calendar' | 'tasks'>('calendar');
     const [calendarView, setCalendarView] = useState<CalendarViewMode>('multi');
     const [isInitialized, setIsInitialized] = useState(false);
+
+    // Power Hour state
+    const [showPowerHourSetup, setShowPowerHourSetup] = useState(false);
+    const powerHourSettings = userProfile?.powerHour || null;
+
+    // Networking Hour state
+    const [showNetworkingHourSetup, setShowNetworkingHourSetup] = useState(false);
+    const networkingHourSettings = userProfile?.networkingHour || null;
+
+    // Work Schedule Import state
+    const [showScheduleImport, setShowScheduleImport] = useState(false);
+    const [showFreeWindowsSummary, setShowFreeWindowsSummary] = useState(false);
+    const workSchedule = userProfile?.workSchedule;
+    const classSchedule = userProfile?.classSchedule;
+
+    // Analyze free windows when work/class schedule changes
+    const freeWindows = useMemo(() => {
+        if (!workSchedule && !classSchedule) return [];
+        return analyzeFreeWindows(workSchedule, classSchedule, []);
+    }, [workSchedule, classSchedule]);
 
     // Calendar View State
     const [currentDate, setCurrentDate] = useState(getTodayString());
@@ -363,6 +415,231 @@ export const Schedule: React.FC = () => {
         return cat ? cat.color : '#cbd5e1';
     };
 
+    // --- POWER HOUR FUNCTIONS ---
+    const handleSavePowerHour = async (settings: PowerHourSettings) => {
+        await saveUserProfile({ powerHour: settings });
+
+        // Create recurring Power Hour blocks in schedule for the next 7 days
+        const today = new Date();
+        const newBlocks: TimeBlock[] = [];
+
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(today);
+            date.setDate(today.getDate() + i);
+            const dateStr = formatDate(date);
+            const dayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+            const dayId = dayNames[date.getDay()];
+
+            if (settings.scheduledDays.includes(dayId)) {
+                // Check if Power Hour block already exists for this day
+                const existingBlock = schedule.find(
+                    b => b.date === dateStr && b.categoryId === 'job_search'
+                );
+
+                if (!existingBlock) {
+                    const [hours, mins] = settings.scheduledTime.split(':').map(Number);
+                    const endHour = hours + 1;
+                    newBlocks.push({
+                        id: `ph-${dateStr}`,
+                        title: 'Power Hour',
+                        categoryId: 'job_search',
+                        startTime: settings.scheduledTime,
+                        endTime: `${endHour.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`,
+                        date: dateStr,
+                        description: `Apply to ${settings.dailyGoal} jobs`,
+                        isPowerHour: true
+                    });
+                }
+            }
+        }
+
+        if (newBlocks.length > 0) {
+            setSchedule(prev => [...prev, ...newBlocks]);
+        }
+    };
+
+    const todayDayId = getDayId();
+    const isPowerHourToday = powerHourSettings?.scheduledDays?.includes(todayDayId);
+    const isPowerHourNow = powerHourSettings && isPowerHourActive(powerHourSettings.scheduledTime);
+
+    // --- NETWORKING HOUR FUNCTIONS ---
+    const handleSaveNetworkingHour = async (settings: NetworkingHourSettings) => {
+        await saveUserProfile({ networkingHour: settings });
+
+        // Create networking hour blocks for the next 4 weeks
+        const today = new Date();
+        const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        const targetDayIndex = dayNames.indexOf(settings.scheduledDay);
+        const newBlocks: TimeBlock[] = [];
+
+        for (let week = 0; week < 4; week++) {
+            const date = new Date(today);
+            // Find the next occurrence of the target day
+            const currentDayIndex = date.getDay();
+            let daysUntilTarget = targetDayIndex - currentDayIndex;
+            if (daysUntilTarget < 0) daysUntilTarget += 7;
+            if (week === 0 && daysUntilTarget === 0 && date.getHours() >= parseInt(settings.scheduledTime.split(':')[0])) {
+                daysUntilTarget += 7; // Skip today if time has passed
+            }
+            date.setDate(date.getDate() + daysUntilTarget + (week * 7));
+            const dateStr = formatDate(date);
+
+            // Check if networking block already exists for this day
+            const existingBlock = schedule.find(
+                b => b.date === dateStr && b.categoryId === 'networking'
+            );
+
+            if (!existingBlock) {
+                const [hours, mins] = settings.scheduledTime.split(':').map(Number);
+                const endHour = hours + 1;
+                newBlocks.push({
+                    id: `net-${dateStr}`,
+                    title: 'Networking Hour',
+                    categoryId: 'networking',
+                    startTime: settings.scheduledTime,
+                    endTime: `${endHour.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`,
+                    date: dateStr,
+                    description: `Connect with ${settings.weeklyGoal} people`,
+                    isNetworkingHour: true
+                });
+            }
+        }
+
+        if (newBlocks.length > 0) {
+            setSchedule(prev => [...prev, ...newBlocks]);
+        }
+    };
+
+    // Check if today is the scheduled networking day
+    const todayFullDayName = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][new Date().getDay()];
+    const isNetworkingToday = networkingHourSettings?.scheduledDay === todayFullDayName;
+    const isNetworkingNow = networkingHourSettings && isNetworkingToday && isPowerHourActive(networkingHourSettings.scheduledTime);
+
+    // --- WORK SCHEDULE IMPORT FUNCTIONS ---
+    const handleSaveWorkSchedule = async (data: {
+        workSchedule?: {
+            jobName?: string;
+            shifts: Array<{ day: string; startTime: string; endTime: string }>;
+        };
+        classSchedule?: Array<{
+            id: string;
+            className: string;
+            days: string[];
+            startTime: string;
+            endTime: string;
+        }>;
+    }) => {
+        await saveUserProfile({
+            workSchedule: data.workSchedule,
+            classSchedule: data.classSchedule
+        });
+
+        // Create recurring blocks for work shifts
+        if (data.workSchedule?.shifts) {
+            const today = new Date();
+            const newBlocks: TimeBlock[] = [];
+            const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+            for (let i = 0; i < 14; i++) { // 2 weeks of blocks
+                const date = new Date(today);
+                date.setDate(today.getDate() + i);
+                const dateStr = formatDate(date);
+                const dayName = dayNames[date.getDay()];
+
+                // Add work shifts
+                data.workSchedule.shifts
+                    .filter(shift => shift.day.toLowerCase() === dayName)
+                    .forEach(shift => {
+                        const existingBlock = schedule.find(
+                            b => b.date === dateStr && b.categoryId === 'work' && b.startTime === shift.startTime
+                        );
+                        if (!existingBlock) {
+                            newBlocks.push({
+                                id: `work-${dateStr}-${shift.startTime}`,
+                                title: data.workSchedule?.jobName || 'Work',
+                                categoryId: 'work',
+                                startTime: shift.startTime,
+                                endTime: shift.endTime,
+                                date: dateStr,
+                                description: 'Regular work shift'
+                            });
+                        }
+                    });
+            }
+
+            if (newBlocks.length > 0) {
+                setSchedule(prev => [...prev, ...newBlocks]);
+            }
+        }
+
+        // Create recurring blocks for classes
+        if (data.classSchedule) {
+            const today = new Date();
+            const newBlocks: TimeBlock[] = [];
+            const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+            for (let i = 0; i < 14; i++) { // 2 weeks of blocks
+                const date = new Date(today);
+                date.setDate(today.getDate() + i);
+                const dateStr = formatDate(date);
+                const dayName = dayNames[date.getDay()];
+
+                data.classSchedule
+                    .filter(cls => cls.days.map(d => d.toLowerCase()).includes(dayName))
+                    .forEach(cls => {
+                        const existingBlock = schedule.find(
+                            b => b.date === dateStr && b.categoryId === 'learning' && b.title === cls.className
+                        );
+                        if (!existingBlock) {
+                            newBlocks.push({
+                                id: `class-${dateStr}-${cls.className}`,
+                                title: cls.className,
+                                categoryId: 'learning',
+                                startTime: cls.startTime,
+                                endTime: cls.endTime,
+                                date: dateStr,
+                                description: 'Class session'
+                            });
+                        }
+                    });
+            }
+
+            if (newBlocks.length > 0) {
+                setSchedule(prev => [...prev, ...newBlocks]);
+            }
+        }
+
+        // Show free windows summary after import
+        setShowFreeWindowsSummary(true);
+    };
+
+    // Handle setting a free window as Power Hour
+    const handleSetPowerHourFromWindow = (window: FreeWindow) => {
+        // Map day name to short format
+        const dayMap: Record<string, string> = {
+            'monday': 'mon',
+            'tuesday': 'tue',
+            'wednesday': 'wed',
+            'thursday': 'thu',
+            'friday': 'fri',
+            'saturday': 'sat',
+            'sunday': 'sun'
+        };
+
+        const settings: PowerHourSettings = {
+            scheduledTime: window.startTime,
+            scheduledDays: [dayMap[window.day]],
+            currentStreak: 0,
+            longestStreak: 0,
+            lastCompletedDate: null,
+            totalPowerHours: 0,
+            dailyGoal: 3
+        };
+
+        handleSavePowerHour(settings);
+        setShowFreeWindowsSummary(false);
+    };
+
     // --- CALENDAR EXPORT FUNCTIONS ---
     const exportToGoogleCalendar = (block: TimeBlock) => {
         const dateStr = block.date.replace(/-/g, '');
@@ -461,6 +738,15 @@ END:VCALENDAR`;
                             <Button size="sm" variant="ghost" onClick={() => setIsCategoryModalOpen(true)} icon={<Settings size={16} />}>Types</Button>
                             <Button
                                 size="sm"
+                                variant="outline"
+                                onClick={() => setShowScheduleImport(true)}
+                                icon={<Upload size={16} />}
+                                className={workSchedule || classSchedule ? 'border-green-300 text-green-600' : ''}
+                            >
+                                Import
+                            </Button>
+                            <Button
+                                size="sm"
                                 variant="glass-dark"
                                 className="bg-jalanea-900 text-gold border-jalanea-800 hover:bg-jalanea-800"
                                 icon={isLoadingSuggestions ? <Sparkles className="animate-spin" size={16} /> : <Sparkles size={16} />}
@@ -473,6 +759,196 @@ END:VCALENDAR`;
                     </div>
                 )}
             </div>
+
+            {/* --- POWER HOUR SECTION --- */}
+            {viewMode === 'calendar' && (
+                <div className={`rounded-2xl overflow-hidden transition-all ${
+                    isPowerHourNow
+                        ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-white shadow-lg shadow-yellow-500/30'
+                        : 'bg-white border border-jalanea-200'
+                }`}>
+                    <div className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-xl ${isPowerHourNow ? 'bg-white/20' : 'bg-yellow-100'}`}>
+                                    <Zap size={20} className={isPowerHourNow ? 'text-white' : 'text-yellow-600'} />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h3 className={`font-bold ${isPowerHourNow ? 'text-white' : 'text-jalanea-900'}`}>
+                                            {isPowerHourNow ? "Power Hour Active!" : "Today's Power Hour"}
+                                        </h3>
+                                        {powerHourSettings && powerHourSettings.currentStreak > 0 && (
+                                            <span className={`flex items-center gap-1 text-sm font-bold px-2 py-0.5 rounded-full ${
+                                                isPowerHourNow ? 'bg-white/20 text-white' : 'bg-orange-100 text-orange-600'
+                                            }`}>
+                                                <Flame size={12} />
+                                                {powerHourSettings.currentStreak}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {powerHourSettings && isPowerHourToday ? (
+                                        <p className={`text-sm ${isPowerHourNow ? 'text-white/80' : 'text-jalanea-500'}`}>
+                                            {formatPowerHourTime(powerHourSettings.scheduledTime)} - {formatPowerHourTime(
+                                                `${(parseInt(powerHourSettings.scheduledTime.split(':')[0]) + 1).toString().padStart(2, '0')}:${powerHourSettings.scheduledTime.split(':')[1]}`
+                                            )} • Goal: {powerHourSettings.dailyGoal} applications
+                                        </p>
+                                    ) : powerHourSettings ? (
+                                        <p className={`text-sm ${isPowerHourNow ? 'text-white/80' : 'text-jalanea-500'}`}>
+                                            Not scheduled today
+                                        </p>
+                                    ) : (
+                                        <p className={`text-sm ${isPowerHourNow ? 'text-white/80' : 'text-jalanea-500'}`}>
+                                            Set up your daily job search routine
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                {isPowerHourNow ? (
+                                    <Button
+                                        size="sm"
+                                        onClick={() => navigate('/jobs')}
+                                        icon={<Play size={14} />}
+                                        className="bg-white text-yellow-600 hover:bg-yellow-50"
+                                    >
+                                        Start Applying
+                                    </Button>
+                                ) : powerHourSettings ? (
+                                    <>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => setShowPowerHourSetup(true)}
+                                            className="border-jalanea-200"
+                                        >
+                                            Reschedule
+                                        </Button>
+                                        {isPowerHourToday && (
+                                            <Button
+                                                size="sm"
+                                                variant="primary"
+                                                onClick={() => navigate('/jobs')}
+                                                icon={<Target size={14} />}
+                                                className="bg-yellow-500 hover:bg-yellow-600"
+                                            >
+                                                Start Now
+                                            </Button>
+                                        )}
+                                    </>
+                                ) : (
+                                    <Button
+                                        size="sm"
+                                        variant="primary"
+                                        onClick={() => setShowPowerHourSetup(true)}
+                                        icon={<Zap size={14} />}
+                                        className="bg-yellow-500 hover:bg-yellow-600"
+                                    >
+                                        Set Up Power Hour
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- NETWORKING HOUR SECTION --- */}
+            {viewMode === 'calendar' && (
+                <div className={`rounded-2xl overflow-hidden transition-all ${
+                    isNetworkingNow
+                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30'
+                        : 'bg-white border border-jalanea-200'
+                }`}>
+                    <div className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-xl ${isNetworkingNow ? 'bg-white/20' : 'bg-blue-100'}`}>
+                                    <Users size={20} className={isNetworkingNow ? 'text-white' : 'text-blue-600'} />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h3 className={`font-bold ${isNetworkingNow ? 'text-white' : 'text-jalanea-900'}`}>
+                                            {isNetworkingNow ? "Networking Hour Active!" : "This Week's Networking Hour"}
+                                        </h3>
+                                        {networkingHourSettings && networkingHourSettings.currentWeekConnections > 0 && (
+                                            <span className={`text-sm font-bold px-2 py-0.5 rounded-full ${
+                                                isNetworkingNow ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-600'
+                                            }`}>
+                                                {networkingHourSettings.currentWeekConnections}/{networkingHourSettings.weeklyGoal}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {networkingHourSettings ? (
+                                        <p className={`text-sm ${isNetworkingNow ? 'text-white/80' : 'text-jalanea-500'}`}>
+                                            {networkingHourSettings.scheduledDay.charAt(0).toUpperCase() + networkingHourSettings.scheduledDay.slice(1)} at {formatPowerHourTime(networkingHourSettings.scheduledTime)} • Goal: {networkingHourSettings.weeklyGoal} connections
+                                        </p>
+                                    ) : (
+                                        <p className={`text-sm ${isNetworkingNow ? 'text-white/80' : 'text-jalanea-500'}`}>
+                                            Set up weekly time for building your professional network
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                {isNetworkingNow ? (
+                                    <Button
+                                        size="sm"
+                                        onClick={() => window.open('https://www.linkedin.com', '_blank')}
+                                        icon={<Linkedin size={14} />}
+                                        className="bg-white text-blue-600 hover:bg-blue-50"
+                                    >
+                                        Open LinkedIn
+                                    </Button>
+                                ) : networkingHourSettings ? (
+                                    <>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => setShowNetworkingHourSetup(true)}
+                                            className="border-jalanea-200"
+                                        >
+                                            Reschedule
+                                        </Button>
+                                        {isNetworkingToday && (
+                                            <Button
+                                                size="sm"
+                                                variant="primary"
+                                                onClick={() => window.open('https://www.linkedin.com', '_blank')}
+                                                icon={<Linkedin size={14} />}
+                                                className="bg-blue-500 hover:bg-blue-600"
+                                            >
+                                                Start Networking
+                                            </Button>
+                                        )}
+                                    </>
+                                ) : (
+                                    <Button
+                                        size="sm"
+                                        variant="primary"
+                                        onClick={() => setShowNetworkingHourSetup(true)}
+                                        icon={<Users size={14} />}
+                                        className="bg-blue-500 hover:bg-blue-600"
+                                    >
+                                        Set Up Networking Hour
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- FREE WINDOWS SECTION --- */}
+            {viewMode === 'calendar' && freeWindows.length > 0 && (
+                <FreeWindowsCard
+                    windows={freeWindows}
+                    onSetPowerHour={handleSetPowerHourFromWindow}
+                    onOptimize={() => setShowPowerHourSetup(true)}
+                />
+            )}
 
             {/* --- MONTH GRID VIEW --- */}
             {viewMode === 'calendar' && calendarView === 'month' && (
@@ -546,18 +1022,32 @@ END:VCALENDAR`;
                                     <div className="flex-1 p-2 space-y-2 overflow-y-auto custom-scrollbar relative group/col">
                                         {dayBlocks.map(block => {
                                             const catColor = getCatColor(block.categoryId);
+                                            const isPowerHourBlock = block.categoryId === 'job_search' || block.isPowerHour;
+                                            const isNetworkingBlock = block.categoryId === 'networking' || block.isNetworkingHour;
                                             return (
                                                 <div
                                                     key={block.id}
                                                     onClick={() => openEditModal(block)}
-                                                    className="p-3 rounded-xl border border-black/5 shadow-sm hover:shadow-md transition-all cursor-pointer relative overflow-hidden group"
-                                                    style={{ borderLeft: `4px solid ${catColor}`, backgroundColor: 'white' }}
+                                                    className={`p-3 rounded-xl border shadow-sm hover:shadow-md transition-all cursor-pointer relative overflow-hidden group ${
+                                                        isPowerHourBlock
+                                                            ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-300'
+                                                            : isNetworkingBlock
+                                                                ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300'
+                                                                : 'border-black/5 bg-white'
+                                                    }`}
+                                                    style={{ borderLeft: `4px solid ${catColor}` }}
                                                 >
                                                     <div className="flex justify-between items-start">
                                                         <span className="text-xs font-bold text-jalanea-400">{block.startTime}</span>
-                                                        {block.isAiSuggested && <Sparkles size={10} className="text-gold" />}
+                                                        <div className="flex items-center gap-1">
+                                                            {isPowerHourBlock && <Zap size={12} className="text-yellow-500" />}
+                                                            {isNetworkingBlock && <Users size={12} className="text-blue-500" />}
+                                                            {block.isAiSuggested && <Sparkles size={10} className="text-gold" />}
+                                                        </div>
                                                     </div>
-                                                    <div className="font-bold text-sm text-jalanea-900 mt-1 line-clamp-2">{block.title}</div>
+                                                    <div className={`font-bold text-sm mt-1 line-clamp-2 ${
+                                                        isPowerHourBlock ? 'text-yellow-700' : isNetworkingBlock ? 'text-blue-700' : 'text-jalanea-900'
+                                                    }`}>{block.title}</div>
                                                     {block.description && <div className="text-xs text-jalanea-500 mt-1 line-clamp-1">{block.description}</div>}
                                                     <div className="text-[10px] text-jalanea-500 mt-1 uppercase tracking-wide opacity-70">
                                                         {categories.find(c => c.id === block.categoryId)?.label}
@@ -927,6 +1417,43 @@ END:VCALENDAR`;
                     </Card>
                 </div>
             )}
+
+            {/* --- POWER HOUR SETUP MODAL --- */}
+            <PowerHourSetup
+                isOpen={showPowerHourSetup}
+                onClose={() => setShowPowerHourSetup(false)}
+                onSave={handleSavePowerHour}
+                existingSchedule={schedule.filter(s => s.date === getTodayString()).map(s => ({
+                    startTime: s.startTime,
+                    endTime: s.endTime
+                }))}
+                existingSettings={powerHourSettings}
+            />
+
+            {/* --- NETWORKING HOUR SETUP MODAL --- */}
+            <NetworkingHourSetup
+                isOpen={showNetworkingHourSetup}
+                onClose={() => setShowNetworkingHourSetup(false)}
+                onSave={handleSaveNetworkingHour}
+                existingSettings={networkingHourSettings}
+            />
+
+            {/* --- WORK SCHEDULE IMPORT MODAL --- */}
+            <WorkScheduleImportModal
+                isOpen={showScheduleImport}
+                onClose={() => setShowScheduleImport(false)}
+                onSave={handleSaveWorkSchedule}
+                initialWorkSchedule={workSchedule}
+                initialClassSchedule={classSchedule}
+            />
+
+            {/* --- FREE WINDOWS SUMMARY MODAL --- */}
+            <FreeWindowsSummary
+                isOpen={showFreeWindowsSummary}
+                onClose={() => setShowFreeWindowsSummary(false)}
+                windows={freeWindows}
+                onSetPowerHour={handleSetPowerHourFromWindow}
+            />
         </div>
     );
 };

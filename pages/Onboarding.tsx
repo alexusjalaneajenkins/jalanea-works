@@ -1,32 +1,32 @@
-import React, { useReducer, useState, useCallback } from 'react';
+import React, { useReducer, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CENTRAL_FL_SCHOOLS, getDegreeTypes, getPrograms } from '../data/centralFloridaPrograms';
+import { getProgramSkills } from '../data/centralFloridaPrograms';
 import { Card } from '../components/Card';
-import { Button } from '../components/Button';
-import { Combobox } from '../components/Combobox';
 import { Stage1_Identity } from '../components/onboarding/Stage1_Identity';
 import { Stage2_Education } from '../components/onboarding/Stage2_Education';
 import { Stage3_Logistics } from '../components/onboarding/Stage3_Logistics';
-import { Stage4_Reality } from '../components/onboarding/Stage4_Reality';
+import { Stage4_Salary } from '../components/onboarding/Stage4_Salary';
+import { Stage5_Reality } from '../components/onboarding/Stage5_Reality';
+import { BudgetData } from '../components/SalaryBudgetBreakdown';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, setDoc } from 'firebase/firestore';
 import { db, auth } from '../services/firebase';
 import {
-    User, MapPin, GraduationCap, Briefcase, Clock, Car, Bus, Bike,
-    ChevronRight, ChevronLeft, Check, Sparkles, Plus, X, Trash2,
-    Mic, Unlock, Zap, Heart, Home, Calendar, Target, AlertCircle,
-    Building, TrendingUp, Lightbulb, ExternalLink, Lock
+    Car, Bus, Bike, ChevronRight, ChevronLeft, Check, Sparkles
 } from 'lucide-react';
-import type { UserProfile, Education, DegreeType, WorkStyle } from '../types';
+import type { UserProfile, Education, DegreeType } from '../types';
 
 // =====================================================
-// JALANEA WORKS: 6-STAGE ONBOARDING WIZARD
+// JALANEA WORKS: 5-STAGE ONBOARDING WIZARD (3 GROUPS)
 // Philosophy: "Build Bridges, Not Walls"
+//
+// GROUP 1: About You (Stages 1-2)
+// GROUP 2: Your Goals (Stages 3-4)
+// GROUP 3: Your Path (Stage 5)
 // =====================================================
 
-type Stage = 1 | 2 | 3 | 4 | 5 | 6;
-type TransportMode = 'car' | 'bus' | 'bike' | 'rideshare';
-type UrgencyLevel = 'emergency' | 'bridge' | 'career';
+type Stage = 1 | 2 | 3 | 4 | 5;
+type TransportMode = 'car' | 'bus' | 'bike' | 'rideshare' | 'walk';
 
 // Education Entry
 interface EducationEntry {
@@ -38,22 +38,8 @@ interface EducationEntry {
     status?: string; // Alumni or Student
 }
 
-// Structured Bridge for Stage 5
-interface Bridge {
-    type: 'resource' | 'program' | 'strategy' | 'tip' | 'grant' | 'filter';
-    title: string;
-    description?: string;
-    metadata?: {
-        weeks?: number; // For timeline
-        savings?: string;
-        actionUrl?: string;
-    };
-}
-
-interface SolutionCard {
-    challenge: string;
-    bridges: Bridge[];
-}
+// Availability type
+type AvailabilityType = 'open' | 'weekdays' | 'weekends' | 'flexible' | 'limited';
 
 // Complete State Shape
 interface OnboardingState {
@@ -61,23 +47,24 @@ interface OnboardingState {
     // Stage 1: Identity
     name: string;
     commuteStart: string;
+    commuteCoords: string; // lat,lon for distance calculations
     linkedIn: string;
     portfolio: string;
     // Stage 2: Education
     education: EducationEntry[];
-    // Stage 3: Logistics
-    transport: TransportMode;
-    hardStopStart: string;
-    hardStopEnd: string;
-    weekendsAvailable: boolean;
-    // Stage 4: Open Mic
+    // Stage 3: Logistics (all start unselected - user must choose)
+    transport: TransportMode[];
+    commuteTolerance: 'local' | 'standard' | 'extended' | null;
+    availability: AvailabilityType | null;
+    selectedDays: string[];
+    shiftPreference: string[];
+    // Stage 4: Salary (starts unselected - user must choose a tier)
+    salaryMin: number | null;
+    salaryMax: number | null;
+    budgetData: BudgetData | null;
+    // Stage 5: Reality/Challenges
     realityContext: string;
     selectedPrompts: string[];
-    // Stage 5: Strategy Reveal
-    solutions: SolutionCard[];
-    solutionsAccepted: boolean;
-    // Stage 6: Mission
-    urgency: UrgencyLevel;
     // Meta
     isSubmitting: boolean;
 }
@@ -90,47 +77,58 @@ type OnboardingAction =
     | { type: 'UPDATE_EDUCATION'; id: string; field: keyof EducationEntry; value: string }
     | { type: 'REMOVE_EDUCATION'; id: string }
     | { type: 'TOGGLE_PROMPT'; prompt: string }
-    | { type: 'SET_SOLUTIONS'; solutions: SolutionCard[] }
     | { type: 'RESET' };
 
 // Helper to generate unique IDs
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
-const getBridgeIcon = (type: Bridge['type']) => {
-    switch (type) {
-        case 'grant': return <Unlock className="w-4 h-4" />;
-        case 'resource': return <Building className="w-4 h-4" />;
-        case 'program': return <Briefcase className="w-4 h-4" />;
-        case 'strategy': return <TrendingUp className="w-4 h-4" />;
-        case 'tip': return <Lightbulb className="w-4 h-4" />;
-        case 'filter': return <Target className="w-4 h-4" />;
-        default: return <Check className="w-4 h-4" />;
+// Group configuration for progress indicator
+const STAGE_GROUPS = [
+    { name: 'About You', stages: [1, 2] as const },
+    { name: 'Your Goals', stages: [3, 4] as const },
+    { name: 'Your Path', stages: [5] as const },
+] as const;
+
+const getGroupInfo = (stage: Stage) => {
+    for (let i = 0; i < STAGE_GROUPS.length; i++) {
+        const group = STAGE_GROUPS[i];
+        if ((group.stages as readonly number[]).includes(stage)) {
+            const stageIndex = (group.stages as readonly number[]).indexOf(stage);
+            return {
+                groupIndex: i,
+                groupName: group.name,
+                stageInGroup: stageIndex + 1,
+                totalInGroup: group.stages.length,
+            };
+        }
     }
+    return { groupIndex: 0, groupName: '', stageInGroup: 1, totalInGroup: 1 };
 };
 
-// Initial State
+// Initial State - all selections start empty, user must actively choose
 const initialState: OnboardingState = {
     stage: 1,
-    // Stage 1
+    // Stage 1: Identity
     name: '',
     commuteStart: '',
+    commuteCoords: '',
     linkedIn: '',
     portfolio: '',
-    // Stage 2 - Start empty, Stage2_Education component handles empty state
+    // Stage 2: Education
     education: [],
-    // Stage 3
-    transport: 'car',
-    hardStopStart: '',
-    hardStopEnd: '',
-    weekendsAvailable: true,
-    // Stage 4
+    // Stage 3: Logistics - NO defaults, user must select
+    transport: [],
+    commuteTolerance: null,
+    availability: null,
+    selectedDays: [],
+    shiftPreference: [],
+    // Stage 4: Salary - NO defaults, user must select a tier
+    salaryMin: null,
+    salaryMax: null,
+    budgetData: null,
+    // Stage 5: Reality/Challenges
     realityContext: '',
     selectedPrompts: [],
-    // Stage 5
-    solutions: [],
-    solutionsAccepted: false, // Default to false to trigger animation on toggle
-    // Stage 6
-    urgency: 'career',
     // Meta
     isSubmitting: false,
 };
@@ -165,8 +163,6 @@ function onboardingReducer(state: OnboardingState, action: OnboardingAction): On
                     ? state.selectedPrompts.filter(p => p !== action.prompt)
                     : [...state.selectedPrompts, action.prompt]
             };
-        case 'SET_SOLUTIONS':
-            return { ...state, solutions: action.solutions };
         case 'RESET':
             return initialState;
         default:
@@ -182,143 +178,41 @@ const TRANSPORT_OPTIONS: { value: TransportMode; label: string; icon: React.Reac
     { value: 'rideshare', label: 'Ride-Share', icon: <Car className="w-6 h-6" />, desc: 'Uber/Lyft/Friend' },
 ];
 
-// Reality Prompts for Stage 4
-const REALITY_PROMPTS = [
-    { label: 'I have a mobility challenge', icon: '♿' },
-    { label: 'I care for a family member', icon: '👨‍👩‍👧' },
-    { label: 'I need housing support', icon: '🏠' },
-    { label: 'I work multiple jobs', icon: '💼' },
-    { label: 'I have limited transportation', icon: '🚌' },
-    { label: 'I am a single parent', icon: '👶' },
-];
+// Categorize skills into technical, design, and soft
+const categorizeSkills = (skills: string[]): { technical: string[]; design: string[]; soft: string[] } => {
+    const designKeywords = ['adobe', 'figma', 'photoshop', 'illustrator', 'design', 'ui/ux', 'typography', 'branding', 'layout', 'color', 'camera', 'photo', 'video', 'animation', 'creative suite', 'lightroom', 'premiere', 'after effects', 'maya', 'blender', 'storyboard'];
+    const softKeywords = ['communication', 'teamwork', 'leadership', 'problem solving', 'time management', 'critical thinking', 'adaptability', 'customer service', 'client', 'team', 'management', 'planning', 'organization'];
 
-// Urgency Options for Stage 6
-const URGENCY_OPTIONS: { value: UrgencyLevel; label: string; icon: React.ReactNode; desc: string; color: string }[] = [
-    { value: 'emergency', label: 'Emergency / ASAP', icon: <Zap className="w-6 h-6" />, desc: 'Next-day pay priority', color: 'red' },
-    { value: 'bridge', label: 'Bridge Job', icon: <Target className="w-6 h-6" />, desc: 'Cashflow while building', color: 'yellow' },
-    { value: 'career', label: 'Career Launch', icon: <Sparkles className="w-6 h-6" />, desc: 'Long-term growth focus', color: 'green' },
-];
+    const technical: string[] = [];
+    const design: string[] = [];
+    const soft: string[] = [];
 
-// Example solutions generator (would be AI-powered in production)
-const generateSolutions = (context: string, prompts: string[]): SolutionCard[] => {
-    const solutions: SolutionCard[] = [];
+    skills.forEach(skill => {
+        const lowerSkill = skill.toLowerCase();
+        if (designKeywords.some(k => lowerSkill.includes(k))) {
+            design.push(skill);
+        } else if (softKeywords.some(k => lowerSkill.includes(k))) {
+            soft.push(skill);
+        } else {
+            technical.push(skill);
+        }
+    });
 
-    if (prompts.includes('I have a mobility challenge') || context.toLowerCase().includes('mobility') || context.toLowerCase().includes('standing')) {
-        solutions.push({
-            challenge: 'Mobility / Standing',
-            bridges: [
-                {
-                    type: 'grant',
-                    title: 'Voc Rehab Equipment Grant',
-                    description: 'Funding for adaptive chairs & tools',
-                    metadata: { actionUrl: 'https://www.rehabworks.org/' }
-                },
-                {
-                    type: 'tip',
-                    title: 'Workplace Modification',
-                    description: 'Request anti-fatigue mats (ADA Right)'
-                },
-                {
-                    type: 'filter',
-                    title: 'Smart Job Match',
-                    description: 'Prioritizing desk-based & flexible roles'
-                },
-            ],
-        });
-    }
+    return { technical, design, soft };
+};
 
-    if (prompts.includes('I need housing support') || context.toLowerCase().includes('housing') || context.toLowerCase().includes('homeless')) {
-        solutions.push({
-            challenge: 'Housing Stability',
-            bridges: [
-                {
-                    type: 'resource',
-                    title: 'Coalition for the Homeless',
-                    description: 'Central Florida Housing Support',
-                    metadata: { actionUrl: 'https://www.centralfloridahomeless.org/' }
-                },
-                {
-                    type: 'program',
-                    title: 'Rapid Re-Housing',
-                    description: 'Orange County Assistance Program'
-                },
-                {
-                    type: 'tip',
-                    title: 'Pay Cycle Optimization',
-                    description: 'Targeting jobs with Daily/Weekly pay'
-                },
-            ],
-        });
-    }
+// Derive all skills from education programs
+const deriveSkillsFromEducation = (education: EducationEntry[]): { technical: string[]; design: string[]; soft: string[] } => {
+    const allSkills = new Set<string>();
 
-    if (prompts.includes('I have limited transportation') || context.toLowerCase().includes('bus') || context.toLowerCase().includes('no car')) {
-        solutions.push({
-            challenge: 'Transportation Gap',
-            bridges: [
-                {
-                    type: 'strategy',
-                    title: 'The 14-Week Bus Grind',
-                    description: 'Ride LYNX → Save $2.5k → Buy Car',
-                    metadata: { weeks: 14, savings: '$2,500' }
-                },
-                {
-                    type: 'resource',
-                    title: 'LYNX Reduced Fare',
-                    description: 'Discounted passes for eligible riders',
-                    metadata: { actionUrl: 'https://www.golynx.com/' }
-                },
-                {
-                    type: 'tip',
-                    title: 'I-4 Corridor Priority',
-                    description: 'Focusing on high-access transit routes'
-                },
-            ],
-        });
-    }
+    education.forEach(edu => {
+        if (edu.program) {
+            const programSkills = getProgramSkills(edu.program);
+            programSkills.forEach(skill => allSkills.add(skill));
+        }
+    });
 
-    if (prompts.includes('I care for a family member') || context.toLowerCase().includes('caregiver')) {
-        solutions.push({
-            challenge: 'Caregiver Schedule',
-            bridges: [
-                {
-                    type: 'filter',
-                    title: 'Schedule Defender',
-                    description: 'Matching shifts around your care hours'
-                },
-                {
-                    type: 'tip',
-                    title: 'Remote Options',
-                    description: 'Work from home roles allow breaks'
-                },
-                {
-                    type: 'resource',
-                    title: 'Respite Care Orange County',
-                    description: 'Support for caregiver relief',
-                    metadata: { actionUrl: 'https://www.seniorsfirstinc.org/' }
-                },
-            ],
-        });
-    }
-
-    if (solutions.length === 0 && (context.trim() || prompts.length > 0)) {
-        solutions.push({
-            challenge: 'Your Context',
-            bridges: [
-                {
-                    type: 'strategy',
-                    title: 'Personalized Matching',
-                    description: 'We analyze your needs to find the best fit'
-                },
-                {
-                    type: 'filter',
-                    title: 'Bridge Builder AI',
-                    description: 'Removing barriers, highlighting support'
-                },
-            ],
-        });
-    }
-
-    return solutions;
+    return categorizeSkills(Array.from(allSkills));
 };
 
 export const Onboarding: React.FC = () => {
@@ -326,24 +220,113 @@ export const Onboarding: React.FC = () => {
     const { currentUser: user, saveUserProfile: updateUserProfile } = useAuth();
     const [state, dispatch] = useReducer(onboardingReducer, initialState);
 
-    // Navigation
-    const nextStage = () => {
-        if (state.stage === 4) {
-            // Generate solutions before moving to Stage 5
-            const solutions = generateSolutions(state.realityContext, state.selectedPrompts);
-            dispatch({ type: 'SET_SOLUTIONS', solutions });
+    // Scroll to top whenever stage changes
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [state.stage]);
+
+    // Get current group info
+    const groupInfo = getGroupInfo(state.stage);
+
+    // Save progress to Firebase (called on each stage completion)
+    const saveProgress = async () => {
+        if (!auth.currentUser) {
+            console.warn('No authenticated user, skipping progress save');
+            return;
         }
-        dispatch({ type: 'SET_STAGE', payload: Math.min(6, state.stage + 1) as Stage });
+
+        try {
+            // Build progress data with flat field names
+            const progressData: Record<string, any> = {
+                onboardingStage: state.stage,
+                updatedAt: new Date().toISOString(),
+            };
+
+            // Stage 1: Identity
+            if (state.name) {
+                progressData.name = state.name;
+                progressData.fullName = state.name;
+            }
+            if (state.commuteStart) progressData.location = state.commuteStart;
+            if (state.commuteCoords) progressData.commuteCoords = state.commuteCoords;
+            if (state.linkedIn) progressData.linkedinUrl = state.linkedIn;
+            if (state.portfolio) progressData.portfolioUrl = state.portfolio;
+
+            // Stage 2: Credentials
+            if (state.education.length > 0) {
+                const credentials = state.education
+                    .filter(edu => edu.school && edu.program)
+                    .map(edu => ({
+                        school: edu.school,
+                        program: edu.program,
+                        graduationYear: edu.gradYear,
+                        degreeType: edu.degreeType || 'Certificate',
+                        status: edu.status || 'Alumni',
+                    }));
+                if (credentials.length > 0) {
+                    progressData.credentials = credentials;
+                    progressData.skills = deriveSkillsFromEducation(state.education);
+                }
+            }
+
+            // Stage 3: Logistics (flat fields)
+            if (state.transport.length > 0) progressData.commuteMethod = state.transport;
+            if (state.commuteTolerance) progressData.commuteWillingness = state.commuteTolerance;
+            if (state.availability) progressData.availability = state.availability;
+            if (state.selectedDays.length > 0) progressData.selectedDays = state.selectedDays;
+            if (state.shiftPreference.length > 0) progressData.shiftPreference = state.shiftPreference;
+
+            // Stage 4: Salary (flat fields)
+            if (state.salaryMin && state.salaryMax) {
+                progressData.salaryMin = state.salaryMin;
+                progressData.salaryMax = state.salaryMax;
+                // Determine tier name
+                const min = state.salaryMin;
+                if (min === 30000) progressData.salaryTier = 'entry';
+                else if (min === 40000) progressData.salaryTier = 'growing';
+                else if (min === 52000) progressData.salaryTier = 'comfortable';
+                else if (min === 62000) progressData.salaryTier = 'established';
+                else if (min === 75000) progressData.salaryTier = 'thriving';
+                else if (min === 90000) progressData.salaryTier = 'advanced';
+            }
+            if (state.budgetData) progressData.budgetData = state.budgetData;
+
+            // Stage 5: Reality
+            if (state.selectedPrompts.length > 0) progressData.realityChallenges = state.selectedPrompts;
+            if (state.realityContext) progressData.realityContext = state.realityContext;
+
+            // Save to Firestore
+            console.log('Saving progress to Firebase:', progressData);
+            const userDocRef = doc(db, 'users', auth.currentUser.uid);
+            await setDoc(userDocRef, progressData, { merge: true });
+            console.log('Progress saved successfully');
+        } catch (error) {
+            console.error('Error saving progress:', error);
+            // Don't block navigation on save failure
+        }
+    };
+
+    // Navigation with progressive saving
+    const nextStage = async () => {
+        // Save current stage data before advancing
+        await saveProgress();
+        dispatch({ type: 'SET_STAGE', payload: Math.min(5, state.stage + 1) as Stage });
     };
     const prevStage = () => dispatch({ type: 'SET_STAGE', payload: Math.max(1, state.stage - 1) as Stage });
 
-    // Validation
+    // Validation - all required fields must be actively selected
     const isStage1Valid = state.name.trim() && state.commuteStart.trim();
     const isStage2Valid = state.education.some(edu => edu.school && edu.program);
-    const isStage3Valid = state.transport !== null;
-    const isStage4Valid = true; // Optional stage
-    const isStage5Valid = true; // Just review
-    const isStage6Valid = state.urgency !== null;
+    // Stage 3: Transport, commute tolerance, and availability are all required
+    const isStage3Valid =
+        state.transport.length > 0 &&
+        state.commuteTolerance !== null &&
+        state.availability !== null &&
+        // If "limited" availability, require at least one day selected
+        (state.availability !== 'limited' || state.selectedDays.length > 0);
+    // Stage 4: User must select a salary tier
+    const isStage4Valid = state.salaryMin !== null && state.salaryMax !== null;
+    const isStage5Valid = true; // Reality - optional stage
 
     const canProceed = () => {
         switch (state.stage) {
@@ -352,108 +335,175 @@ export const Onboarding: React.FC = () => {
             case 3: return isStage3Valid;
             case 4: return isStage4Valid;
             case 5: return isStage5Valid;
-            case 6: return isStage6Valid;
             default: return false;
         }
     };
 
-    // Submit
+    // Submit - Save all onboarding data to Firebase
     const submitProfile = async () => {
+        console.log('=== ONBOARDING SUBMIT START ===');
+        console.log('User from context:', user?.uid);
+        console.log('Auth currentUser:', auth.currentUser?.uid);
+
         if (!user || !auth.currentUser) {
-            alert('Authentication lost. Please refresh.');
+            alert('Authentication lost. Please refresh the page and try again.');
+            console.error('No authenticated user found');
             return;
         }
 
         dispatch({ type: 'UPDATE_FIELD', field: 'isSubmitting', value: true });
 
         try {
-            const education: Education[] = state.education
+            // Build credentials array from education
+            const credentials = state.education
                 .filter(edu => edu.school && edu.program)
                 .map(edu => ({
-                    degreeType: edu.degreeType as DegreeType,
-                    degree: edu.program,
                     school: edu.school,
-                    year: edu.gradYear,
                     program: edu.program,
+                    graduationYear: edu.gradYear,
+                    degreeType: edu.degreeType || 'Certificate',
+                    status: edu.status || 'Alumni',
                 }));
 
-            const profile: Partial<UserProfile> = {
-                name: state.name,
-                fullName: state.name,
-                location: state.commuteStart,
-                education,
-                preferences: {
-                    targetRoles: [],
-                    workStyles: state.transport === 'car' ? ['On-site', 'Hybrid'] : ['Remote', 'Hybrid'],
-                    learningStyle: 'Mixed',
-                    salary: 50000,
-                    transportMode: state.transport === 'car' ? 'Car' : state.transport === 'bus' ? 'Bus' : 'Car',
-                },
-                logistics: {
-                    isParent: state.selectedPrompts.includes('I am a single parent'),
-                    employmentStatus: state.urgency === 'emergency' ? 'Unemployed' : 'Full-time',
-                    transportMode: state.transport,
-                    hardStopStart: state.hardStopStart,
-                    hardStopEnd: state.hardStopEnd,
-                    weekendsAvailable: state.weekendsAvailable,
-                    realityContext: state.realityContext,
-                    selectedPrompts: state.selectedPrompts,
-                    urgencyLevel: state.urgency,
-                },
-                linkedinUrl: state.linkedIn,
-                portfolioUrl: state.portfolio,
+            // Derive skills from education programs
+            const derivedSkills = deriveSkillsFromEducation(state.education);
+
+            // Determine salary tier from min/max values
+            const getSalaryTierName = (min: number, max: number): string => {
+                if (min === 30000) return 'entry';
+                if (min === 40000) return 'growing';
+                if (min === 52000) return 'comfortable';
+                if (min === 62000) return 'established';
+                if (min === 75000) return 'thriving';
+                if (min === 90000) return 'advanced';
+                return 'custom';
+            };
+
+            // Build flat onboarding data object
+            const onboardingData = {
+                // Stage 1: Identity
+                name: state.name || null,
+                fullName: state.name || null,
+                location: state.commuteStart || null,
+                commuteCoords: state.commuteCoords || null,
+                linkedinUrl: state.linkedIn || null,
+                portfolioUrl: state.portfolio || null,
+
+                // Stage 2: Education/Credentials
+                credentials: credentials,
+                skills: derivedSkills,
+
+                // Stage 3: Logistics (flat fields)
+                commuteMethod: state.transport, // array like ['car', 'bus']
+                commuteWillingness: state.commuteTolerance, // 'local', 'standard', 'extended'
+                availability: state.availability, // 'open', 'weekdays', etc.
+                selectedDays: state.selectedDays.length > 0 ? state.selectedDays : null,
+                shiftPreference: state.shiftPreference.length > 0 ? state.shiftPreference : null,
+
+                // Stage 4: Salary (flat fields)
+                salaryTier: state.salaryMin && state.salaryMax
+                    ? getSalaryTierName(state.salaryMin, state.salaryMax)
+                    : null,
+                salaryMin: state.salaryMin,
+                salaryMax: state.salaryMax,
+                budgetData: state.budgetData || null,
+
+                // Stage 5: Reality/Challenges
+                realityChallenges: state.selectedPrompts.length > 0 ? state.selectedPrompts : null,
+                realityContext: state.realityContext || null,
+
+                // Meta fields
                 onboardingCompleted: true,
+                onboardingCompletedAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
             };
 
-            const userDoc = doc(db, 'users', auth.currentUser.uid);
-            await setDoc(userDoc, profile, { merge: true });
-            await updateUserProfile(profile);
+            console.log('Onboarding data to save:', JSON.stringify(onboardingData, null, 2));
+            console.log('Saving to user document:', auth.currentUser.uid);
+
+            // Save to Firestore with merge to preserve subscription data
+            const userDocRef = doc(db, 'users', auth.currentUser.uid);
+            await setDoc(userDocRef, onboardingData, { merge: true });
+
+            console.log('=== FIREBASE SAVE SUCCESSFUL ===');
+
+            // Also update context (this triggers profile reload)
+            await updateUserProfile(onboardingData as any);
+
+            console.log('=== ONBOARDING COMPLETE - REDIRECTING ===');
             navigate('/dashboard');
-        } catch (error) {
-            console.error('Error saving profile:', error);
-            alert('Failed to save. Please try again.');
+        } catch (error: any) {
+            console.error('=== FIREBASE SAVE FAILED ===');
+            console.error('Error details:', error);
+            console.error('Error code:', error?.code);
+            console.error('Error message:', error?.message);
+            alert(`Failed to save your profile: ${error?.message || 'Unknown error'}. Please try again.`);
         } finally {
             dispatch({ type: 'UPDATE_FIELD', field: 'isSubmitting', value: false });
         }
     };
 
-    // Stage Indicator
-    const StageIndicator = () => (
-        <div className="flex items-center justify-center gap-2 mb-8">
-            {[1, 2, 3, 4, 5, 6].map((s) => (
-                <div
-                    key={s}
-                    className={`w-3 h-3 rounded-full transition-all duration-300 ${s === state.stage
-                        ? 'bg-yellow-500 scale-125 ring-4 ring-yellow-200'
-                        : s < state.stage
-                            ? 'bg-green-500'
-                            : 'bg-slate-200'
-                        }`}
-                />
-            ))}
+    // Group Progress Indicator
+    const GroupProgressIndicator = () => (
+        <div className="mb-8">
+            {/* 3 Group Circles */}
+            <div className="flex items-center justify-center gap-4 mb-4">
+                {STAGE_GROUPS.map((group, idx) => {
+                    const isCurrentGroup = idx === groupInfo.groupIndex;
+                    const isCompletedGroup = idx < groupInfo.groupIndex;
+                    return (
+                        <div key={group.name} className="flex items-center gap-2">
+                            <div
+                                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ${
+                                    isCurrentGroup
+                                        ? 'bg-amber-500 text-white scale-110 ring-4 ring-amber-500/30'
+                                        : isCompletedGroup
+                                            ? 'bg-amber-500 text-white'
+                                            : 'bg-slate-700 text-slate-400'
+                                }`}
+                            >
+                                {isCompletedGroup ? (
+                                    <Check className="w-5 h-5" />
+                                ) : (
+                                    idx + 1
+                                )}
+                            </div>
+                            {idx < STAGE_GROUPS.length - 1 && (
+                                <div className={`w-8 h-1 rounded-full transition-all ${
+                                    isCompletedGroup ? 'bg-amber-500' : 'bg-slate-700'
+                                }`} />
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Current Group Name */}
+            <div className="text-center">
+                <div className="text-amber-500 font-bold text-lg">
+                    {groupInfo.groupName}
+                </div>
+                {groupInfo.totalInGroup > 1 && (
+                    <div className="text-slate-400 text-sm">
+                        Step {groupInfo.stageInGroup} of {groupInfo.totalInGroup}
+                    </div>
+                )}
+            </div>
         </div>
     );
 
-    // Stage Labels
-    const STAGE_LABELS = ['', 'The Start Line', 'The Foundation', 'The Strategy', 'Your Reality', 'The Unlock', 'The Mission'];
-
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-yellow-50 py-12">
+        <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 py-12">
             <div className="max-w-2xl mx-auto px-4">
                 {/* Header */}
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-100 rounded-full mb-4">
-                        <Sparkles className="w-4 h-4 text-yellow-600" />
-                        <span className="text-sm font-medium text-yellow-700">Jalanea Works Onboarding</span>
+                <div className="text-center mb-4">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-full mb-4">
+                        <Sparkles className="w-4 h-4 text-amber-500" />
+                        <span className="text-sm font-bold text-amber-500">Jalanea Works Onboarding</span>
                     </div>
-                    <h1 className="text-3xl font-bold text-slate-900">
-                        {STAGE_LABELS[state.stage]}
-                    </h1>
-                    <p className="text-slate-500 mt-2">Stage {state.stage} of 6</p>
                 </div>
 
-                <StageIndicator />
+                <GroupProgressIndicator />
 
                 {/* Stage Content */}
                 <Card variant="solid-white" className="max-w-2xl mx-auto">
@@ -493,15 +543,10 @@ export const Onboarding: React.FC = () => {
                         <Stage3_Logistics
                             data={{
                                 transport: state.transport,
-                                hardStopStart: state.hardStopStart,
-                                hardStopEnd: state.hardStopEnd,
-                                weekendsAvailable: state.weekendsAvailable,
-                                // Cast explicitly if type isn't updated in OnboardingState yet, 
-                                // or assume we will store them in existing state if flexible.
-                                // For now, we'll cast to any or add them to OnboardingState in a separate step if strict.
-                                // Let's use flexible assignment for new fields until we update the interface.
-                                commuteTolerance: (state as any).commuteTolerance,
-                                constraintReason: (state as any).constraintReason
+                                commuteTolerance: state.commuteTolerance,
+                                availability: state.availability,
+                                selectedDays: state.selectedDays,
+                                shiftPreference: state.shiftPreference,
                             }}
                             onUpdate={(field, value) => dispatch({ type: 'UPDATE_FIELD', field: field as any, value })}
                             onNext={nextStage}
@@ -511,9 +556,21 @@ export const Onboarding: React.FC = () => {
 
 
 
-                    {/* ===== STAGE 4: OPEN MIC ===== */}
+                    {/* ===== STAGE 4: SALARY ===== */}
                     {state.stage === 4 && (
-                        <Stage4_Reality
+                        <Stage4_Salary
+                            data={{
+                                salaryMin: state.salaryMin,
+                                salaryMax: state.salaryMax,
+                                budgetData: state.budgetData
+                            }}
+                            onUpdate={(field, value) => dispatch({ type: 'UPDATE_FIELD', field: field as any, value })}
+                        />
+                    )}
+
+                    {/* ===== STAGE 5: REALITY/CHALLENGES ===== */}
+                    {state.stage === 5 && (
+                        <Stage5_Reality
                             data={{
                                 realityContext: state.realityContext,
                                 selectedPrompts: state.selectedPrompts
@@ -524,211 +581,41 @@ export const Onboarding: React.FC = () => {
                         />
                     )}
 
-                    {/* ===== STAGE 5: STRATEGY REVEAL ===== */}
-                    {state.stage === 5 && (
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-3 bg-green-100 rounded-xl">
-                                    <Unlock className="w-6 h-6 text-green-600" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-slate-900">The Jalanea Bridges</h2>
-                                    <p className="text-sm text-slate-500">Every challenge has a solution</p>
-                                </div>
-                            </div>
-
-                            {state.solutions.length > 0 ? (
-                                <div className="space-y-6">
-                                    {state.solutions.map((solution, idx) => (
-                                        <Card key={idx} variant="solid-white" className="p-0 overflow-hidden border-slate-100 shadow-sm">
-                                            <div className="grid grid-cols-1 md:grid-cols-[25%_75%]">
-                                                {/* Left: Challenge */}
-                                                <div className="p-5 bg-slate-50 border-b md:border-b-0 md:border-r border-slate-100">
-                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                                                        The Challenge
-                                                    </div>
-                                                    <div className="font-semibold text-slate-800 leading-tight">
-                                                        {solution.challenge}
-                                                    </div>
-                                                </div>
-
-                                                {/* Right: Bridges */}
-                                                <div className="p-5 bg-green-50/30">
-                                                    <div className="text-[10px] font-bold text-green-600 uppercase tracking-wider mb-3">
-                                                        The Jalanea Bridge
-                                                    </div>
-                                                    <div className="space-y-3">
-                                                        {solution.bridges.map((bridge, i) => (
-                                                            <div key={i} className="flex gap-3 items-start group">
-                                                                <div className={`mt-0.5 p-1.5 rounded-lg shrink-0 ${bridge.type === 'grant' ? 'bg-purple-100 text-purple-600' :
-                                                                    bridge.type === 'resource' ? 'bg-blue-100 text-blue-600' :
-                                                                        bridge.type === 'strategy' ? 'bg-amber-100 text-amber-600' :
-                                                                            'bg-green-100 text-green-600'
-                                                                    }`}>
-                                                                    {getBridgeIcon(bridge.type)}
-                                                                </div>
-                                                                <div className="flex-1">
-                                                                    <div className="font-bold text-slate-900 text-sm">
-                                                                        {bridge.title}
-                                                                        {bridge.metadata?.actionUrl && (
-                                                                            <a href={bridge.metadata.actionUrl} target="_blank" rel="noreferrer" className="ml-2 inline-flex items-center text-xs text-blue-600 hover:text-blue-700 hover:underline">
-                                                                                Open <ExternalLink className="w-3 h-3 ml-0.5" />
-                                                                            </a>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="text-sm text-slate-500 leading-relaxed">
-                                                                        {bridge.description}
-                                                                    </div>
-                                                                    {bridge.metadata?.weeks && (
-                                                                        <div className="mt-2 w-full max-w-xs p-2 bg-white rounded-lg border border-slate-100">
-                                                                            <div className="flex justify-between text-[10px] font-bold text-slate-400 mb-1">
-                                                                                <span>START</span>
-                                                                                <span>{bridge.metadata.weeks} WEEKS</span>
-                                                                            </div>
-                                                                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                                                                                <div className="h-full bg-amber-400 w-2/3 rounded-full animate-pulse" />
-                                                                            </div>
-                                                                            <div className="mt-1 text-[10px] text-amber-600 font-medium">
-                                                                                Goal: {bridge.metadata.savings} Saved
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </Card>
-                                    ))}
-
-                                    {/* Payoff Section (Animation) */}
-                                    <div className="mt-8 pt-6 border-t border-slate-100">
-                                        {/* Toggle */}
-                                        <div className={`p-5 rounded-2xl border-2 transition-all duration-300 ease-out ${state.solutionsAccepted ? 'bg-green-50 border-green-200 shadow-inner' : 'bg-white border-slate-200'}`}>
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <div className="font-bold text-slate-900">With these solutions, I'm ready to work!</div>
-                                                    <div className="text-sm text-slate-500">We'll match you with all compatible opportunities</div>
-                                                </div>
-                                                <button
-                                                    onClick={() => dispatch({ type: 'UPDATE_FIELD', field: 'solutionsAccepted', value: !state.solutionsAccepted })}
-                                                    className={`relative w-14 h-8 rounded-full transition-colors duration-300 ${state.solutionsAccepted ? 'bg-green-500' : 'bg-slate-300'}`}
-                                                >
-                                                    <div className={`absolute top-1 left-1 bg-white w-6 h-6 rounded-full shadow-sm transition-transform duration-300 ${state.solutionsAccepted ? 'translate-x-6' : 'translate-x-0'}`} />
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* Animation Card */}
-                                        <div className={`transform transition-all duration-700 ease-out origin-top ${state.solutionsAccepted ? 'max-h-60 opacity-100 translate-y-0 mt-4' : 'max-h-0 opacity-0 -translate-y-4 mt-0'}`}>
-                                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 text-center border border-green-100 shadow-sm relative overflow-hidden">
-                                                <div className="absolute top-0 right-0 p-12 bg-green-200/20 rounded-full blur-3xl -mr-10 -mt-10" />
-                                                <div className="relative z-10 flex flex-col items-center justify-center gap-3">
-                                                    <div className="p-4 bg-white rounded-full shadow-md mb-1 animate-bounce">
-                                                        <Unlock className="w-8 h-8 text-green-600" />
-                                                    </div>
-                                                    <div className="text-4xl font-extrabold text-green-700 tracking-tight">
-                                                        500+ Jobs Unlocked
-                                                    </div>
-                                                    <div className="text-sm font-medium text-green-600">
-                                                        Your personalized bridge is built.
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="text-center py-8">
-                                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <Check className="w-8 h-8 text-green-600" />
-                                    </div>
-                                    <h3 className="text-lg font-bold text-slate-900 mb-2">You're All Clear!</h3>
-                                    <p className="text-slate-500">No barriers detected. All job opportunities are available to you.</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* ===== STAGE 6: MISSION ===== */}
-                    {state.stage === 6 && (
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-3 bg-yellow-100 rounded-xl">
-                                    <Target className="w-6 h-6 text-yellow-600" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-slate-900">Your Mission</h2>
-                                    <p className="text-sm text-slate-500">What's your financial priority right now?</p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-3">
-                                {URGENCY_OPTIONS.map((opt) => (
-                                    <button
-                                        key={opt.value}
-                                        onClick={() => dispatch({ type: 'UPDATE_FIELD', field: 'urgency', value: opt.value })}
-                                        className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${state.urgency === opt.value
-                                            ? opt.color === 'red' ? 'border-red-500 bg-red-50'
-                                                : opt.color === 'yellow' ? 'border-yellow-500 bg-yellow-50'
-                                                    : 'border-green-500 bg-green-50'
-                                            : 'border-slate-200 hover:border-slate-300'
-                                            }`}
-                                    >
-                                        <div className={`p-3 rounded-xl ${state.urgency === opt.value
-                                            ? opt.color === 'red' ? 'bg-red-100 text-red-600'
-                                                : opt.color === 'yellow' ? 'bg-yellow-100 text-yellow-600'
-                                                    : 'bg-green-100 text-green-600'
-                                            : 'bg-slate-100 text-slate-500'
-                                            }`}>
-                                            {opt.icon}
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="font-bold text-slate-900">{opt.label}</div>
-                                            <div className="text-sm text-slate-500">{opt.desc}</div>
-                                        </div>
-                                        {state.urgency === opt.value && (
-                                            <Check className={`w-6 h-6 ${opt.color === 'red' ? 'text-red-500'
-                                                : opt.color === 'yellow' ? 'text-yellow-500'
-                                                    : 'text-green-500'
-                                                }`} />
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
                     {/* Navigation Buttons */}
-                    <div className="flex justify-between items-center mt-8 pt-6 border-t border-slate-100">
+                    <div className="flex justify-between items-center mt-8 pt-6 border-t border-slate-200">
                         {state.stage > 1 ? (
-                            <Button variant="ghost" onClick={prevStage}>
-                                <ChevronLeft className="w-4 h-4 mr-1" />
+                            <button
+                                type="button"
+                                onClick={prevStage}
+                                className="px-5 py-3 min-h-[44px] text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-all flex items-center gap-1 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-white"
+                            >
+                                <ChevronLeft className="w-4 h-4" />
                                 Back
-                            </Button>
+                            </button>
                         ) : (
                             <div />
                         )}
 
-                        {state.stage < 6 ? (
-                            <Button
-                                variant="primary"
+                        {state.stage < 5 ? (
+                            <button
+                                type="button"
                                 onClick={nextStage}
                                 disabled={!canProceed()}
+                                className="px-6 py-3.5 min-h-[44px] bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-white"
                             >
                                 Continue
-                                <ChevronRight className="w-4 h-4 ml-1" />
-                            </Button>
+                                <ChevronRight className="w-4 h-4" />
+                            </button>
                         ) : (
-                            <Button
-                                variant="primary"
+                            <button
+                                type="button"
                                 onClick={submitProfile}
                                 disabled={state.isSubmitting}
+                                className="px-6 py-3.5 min-h-[44px] bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-white"
                             >
                                 {state.isSubmitting ? 'Launching...' : 'Launch My Career'}
-                                <Sparkles className="w-4 h-4 ml-1" />
-                            </Button>
+                                <Sparkles className="w-4 h-4" />
+                            </button>
                         )}
                     </div>
                 </Card>

@@ -67,8 +67,8 @@ interface HomeProps {
   setRoute: (route: NavRoute) => void;
 }
 
-// Valencia College Program Data Mapping
-const VALENCIA_PROGRAMS: Record<string, { roles: { title: string; match: number; salary: string }[]; avgBump: string; openRoles: number }> = {
+// Community College Program Data Mapping (Valencia, Miami Dade, Broward, etc.)
+const COMMUNITY_COLLEGE_PROGRAMS: Record<string, { roles: { title: string; match: number; salary: string }[]; avgBump: string; openRoles: number }> = {
   "AS Graphic and Interactive Design": {
     roles: [
       { title: "Junior Web Designer", match: 94, salary: "$52k - $65k" },
@@ -143,7 +143,7 @@ const VALENCIA_PROGRAMS: Record<string, { roles: { title: string; match: number;
   }
 };
 
-const degreeList = Object.keys(VALENCIA_PROGRAMS);
+const degreeList = Object.keys(COMMUNITY_COLLEGE_PROGRAMS);
 
 // Stats Data
 const STATS = [
@@ -158,7 +158,7 @@ const STEPS = [
   {
     number: "01",
     title: "Select Your Degree",
-    description: "We map your specific Valencia or UCF coursework directly to the skills Orlando employers are looking for.",
+    description: "We map your specific community college coursework directly to the skills employers are looking for.",
     icon: GraduationCap
   },
   {
@@ -170,7 +170,7 @@ const STEPS = [
   {
     number: "03",
     title: "Apply Locally",
-    description: "We send 3 quality applications daily to Orlando partners who want homegrown talent.",
+    description: "We send quality applications to local employers who want homegrown talent.",
     icon: Send
   }
 ];
@@ -217,8 +217,8 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
     d.toLowerCase().includes(degreeSearch.toLowerCase())
   );
 
-  const matchedDegree = VALENCIA_PROGRAMS[degreeSearch] ? degreeSearch : "AS Graphic and Interactive Design";
-  const currentData = VALENCIA_PROGRAMS[matchedDegree];
+  const matchedDegree = COMMUNITY_COLLEGE_PROGRAMS[degreeSearch] ? degreeSearch : "AS Graphic and Interactive Design";
+  const currentData = COMMUNITY_COLLEGE_PROGRAMS[matchedDegree];
 
   return (
     <div className="min-h-screen flex flex-col bg-jalanea-950">
@@ -260,7 +260,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                 </h2>
 
                 <p className="text-sm sm:text-base md:text-lg text-jalanea-200 leading-relaxed max-w-3xl mx-auto px-2">
-                  Jalanea Works is built for <span className="text-white font-bold">low-income housing students</span> and Valencia College graduates. We connect your degree to entry-level positions so you can work, earn, and build a stable foundation.
+                  Jalanea Works is built for <span className="text-white font-bold">low-income housing students</span> and community college graduates. We connect your degree to entry-level positions so you can work, earn, and build a stable foundation.
                 </p>
 
                 {/* 3 Pillars - Stack on mobile, 3 cols on tablet+ */}
@@ -271,7 +271,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                     </div>
                     <h4 className="font-bold text-white mb-1 text-xs sm:text-sm">Your Degree, Your Power</h4>
                     <p className="text-[11px] sm:text-xs text-slate-200">
-                      We link Valencia & UCF programs directly to careers that want YOUR specific skills.
+                      We link community college programs directly to careers that want YOUR specific skills.
                     </p>
                   </div>
                   <div className="bg-white/5 p-4 sm:p-5 rounded-xl border border-white/10">
@@ -422,10 +422,10 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
             <div className="space-y-6 md:space-y-8 animate-in slide-in-from-left-4 duration-700 text-center lg:text-left">
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold leading-[0.95] tracking-tight text-white">
                 The Entry-Level Job Market, <span className="text-transparent bg-clip-text bg-gold-flow bg-200% animate-text-flow">Solved.</span><br />
-                <span className="text-2xl sm:text-3xl md:text-4xl text-slate-300 font-normal mt-2 block">For Valencia & UCF Grads.</span>
+                <span className="text-2xl sm:text-3xl md:text-4xl text-slate-300 font-normal mt-2 block">For Community College Grads.</span>
               </h1>
               <p className="text-lg md:text-xl lg:text-2xl text-slate-200 leading-relaxed max-w-xl mx-auto lg:mx-0">
-                Stop applying to "entry-level" jobs that want 3 years of experience. We match you with Orlando employers specifically looking for <span className="text-white font-semibold">your degree and fresh talent.</span>
+                Stop applying to "entry-level" jobs that want 3 years of experience. We match you with employers specifically looking for <span className="text-white font-semibold">your degree and fresh talent.</span>
               </p>
 
               {/* CTA Buttons */}
@@ -687,7 +687,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                 Building careers that <span className="text-gold">build communities</span>
               </h2>
               <p className="text-lg text-slate-200 leading-relaxed">
-                Jalanea Works isn't just about finding jobs—it's about transforming Orlando's workforce from the ground up. Every placement strengthens our local economy and proves that community college graduates are the backbone of innovation.
+                Jalanea Works isn't just about finding jobs—it's about transforming local workforces from the ground up. Every placement strengthens local economies and proves that community college graduates are the backbone of innovation.
               </p>
               <motion.div
                 className="flex flex-wrap gap-4 pt-4"
@@ -698,8 +698,8 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
               >
                 {[
                   { value: "94%", label: "Say life-changing" },
-                  { value: "Orlando", label: "Focused opportunities" },
-                  { value: "Valencia", label: "Direct partnerships" }
+                  { value: "Local", label: "Focused opportunities" },
+                  { value: "Direct", label: "College partnerships" }
                 ].map((item, i) => (
                   <motion.div
                     key={i}
@@ -723,9 +723,9 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
               viewport={{ once: true, amount: 0.2 }}
             >
               {[
-                { icon: Users, title: "Community First", desc: "We prioritize local Orlando employers who believe in investing in homegrown talent." },
+                { icon: Users, title: "Community First", desc: "We prioritize local employers who believe in investing in homegrown talent." },
                 { icon: TrendingUp, title: "Breaking Cycles", desc: "Education should be the exit strategy from poverty. We bridge the gap to that first sustainable paycheck." },
-                { icon: Zap, title: "AI-Powered Advocacy", desc: "Our AI translates your Valencia coursework into professional assets that speak to employers." }
+                { icon: Zap, title: "AI-Powered Advocacy", desc: "Our AI translates your community college coursework into professional assets that speak to employers." }
               ].map((feature, i) => (
                 <motion.div
                   key={i}
@@ -782,7 +782,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           >
-            Join thousands of Valencia College graduates who've transformed their credentials into rewarding careers.
+            Join thousands of community college graduates who've transformed their credentials into rewarding careers.
           </motion.p>
           <motion.div
             className="flex flex-col items-center gap-6"
@@ -816,7 +816,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
                 See Pricing Plans
               </motion.button>
             </div>
-            <p className="text-sm text-slate-500">No credit card required • Free for Valencia students</p>
+            <p className="text-sm text-slate-500">No credit card required • Free for community college students</p>
           </motion.div>
         </div>
       </section>
