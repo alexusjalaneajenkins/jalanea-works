@@ -1,0 +1,45 @@
+# Auto-deploy to Render on push to master
+# This workflow triggers Render deploy hooks when code is pushed
+#
+# Setup required:
+# 1. Go to Render Dashboard > Your Service > Settings > Deploy Hook
+# 2. Copy the Deploy Hook URL
+# 3. Add it as a GitHub secret: RENDER_API_DEPLOY_HOOK
+# 4. Optionally add RENDER_WORKER_DEPLOY_HOOK for the worker service
+
+name: Deploy to Render
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'cloud-agent/**'  # Only deploy when cloud-agent code changes
+
+jobs:
+  deploy-api:
+    name: Deploy API Server
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render Deploy (API)
+        run: |
+          if [ -n "${{ secrets.RENDER_API_DEPLOY_HOOK }}" ]; then
+            echo "Triggering API deploy..."
+            curl -s "${{ secrets.RENDER_API_DEPLOY_HOOK }}"
+            echo "Deploy triggered!"
+          else
+            echo "RENDER_API_DEPLOY_HOOK secret not set - skipping deploy"
+          fi
+
+  deploy-worker:
+    name: Deploy Worker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render Deploy (Worker)
+        run: |
+          if [ -n "${{ secrets.RENDER_WORKER_DEPLOY_HOOK }}" ]; then
+            echo "Triggering Worker deploy..."
+            curl -s "${{ secrets.RENDER_WORKER_DEPLOY_HOOK }}"
+            echo "Deploy triggered!"
+          else
+            echo "RENDER_WORKER_DEPLOY_HOOK secret not set - skipping deploy"
+          fi
