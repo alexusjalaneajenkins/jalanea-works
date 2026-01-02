@@ -206,12 +206,12 @@ export const MobileProfile: React.FC = () => {
         return;
       }
 
-      // Send to the cloud agent API
+      // Send to the cloud agent API with userId for database storage
       const AGENT_API_URL = import.meta.env.VITE_CLOUD_AGENT_URL || 'http://localhost:3001';
       const res = await fetch(`${AGENT_API_URL}/sites/${connectingTo}/import-cookies`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cookies: filteredCookies }),
+        body: JSON.stringify({ cookies: filteredCookies, userId: currentUser.uid }),
       });
 
       if (!res.ok) {
@@ -368,49 +368,49 @@ export const MobileProfile: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         className={`p-5 rounded-2xl mb-4 ${glassPanel}`}
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {currentUser?.photoURL ? (
             <img
               src={currentUser.photoURL}
               alt="Profile"
-              className="w-16 h-16 rounded-2xl object-cover border-2 border-gold shadow-lg shadow-gold/20"
+              className="w-16 h-16 shrink-0 rounded-2xl object-cover border-2 border-gold shadow-lg shadow-gold/20"
             />
           ) : (
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-gold to-amber-500 flex items-center justify-center text-xl font-bold text-black shadow-lg shadow-gold/30">
+            <div className="w-16 h-16 shrink-0 rounded-2xl bg-gradient-to-br from-gold to-amber-500 flex items-center justify-center text-xl font-bold text-black shadow-lg shadow-gold/30">
               {userProfile?.fullName?.charAt(0) || currentUser?.email?.charAt(0) || '?'}
             </div>
           )}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h2 className={`text-lg font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+              <h2 className={`text-lg font-bold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
                 {userProfile?.fullName || currentUser?.displayName || 'Welcome!'}
               </h2>
-              <Zap size={16} className="text-gold" />
+              <Zap size={16} className="text-gold shrink-0" />
             </div>
             {userProfile?.targetRole && (
-              <p className={`text-sm ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+              <p className={`text-sm truncate ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                 {userProfile.targetRole}
               </p>
             )}
             <div className={`flex items-center gap-1 text-xs mt-1 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
               {userProfile?.location && (
                 <>
-                  <MapPin size={12} />
-                  <span>{userProfile.location}</span>
+                  <MapPin size={12} className="shrink-0" />
+                  <span className="truncate">{userProfile.location}</span>
                   <span className="mx-1">•</span>
                 </>
               )}
-              <Mail size={12} />
-              <span className="truncate max-w-[150px]">{currentUser?.email}</span>
+              <Mail size={12} className="shrink-0" />
+              <span className="truncate">{currentUser?.email}</span>
             </div>
           </div>
           <button
             onClick={() => haptics.light()}
-            className={`p-2.5 rounded-xl active:scale-95 transition-all ${
+            className={`p-2 shrink-0 rounded-xl active:scale-95 transition-all ${
               isLight ? 'bg-gold/10' : 'bg-gold/20'
             }`}
           >
-            <Edit3 size={18} className="text-gold" />
+            <Edit3 size={16} className="text-gold" />
           </button>
         </div>
 

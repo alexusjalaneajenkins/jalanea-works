@@ -493,7 +493,7 @@ app.post('/sites/:siteId/import-cookies', async (req: Request, res: Response) =>
       return res.status(404).json({ error: 'Job site not found' });
     }
 
-    const { cookies } = req.body;
+    const { cookies, userId } = req.body;
 
     if (!cookies || !Array.isArray(cookies)) {
       return res.status(400).json({
@@ -530,6 +530,39 @@ app.post('/sites/:siteId/import-cookies', async (req: Request, res: Response) =>
     fs.writeFileSync(sessionFile, JSON.stringify(storageState, null, 2));
 
     console.log(`[Server] Imported ${playwrightCookies.length} cookies for ${site.name}`);
+
+    // If userId provided, save to database as well
+    if (userId && supabaseAdmin) {
+      try {
+        // Encrypt the session data using base encrypt function
+        const sessionData = JSON.stringify(storageState);
+        const { encrypt } = await import('./crypto.js');
+        const encryptedData = encrypt(sessionData);
+
+        // Upsert the credential record
+        const { error: dbError } = await supabaseAdmin
+          .from('site_credentials')
+          .upsert({
+            user_id: userId,
+            site_id: site.id,
+            encrypted_data: encryptedData,
+            is_verified: true,
+            last_verified_at: new Date().toISOString(),
+            login_status: 'success',
+            status_message: `Imported ${playwrightCookies.length} cookies`
+          }, {
+            onConflict: 'user_id,site_id'
+          });
+
+        if (dbError) {
+          console.error('[Server] Failed to save credential to DB:', dbError);
+        } else {
+          console.log(`[Server] Saved credential for user ${userId} on ${site.id}`);
+        }
+      } catch (dbErr) {
+        console.error('[Server] DB error saving credential:', dbErr);
+      }
+    }
 
     res.json({
       success: true,
