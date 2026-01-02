@@ -4,6 +4,7 @@ import { Send, Mic, Sparkles, FileText, DollarSign, Users, Briefcase, Zap } from
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { haptics } from '../../utils/haptics';
+import { getCareerAdvice, AIUserContext } from '../../services/geminiService';
 
 /**
  * MobileCoach - Research-driven design applying:
@@ -53,6 +54,20 @@ export const MobileCoach: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Build user context for personalized AI responses
+  const buildUserContext = (): AIUserContext => {
+    return {
+      name: userProfile?.displayName || null,
+      school: userProfile?.school || null,
+      program: userProfile?.program || null,
+      skills: userProfile?.skills || null,
+      targetSalary: userProfile?.targetSalary || undefined,
+      availability: userProfile?.availability || null,
+      challenges: userProfile?.challenges || undefined,
+      location: userProfile?.location || null,
+    };
+  };
+
   const handleSend = async (text?: string) => {
     const messageText = text || inputValue.trim();
     if (!messageText) return;
@@ -69,41 +84,34 @@ export const MobileCoach: React.FC = () => {
     };
     setMessages(prev => [...prev, userMessage]);
 
-    // Simulate AI response
+    // Get real AI response
     setIsTyping(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    const aiResponse: Message = {
-      id: (Date.now() + 1).toString(),
-      role: 'assistant',
-      content: getAIResponse(messageText),
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, aiResponse]);
-    setIsTyping(false);
-    haptics.success();
-  };
+    try {
+      const userContext = buildUserContext();
+      const response = await getCareerAdvice(messageText, userContext);
 
-  const getAIResponse = (query: string): string => {
-    const lowerQuery = query.toLowerCase();
-
-    if (lowerQuery.includes('interview')) {
-      return "Great choice focusing on interview prep! Here are my top tips:\n\n1. **Research the company** - Know their mission, recent news, and culture\n2. **Practice STAR method** - Structure your answers with Situation, Task, Action, Result\n3. **Prepare questions** - Have 3-5 thoughtful questions ready\n4. **Mock interviews** - Practice with a friend or record yourself\n\nWant me to run through some common interview questions with you?";
+      const aiResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: response,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, aiResponse]);
+      haptics.success();
+    } catch (error) {
+      console.error('AI Coach error:', error);
+      const errorResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: "I'm having trouble connecting right now. Please try again in a moment!",
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorResponse]);
+      haptics.error();
+    } finally {
+      setIsTyping(false);
     }
-
-    if (lowerQuery.includes('resume')) {
-      return "I'd love to help with your resume! Key areas to focus on:\n\n1. **Strong action verbs** - Led, Developed, Achieved, Implemented\n2. **Quantify achievements** - Use numbers and percentages\n3. **Tailor to the job** - Match keywords from the job description\n4. **Clean formatting** - Use consistent fonts and spacing\n\nWould you like me to review specific sections of your resume?";
-    }
-
-    if (lowerQuery.includes('salary') || lowerQuery.includes('negotiate')) {
-      return "Salary negotiation is crucial! Here's my approach:\n\n1. **Research market rates** - Use Glassdoor, LinkedIn, Levels.fyi\n2. **Know your worth** - List your achievements and unique value\n3. **Let them go first** - Try to get their range before sharing yours\n4. **Consider total comp** - Benefits, equity, and PTO matter too\n\nWhat's your current situation - new offer or asking for a raise?";
-    }
-
-    if (lowerQuery.includes('network')) {
-      return "Networking is key to career growth! Try these strategies:\n\n1. **LinkedIn optimization** - Update your headline and engage with content\n2. **Informational interviews** - Ask for 15-min coffee chats\n3. **Industry events** - Attend meetups and conferences\n4. **Give first** - Share resources and make introductions\n\nWould you like help crafting a networking message?";
-    }
-
-    return "That's a great question! I'm here to help with your career journey. I can assist with:\n\n• Interview preparation and practice\n• Resume and cover letter reviews\n• Salary negotiation strategies\n• Job search optimization\n• Networking tips\n• Career planning advice\n\nWhat specific area would you like to focus on?";
   };
 
   const handleQuickAction = (prompt: string) => {

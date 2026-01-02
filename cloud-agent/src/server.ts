@@ -696,6 +696,159 @@ app.post('/sites/:siteId/search', async (req: Request, res: Response) => {
 });
 
 /**
+ * Get session cookies for a site (for WebView login flow)
+ * Returns encrypted session data that can be stored in Supabase
+ */
+app.get('/sites/:siteId/session', async (req: Request, res: Response) => {
+  try {
+    const site = getJobSite(req.params.siteId);
+    if (!site) {
+      return res.status(404).json({ error: 'Job site not found' });
+    }
+
+    const sessionDir = `./sessions/${site.id}`;
+    const sessionFile = path.join(sessionDir, 'browser-state.json');
+
+    if (!fs.existsSync(sessionFile)) {
+      return res.status(404).json({
+        error: 'No session found',
+        message: 'User needs to log in first'
+      });
+    }
+
+    // Read the session file
+    const sessionData = fs.readFileSync(sessionFile, 'utf-8');
+    const storageState = JSON.parse(sessionData);
+
+    // Return session info (cookies count, domain, etc.)
+    const cookies = storageState.cookies || [];
+    const domains = [...new Set(cookies.map((c: any) => c.domain))];
+
+    res.json({
+      success: true,
+      siteId: site.id,
+      siteName: site.name,
+      sessionData: sessionData, // Full session for storage
+      summary: {
+        cookieCount: cookies.length,
+        domains,
+        hasSession: cookies.length > 0
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Store session cookies to Supabase for a user
+ * This allows cloud workers to use the session later
+ */
+app.post('/sites/:siteId/store-session', async (req: Request, res: Response) => {
+  try {
+    const site = getJobSite(req.params.siteId);
+    if (!site) {
+      return res.status(404).json({ error: 'Job site not found' });
+    }
+
+    const { userId, sessionData } = req.body;
+
+    if (!userId || !sessionData) {
+      return res.status(400).json({ error: 'userId and sessionData are required' });
+    }
+
+    // Store in Supabase site_connections table
+    const { data, error } = await supabase
+      .from('site_connections')
+      .upsert({
+        user_id: userId,
+        site_id: site.id,
+        site_name: site.name,
+        is_connected: true,
+        last_verified_at: new Date().toISOString(),
+        session_data_encrypted: sessionData // TODO: Add encryption
+      }, {
+        onConflict: 'user_id,site_id'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[Server] Supabase error:', error);
+      return res.status(500).json({ error: 'Failed to store session', details: error.message });
+    }
+
+    console.log(`[Server] Stored session for user ${userId} on ${site.name}`);
+
+    res.json({
+      success: true,
+      siteId: site.id,
+      siteName: site.name,
+      message: `Session stored for ${site.name}. Cloud workers can now apply to jobs for you.`,
+      connectionId: data.id
+    });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Load session from Supabase for a user
+ * Called by cloud workers before starting job applications
+ */
+app.post('/sites/:siteId/load-session', async (req: Request, res: Response) => {
+  try {
+    const site = getJobSite(req.params.siteId);
+    if (!site) {
+      return res.status(404).json({ error: 'Job site not found' });
+    }
+
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
+    // Get session from Supabase
+    const { data, error } = await supabase
+      .from('site_connections')
+      .select('session_data_encrypted, last_verified_at')
+      .eq('user_id', userId)
+      .eq('site_id', site.id)
+      .eq('is_connected', true)
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({
+        error: 'No session found',
+        message: 'User needs to connect this site first'
+      });
+    }
+
+    // Write session to local file for browser to use
+    const sessionDir = `./sessions/${site.id}`;
+    if (!fs.existsSync(sessionDir)) {
+      fs.mkdirSync(sessionDir, { recursive: true });
+    }
+
+    const sessionFile = path.join(sessionDir, 'browser-state.json');
+    fs.writeFileSync(sessionFile, data.session_data_encrypted);
+
+    console.log(`[Server] Loaded session for user ${userId} on ${site.name}`);
+
+    res.json({
+      success: true,
+      siteId: site.id,
+      siteName: site.name,
+      lastVerified: data.last_verified_at,
+      message: 'Session loaded from cloud. Ready to apply.'
+    });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
  * Close the login browser
  */
 app.post('/sites/close', async (req: Request, res: Response) => {
@@ -838,6 +991,110 @@ app.get('/dashboard/:userId', async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('[Server] Error fetching dashboard stats:', error);
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+// ============================================
+// Notification Endpoints
+// ============================================
+
+import { sendNotification, getNotificationPayload, updateNotificationPreferences, getNotificationPreferences, notify, NotificationType } from './notifications.js';
+
+/**
+ * Send a notification to a user
+ */
+app.post('/notifications/send', async (req: Request, res: Response) => {
+  try {
+    const { userId, type, payload, data } = req.body;
+
+    if (!userId || !type) {
+      return res.status(400).json({ error: 'userId and type are required' });
+    }
+
+    // If custom payload provided, use it; otherwise generate from template
+    const notificationPayload = payload || getNotificationPayload(type as NotificationType, data);
+
+    const result = await sendNotification(userId, type as NotificationType, notificationPayload);
+
+    res.json({
+      success: result.success,
+      channels: result.channels,
+      message: result.success
+        ? `Notification sent via: ${result.channels.join(', ') || 'none (no channels enabled)'}`
+        : 'Failed to send notification'
+    });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Get notification preferences for a user
+ */
+app.get('/notifications/preferences/:userId', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    const preferences = await getNotificationPreferences(userId);
+
+    if (!preferences) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      success: true,
+      preferences
+    });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Update notification preferences for a user
+ */
+app.put('/notifications/preferences/:userId', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const preferences = req.body;
+
+    const success = await updateNotificationPreferences(userId, preferences);
+
+    if (!success) {
+      return res.status(500).json({ error: 'Failed to update preferences' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Notification preferences updated'
+    });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Test notification (send a test message to verify setup)
+ */
+app.post('/notifications/test/:userId', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    const result = await notify(userId, 'application_success', {
+      jobTitle: 'Test Job',
+      company: 'Test Company',
+      jobUrl: 'https://jalanea.works/job-agent'
+    });
+
+    res.json({
+      success: result.success,
+      channels: result.channels,
+      message: result.success
+        ? `Test notification sent via: ${result.channels.join(', ') || 'none'}`
+        : 'No notification channels configured'
+    });
+  } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
 });
