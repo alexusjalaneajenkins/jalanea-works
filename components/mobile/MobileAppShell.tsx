@@ -132,7 +132,9 @@ export const MobileAppShell: React.FC = () => {
         top: 0,
         left: 0,
         right: 0,
-        bottom: 0
+        bottom: 0,
+        // Allow nav's safe-area fill to extend past container
+        overflow: 'visible',
       }}
     >
       {/* Header - handles its own safe-area-inset-top */}

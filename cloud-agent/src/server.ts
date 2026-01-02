@@ -18,6 +18,9 @@ dotenv.config();
 import express, { Request, Response } from 'express';
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer } from 'http';
+import { exec } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
 import { JobApplicationAgent, AgentEvent } from './agent.js';
 import { UserProfile } from './vision.js';
 import { BrowserController } from './browser.js';
@@ -423,6 +426,111 @@ app.get('/sites/:siteId/login-status', async (req: Request, res: Response) => {
       isLoggedIn,
       siteId: site.id,
       message: isLoggedIn ? 'Logged in and ready!' : 'Waiting for login...'
+    });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Open the user's REAL Chrome browser for login
+ * This bypasses Cloudflare detection since it's not an automated browser
+ */
+app.post('/sites/:siteId/native-login', async (req: Request, res: Response) => {
+  try {
+    const site = getJobSite(req.params.siteId);
+    if (!site) {
+      return res.status(404).json({ error: 'Job site not found' });
+    }
+
+    // Open the login URL in the user's default browser (macOS)
+    const loginUrl = site.loginUrl;
+
+    if (process.platform === 'darwin') {
+      // macOS: Open in Chrome specifically
+      exec(`open -a "Google Chrome" "${loginUrl}"`, (error) => {
+        if (error) {
+          // Fallback to default browser
+          exec(`open "${loginUrl}"`);
+        }
+      });
+    } else if (process.platform === 'win32') {
+      exec(`start chrome "${loginUrl}"`);
+    } else {
+      exec(`xdg-open "${loginUrl}"`);
+    }
+
+    res.json({
+      success: true,
+      siteId: site.id,
+      siteName: site.name,
+      message: `Opening ${site.name} in your Chrome browser. Log in there, then click "I'm Logged In" when done.`,
+      instructions: [
+        '1. Chrome should open with the login page',
+        '2. Log in to your account (complete any CAPTCHAs)',
+        '3. Once logged in, come back here and click "I\'m Logged In"',
+        '4. We\'ll import your cookies to use for automation'
+      ]
+    });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Import cookies from a JSON export (from Cookie-Editor extension or similar)
+ * Cookies should be in Netscape/JSON format
+ */
+app.post('/sites/:siteId/import-cookies', async (req: Request, res: Response) => {
+  try {
+    const site = getJobSite(req.params.siteId);
+    if (!site) {
+      return res.status(404).json({ error: 'Job site not found' });
+    }
+
+    const { cookies } = req.body;
+
+    if (!cookies || !Array.isArray(cookies)) {
+      return res.status(400).json({
+        error: 'Invalid cookies format',
+        hint: 'Export cookies from Cookie-Editor extension as JSON'
+      });
+    }
+
+    // Save cookies to session file
+    const sessionDir = `./sessions/${site.id}`;
+    if (!fs.existsSync(sessionDir)) {
+      fs.mkdirSync(sessionDir, { recursive: true });
+    }
+
+    const sessionFile = path.join(sessionDir, 'browser-state.json');
+
+    // Transform cookies to Playwright format if needed
+    const playwrightCookies = cookies.map((cookie: any) => ({
+      name: cookie.name,
+      value: cookie.value,
+      domain: cookie.domain,
+      path: cookie.path || '/',
+      expires: cookie.expirationDate || cookie.expires || -1,
+      httpOnly: cookie.httpOnly || false,
+      secure: cookie.secure || false,
+      sameSite: cookie.sameSite || 'Lax'
+    }));
+
+    const storageState = {
+      cookies: playwrightCookies,
+      origins: []
+    };
+
+    fs.writeFileSync(sessionFile, JSON.stringify(storageState, null, 2));
+
+    console.log(`[Server] Imported ${playwrightCookies.length} cookies for ${site.name}`);
+
+    res.json({
+      success: true,
+      siteId: site.id,
+      message: `Imported ${playwrightCookies.length} cookies for ${site.name}. Session saved!`,
+      cookiesImported: playwrightCookies.length
     });
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });

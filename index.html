@@ -440,10 +440,16 @@
       padding-bottom: env(safe-area-inset-bottom);
     }
 
-    /* Standalone mode adjustments */
+    /* Standalone mode adjustments - PWA safe area fixes */
     @media (display-mode: standalone) {
+      /* Key fix: prevents white/black bar at bottom */
+      html {
+        min-height: calc(100% + env(safe-area-inset-top));
+      }
+
+      /* Let mobile components handle their own safe areas */
       body {
-        padding-top: env(safe-area-inset-top);
+        padding: 0 !important;
       }
     }
 

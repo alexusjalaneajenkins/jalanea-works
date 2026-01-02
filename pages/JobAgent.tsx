@@ -32,8 +32,8 @@ const HELP_STEPS = [
   {
     step: 2,
     title: 'Log In to the Site',
-    description: 'Sign in with your existing account credentials in the browser window that opens. The agent will detect when you\'re logged in.',
-    tip: 'Use your regular login - the agent saves your session for future use.'
+    description: 'Sign in with your existing account credentials. If you get stuck in a CAPTCHA loop, log in using your regular Chrome browser first, then try again.',
+    tip: '⚠️ Some sites detect automated browsers. If CAPTCHA keeps looping, sign in via your own Chrome first!'
   },
   {
     step: 3,
@@ -57,6 +57,10 @@ const TROUBLESHOOTING = [
   {
     issue: 'Browser doesn\'t open',
     solution: 'The agent may still be starting up. Wait a few seconds and try again. Check if another browser instance is already open.'
+  },
+  {
+    issue: 'CAPTCHA keeps looping',
+    solution: 'Some sites detect automated browsers. Fix: 1) Open your regular Chrome browser, 2) Go to the job site and sign in there first, 3) Then come back and try the agent again. The site will recognize your device.'
   },
   {
     issue: 'Login not detected',
@@ -486,6 +490,49 @@ export const JobAgent: React.FC = () => {
       }));
       addEvent(`❌ Failed to launch ${siteName} - check if agent is running`);
     }
+  };
+
+  // Launch site using user's real Chrome browser (bypasses Cloudflare)
+  const launchNativeChrome = async (siteId: string) => {
+    const siteName = JOB_SITES.find(s => s.id === siteId)?.name || siteId;
+    setSelectedSite(siteId);
+    setSiteStatuses(prev => ({
+      ...prev,
+      [siteId]: { siteId, isLoggedIn: false, isLaunching: true, message: '🌐 Opening in your Chrome browser...' }
+    }));
+
+    try {
+      const res = await fetch(`${AGENT_API_URL}/sites/${siteId}/native-login`, { method: 'POST' });
+      const data = await res.json();
+
+      setSiteStatuses(prev => ({
+        ...prev,
+        [siteId]: {
+          siteId,
+          isLoggedIn: false,
+          isLaunching: false,
+          message: '👆 Log in via Chrome, then click "I\'m Logged In" below'
+        }
+      }));
+
+      addEvent(`🌐 Opened ${siteName} in your Chrome browser`);
+      setWaitingForLogin(true);
+    } catch (e) {
+      setSiteStatuses(prev => ({
+        ...prev,
+        [siteId]: { siteId, isLoggedIn: false, isLaunching: false, message: '❌ Failed to open Chrome' }
+      }));
+      addEvent(`❌ Failed to open ${siteName} in Chrome`);
+    }
+  };
+
+  // User confirms they've logged in via Chrome - now try launching the agent browser
+  const confirmNativeLogin = async (siteId: string) => {
+    const siteName = JOB_SITES.find(s => s.id === siteId)?.name || siteId;
+    addEvent(`✅ Confirmed ${siteName} login, launching agent...`);
+    setWaitingForLogin(false);
+    // Now launch the Playwright browser - it should have an easier time since the IP is trusted
+    await launchSite(siteId);
   };
 
   // Poll for login status
@@ -944,6 +991,38 @@ export const JobAgent: React.FC = () => {
                       }`}>
                         {status.message}
                       </p>
+                    )}
+
+                    {/* Show native Chrome login button when CAPTCHA issues suspected */}
+                    {status && !status.isLaunching && !isLoggedIn && waitingForLogin && isSelected && (
+                      <div className="mt-3 space-y-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            launchNativeChrome(site.id);
+                          }}
+                          className={`w-full px-3 py-2 text-xs rounded-lg font-medium ${
+                            isLight
+                              ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                              : 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30'
+                          }`}
+                        >
+                          🌐 Try Login via Chrome
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            confirmNativeLogin(site.id);
+                          }}
+                          className={`w-full px-3 py-2 text-xs rounded-lg font-medium ${
+                            isLight
+                              ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                              : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
+                          }`}
+                        >
+                          ✅ I'm Already Logged In
+                        </button>
+                      </div>
                     )}
                   </motion.button>
                 );

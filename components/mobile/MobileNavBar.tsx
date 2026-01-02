@@ -44,19 +44,32 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
     onNavigate(screen);
   };
 
+  // Background color for the nav - must match for safe area fill
+  const bgColor = isLight ? '#ffffff' : '#0f172a';
+
   return (
     <nav
-      className={`flex-shrink-0 ${
+      className={`flex-shrink-0 relative ${
         isLight
-          ? 'bg-white border-t border-slate-200/30'
-          : 'bg-[#0f172a] border-t border-white/5'
+          ? 'border-t border-slate-200/30'
+          : 'border-t border-white/5'
       }`}
       style={{
+        backgroundColor: bgColor,
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
-        paddingBottom: 'env(safe-area-inset-bottom)'
       }}
     >
+      {/* Safe area fill - extends background to actual screen bottom */}
+      <div
+        className="absolute left-0 right-0 bottom-0"
+        style={{
+          backgroundColor: bgColor,
+          height: 'env(safe-area-inset-bottom, 0px)',
+          transform: 'translateY(100%)',
+        }}
+      />
+      {/* Nav content */}
       <div className="flex items-center justify-around h-16 px-1">
         {navItems.map((item) => {
           const isActive = activeScreen === item.id;
