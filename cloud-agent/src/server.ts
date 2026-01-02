@@ -1524,7 +1524,7 @@ app.get('/credentials/:userId', async (req: Request, res: Response) => {
       isConnected: true,
       isVerified: cred.is_verified,
       lastVerifiedAt: cred.last_verified_at,
-      status: cred.login_status,
+      loginStatus: cred.login_status, // Match frontend's expected field name
       statusMessage: cred.status_message,
       connectedAt: cred.created_at,
     }));
