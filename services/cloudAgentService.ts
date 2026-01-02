@@ -352,7 +352,15 @@ export async function getSiteCredentials(userId: string): Promise<SiteCredential
     throw new Error('Failed to fetch site credentials');
   }
   const data = await response.json();
-  return data.credentials;
+  // API returns 'sites' array with credential status
+  return (data.sites || []).map((site: any) => ({
+    siteId: site.siteId,
+    isVerified: site.isVerified || false,
+    lastVerifiedAt: site.lastVerifiedAt || null,
+    lastLoginAt: site.lastLoginAt || null,
+    loginStatus: site.status || 'pending',
+    statusMessage: site.statusMessage || null,
+  }));
 }
 
 /**
