@@ -27,9 +27,9 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
           : 'bg-[#020617] border-b border-white/5'
       }`}
       style={{
-        paddingTop: 'max(env(safe-area-inset-top), 8px)',
-        minHeight: '56px',
-        height: 'calc(56px + env(safe-area-inset-top))'
+        // Status bar: 20px on regular phones, more on notched/Dynamic Island phones
+        paddingTop: 'calc(max(env(safe-area-inset-top, 20px), 20px) + 8px)',
+        minHeight: '56px'
       }}
     >
       {/* Left side */}
