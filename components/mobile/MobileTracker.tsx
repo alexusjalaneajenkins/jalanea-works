@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Building2, Calendar, ChevronRight, MoreHorizontal, Send, Clock, MessageSquare, Trophy } from 'lucide-react';
+import { Plus, Building2, Calendar, ChevronRight, MoreHorizontal, Send, Clock, MessageSquare, Trophy, Bookmark } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { haptics } from '../../utils/haptics';
+import type { SavedJob } from '../../types';
 
 /**
  * MobileTracker - Research-driven design applying:
@@ -13,84 +14,72 @@ import { haptics } from '../../utils/haptics';
  * - Brand consistency: Gold accents, glassmorphism
  */
 
-type ApplicationStatus = 'applied' | 'review' | 'interview' | 'offer';
-
-interface Application {
-  id: string;
-  company: string;
-  position: string;
-  logo: string;
-  status: ApplicationStatus;
-  appliedDate: string;
-  lastUpdate: string;
-  salary?: string;
-}
+type ApplicationStatus = 'saved' | 'applied' | 'interview' | 'offer';
 
 // Gold-themed status config for brand consistency
 const statusConfig: Record<ApplicationStatus, { label: string; color: string; bgColor: string; icon: React.ElementType }> = {
-  applied: { label: 'Applied', color: 'text-slate-500', bgColor: 'bg-slate-500/10', icon: Send },
-  review: { label: 'In Review', color: 'text-gold', bgColor: 'bg-gold/10', icon: Clock },
+  saved: { label: 'Saved', color: 'text-slate-500', bgColor: 'bg-slate-500/10', icon: Bookmark },
+  applied: { label: 'Applied', color: 'text-gold', bgColor: 'bg-gold/10', icon: Send },
   interview: { label: 'Interview', color: 'text-blue-500', bgColor: 'bg-blue-500/10', icon: MessageSquare },
   offer: { label: 'Offer', color: 'text-green-500', bgColor: 'bg-green-500/10', icon: Trophy },
 };
 
-const mockApplications: Application[] = [
-  {
-    id: '1',
-    company: 'Stripe',
-    position: 'Product Designer',
-    logo: 'https://logo.clearbit.com/stripe.com',
-    status: 'interview',
-    appliedDate: 'Dec 15, 2025',
-    lastUpdate: '2 days ago',
-    salary: '$120k - $150k',
-  },
-  {
-    id: '2',
-    company: 'Netflix',
-    position: 'Frontend Engineer',
-    logo: 'https://logo.clearbit.com/netflix.com',
-    status: 'applied',
-    appliedDate: 'Dec 20, 2025',
-    lastUpdate: '5 days ago',
-    salary: '$140k - $180k',
-  },
-  {
-    id: '3',
-    company: 'Airbnb',
-    position: 'UX Researcher',
-    logo: 'https://logo.clearbit.com/airbnb.com',
-    status: 'review',
-    appliedDate: 'Dec 18, 2025',
-    lastUpdate: '3 days ago',
-    salary: '$100k - $130k',
-  },
-  {
-    id: '4',
-    company: 'Google',
-    position: 'Software Engineer',
-    logo: 'https://logo.clearbit.com/google.com',
-    status: 'offer',
-    appliedDate: 'Nov 28, 2025',
-    lastUpdate: 'Yesterday',
-    salary: '$150k - $200k',
-  },
-  {
-    id: '5',
-    company: 'Meta',
-    position: 'Product Manager',
-    logo: 'https://logo.clearbit.com/meta.com',
-    status: 'applied',
-    appliedDate: 'Dec 22, 2025',
-    lastUpdate: '1 day ago',
-    salary: '$130k - $170k',
-  },
-];
+// Map saved job status to tracker status
+const mapStatus = (status: SavedJob['status']): ApplicationStatus => {
+  if (status === 'interviewing') return 'interview';
+  if (status === 'rejected') return 'applied'; // Show rejected under applied
+  return status as ApplicationStatus;
+};
+
+// Format date for display
+const formatDate = (dateString: string): string => {
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch {
+    return dateString;
+  }
+};
+
+// Get relative time
+const getRelativeTime = (dateString: string): string => {
+  try {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return `${Math.floor(diffDays / 30)} months ago`;
+  } catch {
+    return 'Recently';
+  }
+};
 
 export const MobileTracker: React.FC = () => {
   const { isLight } = useTheme();
+  const { userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<ApplicationStatus | 'all'>('all');
-  const [applications] = useState<Application[]>(mockApplications);
+
+  // Use real saved jobs from user profile
+  const savedJobs = userProfile?.savedJobs || [];
+
+  // Transform saved jobs for display
+  const applications = useMemo(() => {
+    return savedJobs.map(sj => ({
+      id: sj.id,
+      company: sj.job.company,
+      position: sj.job.title,
+      logo: sj.job.logo || `https://ui-avatars.com/api/?name=${sj.job.company}&background=FFC425&color=000`,
+      status: mapStatus(sj.status),
+      appliedDate: formatDate(sj.savedAt),
+      lastUpdate: getRelativeTime(sj.savedAt),
+      salary: sj.job.salaryRange,
+    }));
+  }, [savedJobs]);
 
   // Glass panel styles matching desktop design system
   const glassPanel = isLight
@@ -103,16 +92,16 @@ export const MobileTracker: React.FC = () => {
 
   const statusCounts = {
     all: applications.length,
+    saved: applications.filter(a => a.status === 'saved').length,
     applied: applications.filter(a => a.status === 'applied').length,
-    review: applications.filter(a => a.status === 'review').length,
     interview: applications.filter(a => a.status === 'interview').length,
     offer: applications.filter(a => a.status === 'offer').length,
   };
 
   const tabs = [
     { id: 'all' as const, label: 'All', count: statusCounts.all },
+    { id: 'saved' as const, label: 'Saved', count: statusCounts.saved },
     { id: 'applied' as const, label: 'Applied', count: statusCounts.applied },
-    { id: 'review' as const, label: 'Review', count: statusCounts.review },
     { id: 'interview' as const, label: 'Interview', count: statusCounts.interview },
     { id: 'offer' as const, label: 'Offers', count: statusCounts.offer },
   ];
@@ -123,7 +112,7 @@ export const MobileTracker: React.FC = () => {
       <div className="px-4 py-3">
         <div className={`p-4 rounded-2xl ${glassPanel}`}>
           <div className="grid grid-cols-4 gap-3">
-            {(['applied', 'review', 'interview', 'offer'] as ApplicationStatus[]).map((status) => {
+            {(['saved', 'applied', 'interview', 'offer'] as ApplicationStatus[]).map((status) => {
               const StatusIcon = statusConfig[status].icon;
               const isActive = activeTab === status;
               return (

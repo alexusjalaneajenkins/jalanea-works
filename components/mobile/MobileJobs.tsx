@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { Heart, X, MapPin, DollarSign, Building2, Filter, List, Layers, Bookmark, Send } from 'lucide-react';
+import { Heart, X, MapPin, DollarSign, Building2, Filter, List, Layers, Bookmark, Send, Loader2 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { haptics } from '../../utils/haptics';
+import { searchJobs } from '../../services/jobService';
+import type { Job } from '../../types';
 
 /**
  * MobileJobs - Research-driven design applying:
@@ -13,74 +15,57 @@ import { haptics } from '../../utils/haptics';
  * - Brand consistency: Gold accents, glassmorphism
  */
 
-// Mock job data for demo
-const mockJobs = [
-  {
-    id: '1',
-    title: 'Product Designer',
-    company: 'Stripe',
-    location: 'Orlando, FL',
-    salary: '$120k - $150k',
-    remote: true,
-    matchScore: 92,
-    tags: ['UI/UX', 'Figma', 'Remote'],
-    logo: 'https://logo.clearbit.com/stripe.com'
-  },
-  {
-    id: '2',
-    title: 'Frontend Developer',
-    company: 'Netflix',
-    location: 'Remote',
-    salary: '$140k - $180k',
-    remote: true,
-    matchScore: 85,
-    tags: ['React', 'TypeScript', 'Remote'],
-    logo: 'https://logo.clearbit.com/netflix.com'
-  },
-  {
-    id: '3',
-    title: 'UX Researcher',
-    company: 'Airbnb',
-    location: 'Miami, FL',
-    salary: '$100k - $130k',
-    remote: false,
-    matchScore: 78,
-    tags: ['Research', 'Interviews', 'Hybrid'],
-    logo: 'https://logo.clearbit.com/airbnb.com'
-  },
-  {
-    id: '4',
-    title: 'Software Engineer',
-    company: 'Google',
-    location: 'Orlando, FL',
-    salary: '$150k - $200k',
-    remote: true,
-    matchScore: 88,
-    tags: ['Python', 'Cloud', 'Remote'],
-    logo: 'https://logo.clearbit.com/google.com'
-  }
-];
-
 export const MobileJobs: React.FC = () => {
   const { isLight } = useTheme();
+  const { userProfile, saveJob, isJobSaved } = useAuth();
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [savedJobs, setSavedJobs] = useState<string[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const currentJob = mockJobs[currentIndex];
-  const hasMoreJobs = currentIndex < mockJobs.length;
+  // Fetch jobs based on user's profile/preferences
+  useEffect(() => {
+    const fetchJobs = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Build search query from user's program/skills
+        const query = userProfile?.program || userProfile?.skills?.technical?.[0] || 'entry level';
+        const location = userProfile?.location || 'Orlando, FL';
+
+        const result = await searchJobs(query, { location });
+        setJobs(result.jobs || []);
+      } catch (err) {
+        console.error('Failed to fetch jobs:', err);
+        setError('Unable to load jobs. Pull down to retry.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, [userProfile?.program, userProfile?.location]);
+
+  const currentJob = jobs[currentIndex];
+  const hasMoreJobs = currentIndex < jobs.length;
 
   // Glass panel styles matching desktop design system
   const glassPanel = isLight
     ? 'bg-white/80 backdrop-blur-xl border border-slate-200/50 shadow-lg'
     : 'bg-slate-900/60 backdrop-blur-xl border border-white/10';
 
-  const handleSwipe = (direction: 'left' | 'right') => {
-    if (!hasMoreJobs) return;
+  const handleSwipe = async (direction: 'left' | 'right') => {
+    if (!hasMoreJobs || !currentJob) return;
 
     if (direction === 'right') {
       haptics.success();
-      setSavedJobs(prev => [...prev, currentJob.id]);
+      // Save job to user's profile
+      try {
+        await saveJob(currentJob, 'saved');
+      } catch (err) {
+        console.error('Failed to save job:', err);
+      }
     } else {
       haptics.light();
     }
@@ -96,16 +81,56 @@ export const MobileJobs: React.FC = () => {
     }
   };
 
-  const resetCards = () => {
+  const resetCards = async () => {
     setCurrentIndex(0);
-    setSavedJobs([]);
     haptics.medium();
+    // Optionally refetch jobs
+    setLoading(true);
+    try {
+      const query = userProfile?.program || userProfile?.skills?.technical?.[0] || 'entry level';
+      const location = userProfile?.location || 'Orlando, FL';
+      const result = await searchJobs(query, { location });
+      setJobs(result.jobs || []);
+    } catch (err) {
+      console.error('Failed to refresh jobs:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Get match score color - GOLD for brand consistency
   const getMatchColor = (_score: number) => {
     return 'text-gold'; // All match scores use gold for brand consistency
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-gold mb-4" />
+        <p className={`text-sm ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+          Finding jobs for you...
+        </p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center py-20 px-6">
+        <p className={`text-center mb-4 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+          {error}
+        </p>
+        <button
+          onClick={resetCards}
+          className="px-4 py-2 bg-gold text-black font-medium rounded-xl"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-8rem)]">
@@ -150,7 +175,7 @@ export const MobileJobs: React.FC = () => {
             <>
               {/* Progress indicator */}
               <div className={`flex items-center gap-1 mb-3 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
-                <span className="text-xs font-medium">{currentIndex + 1} of {mockJobs.length}</span>
+                <span className="text-xs font-medium">{currentIndex + 1} of {jobs.length}</span>
               </div>
 
               {/* Card Stack */}
@@ -215,20 +240,20 @@ export const MobileJobs: React.FC = () => {
                           isLight ? 'bg-gold/10 text-amber-700 border border-gold/20' : 'bg-gold/10 text-gold border border-gold/20'
                         }`}>
                           <DollarSign size={14} />
-                          {currentJob.salary}
+                          {currentJob.salaryRange || 'Not specified'}
                         </div>
                       </div>
 
-                      {/* Tags - Gold-themed for brand consistency */}
+                      {/* Skills - Gold-themed for brand consistency */}
                       <div className="flex flex-wrap gap-2 mb-4">
-                        {currentJob.tags.map(tag => (
+                        {(currentJob.skills || []).slice(0, 4).map(skill => (
                           <span
-                            key={tag}
+                            key={skill}
                             className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
                               isLight ? 'bg-gold/10 text-amber-700' : 'bg-gold/20 text-gold'
                             }`}
                           >
-                            {tag}
+                            {skill}
                           </span>
                         ))}
                       </div>
@@ -283,7 +308,7 @@ export const MobileJobs: React.FC = () => {
                 All caught up!
               </h3>
               <p className={`text-sm mb-6 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                You saved <span className="font-semibold text-gold">{savedJobs.length}</span> jobs to apply to later
+                You saved <span className="font-semibold text-gold">{userProfile?.savedJobs?.length || 0}</span> jobs to apply to later
               </p>
               <div className="flex gap-3">
                 <button
@@ -307,7 +332,7 @@ export const MobileJobs: React.FC = () => {
         /* List View - Brand-consistent with glassmorphism */
         <div className="flex-1 overflow-y-auto px-4 pb-4">
           <div className="space-y-3">
-            {mockJobs.map((job, index) => (
+            {jobs.map((job, index) => (
               <motion.div
                 key={job.id}
                 initial={{ opacity: 0, y: 10 }}
@@ -317,7 +342,7 @@ export const MobileJobs: React.FC = () => {
               >
                 <div className="flex items-start gap-3">
                   <img
-                    src={job.logo}
+                    src={job.logo || `https://ui-avatars.com/api/?name=${job.company}&background=FFC425&color=000`}
                     alt={job.company}
                     className="w-12 h-12 rounded-xl object-contain bg-white p-1.5 shadow-sm"
                     onError={(e) => {
@@ -338,9 +363,9 @@ export const MobileJobs: React.FC = () => {
                     </p>
                     <div className="flex items-center gap-2 mt-2">
                       <span className={`text-xs ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
-                        {job.salary}
+                        {job.salaryRange || 'Salary not specified'}
                       </span>
-                      {job.remote && (
+                      {job.locationType === 'Remote' && (
                         <span className={`text-xs px-2 py-0.5 rounded-lg font-medium ${
                           isLight ? 'bg-gold/10 text-amber-700' : 'bg-gold/20 text-gold'
                         }`}>
@@ -350,21 +375,23 @@ export const MobileJobs: React.FC = () => {
                     </div>
                   </div>
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       haptics.light();
-                      setSavedJobs(prev =>
-                        prev.includes(job.id) ? prev.filter(id => id !== job.id) : [...prev, job.id]
-                      );
+                      try {
+                        await saveJob(job, 'saved');
+                      } catch (err) {
+                        console.error('Failed to save job:', err);
+                      }
                     }}
                     className={`p-2 rounded-lg active:scale-90 transition-all ${
-                      savedJobs.includes(job.id)
+                      isJobSaved(job.id)
                         ? 'bg-gold/20'
                         : isLight ? 'bg-slate-100' : 'bg-slate-800'
                     }`}
                   >
                     <Bookmark
                       size={18}
-                      className={savedJobs.includes(job.id) ? 'text-gold fill-gold' : isLight ? 'text-slate-400' : 'text-slate-500'}
+                      className={isJobSaved(job.id) ? 'text-gold fill-gold' : isLight ? 'text-slate-400' : 'text-slate-500'}
                     />
                   </button>
                 </div>
