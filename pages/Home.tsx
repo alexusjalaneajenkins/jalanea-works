@@ -381,7 +381,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
       >
         {/* Content container - padded below status bar/Dynamic Island */}
         <div
-          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 md:h-20 flex items-center justify-between relative"
+          className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 h-16 md:h-24 flex items-center justify-between relative"
           style={{ marginTop: 'env(safe-area-inset-top, 0px)' }}
         >
           {/* Logo - Left */}
@@ -393,7 +393,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
           </div>
 
           {/* Centered Nav Links - Absolute Center */}
-          <nav className="hidden md:flex items-center gap-8 absolute left-1/2 transform -translate-x-1/2">
+          <nav className="hidden md:flex items-center gap-10 absolute left-1/2 transform -translate-x-1/2">
             <button onClick={() => navigate('/mission')} className="text-sm font-medium text-slate-300 hover:text-gold transition-colors">Our Why</button>
             <button onClick={() => navigate('/entrepreneur')} className="text-sm font-medium text-slate-300 hover:text-gold transition-colors">Start a Business</button>
             <button onClick={() => navigate('/blog')} className="text-sm font-medium text-slate-300 hover:text-gold transition-colors">Blog</button>
@@ -401,7 +401,7 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
           </nav>
 
           {/* Auth Buttons - Right */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-6">
             <button className="text-sm font-medium text-white hover:text-gold transition-colors" onClick={() => openAuth('signin')}>Sign in</button>
             <Button size="sm" variant="primary" onClick={() => openAuth('signup')}>Get Started</Button>
           </div>
@@ -414,10 +414,10 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
         </div>
       </header>
 
-      {/* Hero Section - padding accounts for fixed header (h-14 + safe-area) */}
+      {/* Hero Section - padding accounts for fixed header (h-16/h-24 + safe-area) */}
       <section
         className="relative min-h-screen flex items-center pb-8 md:pb-12 overflow-hidden"
-        style={{ paddingTop: 'calc(56px + env(safe-area-inset-top, 0px) + 16px)' }}
+        style={{ paddingTop: 'calc(64px + env(safe-area-inset-top, 0px) + 24px)' }}
       >
         {/* Background Mesh Gradients */}
         <div className="absolute inset-0 bg-jalanea-950"></div>

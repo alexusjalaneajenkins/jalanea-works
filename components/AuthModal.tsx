@@ -1618,7 +1618,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                     </button>
 
                     {/* Content Area */}
-                    <div className="p-3 sm:p-4 w-full h-full flex flex-col justify-center overflow-hidden">
+                    <div className="p-6 sm:p-8 md:p-10 w-full h-full flex flex-col justify-center overflow-hidden">
                         {currentView === VIEWS.LOGIN && renderLogin()}
                         {currentView === VIEWS.INTRO && renderIntro()}
                         {currentView === VIEWS.SIGNUP && renderSignup()}

@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
   -- Account status
   subscription_tier TEXT DEFAULT 'free' CHECK (subscription_tier IN ('free', 'starter', 'pro', 'unlimited')),
+  stripe_customer_id TEXT UNIQUE, -- Stripe customer ID for billing
   applications_this_month INTEGER DEFAULT 0,
   applications_reset_date DATE DEFAULT CURRENT_DATE,
 

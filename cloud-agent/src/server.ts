@@ -1154,6 +1154,15 @@ app.post('/queue/resume', async (req: Request, res: Response) => {
 // ============================================
 
 import { sendNotification, getNotificationPayload, updateNotificationPreferences, getNotificationPreferences, notify, NotificationType } from './notifications.js';
+import {
+  createCheckoutSession,
+  createPortalSession,
+  getSubscriptionStatus,
+  handleWebhook,
+  cancelSubscription,
+  reactivateSubscription,
+  TIER_LIMITS
+} from './billing.js';
 
 /**
  * Send a notification to a user
@@ -1251,6 +1260,215 @@ app.post('/notifications/test/:userId', async (req: Request, res: Response) => {
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
   }
+});
+
+// ============================================
+// Billing Endpoints (Stripe)
+// ============================================
+
+/**
+ * Create checkout session for subscription upgrade
+ * POST /billing/checkout
+ * Body: { userId, email, tier, successUrl, cancelUrl }
+ */
+app.post('/billing/checkout', async (req: Request, res: Response) => {
+  try {
+    const { userId, email, tier, successUrl, cancelUrl } = req.body;
+
+    if (!userId || !email || !tier) {
+      return res.status(400).json({ error: 'userId, email, and tier are required' });
+    }
+
+    if (!['starter', 'pro', 'unlimited'].includes(tier)) {
+      return res.status(400).json({ error: 'Invalid tier. Must be: starter, pro, or unlimited' });
+    }
+
+    const session = await createCheckoutSession(
+      userId,
+      email,
+      tier as 'starter' | 'pro' | 'unlimited',
+      successUrl || 'https://jalanea.works/settings?success=true',
+      cancelUrl || 'https://jalanea.works/settings?canceled=true'
+    );
+
+    res.json({
+      success: true,
+      sessionId: session.sessionId,
+      url: session.url,
+      message: `Checkout session created for ${tier} tier`
+    });
+  } catch (error) {
+    console.error('[Billing] Checkout error:', error);
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Create customer portal session for managing subscription
+ * POST /billing/portal
+ * Body: { userId, email, returnUrl }
+ */
+app.post('/billing/portal', async (req: Request, res: Response) => {
+  try {
+    const { userId, email, returnUrl } = req.body;
+
+    if (!userId || !email) {
+      return res.status(400).json({ error: 'userId and email are required' });
+    }
+
+    const session = await createPortalSession(
+      userId,
+      email,
+      returnUrl || 'https://jalanea.works/settings'
+    );
+
+    res.json({
+      success: true,
+      url: session.url,
+      message: 'Portal session created'
+    });
+  } catch (error) {
+    console.error('[Billing] Portal error:', error);
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Get subscription status for a user
+ * GET /billing/status/:userId
+ */
+app.get('/billing/status/:userId', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    const status = await getSubscriptionStatus(userId);
+
+    res.json({
+      success: true,
+      subscription: status,
+      limits: {
+        applicationsPerMonth: TIER_LIMITS[status.tier],
+        tier: status.tier
+      }
+    });
+  } catch (error) {
+    console.error('[Billing] Status error:', error);
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Cancel subscription (at period end)
+ * POST /billing/cancel
+ * Body: { userId }
+ */
+app.post('/billing/cancel', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
+    await cancelSubscription(userId);
+
+    res.json({
+      success: true,
+      message: 'Subscription will be canceled at end of billing period'
+    });
+  } catch (error) {
+    console.error('[Billing] Cancel error:', error);
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Reactivate a canceled subscription
+ * POST /billing/reactivate
+ * Body: { userId }
+ */
+app.post('/billing/reactivate', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
+    await reactivateSubscription(userId);
+
+    res.json({
+      success: true,
+      message: 'Subscription reactivated'
+    });
+  } catch (error) {
+    console.error('[Billing] Reactivate error:', error);
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Stripe webhook handler
+ * POST /billing/webhook
+ * Note: Body must be raw (not parsed as JSON)
+ */
+app.post('/billing/webhook', express.raw({ type: 'application/json' }), async (req: Request, res: Response) => {
+  try {
+    const signature = req.headers['stripe-signature'] as string;
+
+    if (!signature) {
+      return res.status(400).json({ error: 'Missing stripe-signature header' });
+    }
+
+    const result = await handleWebhook(req.body, signature);
+
+    res.json({
+      received: result.received,
+      event: result.event
+    });
+  } catch (error) {
+    console.error('[Billing] Webhook error:', error);
+    res.status(400).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Get pricing tiers info (public endpoint)
+ * GET /billing/tiers
+ */
+app.get('/billing/tiers', (req: Request, res: Response) => {
+  res.json({
+    tiers: [
+      {
+        id: 'free',
+        name: 'Free',
+        price: 0,
+        applicationsPerMonth: TIER_LIMITS.free,
+        features: ['Basic automation', 'Email support', '1 job site']
+      },
+      {
+        id: 'starter',
+        name: 'Starter',
+        price: 15,
+        applicationsPerMonth: TIER_LIMITS.starter,
+        features: ['Auto CAPTCHA solving', 'Priority queue', 'All job sites', 'Email notifications']
+      },
+      {
+        id: 'pro',
+        name: 'Pro',
+        price: 35,
+        applicationsPerMonth: TIER_LIMITS.pro,
+        features: ['Everything in Starter', 'Resume optimization', 'Advanced matching', 'SMS notifications']
+      },
+      {
+        id: 'unlimited',
+        name: 'Unlimited',
+        price: 79,
+        applicationsPerMonth: TIER_LIMITS.unlimited,
+        features: ['Everything in Pro', 'Unlimited applications', 'Dedicated worker', 'API access', 'Priority support']
+      }
+    ]
+  });
 });
 
 // ============================================
