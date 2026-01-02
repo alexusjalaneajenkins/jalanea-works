@@ -575,6 +575,42 @@ app.post('/sites/:siteId/import-cookies', async (req: Request, res: Response) =>
   }
 });
 
+import { generateWorkflowPrompt, generateQuickPrompt } from './workflows/job-application-workflow.js';
+
+/**
+ * Build application form-filling prompt using the systematic workflow
+ */
+function buildApplicationPrompt(profile: any): string {
+  return generateWorkflowPrompt({
+    fullName: profile?.fullName || profile?.name || '',
+    email: profile?.email || '',
+    phone: profile?.phone || '',
+    location: profile?.location || '',
+    linkedinUrl: profile?.linkedinUrl || '',
+    resumePath: profile?.resumePath || '',
+    coverLetterPath: profile?.coverLetterPath || '',
+    education: profile?.education?.map((edu: any) => ({
+      school: edu.school || edu.institution || '',
+      degree: edu.degree || edu.program || '',
+      fieldOfStudy: edu.fieldOfStudy || edu.major || '',
+      graduationDate: edu.graduationDate || edu.endDate || '',
+      gpa: edu.gpa || ''
+    })),
+    workExperience: profile?.workExperience?.map((exp: any) => ({
+      company: exp.company || '',
+      title: exp.title || exp.position || '',
+      startDate: exp.startDate || '',
+      endDate: exp.endDate || '',
+      description: exp.description || ''
+    })),
+    applicationAnswers: profile?.applicationAnswers || {},
+    preferredStartDate: profile?.startDate || 'Immediately available',
+    salaryExpectation: profile?.salaryMin && profile?.salaryMax
+      ? `$${profile.salaryMin.toLocaleString()} - $${profile.salaryMax.toLocaleString()}`
+      : ''
+  });
+}
+
 /**
  * Build a comprehensive task prompt using user profile data
  */
