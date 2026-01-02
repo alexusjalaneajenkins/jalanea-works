@@ -68,6 +68,9 @@ RUN npm ci --omit=dev
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
 
+# Cache bust for browser installation (change this to force rebuild)
+ARG BROWSER_CACHE_BUST=20260102
+
 # Download Camoufox browser
 RUN npx camoufox-js fetch
 
