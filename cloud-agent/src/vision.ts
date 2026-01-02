@@ -47,6 +47,8 @@ export interface UserProfile {
   desiredJobTitles: string[];
   desiredSalary?: string;
   workType: 'remote' | 'hybrid' | 'onsite' | 'any';
+  linkedinUrl?: string;
+  portfolioUrl?: string;
 }
 
 // Model tiers with capabilities and costs
@@ -414,9 +416,18 @@ export class VisionAgent {
     // Check rate limit
     await this.checkRateLimitAndManage(selectedModel);
 
-    const userProfileContext = this.userProfile
-      ? `\nUSER PROFILE:\n- Name: ${this.userProfile.name}\n- Email: ${this.userProfile.email}\n- Phone: ${this.userProfile.phone}\n- Location: ${this.userProfile.location}\n- Skills: ${this.userProfile.skills.join(', ')}\n- Desired Jobs: ${this.userProfile.desiredJobTitles.join(', ')}\n- Work Type: ${this.userProfile.workType}\n`
-      : '';
+    // Build user profile context with null-safe access
+    let userProfileContext = '';
+    if (this.userProfile) {
+      const skills = Array.isArray(this.userProfile.skills)
+        ? this.userProfile.skills.join(', ')
+        : (this.userProfile.skills || 'Not specified');
+      const desiredJobs = Array.isArray(this.userProfile.desiredJobTitles)
+        ? this.userProfile.desiredJobTitles.join(', ')
+        : (this.userProfile.desiredJobTitles || 'Not specified');
+
+      userProfileContext = `\nUSER PROFILE:\n- Name: ${this.userProfile.name || 'Not specified'}\n- Email: ${this.userProfile.email || 'Not specified'}\n- Phone: ${this.userProfile.phone || 'Not specified'}\n- Location: ${this.userProfile.location || 'Not specified'}\n- Skills: ${skills}\n- Desired Jobs: ${desiredJobs}\n- Work Type: ${this.userProfile.workType || 'any'}\n`;
+    }
 
     // Build last action context to prevent repeated clicks
     let lastActionContext = '';

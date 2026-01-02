@@ -42,7 +42,7 @@ export interface AgentState {
 }
 
 export interface AgentEvent {
-  type: 'screenshot' | 'action' | 'status' | 'error' | 'job_applied' | 'message';
+  type: 'screenshot' | 'action' | 'status' | 'error' | 'job_applied' | 'message' | 'captcha';
   data: any;
   timestamp: number;
 }
@@ -194,6 +194,45 @@ export class JobApplicationAgent extends EventEmitter {
       if (this.shouldStop) break;
 
       try {
+        // 0. CHECK FOR CAPTCHA - Pause and notify user if detected
+        const captcha = await this.browser.detectCaptcha();
+        if (captcha) {
+          console.log(`[Agent] ⚠️ CAPTCHA detected: ${captcha.type}`);
+
+          // Emit CAPTCHA event to notify frontend
+          this.emit('event', {
+            type: 'captcha',
+            data: {
+              captchaType: captcha.type,
+              message: captcha.message,
+              action: 'Please solve the CAPTCHA in the browser window, then the agent will continue automatically.',
+            },
+            timestamp: Date.now(),
+          } as any);
+
+          // Auto-pause and wait for user to solve it
+          this.emit('event', {
+            type: 'message',
+            data: { message: `🔐 ${captcha.message}. Please solve it in the browser window.` },
+            timestamp: Date.now(),
+          } as any);
+
+          // Wait for CAPTCHA to be solved (check every 2 seconds for up to 2 minutes)
+          const solved = await this.browser.waitForCaptchaSolved(120000);
+
+          if (solved) {
+            this.emit('event', {
+              type: 'message',
+              data: { message: '✅ CAPTCHA solved! Resuming agent...' },
+              timestamp: Date.now(),
+            } as any);
+            // Save session after CAPTCHA solve to preserve the verification
+            await this.browser.saveSession();
+          } else {
+            console.log('[Agent] CAPTCHA was not solved in time, continuing anyway...');
+          }
+        }
+
         // 1. SEE - Take a screenshot
         const screenshot = await this.browser.screenshot();
         this.state.lastScreenshot = screenshot.base64;
@@ -218,7 +257,7 @@ export class JobApplicationAgent extends EventEmitter {
           task
         );
 
-        let result: VisionResult;
+        let result: VisionResult | undefined;
 
         // Force API call after clicking input (need to determine what to type)
         if (lastWasClickOnInput) {

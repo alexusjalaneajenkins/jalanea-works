@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#020617">
+  <title>Offline - Jalanea Works</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #020617 50%, #0f172a 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      color: white;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 400px;
+      width: 100%;
+    }
+
+    .icon-container {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 32px;
+      background: rgba(255, 196, 37, 0.1);
+      border-radius: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid rgba(255, 196, 37, 0.2);
+      animation: pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        box-shadow: 0 0 20px rgba(255, 196, 37, 0.2);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 0 40px rgba(255, 196, 37, 0.4);
+        transform: scale(1.02);
+      }
+    }
+
+    .wifi-icon {
+      width: 64px;
+      height: 64px;
+      color: #FFC425;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: white;
+    }
+
+    h1 span {
+      color: #FFC425;
+    }
+
+    p {
+      font-size: 16px;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: #FFC425;
+      color: #000;
+      font-weight: 600;
+      font-size: 16px;
+      padding: 16px 32px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      width: 100%;
+      max-width: 280px;
+    }
+
+    .btn:hover {
+      background: #FFD768;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(255, 196, 37, 0.3);
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .features {
+      margin-top: 48px;
+      padding-top: 32px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .features h2 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+    }
+
+    .feature-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      text-align: left;
+    }
+
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .feature-icon.blue { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+    .feature-icon.green { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+    .feature-icon.purple { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+
+    .feature-icon svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .feature-text {
+      font-size: 14px;
+      color: #cbd5e1;
+    }
+
+    .footer {
+      margin-top: 48px;
+      font-size: 12px;
+      color: #475569;
+    }
+
+    /* Safe area for notched devices */
+    @supports (padding: env(safe-area-inset-bottom)) {
+      body {
+        padding-bottom: calc(24px + env(safe-area-inset-bottom));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon-container">
+      <svg class="wifi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="2" y1="2" x2="22" y2="22"></line>
+        <path d="M8.5 16.5a5 5 0 0 1 7 0"></path>
+        <path d="M2 8.82a15 15 0 0 1 4.17-2.65"></path>
+        <path d="M10.66 5c4.01-.36 8.14.9 11.34 3.76"></path>
+        <path d="M16.85 11.25a10 10 0 0 1 2.22 1.68"></path>
+        <path d="M5 13a10 10 0 0 1 5.24-2.76"></path>
+        <line x1="12" y1="20" x2="12.01" y2="20"></line>
+      </svg>
+    </div>
+
+    <h1>You're <span>Offline</span></h1>
+    <p>
+      It looks like you've lost your internet connection.
+      Don't worry - some features are still available offline!
+    </p>
+
+    <button class="btn" onclick="tryReconnect()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"></polyline>
+        <polyline points="1 20 1 14 7 14"></polyline>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+      </svg>
+      Try Again
+    </button>
+
+    <div class="features">
+      <h2>Available Offline</h2>
+      <div class="feature-list">
+        <div class="feature-item">
+          <div class="feature-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+          </div>
+          <span class="feature-text">View your saved resume</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+          <span class="feature-text">Track saved job applications</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <span class="feature-text">Actions sync when you're back online</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="footer">
+      Jalanea<span style="color: #FFC425;">Works</span> - Career Launchpad
+    </p>
+  </div>
+
+  <script>
+    function tryReconnect() {
+      // Check if we're back online
+      if (navigator.onLine) {
+        window.location.reload();
+      } else {
+        // Visual feedback that we're still offline
+        const btn = document.querySelector('.btn');
+        btn.style.background = '#ef4444';
+        btn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+          </svg>
+          Still Offline
+        `;
+
+        setTimeout(() => {
+          btn.style.background = '#FFC425';
+          btn.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            Try Again
+          `;
+        }, 2000);
+      }
+    }
+
+    // Auto-reload when back online
+    window.addEventListener('online', () => {
+      window.location.reload();
+    });
+  </script>
+</body>
+</html>

@@ -372,6 +372,16 @@ export const JobAgent: React.FC = () => {
           sendNotification('Job Search Complete!', 'The agent has finished searching for jobs.');
         } else if (data.type === 'error') {
           addEvent(`❌ Error: ${data.data?.message || 'Something went wrong'}`);
+        } else if (data.type === 'captcha') {
+          // CAPTCHA detected - show prominent notification
+          const captchaType = data.data?.captchaType || 'CAPTCHA';
+          const message = data.data?.message || 'Human verification required';
+          addEvent(`🔐 ${captchaType}: ${message}`);
+          // Send system notification to alert user
+          sendNotification('Human Verification Required!', `${message}. Please solve it in the browser window.`);
+        } else if (data.type === 'message') {
+          // General agent messages
+          addEvent(data.data?.message || 'Agent message');
         }
       } catch (e) {
         console.error('WebSocket parse error:', e);

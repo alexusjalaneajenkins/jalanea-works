@@ -25,6 +25,7 @@ import { AIChat } from './components/AIChat';
 import { FeedbackModal } from './components/FeedbackModal';
 import { ToastProvider } from './components/Toast';
 import { InstallPrompt } from './components/InstallPrompt';
+import { PWAProvider } from './components/PWAProvider';
 import { MobileAppShell } from './components/mobile/MobileAppShell';
 import { haptics } from './utils/haptics';
 import { NavRoute } from './types';
@@ -249,7 +250,8 @@ const App: React.FC = () => {
     <ThemeProvider>
       <AuthProvider>
         <ToastProvider>
-          <BrowserRouter>
+          <PWAProvider>
+            <BrowserRouter>
               <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<Home setRoute={() => { }} />} />
@@ -276,6 +278,7 @@ const App: React.FC = () => {
                 } />
               </Routes>
             </BrowserRouter>
+          </PWAProvider>
         </ToastProvider>
       </AuthProvider>
     </ThemeProvider>

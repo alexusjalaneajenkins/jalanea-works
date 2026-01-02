@@ -529,6 +529,10 @@ app.post('/sites/:siteId/search', async (req: Request, res: Response) => {
         name: profile.name || '',
         email: profile.email || '',
         phone: profile.phone || '',
+        location: profile.location || '',
+        resumeText: profile.resumeText || '',
+        desiredJobTitles: profile.desiredJobTitles || [],
+        workType: profile.workType || 'any',
         // Skills for matching
         skills: [
           ...(profile.skills?.technical || []),

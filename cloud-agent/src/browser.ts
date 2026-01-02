@@ -54,14 +54,73 @@ export class BrowserController {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
+  /**
+   * Move mouse in a human-like curved path (Bezier curve)
+   * Bots typically move in straight lines which is detectable
+   */
+  private async humanMouseMove(toX: number, toY: number): Promise<void> {
+    if (!this.page) return;
+
+    // Get current mouse position (default to random starting point if unknown)
+    const fromX = Math.random() * (this.config.viewport?.width || 1280);
+    const fromY = Math.random() * (this.config.viewport?.height || 800);
+
+    // Number of steps (more steps = smoother movement)
+    const steps = 20 + Math.floor(Math.random() * 15);
+
+    // Generate control points for Bezier curve (adds natural curve)
+    const cpX = (fromX + toX) / 2 + (Math.random() - 0.5) * 100;
+    const cpY = (fromY + toY) / 2 + (Math.random() - 0.5) * 100;
+
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      // Quadratic Bezier curve formula
+      const x = Math.round((1 - t) * (1 - t) * fromX + 2 * (1 - t) * t * cpX + t * t * toX);
+      const y = Math.round((1 - t) * (1 - t) * fromY + 2 * (1 - t) * t * cpY + t * t * toY);
+
+      await this.page.mouse.move(x, y);
+
+      // Variable delay between movements (humans don't move at constant speed)
+      const delay = 5 + Math.floor(Math.random() * 15);
+      await this.page.waitForTimeout(delay);
+    }
+  }
+
+  /**
+   * Human-like typing with variable delays between keystrokes
+   */
+  private async humanType(text: string): Promise<void> {
+    if (!this.page) return;
+
+    for (const char of text) {
+      await this.page.keyboard.type(char);
+      // Variable delay: 50-150ms for most chars, longer pauses occasionally
+      const delay = Math.random() < 0.1
+        ? 200 + Math.floor(Math.random() * 300) // Occasional longer pause (thinking)
+        : 50 + Math.floor(Math.random() * 100);  // Normal typing speed
+      await this.page.waitForTimeout(delay);
+    }
+  }
+
   constructor(config: BrowserConfig = {}) {
+    // Randomize viewport slightly to avoid fingerprinting
+    const baseWidth = 1280;
+    const baseHeight = 800;
+    const widthVariation = Math.floor(Math.random() * 100) - 50; // -50 to +50
+    const heightVariation = Math.floor(Math.random() * 60) - 30; // -30 to +30
+
     this.config = {
       headless: true,
-      viewport: { width: 1280, height: 800 },
-      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      sessionDir: './sessions',
+      viewport: {
+        width: baseWidth + widthVariation,
+        height: baseHeight + heightVariation
+      },
+      // Updated to latest Chrome version (2025)
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
       useSystemChrome: false, // Use isolated browser - persistent contexts crash on macOS 26
       ...config,
+      // Ensure sessionDir has a default value (spread can override with undefined)
+      sessionDir: config?.sessionDir || './sessions',
     };
 
     // Ensure session directory exists
@@ -136,41 +195,183 @@ export class BrowserController {
     // Set default timeout
     this.page.setDefaultTimeout(30000);
 
-    // Add stealth scripts to hide automation signals from Cloudflare
+    // Add comprehensive stealth scripts to hide automation signals
     await this.page.addInitScript(() => {
-      // Override navigator.webdriver
+      // ============================================
+      // 1. WEBDRIVER DETECTION
+      // ============================================
+      // Override navigator.webdriver - most basic check
       Object.defineProperty(navigator, 'webdriver', {
         get: () => undefined,
       });
 
+      // Delete webdriver property entirely
+      delete (navigator as any).__proto__.webdriver;
+
+      // ============================================
+      // 2. PLUGINS & MIME TYPES
+      // ============================================
       // Override navigator.plugins to look like a real browser
       Object.defineProperty(navigator, 'plugins', {
-        get: () => [
-          { name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer' },
-          { name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai' },
-          { name: 'Native Client', filename: 'internal-nacl-plugin' },
-        ],
+        get: () => {
+          const plugins = [
+            { name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer', description: 'Portable Document Format' },
+            { name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai', description: '' },
+            { name: 'Native Client', filename: 'internal-nacl-plugin', description: '' },
+          ];
+          (plugins as any).item = (i: number) => plugins[i] || null;
+          (plugins as any).namedItem = (name: string) => plugins.find(p => p.name === name) || null;
+          (plugins as any).refresh = () => {};
+          return plugins;
+        },
       });
 
-      // Override navigator.languages
+      // Override navigator.mimeTypes
+      Object.defineProperty(navigator, 'mimeTypes', {
+        get: () => {
+          const mimeTypes = [
+            { type: 'application/pdf', suffixes: 'pdf', description: 'Portable Document Format' },
+            { type: 'text/pdf', suffixes: 'pdf', description: 'Portable Document Format' },
+          ];
+          (mimeTypes as any).item = (i: number) => mimeTypes[i] || null;
+          (mimeTypes as any).namedItem = (name: string) => mimeTypes.find(m => m.type === name) || null;
+          return mimeTypes;
+        },
+      });
+
+      // ============================================
+      // 3. LANGUAGE & PLATFORM
+      // ============================================
       Object.defineProperty(navigator, 'languages', {
         get: () => ['en-US', 'en'],
       });
 
-      // Hide automation-related Chrome properties
+      Object.defineProperty(navigator, 'platform', {
+        get: () => 'MacIntel',
+      });
+
+      Object.defineProperty(navigator, 'hardwareConcurrency', {
+        get: () => 8,
+      });
+
+      Object.defineProperty(navigator, 'deviceMemory', {
+        get: () => 8,
+      });
+
+      // ============================================
+      // 4. PERMISSIONS API
+      // ============================================
       const originalQuery = window.navigator.permissions.query;
       window.navigator.permissions.query = (parameters: any) =>
         parameters.name === 'notifications'
           ? Promise.resolve({ state: Notification.permission } as PermissionStatus)
           : originalQuery(parameters);
 
-      // Prevent detection via window.chrome
+      // ============================================
+      // 5. CHROME OBJECT
+      // ============================================
       (window as any).chrome = {
-        runtime: {},
-        loadTimes: () => {},
-        csi: () => {},
-        app: {},
+        runtime: {
+          connect: () => {},
+          sendMessage: () => {},
+          onMessage: { addListener: () => {}, removeListener: () => {} },
+          onConnect: { addListener: () => {}, removeListener: () => {} },
+        },
+        loadTimes: () => ({
+          requestTime: Date.now() / 1000 - Math.random() * 100,
+          startLoadTime: Date.now() / 1000 - Math.random() * 50,
+          commitLoadTime: Date.now() / 1000 - Math.random() * 10,
+          finishDocumentLoadTime: Date.now() / 1000 - Math.random() * 5,
+          finishLoadTime: Date.now() / 1000,
+          firstPaintTime: Date.now() / 1000 - Math.random() * 3,
+          firstPaintAfterLoadTime: 0,
+          navigationType: 'Other',
+          wasFetchedViaSpdy: false,
+          wasNpnNegotiated: true,
+          npnNegotiatedProtocol: 'h2',
+          wasAlternateProtocolAvailable: false,
+          connectionInfo: 'h2',
+        }),
+        csi: () => ({
+          startE: Date.now() - Math.floor(Math.random() * 5000),
+          onloadT: Date.now() - Math.floor(Math.random() * 2000),
+          pageT: Date.now(),
+          tran: 15,
+        }),
+        app: {
+          isInstalled: false,
+          InstallState: { DISABLED: 'disabled', INSTALLED: 'installed', NOT_INSTALLED: 'not_installed' },
+          RunningState: { CANNOT_RUN: 'cannot_run', READY_TO_RUN: 'ready_to_run', RUNNING: 'running' },
+        },
       };
+
+      // ============================================
+      // 6. WEBGL FINGERPRINTING PROTECTION
+      // ============================================
+      const getParameterProxy = new Proxy(WebGLRenderingContext.prototype.getParameter, {
+        apply: function(target, thisArg, args) {
+          if (args[0] === 37445) { // UNMASKED_VENDOR_WEBGL
+            return 'Intel Inc.';
+          }
+          if (args[0] === 37446) { // UNMASKED_RENDERER_WEBGL
+            return 'Intel Iris OpenGL Engine';
+          }
+          return Reflect.apply(target, thisArg, args);
+        }
+      });
+      WebGLRenderingContext.prototype.getParameter = getParameterProxy;
+
+      // Also for WebGL2
+      if (typeof WebGL2RenderingContext !== 'undefined') {
+        WebGL2RenderingContext.prototype.getParameter = getParameterProxy;
+      }
+
+      // ============================================
+      // 7. CANVAS FINGERPRINTING PROTECTION
+      // ============================================
+      const originalToDataURL = HTMLCanvasElement.prototype.toDataURL;
+      HTMLCanvasElement.prototype.toDataURL = function(type?: string, quality?: any) {
+        // Add slight noise to canvas to break fingerprinting
+        const ctx = this.getContext('2d');
+        if (ctx) {
+          const imageData = ctx.getImageData(0, 0, this.width, this.height);
+          for (let i = 0; i < imageData.data.length; i += 4) {
+            // Add very slight random noise (imperceptible)
+            imageData.data[i] = Math.max(0, Math.min(255, imageData.data[i] + (Math.random() - 0.5) * 2));
+          }
+          ctx.putImageData(imageData, 0, 0);
+        }
+        return originalToDataURL.call(this, type, quality);
+      };
+
+      // ============================================
+      // 8. AUTOMATION FLAGS
+      // ============================================
+      // Remove automation-related properties from navigator
+      Object.defineProperty(navigator, 'maxTouchPoints', {
+        get: () => 0,
+      });
+
+      // Spoof screen properties
+      Object.defineProperty(screen, 'availWidth', {
+        get: () => window.innerWidth + Math.floor(Math.random() * 10),
+      });
+
+      Object.defineProperty(screen, 'availHeight', {
+        get: () => window.innerHeight + Math.floor(Math.random() * 10),
+      });
+
+      // ============================================
+      // 9. IFRAME CONTENTWINDOW
+      // ============================================
+      // Prevent iframe-based detection
+      Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', {
+        get: function() {
+          return window;
+        }
+      });
+
+      console.log('[Stealth] Anti-detection measures loaded');
     });
 
     console.log('[Browser] Browser launched successfully with stealth mode');
@@ -210,6 +411,96 @@ export class BrowserController {
         // Selector not found, continue
       }
     }
+    return false;
+  }
+
+  /**
+   * Check if a CAPTCHA/human verification is present on the page
+   * Returns the type of CAPTCHA detected or null if none
+   */
+  async detectCaptcha(): Promise<{ type: string; message: string } | null> {
+    if (!this.page) return null;
+
+    const captchaIndicators = [
+      // General CAPTCHA
+      { selector: 'iframe[src*="recaptcha"]', type: 'reCAPTCHA', message: 'Google reCAPTCHA detected' },
+      { selector: 'iframe[src*="hcaptcha"]', type: 'hCaptcha', message: 'hCaptcha detected' },
+      { selector: '[class*="captcha"]', type: 'Generic CAPTCHA', message: 'CAPTCHA challenge detected' },
+      { selector: '#captcha', type: 'Generic CAPTCHA', message: 'CAPTCHA challenge detected' },
+
+      // Cloudflare
+      { selector: 'iframe[src*="challenges.cloudflare.com"]', type: 'Cloudflare Turnstile', message: 'Cloudflare Turnstile verification required' },
+      { selector: '#challenge-running', type: 'Cloudflare Challenge', message: 'Cloudflare is verifying your browser' },
+      { selector: '.cf-browser-verification', type: 'Cloudflare Verification', message: 'Cloudflare browser verification in progress' },
+
+      // Indeed-specific
+      { selector: '[data-testid="captcha"]', type: 'Indeed CAPTCHA', message: 'Indeed CAPTCHA detected' },
+      { selector: 'iframe[title*="human"]', type: 'Human Verification', message: 'Human verification required' },
+      { selector: 'iframe[title*="verification"]', type: 'Verification', message: 'Verification challenge detected' },
+
+      // Text-based detection
+      { selector: ':has-text("verify you are human")', type: 'Human Verification', message: 'Human verification page detected' },
+      { selector: ':has-text("are you a robot")', type: 'Bot Detection', message: 'Bot detection page detected' },
+      { selector: ':has-text("prove you\'re not a robot")', type: 'Bot Detection', message: 'Bot detection challenge' },
+      { selector: ':has-text("security check")', type: 'Security Check', message: 'Security check required' },
+
+      // PerimeterX/HUMAN
+      { selector: 'iframe[src*="px-captcha"]', type: 'PerimeterX', message: 'PerimeterX CAPTCHA detected' },
+      { selector: '#px-captcha', type: 'PerimeterX', message: 'PerimeterX challenge detected' },
+    ];
+
+    for (const indicator of captchaIndicators) {
+      try {
+        const element = await this.page.$(indicator.selector);
+        if (element) {
+          console.log(`[Browser] ⚠️ ${indicator.type} detected!`);
+          return { type: indicator.type, message: indicator.message };
+        }
+      } catch (e) {
+        // Selector might not be valid for some page states
+      }
+    }
+
+    // Also check page text content for CAPTCHA-related phrases
+    try {
+      const pageText = await this.page.textContent('body') || '';
+      const lowerText = pageText.toLowerCase();
+
+      if (lowerText.includes('verify you are human') ||
+          lowerText.includes('human verification') ||
+          lowerText.includes("prove you're not a robot") ||
+          lowerText.includes('complete the security check') ||
+          lowerText.includes('press and hold')) {
+        console.log('[Browser] ⚠️ Human verification text detected on page!');
+        return { type: 'Human Verification', message: 'Please complete the human verification in the browser' };
+      }
+    } catch (e) {
+      // Page might not be fully loaded
+    }
+
+    return null;
+  }
+
+  /**
+   * Wait for CAPTCHA to be solved by user
+   * Returns true when CAPTCHA is no longer detected, false if timeout
+   */
+  async waitForCaptchaSolved(timeoutMs: number = 120000): Promise<boolean> {
+    if (!this.page) return false;
+
+    console.log('[Browser] Waiting for user to solve CAPTCHA...');
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeoutMs) {
+      const captcha = await this.detectCaptcha();
+      if (!captcha) {
+        console.log('[Browser] ✓ CAPTCHA solved!');
+        return true;
+      }
+      await this.page.waitForTimeout(2000); // Check every 2 seconds
+    }
+
+    console.log('[Browser] CAPTCHA solve timeout');
     return false;
   }
 
@@ -311,10 +602,17 @@ export class BrowserController {
       }
     }
 
-    // Fall back to coordinates
-    console.log(`[Browser] Clicking at coordinates (${x}, ${y})`);
+    // Fall back to coordinates with human-like mouse movement
+    console.log(`[Browser] Clicking at coordinates (${x}, ${y}) with human-like movement`);
+
+    // Move mouse in curved path before clicking
+    await this.humanMouseMove(x, y);
+
+    // Small random delay before click (humans don't click instantly after moving)
+    await this.page.waitForTimeout(50 + Math.floor(Math.random() * 100));
+
     await this.page.mouse.click(x, y);
-    await this.page.waitForTimeout(500);
+    await this.page.waitForTimeout(300 + Math.floor(Math.random() * 300));
     return false;
   }
 
@@ -330,7 +628,7 @@ export class BrowserController {
   }
 
   /**
-   * Type text (optionally at coordinates)
+   * Type text (optionally at coordinates) with human-like typing patterns
    */
   async type(text: string, x?: number, y?: number): Promise<void> {
     if (!this.page) throw new Error('Browser not launched');
@@ -339,9 +637,12 @@ export class BrowserController {
       await this.click(x, y);
     }
 
-    console.log(`[Browser] Typing: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`);
-    await this.page.keyboard.type(text, { delay: 50 });
-    await this.page.waitForTimeout(300);
+    console.log(`[Browser] Typing with human-like pattern: "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`);
+
+    // Use human-like typing with variable delays
+    await this.humanType(text);
+
+    await this.page.waitForTimeout(200 + Math.floor(Math.random() * 200));
   }
 
   /**
