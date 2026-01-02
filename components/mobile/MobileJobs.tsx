@@ -24,6 +24,24 @@ export const MobileJobs: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Normalize location for SerpAPI (extract valid city, state format)
+  const normalizeLocation = (loc: string | undefined): string => {
+    if (!loc) return 'Orlando, FL';
+    // Remove zip codes (5 digits or 5+4 format)
+    let cleaned = loc.replace(/\s*\d{5}(-\d{4})?\s*$/, '').trim();
+    // If location is too short or doesn't contain a state, use default
+    if (cleaned.length < 5 || !cleaned.includes(',')) {
+      return 'Orlando, FL';
+    }
+    // Check if the city part looks like a real city (not a neighborhood like "University")
+    const cityPart = cleaned.split(',')[0].trim();
+    const invalidCityNames = ['university', 'downtown', 'midtown', 'uptown', 'north', 'south', 'east', 'west'];
+    if (invalidCityNames.some(invalid => cityPart.toLowerCase() === invalid)) {
+      return 'Orlando, FL';
+    }
+    return cleaned;
+  };
+
   // Fetch jobs based on user's profile/preferences
   useEffect(() => {
     const fetchJobs = async () => {
@@ -32,7 +50,7 @@ export const MobileJobs: React.FC = () => {
       try {
         // Build search query from user's program/skills
         const query = userProfile?.program || userProfile?.skills?.technical?.[0] || 'entry level';
-        const location = userProfile?.location || 'Orlando, FL';
+        const location = normalizeLocation(userProfile?.location);
 
         const result = await searchJobs(query, { location });
         setJobs(result.jobs || []);
@@ -88,7 +106,7 @@ export const MobileJobs: React.FC = () => {
     setLoading(true);
     try {
       const query = userProfile?.program || userProfile?.skills?.technical?.[0] || 'entry level';
-      const location = userProfile?.location || 'Orlando, FL';
+      const location = normalizeLocation(userProfile?.location);
       const result = await searchJobs(query, { location });
       setJobs(result.jobs || []);
     } catch (err) {

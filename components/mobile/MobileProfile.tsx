@@ -64,25 +64,33 @@ export const MobileProfile: React.FC = () => {
   const [siteError, setSiteError] = useState<string | null>(null);
   const [siteSuccess, setSiteSuccess] = useState<string | null>(null);
 
-  // Load job sites and credentials
+  // Load job sites and credentials (handle errors independently)
   useEffect(() => {
     const loadSitesData = async () => {
       if (!currentUser?.uid) {
         setSitesLoading(false);
         return;
       }
+
+      // Load sites first - this should always work
       try {
-        const [sitesData, credsData] = await Promise.all([
-          getJobSites(),
-          getSiteCredentials(currentUser.uid),
-        ]);
+        const sitesData = await getJobSites();
         setSites(sitesData);
+      } catch (err) {
+        console.error('Error loading job sites:', err);
+      }
+
+      // Load credentials separately - may fail if user has none
+      try {
+        const credsData = await getSiteCredentials(currentUser.uid);
         setCredentials(credsData);
       } catch (err) {
-        console.error('Error loading sites:', err);
-      } finally {
-        setSitesLoading(false);
+        // This is expected for new users with no credentials
+        console.log('No credentials found or error:', err);
+        setCredentials([]);
       }
+
+      setSitesLoading(false);
     };
     loadSitesData();
   }, [currentUser]);

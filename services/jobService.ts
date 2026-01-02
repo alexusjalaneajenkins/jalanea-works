@@ -30,9 +30,9 @@ export async function searchJobs(
     }
 ): Promise<TransformedJobSearchResponse> {
     try {
-        // Build query with entry-level focus AND exclusion terms for senior roles
-        // This pre-filters at Google's level before reaching Gemini
-        const entryLevelQuery = `${query} (entry level OR junior OR associate) -senior -lead -manager -director`.trim();
+        // Build query with entry-level focus - keep it simple for better SerpAPI results
+        // Complex boolean operators can cause "no results" errors
+        const entryLevelQuery = `${query} entry level`.trim();
         const params = new URLSearchParams({ q: entryLevelQuery });
 
         if (options?.location) params.append('location', options.location);
