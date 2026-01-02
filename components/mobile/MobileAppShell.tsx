@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { MobileNavBar } from './MobileNavBar';
@@ -10,8 +11,12 @@ import { MobileCoach } from './MobileCoach';
 import { MobileTracker } from './MobileTracker';
 import { MobileProfile } from './MobileProfile';
 import { MobileLogin } from './MobileLogin';
+import { MobileJobAgent } from './MobileJobAgent';
 
 export type MobileScreen = 'home' | 'jobs' | 'coach' | 'tracker' | 'profile';
+
+// Menu overlay screens (accessed via hamburger menu)
+export type MenuScreen = 'job-agent' | 'preferences' | 'notifications' | 'settings' | 'help' | null;
 
 const screenTitles: Record<MobileScreen, string> = {
   home: 'Home',
@@ -45,8 +50,19 @@ export const MobileAppShell: React.FC = () => {
 
   // Initialize screen from URL for cross-platform support (Android, Windows, Linux)
   const [activeScreen, setActiveScreen] = useState<MobileScreen>(() => getScreenFromUrl(location.pathname));
+  const [menuScreen, setMenuScreen] = useState<MenuScreen>(null);
   const { currentUser, loading } = useAuth();
   const { isLight } = useTheme();
+
+  // Handle menu item navigation
+  const handleMenuNavigate = (screen: string) => {
+    setMenuScreen(screen as MenuScreen);
+  };
+
+  // Close menu overlay
+  const closeMenuScreen = () => {
+    setMenuScreen(null);
+  };
 
   // Reference to the scrollable content area
   const contentRef = React.useRef<HTMLDivElement>(null);
@@ -129,6 +145,30 @@ export const MobileAppShell: React.FC = () => {
     }
   };
 
+  // Render menu overlay screen
+  const renderMenuScreen = () => {
+    switch (menuScreen) {
+      case 'job-agent':
+        return <MobileJobAgent onBack={closeMenuScreen} />;
+      case 'preferences':
+        // TODO: Create MobilePreferences component
+        return null;
+      case 'notifications':
+        // TODO: Create MobileNotifications component
+        return null;
+      case 'settings':
+        // For now, navigate to profile which has settings
+        setMenuScreen(null);
+        setActiveScreen('profile');
+        return null;
+      case 'help':
+        // TODO: Create MobileHelp component
+        return null;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div
       className={isLight ? 'bg-slate-50' : 'bg-[#020617]'}
@@ -145,7 +185,10 @@ export const MobileAppShell: React.FC = () => {
       }}
     >
       {/* Header - handles its own safe-area-inset-top */}
-      <MobileHeader title={screenTitles[activeScreen]} />
+      <MobileHeader
+        title={screenTitles[activeScreen]}
+        onMenuNavigate={handleMenuNavigate}
+      />
 
       {/* Main Content - takes remaining space and scrolls */}
       <div
@@ -165,6 +208,21 @@ export const MobileAppShell: React.FC = () => {
         activeScreen={activeScreen}
         onNavigate={setActiveScreen}
       />
+
+      {/* Menu Overlay Screens */}
+      <AnimatePresence>
+        {menuScreen && (
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            className={`fixed inset-0 z-40 ${isLight ? 'bg-slate-50' : 'bg-[#020617]'}`}
+          >
+            {renderMenuScreen()}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
