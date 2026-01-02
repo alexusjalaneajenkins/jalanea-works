@@ -375,12 +375,15 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
         </div>
       )}
 
-      {/* Navbar - Glass Effect */}
+      {/* Navbar - Glass Effect - extends behind status bar */}
       <header
-        className="fixed w-full z-40 bg-jalanea-950/90 backdrop-blur-md border-b border-white/10 transition-colors duration-300"
-        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        className="fixed top-0 left-0 right-0 z-40 bg-jalanea-950/90 backdrop-blur-md border-b border-white/10 transition-colors duration-300"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between relative">
+        {/* Content container - padded below status bar/Dynamic Island */}
+        <div
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 md:h-20 flex items-center justify-between relative"
+          style={{ marginTop: 'env(safe-area-inset-top, 0px)' }}
+        >
           {/* Logo - Left */}
           <div className="flex items-center gap-2 font-display font-bold text-xl md:text-2xl tracking-tighter text-white">
             <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-gold-sheen flex items-center justify-center text-jalanea-950">
@@ -411,10 +414,10 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
         </div>
       </header>
 
-      {/* Hero Section - extra top padding on mobile for safe-area header */}
+      {/* Hero Section - padding accounts for fixed header (h-14 + safe-area) */}
       <section
         className="relative min-h-screen flex items-center pb-8 md:pb-12 overflow-hidden"
-        style={{ paddingTop: 'calc(80px + env(safe-area-inset-top, 0px))' }}
+        style={{ paddingTop: 'calc(56px + env(safe-area-inset-top, 0px) + 16px)' }}
       >
         {/* Background Mesh Gradients */}
         <div className="absolute inset-0 bg-jalanea-950"></div>

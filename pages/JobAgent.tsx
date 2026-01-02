@@ -6,7 +6,8 @@ import {
   Bot, Play, Pause, Square, CheckCircle, AlertCircle,
   ExternalLink, Briefcase, Loader, Wifi, WifiOff,
   Zap, Sparkles, ArrowRight, RefreshCw, Settings,
-  HelpCircle, X, ChevronDown, ChevronUp, Info
+  HelpCircle, X, ChevronDown, ChevronUp, Info, History,
+  Clock, Building2, MapPin, DollarSign
 } from 'lucide-react';
 
 // Cloud Agent API URL - configurable for local dev vs production
@@ -245,7 +246,7 @@ const formatProfileForAgent = (profile: Partial<ProfileContext>): string => {
 };
 
 export const JobAgent: React.FC = () => {
-  const { userProfile } = useAuth();
+  const { userProfile, currentUser } = useAuth();
   const { isLight } = useTheme();
 
   // Agent state
@@ -515,6 +516,31 @@ export const JobAgent: React.FC = () => {
       }
     }, 2000);
   };
+
+  // Fetch job history from cloud-agent API
+  const fetchJobHistory = async () => {
+    if (!currentUser?.uid) return;
+
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`${AGENT_API_URL}/applications?userId=${currentUser.uid}&limit=20`);
+      if (res.ok) {
+        const data = await res.json();
+        setJobHistory(data.applications || []);
+      }
+    } catch (e) {
+      console.error('Failed to fetch job history:', e);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  // Fetch job history on mount and when agent connects
+  useEffect(() => {
+    if (agentConnected && currentUser?.uid) {
+      fetchJobHistory();
+    }
+  }, [agentConnected, currentUser?.uid]);
 
   // Build profile context from user's onboarding data
   const profileContext = buildProfileContext(userProfile);
@@ -1189,6 +1215,166 @@ export const JobAgent: React.FC = () => {
             </div>
           </motion.div>
         </div>
+
+        {/* Job History Section */}
+        <motion.div variants={fadeUp} className="mt-8">
+          <button
+            onClick={() => {
+              setShowHistory(!showHistory);
+              if (!showHistory && jobHistory.length === 0) {
+                fetchJobHistory();
+              }
+            }}
+            className={`w-full flex items-center justify-between p-4 rounded-2xl transition-colors ${
+              isLight
+                ? 'bg-white border border-slate-200 hover:border-slate-300 shadow-sm'
+                : 'bg-slate-800/50 border border-white/10 hover:border-white/20'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                isLight ? 'bg-purple-100' : 'bg-purple-500/20'
+              }`}>
+                <History size={20} className={isLight ? 'text-purple-600' : 'text-purple-400'} />
+              </div>
+              <div className="text-left">
+                <h3 className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                  Application History
+                </h3>
+                <p className={`text-sm ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                  {jobHistory.length > 0 ? `${jobHistory.length} recent applications` : 'View your applied jobs'}
+                </p>
+              </div>
+            </div>
+            {showHistory ? (
+              <ChevronUp size={20} className={isLight ? 'text-slate-500' : 'text-slate-400'} />
+            ) : (
+              <ChevronDown size={20} className={isLight ? 'text-slate-500' : 'text-slate-400'} />
+            )}
+          </button>
+
+          <AnimatePresence>
+            {showHistory && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className={`mt-4 p-4 rounded-2xl ${
+                  isLight
+                    ? 'bg-white border border-slate-200 shadow-sm'
+                    : 'bg-slate-800/50 border border-white/10'
+                }`}>
+                  {historyLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader className="animate-spin text-gold" size={24} />
+                    </div>
+                  ) : jobHistory.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Briefcase size={40} className={`mx-auto mb-3 ${isLight ? 'text-slate-300' : 'text-slate-600'}`} />
+                      <p className={`text-sm ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                        No applications yet. Start a job search to apply automatically!
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {jobHistory.map((job) => (
+                        <div
+                          key={job.id}
+                          className={`p-4 rounded-xl ${
+                            isLight
+                              ? 'bg-slate-50 border border-slate-100'
+                              : 'bg-slate-900/50 border border-white/5'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className={`font-bold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                  {job.jobTitle}
+                                </h4>
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  job.status === 'applied' ? 'bg-emerald-500/20 text-emerald-400' :
+                                  job.status === 'in_progress' ? 'bg-amber-500/20 text-amber-400' :
+                                  job.status === 'failed' ? 'bg-red-500/20 text-red-400' :
+                                  job.status === 'skipped' ? 'bg-slate-500/20 text-slate-400' :
+                                  'bg-blue-500/20 text-blue-400'
+                                }`}>
+                                  {job.status}
+                                </span>
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-3 text-xs">
+                                {job.companyName && (
+                                  <span className={`flex items-center gap-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                                    <Building2 size={12} />
+                                    {job.companyName}
+                                  </span>
+                                )}
+                                {job.jobLocation && (
+                                  <span className={`flex items-center gap-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                                    <MapPin size={12} />
+                                    {job.jobLocation}
+                                  </span>
+                                )}
+                                {job.salaryRange && (
+                                  <span className={`flex items-center gap-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                                    <DollarSign size={12} />
+                                    {job.salaryRange}
+                                  </span>
+                                )}
+                                <span className={`flex items-center gap-1 ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
+                                  <Clock size={12} />
+                                  {new Date(job.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
+
+                              {job.errorMessage && (
+                                <p className="mt-2 text-xs text-red-400">
+                                  {job.errorMessage}
+                                </p>
+                              )}
+                            </div>
+
+                            {job.jobUrl && (
+                              <a
+                                href={job.jobUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`shrink-0 p-2 rounded-lg transition-colors ${
+                                  isLight
+                                    ? 'hover:bg-slate-100 text-slate-500'
+                                    : 'hover:bg-white/10 text-slate-400'
+                                }`}
+                              >
+                                <ExternalLink size={16} />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Refresh button */}
+                      <button
+                        onClick={fetchJobHistory}
+                        disabled={historyLoading}
+                        className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm transition-colors ${
+                          isLight
+                            ? 'text-slate-500 hover:bg-slate-100'
+                            : 'text-slate-400 hover:bg-white/5'
+                        }`}
+                      >
+                        <RefreshCw size={14} className={historyLoading ? 'animate-spin' : ''} />
+                        Refresh
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
         {/* Floating Chatbot Helper */}
         <AnimatePresence>
