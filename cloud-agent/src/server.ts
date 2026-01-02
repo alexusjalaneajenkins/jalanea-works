@@ -253,7 +253,7 @@ function getOrCreateAgent(sessionDir?: string): JobApplicationAgent {
  * Health check
  */
 app.get('/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', timestamp: Date.now() });
+  res.json({ status: 'ok', version: '1.1.0-stream-fix', timestamp: Date.now() });
 });
 
 /**
