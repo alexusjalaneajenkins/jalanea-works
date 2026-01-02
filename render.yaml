@@ -15,7 +15,7 @@ services:
     name: jalanea-api
     runtime: docker
     rootDir: ./cloud-agent
-    dockerfilePath: ./cloud-agent/Dockerfile
+    dockerfilePath: ./Dockerfile
     dockerCommand: node dist/index.js
     plan: free  # Upgrade to starter ($7/mo) when needed
     healthCheckPath: /health
@@ -75,7 +75,7 @@ services:
     name: jalanea-worker
     runtime: docker
     rootDir: ./cloud-agent
-    dockerfilePath: ./cloud-agent/Dockerfile
+    dockerfilePath: ./Dockerfile
     dockerCommand: node dist/queue/worker.js
     plan: starter  # Needs always-on for queue processing
     envVars:
