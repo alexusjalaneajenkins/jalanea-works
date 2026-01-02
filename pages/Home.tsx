@@ -376,7 +376,10 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
       )}
 
       {/* Navbar - Glass Effect */}
-      <header className="fixed w-full z-40 bg-jalanea-950/90 backdrop-blur-md border-b border-white/10 transition-colors duration-300">
+      <header
+        className="fixed w-full z-40 bg-jalanea-950/90 backdrop-blur-md border-b border-white/10 transition-colors duration-300"
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between relative">
           {/* Logo - Left */}
           <div className="flex items-center gap-2 font-display font-bold text-xl md:text-2xl tracking-tighter text-white">

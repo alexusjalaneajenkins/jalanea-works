@@ -387,30 +387,8 @@
       min-height: 100%;
     }
 
-    /* MOBILE APP / PWA MODE: Lock body, allow app to handle scroll */
-    @media (max-width: 767px) {
-      html {
-        height: 100%;
-        height: 100dvh;
-        overflow: hidden;
-      }
-
-      body {
-        height: 100%;
-        height: 100dvh;
-        max-height: -webkit-fill-available;
-        overflow: hidden;
-        margin: 0;
-        padding: 0 !important;
-      }
-
-      #root {
-        height: 100%;
-        height: 100dvh;
-        max-height: -webkit-fill-available;
-        overflow: hidden;
-      }
-    }
+    /* Mobile app shell will handle its own scroll locking via JS */
+    /* Don't lock scroll globally - landing page and other public pages need to scroll */
 
     /* Allow smooth scroll within content areas */
     main, .scrollable {
