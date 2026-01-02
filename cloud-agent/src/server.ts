@@ -39,6 +39,114 @@ import {
 let loginBrowser: BrowserController | null = null;
 let currentSiteId: string | null = null;
 
+// ============================================
+// Live Browser Streaming (Operator-style)
+// ============================================
+
+interface StreamingSession {
+  browser: BrowserController;
+  siteId: string;
+  userId: string;
+  isStreaming: boolean;
+  isTakeoverMode: boolean; // When true, user controls browser, no screenshots captured
+  streamInterval: NodeJS.Timeout | null;
+  clients: Set<WebSocket>;
+  lastActivity: number;
+}
+
+// Active streaming sessions by sessionId
+const streamingSessions: Map<string, StreamingSession> = new Map();
+
+/**
+ * Generate unique session ID
+ */
+function generateSessionId(): string {
+  return `stream-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+}
+
+/**
+ * Broadcast to streaming session clients only
+ */
+function broadcastToSession(sessionId: string, data: any): void {
+  const session = streamingSessions.get(sessionId);
+  if (!session) return;
+
+  const message = JSON.stringify(data);
+  session.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(message);
+    }
+  });
+}
+
+/**
+ * Start screenshot streaming for a session
+ */
+function startScreenshotStreaming(sessionId: string): void {
+  const session = streamingSessions.get(sessionId);
+  if (!session || session.streamInterval) return;
+
+  console.log(`[Stream] Starting screenshot stream for ${sessionId}`);
+
+  session.streamInterval = setInterval(async () => {
+    try {
+      // Don't capture screenshots in takeover mode (privacy for passwords)
+      if (session.isTakeoverMode) {
+        return;
+      }
+
+      const screenshot = await session.browser.screenshot();
+      const url = session.browser.getUrl();
+
+      broadcastToSession(sessionId, {
+        type: 'stream:screenshot',
+        sessionId,
+        data: {
+          image: `data:image/jpeg;base64,${screenshot.base64}`,
+          width: screenshot.width,
+          height: screenshot.height,
+          url,
+          timestamp: screenshot.timestamp,
+        }
+      });
+    } catch (error) {
+      console.error(`[Stream] Screenshot error for ${sessionId}:`, error);
+    }
+  }, 500); // 2 FPS for smooth viewing without overloading
+}
+
+/**
+ * Stop screenshot streaming
+ */
+function stopScreenshotStreaming(sessionId: string): void {
+  const session = streamingSessions.get(sessionId);
+  if (!session || !session.streamInterval) return;
+
+  console.log(`[Stream] Stopping screenshot stream for ${sessionId}`);
+  clearInterval(session.streamInterval);
+  session.streamInterval = null;
+}
+
+/**
+ * Clean up a streaming session
+ */
+async function cleanupStreamingSession(sessionId: string): Promise<void> {
+  const session = streamingSessions.get(sessionId);
+  if (!session) return;
+
+  console.log(`[Stream] Cleaning up session ${sessionId}`);
+
+  stopScreenshotStreaming(sessionId);
+
+  try {
+    await session.browser.close();
+  } catch (e) {
+    console.error(`[Stream] Error closing browser:`, e);
+  }
+
+  streamingSessions.delete(sessionId);
+}
+
 const app = express();
 app.use(express.json());
 
@@ -1908,12 +2016,359 @@ app.get('/billing/tiers', (req: Request, res: Response) => {
 });
 
 // ============================================
+// Live Browser Streaming API (Operator-style)
+// ============================================
+
+/**
+ * Start a new live browser streaming session
+ * POST /stream/start
+ *
+ * Opens a cloud browser for the user to interact with (like ChatGPT Operator)
+ * Screenshots are streamed via WebSocket
+ */
+app.post('/stream/start', async (req: Request, res: Response) => {
+  try {
+    const { siteId, userId, url } = req.body;
+
+    if (!siteId || !userId) {
+      return res.status(400).json({ error: 'siteId and userId are required' });
+    }
+
+    const site = getJobSite(siteId);
+    if (!site) {
+      return res.status(400).json({ error: `Unknown site: ${siteId}` });
+    }
+
+    // Check if user already has an active session
+    for (const [sid, session] of streamingSessions) {
+      if (session.userId === userId) {
+        // Return existing session
+        return res.json({
+          sessionId: sid,
+          siteId: session.siteId,
+          status: 'existing',
+          message: 'Returning existing session'
+        });
+      }
+    }
+
+    const sessionId = generateSessionId();
+    console.log(`[Stream] Creating new session ${sessionId} for user ${userId} on ${siteId}`);
+
+    // Create browser with mobile-friendly viewport
+    const browserType = (process.env.BROWSER_TYPE || 'chromium') as 'chromium' | 'camoufox';
+    const sessionDir = path.join(process.cwd(), 'sessions', siteId);
+
+    const browser = new BrowserController({
+      headless: true, // Must be headless in cloud
+      browserType,
+      sessionDir,
+      viewport: { width: 390, height: 844 }, // iPhone 14 Pro size
+      capsolverApiKey: process.env.CAPSOLVER_API_KEY,
+    });
+
+    await browser.launch();
+
+    // Navigate to login URL
+    const targetUrl = url || site.loginUrl;
+    await browser.navigate(targetUrl);
+
+    // Wait for page to load
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Create session
+    const session: StreamingSession = {
+      browser,
+      siteId,
+      userId,
+      isStreaming: false,
+      isTakeoverMode: false,
+      streamInterval: null,
+      clients: new Set(),
+      lastActivity: Date.now(),
+    };
+
+    streamingSessions.set(sessionId, session);
+
+    // Take initial screenshot
+    const screenshot = await browser.screenshot();
+
+    res.json({
+      sessionId,
+      siteId,
+      status: 'created',
+      initialScreenshot: `data:image/jpeg;base64,${screenshot.base64}`,
+      viewport: { width: screenshot.width, height: screenshot.height },
+      url: browser.getUrl(),
+      message: 'Session created. Connect via WebSocket to start streaming.'
+    });
+
+  } catch (error) {
+    console.error('[Stream] Error starting session:', error);
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Get streaming session status
+ * GET /stream/:sessionId
+ */
+app.get('/stream/:sessionId', async (req: Request, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+    const session = streamingSessions.get(sessionId);
+
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    const screenshot = await session.browser.screenshot();
+
+    res.json({
+      sessionId,
+      siteId: session.siteId,
+      userId: session.userId,
+      isStreaming: session.isStreaming,
+      isTakeoverMode: session.isTakeoverMode,
+      connectedClients: session.clients.size,
+      url: session.browser.getUrl(),
+      screenshot: `data:image/jpeg;base64,${screenshot.base64}`,
+      viewport: { width: screenshot.width, height: screenshot.height },
+      lastActivity: session.lastActivity,
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Perform action on streaming browser (for REST fallback)
+ * POST /stream/:sessionId/action
+ *
+ * Actions: click, type, scroll, press, navigate
+ */
+app.post('/stream/:sessionId/action', async (req: Request, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+    const { action, x, y, text, key, url, direction, amount } = req.body;
+
+    const session = streamingSessions.get(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    session.lastActivity = Date.now();
+
+    switch (action) {
+      case 'click':
+        if (x === undefined || y === undefined) {
+          return res.status(400).json({ error: 'x and y coordinates required for click' });
+        }
+        await session.browser.click(x, y);
+        break;
+
+      case 'type':
+        if (!text) {
+          return res.status(400).json({ error: 'text required for type action' });
+        }
+        await session.browser.type(text, x, y);
+        break;
+
+      case 'press':
+        if (!key) {
+          return res.status(400).json({ error: 'key required for press action' });
+        }
+        await session.browser.press(key);
+        break;
+
+      case 'scroll':
+        await session.browser.scroll(direction || 'down', amount || 300);
+        break;
+
+      case 'navigate':
+        if (!url) {
+          return res.status(400).json({ error: 'url required for navigate action' });
+        }
+        await session.browser.navigate(url);
+        break;
+
+      default:
+        return res.status(400).json({ error: `Unknown action: ${action}` });
+    }
+
+    // Return updated screenshot after action
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const screenshot = await session.browser.screenshot();
+
+    res.json({
+      success: true,
+      action,
+      url: session.browser.getUrl(),
+      screenshot: `data:image/jpeg;base64,${screenshot.base64}`,
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Toggle takeover mode (privacy for password entry)
+ * POST /stream/:sessionId/takeover
+ */
+app.post('/stream/:sessionId/takeover', async (req: Request, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+    const { enabled } = req.body;
+
+    const session = streamingSessions.get(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    session.isTakeoverMode = enabled !== false;
+    session.lastActivity = Date.now();
+
+    // Notify connected clients
+    broadcastToSession(sessionId, {
+      type: 'stream:takeover',
+      sessionId,
+      data: { enabled: session.isTakeoverMode }
+    });
+
+    res.json({
+      success: true,
+      isTakeoverMode: session.isTakeoverMode,
+      message: session.isTakeoverMode
+        ? 'Takeover mode enabled. Screenshots paused for privacy.'
+        : 'Takeover mode disabled. Screenshots resumed.'
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Save session and mark as connected
+ * POST /stream/:sessionId/save
+ */
+app.post('/stream/:sessionId/save', async (req: Request, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+
+    const session = streamingSessions.get(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    // Get storage state from browser
+    const storageState = await session.browser.getStorageState();
+
+    if (!storageState || !storageState.cookies || storageState.cookies.length === 0) {
+      return res.status(400).json({ error: 'No session data to save. Please log in first.' });
+    }
+
+    // Save to file
+    const sessionDir = path.join(process.cwd(), 'sessions', session.siteId);
+    if (!fs.existsSync(sessionDir)) {
+      fs.mkdirSync(sessionDir, { recursive: true });
+    }
+    const sessionFile = path.join(sessionDir, 'state.json');
+    fs.writeFileSync(sessionFile, JSON.stringify(storageState, null, 2));
+
+    // Save to database if admin client available
+    if (supabaseAdmin && session.userId) {
+      try {
+        const sessionData = JSON.stringify(storageState);
+        const { encrypt } = await import('./crypto.js');
+        const encryptedData = encrypt(sessionData);
+
+        await supabaseAdmin
+          .from('site_credentials')
+          .upsert({
+            user_id: session.userId,
+            site_id: session.siteId,
+            encrypted_data: encryptedData,
+            is_verified: true,
+            last_verified_at: new Date().toISOString(),
+            login_status: 'success',
+            status_message: `Connected via live browser (${storageState.cookies.length} cookies)`
+          }, {
+            onConflict: 'user_id,site_id'
+          });
+
+        console.log(`[Stream] Saved credential for user ${session.userId} on ${session.siteId}`);
+      } catch (dbErr) {
+        console.error('[Stream] DB error:', dbErr);
+      }
+    }
+
+    // Notify clients
+    broadcastToSession(sessionId, {
+      type: 'stream:saved',
+      sessionId,
+      data: {
+        siteId: session.siteId,
+        cookieCount: storageState.cookies.length,
+      }
+    });
+
+    res.json({
+      success: true,
+      siteId: session.siteId,
+      cookieCount: storageState.cookies.length,
+      message: 'Session saved successfully!'
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Stop streaming session
+ * POST /stream/:sessionId/stop
+ */
+app.post('/stream/:sessionId/stop', async (req: Request, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+
+    const session = streamingSessions.get(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    // Notify clients before closing
+    broadcastToSession(sessionId, {
+      type: 'stream:stopped',
+      sessionId,
+      data: { reason: 'User requested stop' }
+    });
+
+    await cleanupStreamingSession(sessionId);
+
+    res.json({
+      success: true,
+      message: 'Session stopped and cleaned up'
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+// ============================================
 // WebSocket Handling
 // ============================================
 
 wss.on('connection', (ws: WebSocket) => {
   console.log('[Server] Client connected via WebSocket');
   clients.add(ws);
+
+  // Track which streaming session this client is subscribed to
+  let subscribedSessionId: string | null = null;
 
   // Send current state on connect
   try {
@@ -1940,6 +2395,110 @@ wss.on('connection', (ws: WebSocket) => {
       const data = JSON.parse(message.toString());
       console.log('[Server] Received message:', data.type);
 
+      // ============================================
+      // Live Browser Streaming Commands
+      // ============================================
+      if (data.type?.startsWith('stream:')) {
+        const { sessionId } = data;
+        const session = sessionId ? streamingSessions.get(sessionId) : null;
+
+        switch (data.type) {
+          case 'stream:subscribe':
+            // Subscribe to a streaming session
+            if (!session) {
+              ws.send(JSON.stringify({ type: 'error', data: { message: 'Session not found' } }));
+              return;
+            }
+            subscribedSessionId = sessionId;
+            session.clients.add(ws);
+            session.isStreaming = true;
+            startScreenshotStreaming(sessionId);
+
+            ws.send(JSON.stringify({
+              type: 'stream:subscribed',
+              sessionId,
+              data: { message: 'Subscribed to session' }
+            }));
+            break;
+
+          case 'stream:unsubscribe':
+            // Unsubscribe from streaming session
+            if (subscribedSessionId && streamingSessions.has(subscribedSessionId)) {
+              const sess = streamingSessions.get(subscribedSessionId)!;
+              sess.clients.delete(ws);
+              if (sess.clients.size === 0) {
+                stopScreenshotStreaming(subscribedSessionId);
+                sess.isStreaming = false;
+              }
+            }
+            subscribedSessionId = null;
+            ws.send(JSON.stringify({ type: 'stream:unsubscribed', data: {} }));
+            break;
+
+          case 'stream:click':
+            // Handle click from mobile
+            if (!session) {
+              ws.send(JSON.stringify({ type: 'error', data: { message: 'Session not found' } }));
+              return;
+            }
+            session.lastActivity = Date.now();
+            await session.browser.click(data.x, data.y);
+            break;
+
+          case 'stream:type':
+            // Handle typing
+            if (!session) {
+              ws.send(JSON.stringify({ type: 'error', data: { message: 'Session not found' } }));
+              return;
+            }
+            session.lastActivity = Date.now();
+            await session.browser.type(data.text, data.x, data.y);
+            break;
+
+          case 'stream:press':
+            // Handle key press
+            if (!session) {
+              ws.send(JSON.stringify({ type: 'error', data: { message: 'Session not found' } }));
+              return;
+            }
+            session.lastActivity = Date.now();
+            await session.browser.press(data.key);
+            break;
+
+          case 'stream:scroll':
+            // Handle scroll
+            if (!session) {
+              ws.send(JSON.stringify({ type: 'error', data: { message: 'Session not found' } }));
+              return;
+            }
+            session.lastActivity = Date.now();
+            await session.browser.scroll(data.direction || 'down', data.amount || 300);
+            break;
+
+          case 'stream:takeover':
+            // Toggle takeover mode
+            if (!session) {
+              ws.send(JSON.stringify({ type: 'error', data: { message: 'Session not found' } }));
+              return;
+            }
+            session.isTakeoverMode = data.enabled !== false;
+            session.lastActivity = Date.now();
+            broadcastToSession(sessionId, {
+              type: 'stream:takeover',
+              sessionId,
+              data: { enabled: session.isTakeoverMode }
+            });
+            break;
+
+          default:
+            ws.send(JSON.stringify({ type: 'error', data: { message: `Unknown stream command: ${data.type}` } }));
+        }
+        return;
+      }
+
+      // ============================================
+      // Original Agent Commands
+      // ============================================
       const agentInstance = getOrCreateAgent();
 
       switch (data.type) {
@@ -1976,6 +2535,16 @@ wss.on('connection', (ws: WebSocket) => {
   ws.on('close', () => {
     console.log('[Server] Client disconnected');
     clients.delete(ws);
+
+    // Clean up streaming subscription
+    if (subscribedSessionId && streamingSessions.has(subscribedSessionId)) {
+      const session = streamingSessions.get(subscribedSessionId)!;
+      session.clients.delete(ws);
+      if (session.clients.size === 0) {
+        stopScreenshotStreaming(subscribedSessionId);
+        session.isStreaming = false;
+      }
+    }
   });
 
   ws.on('error', (error) => {

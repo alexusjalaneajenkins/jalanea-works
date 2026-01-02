@@ -31,8 +31,10 @@ import {
   Chrome,
   Cookie,
   Copy,
-  ClipboardPaste
+  ClipboardPaste,
+  Monitor,
 } from 'lucide-react';
+import { LiveBrowser } from './LiveBrowser';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { haptics } from '../../utils/haptics';
@@ -63,7 +65,8 @@ export const MobileProfile: React.FC = () => {
   const [credentials, setCredentials] = useState<SiteCredential[]>([]);
   const [sitesLoading, setSitesLoading] = useState(true);
   const [connectingTo, setConnectingTo] = useState<string | null>(null);
-  const [loginMethod, setLoginMethod] = useState<'choose' | 'credentials' | 'browser' | 'cookies' | 'browser-login-pending'>('choose');
+  const [loginMethod, setLoginMethod] = useState<'choose' | 'credentials' | 'browser' | 'cookies' | 'browser-login-pending' | 'live-browser'>('choose');
+  const [showLiveBrowser, setShowLiveBrowser] = useState(false);
   const [cookiesJson, setCookiesJson] = useState('');
   const [importingCookies, setImportingCookies] = useState(false);
   const [email, setEmail] = useState('');
@@ -597,9 +600,12 @@ export const MobileProfile: React.FC = () => {
                     How would you like to connect your {connectingTo.charAt(0).toUpperCase() + connectingTo.slice(1)} account?
                   </p>
 
-                  {/* Browser Login Option - Opens site in new tab */}
+                  {/* Live Browser Option - Best for mobile */}
                   <button
-                    onClick={() => handleBrowserLogin()}
+                    onClick={() => {
+                      haptics.medium();
+                      setShowLiveBrowser(true);
+                    }}
                     className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all active:scale-[0.98] ${
                       isLight
                         ? 'border-gold bg-gold/5 hover:bg-gold/10'
@@ -607,17 +613,44 @@ export const MobileProfile: React.FC = () => {
                     }`}
                   >
                     <div className="w-12 h-12 rounded-xl bg-gold/20 flex items-center justify-center">
-                      <Chrome size={24} className="text-gold" />
+                      <Monitor size={24} className="text-gold" />
                     </div>
                     <div className="flex-1 text-left">
                       <div className={`font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                        Open {connectingTo?.charAt(0).toUpperCase()}{connectingTo?.slice(1)} to Login
+                        Live Browser Login
                       </div>
                       <div className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                        Sign in with Google, Apple, or email
+                        Login directly in-app (recommended)
                       </div>
                     </div>
-                    <ExternalLink size={18} className="text-gold" />
+                    <div className="px-2 py-0.5 rounded-full bg-gold/20 text-gold text-[10px] font-bold">
+                      NEW
+                    </div>
+                  </button>
+
+                  {/* Browser Login Option - Opens site in new tab */}
+                  <button
+                    onClick={() => handleBrowserLogin()}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all active:scale-[0.98] ${
+                      isLight
+                        ? 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                        : 'border-white/10 bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                      isLight ? 'bg-slate-200' : 'bg-white/10'
+                    }`}>
+                      <Chrome size={24} className={isLight ? 'text-slate-600' : 'text-slate-400'} />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <div className={`font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                        Open in Browser
+                      </div>
+                      <div className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                        Login in separate tab, then import
+                      </div>
+                    </div>
+                    <ExternalLink size={18} className={isLight ? 'text-slate-400' : 'text-slate-500'} />
                   </button>
 
                   {/* Credentials Option */}
@@ -1037,6 +1070,36 @@ export const MobileProfile: React.FC = () => {
       <p className={`text-center text-xs mt-4 ${isLight ? 'text-slate-400' : 'text-slate-600'}`}>
         JalaneaWorks v1.0.0 • Made with <span className="text-gold">💛</span>
       </p>
+
+      {/* Live Browser Modal */}
+      <AnimatePresence>
+        {showLiveBrowser && connectingTo && currentUser?.uid && (
+          <LiveBrowser
+            siteId={connectingTo}
+            siteName={sites.find(s => s.id === connectingTo)?.name || connectingTo}
+            userId={currentUser.uid}
+            onClose={() => {
+              setShowLiveBrowser(false);
+              setConnectingTo(null);
+              setLoginMethod('choose');
+            }}
+            onConnected={async () => {
+              // Refresh credentials after successful connection
+              haptics.success();
+              setSiteSuccess(`${connectingTo} connected successfully!`);
+              try {
+                const credsData = await getSiteCredentials(currentUser.uid);
+                setCredentials(credsData);
+              } catch (err) {
+                console.log('Error refreshing credentials:', err);
+              }
+              setShowLiveBrowser(false);
+              setConnectingTo(null);
+              setLoginMethod('choose');
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

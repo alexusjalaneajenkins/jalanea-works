@@ -774,6 +774,22 @@ export class BrowserController {
   }
 
   /**
+   * Get storage state (cookies, localStorage) for the current browser session
+   * Used for exporting/saving session data
+   */
+  async getStorageState(): Promise<{ cookies: any[]; origins: any[] } | null> {
+    if (!this.context) return null;
+
+    try {
+      const state = await this.context.storageState();
+      return state;
+    } catch (e) {
+      console.error('[Browser] Failed to get storage state:', e);
+      return null;
+    }
+  }
+
+  /**
    * Save Cloudflare-specific cookies (cf_clearance, __cf_bm)
    * These are critical for maintaining Cloudflare bypass
    */
