@@ -21,18 +21,19 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
 
   return (
     <header
-      className={`flex-shrink-0 px-4 pb-3 flex items-end justify-between ${
+      className={`flex-shrink-0 ${
         isLight
           ? 'bg-slate-50 border-b border-slate-200/50'
           : 'bg-[#020617] border-b border-white/5'
       }`}
-      style={{
-        paddingTop: 'env(safe-area-inset-top, 20px)',
-        minHeight: '60px'
-      }}
     >
-      {/* Left side */}
-      <div className="flex items-center gap-3">
+      {/* Content container - sits below status bar/Dynamic Island */}
+      <div
+        className="px-4 pb-3 flex items-center justify-between"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
+      >
+        {/* Left side */}
+        <div className="flex items-center gap-3">
         {showBack && onBack ? (
           <button
             onClick={onBack}
@@ -81,6 +82,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
             {currentUser?.displayName?.charAt(0) || currentUser?.email?.charAt(0) || '?'}
           </div>
         )}
+      </div>
       </div>
     </header>
   );

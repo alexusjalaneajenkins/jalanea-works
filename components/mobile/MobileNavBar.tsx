@@ -48,8 +48,8 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
     <nav
       className={`flex-shrink-0 ${
         isLight
-          ? 'bg-white/90 border-t border-slate-200/30'
-          : 'bg-slate-900/90 border-t border-white/5'
+          ? 'bg-white border-t border-slate-200/30'
+          : 'bg-[#0f172a] border-t border-white/5'
       }`}
       style={{
         backdropFilter: 'blur(24px)',
