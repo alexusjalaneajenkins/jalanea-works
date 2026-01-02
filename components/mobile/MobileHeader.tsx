@@ -21,11 +21,16 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
 
   return (
     <header
-      className={`flex-shrink-0 px-4 h-14 flex items-center justify-between ${
+      className={`flex-shrink-0 px-4 flex items-center justify-between ${
         isLight
           ? 'bg-slate-50 border-b border-slate-200/50'
           : 'bg-[#020617] border-b border-white/5'
       }`}
+      style={{
+        paddingTop: 'max(env(safe-area-inset-top), 8px)',
+        minHeight: '56px',
+        height: 'calc(56px + env(safe-area-inset-top))'
+      }}
     >
       {/* Left side */}
       <div className="flex items-center gap-3">

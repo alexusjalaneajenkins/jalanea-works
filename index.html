@@ -387,14 +387,12 @@
       min-height: 100%;
     }
 
-    /* MOBILE APP / PWA MODE: Lock viewport completely */
+    /* MOBILE APP / PWA MODE: Lock body, allow app to handle scroll */
     @media (max-width: 767px) {
       html {
         height: 100%;
         height: 100dvh;
         overflow: hidden;
-        position: fixed;
-        width: 100%;
       }
 
       body {
@@ -402,36 +400,15 @@
         height: 100dvh;
         max-height: -webkit-fill-available;
         overflow: hidden;
-        position: fixed;
-        width: 100%;
         margin: 0;
         padding: 0 !important;
-        overscroll-behavior: none;
-        -webkit-overflow-scrolling: auto;
-        touch-action: none;
       }
 
       #root {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
+        height: 100%;
         height: 100dvh;
         max-height: -webkit-fill-available;
         overflow: hidden;
-      }
-    }
-
-    /* PWA Standalone mode - extra lock */
-    @media (display-mode: standalone) {
-      html, body, #root {
-        position: fixed;
-        width: 100%;
-        height: 100dvh;
-        max-height: -webkit-fill-available;
-        overflow: hidden;
-        touch-action: none;
       }
     }
 

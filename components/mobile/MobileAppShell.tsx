@@ -51,46 +51,27 @@ export const MobileAppShell: React.FC = () => {
   // Reference to the scrollable content area
   const contentRef = React.useRef<HTMLDivElement>(null);
 
-  // iOS Safari fix: Prevent ALL touch scrolling except in the content area
+  // iOS Safari fix: Lock body but allow content scroll
   useEffect(() => {
-    // Prevent default touch behavior on document
-    const preventScroll = (e: TouchEvent) => {
-      // Allow scrolling only if the touch is inside our content area
-      if (contentRef.current && contentRef.current.contains(e.target as Node)) {
-        // Allow scroll in content area
-        return;
-      }
-      // Block scroll everywhere else
-      e.preventDefault();
-    };
-
-    // Also prevent touchmove on body
-    const preventBodyScroll = (e: TouchEvent) => {
-      if (contentRef.current && contentRef.current.contains(e.target as Node)) {
-        return;
-      }
-      e.preventDefault();
-    };
-
-    // Add listeners with passive: false to allow preventDefault
-    document.addEventListener('touchmove', preventScroll, { passive: false });
-    document.body.addEventListener('touchmove', preventBodyScroll, { passive: false });
-
     // Lock body styles
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
     document.body.style.width = '100%';
     document.body.style.height = '100%';
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
     document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.height = '100%';
 
     return () => {
-      document.removeEventListener('touchmove', preventScroll);
-      document.body.removeEventListener('touchmove', preventBodyScroll);
       document.body.style.overflow = '';
       document.body.style.position = '';
       document.body.style.width = '';
       document.body.style.height = '';
+      document.body.style.margin = '';
+      document.body.style.padding = '';
       document.documentElement.style.overflow = '';
+      document.documentElement.style.height = '';
     };
   }, []);
 
@@ -150,12 +131,8 @@ export const MobileAppShell: React.FC = () => {
         left: 0,
         right: 0,
         bottom: 0,
-        height: '100dvh', // Dynamic viewport height for PWA
+        height: '100dvh',
         maxHeight: '-webkit-fill-available',
-        paddingTop: 'env(safe-area-inset-top)',
-        paddingBottom: 'env(safe-area-inset-bottom)',
-        touchAction: 'none',
-        overscrollBehavior: 'none',
         overflow: 'hidden'
       }}
     >
@@ -165,10 +142,10 @@ export const MobileAppShell: React.FC = () => {
       {/* Main Content - this is the ONLY thing that scrolls */}
       <div
         ref={contentRef}
-        className="flex-1 overflow-y-auto overscroll-contain"
+        className="flex-1 overflow-y-auto"
         style={{
           WebkitOverflowScrolling: 'touch',
-          touchAction: 'pan-y'
+          overscrollBehavior: 'contain'
         }}
       >
         {renderScreen()}

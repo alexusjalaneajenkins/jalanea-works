@@ -53,7 +53,8 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
       }`}
       style={{
         backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)'
+        WebkitBackdropFilter: 'blur(24px)',
+        paddingBottom: 'env(safe-area-inset-bottom)'
       }}
     >
       <div className="flex items-center justify-around h-16 px-1">
