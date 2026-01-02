@@ -31,6 +31,7 @@ import {
   updateJobApplication,
   getDashboardStats,
   supabase,
+  supabaseAdmin,
   JobApplication
 } from './db/client.js';
 
@@ -1436,12 +1437,15 @@ app.get('/credentials/:userId', async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
-    const { data, error } = await supabase
+    // Use admin client to bypass RLS (server-side operation)
+    const client = supabaseAdmin || supabase;
+    const { data, error } = await client
       .from('site_credentials')
       .select('site_id, is_verified, last_verified_at, login_status, status_message, created_at')
       .eq('user_id', userId);
 
     if (error) {
+      console.error('[Server] Credentials fetch error:', error);
       return res.status(500).json({ error: 'Failed to fetch credentials' });
     }
 
@@ -1485,8 +1489,9 @@ app.post('/credentials/:userId/:siteId', async (req: Request, res: Response) => 
     // Encrypt credentials
     const encryptedData = encryptCredentials({ email, password });
 
-    // Upsert credentials
-    const { error } = await supabase
+    // Upsert credentials (use admin client to bypass RLS)
+    const client = supabaseAdmin || supabase;
+    const { error } = await client
       .from('site_credentials')
       .upsert({
         user_id: userId,
@@ -1525,7 +1530,9 @@ app.delete('/credentials/:userId/:siteId', async (req: Request, res: Response) =
   try {
     const { userId, siteId } = req.params;
 
-    const { error } = await supabase
+    // Use admin client to bypass RLS
+    const client = supabaseAdmin || supabase;
+    const { error } = await client
       .from('site_credentials')
       .delete()
       .eq('user_id', userId)
@@ -1564,7 +1571,9 @@ app.post('/credentials/:userId/:siteId/verify', async (req: Request, res: Respon
       updateData.last_login_at = new Date().toISOString();
     }
 
-    const { error } = await supabase
+    // Use admin client to bypass RLS
+    const client = supabaseAdmin || supabase;
+    const { error } = await client
       .from('site_credentials')
       .update(updateData)
       .eq('user_id', userId)
@@ -1585,7 +1594,9 @@ app.post('/credentials/:userId/:siteId/verify', async (req: Request, res: Respon
  * This should be called via service role, not exposed to clients
  */
 export async function getDecryptedCredentials(userId: string, siteId: string): Promise<{ email: string; password: string } | null> {
-  const { data, error } = await supabase
+  // Use admin client to bypass RLS (worker function)
+  const client = supabaseAdmin || supabase;
+  const { data, error } = await client
     .from('site_credentials')
     .select('encrypted_data')
     .eq('user_id', userId)
