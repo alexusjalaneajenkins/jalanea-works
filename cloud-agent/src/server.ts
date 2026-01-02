@@ -1359,25 +1359,15 @@ app.post('/queue/auto-apply', async (req: Request, res: Response) => {
     }
 
     // Queue a job search for each job title/site combination
-    const { addJob } = await import('./queue/jobs.js');
-    const jobId = `auto-apply-${userId}-${Date.now()}`;
+    const { queueJobSearch } = await import('./queue/jobs.js');
 
-    await addJob('job-search', {
+    const jobId = await queueJobSearch({
       userId,
       siteId: prefs.preferredSites?.[0] || 'indeed',
-      searchParams: {
-        jobTitle: prefs.jobTitles[0],
-        location: prefs.locations?.[0] || '',
-        remoteOnly: prefs.remoteOnly || false,
-      },
-      maxApplications: Math.min(prefs.maxApplicationsPerDay || 10, 10), // Cap at tier limit
-      profile: {
-        salaryMin: prefs.salaryMin,
-        salaryMax: prefs.salaryMax,
-      }
-    }, {
-      priority: 5, // Normal priority
-    });
+      searchQuery: prefs.jobTitles[0],
+      location: prefs.locations?.[0] || '',
+      maxResults: Math.min(prefs.maxApplicationsPerDay || 10, 10), // Cap at tier limit
+    }, 5); // Normal priority
 
     res.json({
       success: true,
@@ -1427,6 +1417,188 @@ app.get('/queue/status/:userId', async (req: Request, res: Response) => {
     res.status(500).json({ error: (error as Error).message });
   }
 });
+
+// ============================================
+// Site Credentials Endpoints
+// ============================================
+
+import { encryptCredentials, decryptCredentials } from './crypto.js';
+
+/**
+ * Get all connected sites for a user
+ * GET /credentials/:userId
+ */
+app.get('/credentials/:userId', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    const { data, error } = await supabase
+      .from('site_credentials')
+      .select('site_id, is_verified, last_verified_at, login_status, status_message, created_at')
+      .eq('user_id', userId);
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to fetch credentials' });
+    }
+
+    // Return site connection status (never return actual credentials)
+    const sites = (data || []).map(cred => ({
+      siteId: cred.site_id,
+      isConnected: true,
+      isVerified: cred.is_verified,
+      lastVerifiedAt: cred.last_verified_at,
+      status: cred.login_status,
+      statusMessage: cred.status_message,
+      connectedAt: cred.created_at,
+    }));
+
+    res.json({ success: true, sites });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Save credentials for a job site
+ * POST /credentials/:userId/:siteId
+ * Body: { email, password }
+ */
+app.post('/credentials/:userId/:siteId', async (req: Request, res: Response) => {
+  try {
+    const { userId, siteId } = req.params;
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    // Validate site ID
+    const validSites = ['indeed', 'linkedin', 'ziprecruiter', 'glassdoor'];
+    if (!validSites.includes(siteId)) {
+      return res.status(400).json({ error: 'Invalid site ID' });
+    }
+
+    // Encrypt credentials
+    const encryptedData = encryptCredentials({ email, password });
+
+    // Upsert credentials
+    const { error } = await supabase
+      .from('site_credentials')
+      .upsert({
+        user_id: userId,
+        site_id: siteId,
+        encrypted_data: encryptedData,
+        is_verified: false,
+        login_status: 'pending',
+        status_message: 'Credentials saved, verification pending',
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id,site_id'
+      });
+
+    if (error) {
+      console.error('[Credentials] Save error:', error);
+      return res.status(500).json({ error: 'Failed to save credentials' });
+    }
+
+    console.log(`[Credentials] Saved credentials for user ${userId}, site ${siteId}`);
+
+    res.json({
+      success: true,
+      message: 'Credentials saved. They will be verified on next job search.',
+    });
+  } catch (error) {
+    console.error('[Credentials] Error:', error);
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Delete credentials for a job site
+ * DELETE /credentials/:userId/:siteId
+ */
+app.delete('/credentials/:userId/:siteId', async (req: Request, res: Response) => {
+  try {
+    const { userId, siteId } = req.params;
+
+    const { error } = await supabase
+      .from('site_credentials')
+      .delete()
+      .eq('user_id', userId)
+      .eq('site_id', siteId);
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to delete credentials' });
+    }
+
+    console.log(`[Credentials] Deleted credentials for user ${userId}, site ${siteId}`);
+
+    res.json({ success: true, message: 'Credentials deleted' });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Verify credentials by attempting login (called by worker)
+ * POST /credentials/:userId/:siteId/verify
+ */
+app.post('/credentials/:userId/:siteId/verify', async (req: Request, res: Response) => {
+  try {
+    const { userId, siteId } = req.params;
+    const { status, message } = req.body;
+
+    const updateData: any = {
+      login_status: status,
+      status_message: message,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (status === 'success') {
+      updateData.is_verified = true;
+      updateData.last_verified_at = new Date().toISOString();
+      updateData.last_login_at = new Date().toISOString();
+    }
+
+    const { error } = await supabase
+      .from('site_credentials')
+      .update(updateData)
+      .eq('user_id', userId)
+      .eq('site_id', siteId);
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to update verification status' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Get decrypted credentials (internal use by worker only)
+ * This should be called via service role, not exposed to clients
+ */
+export async function getDecryptedCredentials(userId: string, siteId: string): Promise<{ email: string; password: string } | null> {
+  const { data, error } = await supabase
+    .from('site_credentials')
+    .select('encrypted_data')
+    .eq('user_id', userId)
+    .eq('site_id', siteId)
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  try {
+    return decryptCredentials(data.encrypted_data);
+  } catch (e) {
+    console.error('[Credentials] Decryption failed:', e);
+    return null;
+  }
+}
 
 // ============================================
 // Billing Endpoints (Stripe)

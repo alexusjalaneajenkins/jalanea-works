@@ -45,6 +45,9 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_KEY
         sync: false
+      # Credential Encryption
+      - key: CREDENTIAL_ENCRYPTION_KEY
+        sync: false
       # Redis (Upstash)
       - key: UPSTASH_REDIS_REST_URL
         sync: false
@@ -103,6 +106,9 @@ services:
       - key: SUPABASE_ANON_KEY
         sync: false
       - key: SUPABASE_SERVICE_KEY
+        sync: false
+      # Credential Encryption
+      - key: CREDENTIAL_ENCRYPTION_KEY
         sync: false
       # Redis (Upstash)
       - key: UPSTASH_REDIS_REST_URL

@@ -41,7 +41,11 @@ export type NotificationType =
   | 'captcha_required'
   | 'daily_summary'
   | 'session_expired'
-  | 'subscription_limit';
+  | 'subscription_limit'
+  | 'login_required'
+  | 'login_success'
+  | 'login_failed'
+  | '2fa_required';
 
 // ============================================
 // User Preference Functions
@@ -389,6 +393,33 @@ const templates: Record<NotificationType, (data?: Record<string, any>) => Notifi
     body: `You've used ${data?.used || 0}/${data?.limit || 10} applications this month. Upgrade for more!`,
     url: '/pricing',
     data: { type: 'subscription_limit', ...data }
+  }),
+
+  login_required: (data) => ({
+    title: 'Login Required',
+    body: data?.message || `Please add your ${data?.siteId || 'job site'} credentials to enable auto-apply.`,
+    url: '/settings',
+    data: { type: 'login_required', ...data }
+  }),
+
+  login_success: (data) => ({
+    title: 'Connected Successfully',
+    body: data?.message || `Successfully logged into ${data?.siteId || 'job site'}.`,
+    data: { type: 'login_success', ...data }
+  }),
+
+  login_failed: (data) => ({
+    title: 'Login Failed',
+    body: data?.message || `Could not log into ${data?.siteId || 'job site'}. Please check your credentials.`,
+    url: '/settings',
+    data: { type: 'login_failed', ...data }
+  }),
+
+  '2fa_required': (data) => ({
+    title: 'Two-Factor Auth Required',
+    body: data?.message || `${data?.siteId || 'Job site'} requires 2FA. Please log in manually.`,
+    url: '/settings',
+    data: { type: '2fa_required', ...data }
   })
 };
 

@@ -331,3 +331,75 @@ export async function getQueueStatus(userId: string): Promise<{
   const data = await response.json();
   return data.stats;
 }
+
+// Site Credentials Types
+export interface SiteCredential {
+  siteId: string;
+  isVerified: boolean;
+  lastVerifiedAt: string | null;
+  lastLoginAt: string | null;
+  loginStatus: 'pending' | 'success' | 'failed' | 'needs_2fa' | 'needs_captcha';
+  statusMessage: string | null;
+}
+
+/**
+ * Get all site credentials for a user (returns status, not actual credentials)
+ */
+export async function getSiteCredentials(userId: string): Promise<SiteCredential[]> {
+  const response = await fetch(`${API_URL}/credentials/${userId}`);
+  if (!response.ok) {
+    if (response.status === 404) return [];
+    throw new Error('Failed to fetch site credentials');
+  }
+  const data = await response.json();
+  return data.credentials;
+}
+
+/**
+ * Save encrypted credentials for a job site
+ */
+export async function saveSiteCredentials(
+  userId: string,
+  siteId: string,
+  email: string,
+  password: string
+): Promise<{ success: boolean; message: string }> {
+  const response = await fetch(`${API_URL}/credentials/${userId}/${siteId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Failed to save credentials' }));
+    throw new Error(error.message || 'Failed to save credentials');
+  }
+  return response.json();
+}
+
+/**
+ * Delete credentials for a job site
+ */
+export async function deleteSiteCredentials(
+  userId: string,
+  siteId: string
+): Promise<{ success: boolean }> {
+  const response = await fetch(`${API_URL}/credentials/${userId}/${siteId}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) throw new Error('Failed to delete credentials');
+  return response.json();
+}
+
+/**
+ * Verify credentials by attempting login
+ */
+export async function verifySiteCredentials(
+  userId: string,
+  siteId: string
+): Promise<{ success: boolean; status: string; message: string }> {
+  const response = await fetch(`${API_URL}/credentials/${userId}/${siteId}/verify`, {
+    method: 'POST',
+  });
+  if (!response.ok) throw new Error('Failed to verify credentials');
+  return response.json();
+}

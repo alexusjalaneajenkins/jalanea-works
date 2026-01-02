@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { UserProfile } from '../types';
-import { GraduationCap, Briefcase, Award, PenTool, Edit3, Bell, Mail, MessageSquare, Smartphone, CheckCircle, AlertCircle, Loader, Zap, Crown, ExternalLink, Link2, Clock, CheckCircle2, XCircle, Rocket, Target, MapPin, DollarSign, Bot, Play, Plus, X, Settings2 } from 'lucide-react';
+import { GraduationCap, Briefcase, Award, PenTool, Edit3, Bell, Mail, MessageSquare, Smartphone, CheckCircle, AlertCircle, Loader, Zap, Crown, ExternalLink, Link2, Clock, CheckCircle2, XCircle, Rocket, Target, MapPin, DollarSign, Bot, Play, Plus, X, Settings2, Eye, EyeOff, Trash2, Shield, RefreshCw } from 'lucide-react';
 import { isPushSupported, registerForPushNotifications, getPushPermissionStatus } from '../services/notificationService';
 import { updateNotificationPreferences, NotificationPreferences, getProfile } from '../services/supabaseService';
 import { useAuth } from '../contexts/AuthContext';
@@ -17,11 +17,15 @@ import {
   getJobPreferences,
   saveJobPreferences,
   queueAutoApply,
+  getSiteCredentials,
+  saveSiteCredentials,
+  deleteSiteCredentials,
   Tier,
   DashboardStats,
   JobApplication,
   JobSite,
   JobPreferences,
+  SiteCredential,
 } from '../services/cloudAgentService';
 
 // Mock Profile Data matching the screenshot
@@ -413,36 +417,153 @@ const SITE_COLORS: Record<string, string> = {
   glassdoor: '#0caa41',
 };
 
-// Connected Sites Component
+// Connected Sites Component - Mobile-friendly credential input
 const ConnectedSites: React.FC = () => {
   const { currentUser } = useAuth();
   const [sites, setSites] = useState<JobSite[]>([]);
+  const [credentials, setCredentials] = useState<SiteCredential[]>([]);
   const [loading, setLoading] = useState(true);
-  const [connecting, setConnecting] = useState<string | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  // Form state for connecting sites
+  const [connectingTo, setConnectingTo] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    const loadSites = async () => {
+    const loadData = async () => {
+      if (!currentUser?.uid) {
+        setLoading(false);
+        return;
+      }
       try {
-        const data = await getJobSites();
-        setSites(data);
+        const [sitesData, credsData] = await Promise.all([
+          getJobSites(),
+          getSiteCredentials(currentUser.uid),
+        ]);
+        setSites(sitesData);
+        setCredentials(credsData);
       } catch (err) {
         console.error('Error loading sites:', err);
       } finally {
         setLoading(false);
       }
     };
+    loadData();
+  }, [currentUser]);
 
-    loadSites();
-  }, []);
+  const getCredentialStatus = (siteId: string): SiteCredential | undefined => {
+    return credentials.find(c => c.siteId === siteId);
+  };
 
-  const handleConnect = (siteId: string) => {
-    // For now, show instructions since the actual connection flow
-    // requires the user to log in via a browser window on the server
-    setConnecting(siteId);
+  const handleOpenConnect = (siteId: string) => {
+    setConnectingTo(siteId);
+    setEmail('');
+    setPassword('');
+    setShowPassword(false);
+    setError(null);
+  };
 
-    // Open a modal or show instructions
-    alert(`To connect ${siteId.charAt(0).toUpperCase() + siteId.slice(1)}:\n\n1. The Job Agent will open a browser window\n2. Log into your account\n3. Complete any CAPTCHAs\n4. Your session will be saved for automation\n\nThis feature requires the desktop app or running the agent locally.`);
-    setConnecting(null);
+  const handleCloseConnect = () => {
+    setConnectingTo(null);
+    setEmail('');
+    setPassword('');
+    setShowPassword(false);
+    setError(null);
+  };
+
+  const handleSaveCredentials = async () => {
+    if (!currentUser?.uid || !connectingTo) return;
+    if (!email.trim() || !password.trim()) {
+      setError('Please enter both email and password');
+      return;
+    }
+
+    setSaving(connectingTo);
+    setError(null);
+    try {
+      await saveSiteCredentials(currentUser.uid, connectingTo, email.trim(), password);
+
+      // Update local state
+      const existingIndex = credentials.findIndex(c => c.siteId === connectingTo);
+      const newCred: SiteCredential = {
+        siteId: connectingTo,
+        isVerified: false,
+        lastVerifiedAt: null,
+        lastLoginAt: null,
+        loginStatus: 'pending',
+        statusMessage: 'Credentials saved - will verify on next job run',
+      };
+      if (existingIndex >= 0) {
+        setCredentials(prev => prev.map((c, i) => i === existingIndex ? newCred : c));
+      } else {
+        setCredentials(prev => [...prev, newCred]);
+      }
+
+      setSuccess(`${connectingTo.charAt(0).toUpperCase() + connectingTo.slice(1)} connected! Credentials will be verified when the agent runs.`);
+      setTimeout(() => setSuccess(null), 4000);
+      handleCloseConnect();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save credentials');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const handleDisconnect = async (siteId: string) => {
+    if (!currentUser?.uid) return;
+    if (!confirm(`Are you sure you want to disconnect ${siteId.charAt(0).toUpperCase() + siteId.slice(1)}?`)) return;
+
+    setDeleting(siteId);
+    try {
+      await deleteSiteCredentials(currentUser.uid, siteId);
+      setCredentials(prev => prev.filter(c => c.siteId !== siteId));
+      setSuccess(`${siteId.charAt(0).toUpperCase() + siteId.slice(1)} disconnected`);
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError('Failed to disconnect site');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const getStatusBadge = (cred: SiteCredential) => {
+    switch (cred.loginStatus) {
+      case 'success':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+            <CheckCircle2 size={12} /> Connected
+          </span>
+        );
+      case 'failed':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-medium">
+            <XCircle size={12} /> Failed
+          </span>
+        );
+      case 'needs_2fa':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
+            <Shield size={12} /> Needs 2FA
+          </span>
+        );
+      case 'needs_captcha':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-medium">
+            <RefreshCw size={12} /> CAPTCHA
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-jalanea-100 text-jalanea-600 rounded-full text-xs font-medium">
+            <Clock size={12} /> Pending
+          </span>
+        );
+    }
   };
 
   if (loading) {
@@ -467,46 +588,219 @@ const ConnectedSites: React.FC = () => {
         </h3>
       </div>
       <div className="p-6">
+        {/* Status messages */}
+        {error && (
+          <div className="flex items-center gap-2 p-3 mb-4 bg-red-50 text-red-700 rounded-lg text-sm">
+            <AlertCircle size={16} />
+            {error}
+            <button onClick={() => setError(null)} className="ml-auto hover:bg-red-100 rounded p-1">
+              <X size={14} />
+            </button>
+          </div>
+        )}
+        {success && (
+          <div className="flex items-center gap-2 p-3 mb-4 bg-green-50 text-green-700 rounded-lg text-sm">
+            <CheckCircle size={16} />
+            {success}
+          </div>
+        )}
+
         <p className="text-sm text-jalanea-600 mb-4">
-          Connect your job site accounts to enable automatic applications.
+          Connect your job site accounts to enable automatic applications. Your credentials are encrypted and stored securely.
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {sites.map(site => (
-            <div
-              key={site.id}
-              className="flex items-center justify-between p-4 rounded-lg border border-jalanea-100 hover:border-jalanea-200 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
-                  style={{ backgroundColor: `${SITE_COLORS[site.id] || '#666'}15` }}
-                >
-                  {SITE_ICONS[site.id] || '🔗'}
+
+        <div className="space-y-3">
+          {sites.map(site => {
+            const cred = getCredentialStatus(site.id);
+            const isConnected = !!cred;
+
+            return (
+              <div
+                key={site.id}
+                className={`p-4 rounded-xl border transition-all ${
+                  isConnected
+                    ? 'border-green-200 bg-green-50/30'
+                    : 'border-jalanea-100 hover:border-jalanea-200'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                      style={{ backgroundColor: `${SITE_COLORS[site.id] || '#666'}15` }}
+                    >
+                      {SITE_ICONS[site.id] || '🔗'}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-jalanea-900">{site.name}</h4>
+                      {cred ? (
+                        <div className="flex items-center gap-2 mt-1">
+                          {getStatusBadge(cred)}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-jalanea-500 mt-1">Not connected</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {isConnected ? (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleOpenConnect(site.id)}
+                        className="text-jalanea-600"
+                      >
+                        Update
+                      </Button>
+                      <button
+                        onClick={() => handleDisconnect(site.id)}
+                        disabled={deleting === site.id}
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Disconnect"
+                      >
+                        {deleting === site.id ? (
+                          <Loader size={16} className="animate-spin" />
+                        ) : (
+                          <Trash2 size={16} />
+                        )}
+                      </button>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={() => handleOpenConnect(site.id)}
+                    >
+                      Connect
+                    </Button>
+                  )}
                 </div>
-                <div>
-                  <h4 className="font-medium text-jalanea-900">{site.name}</h4>
-                  <p className="text-xs text-jalanea-500">Not connected</p>
+
+                {/* Status message */}
+                {cred?.statusMessage && (
+                  <p className="text-xs text-jalanea-500 mt-3 pl-15">{cred.statusMessage}</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Security note */}
+        <div className="mt-6 p-4 bg-jalanea-50 rounded-xl">
+          <div className="flex items-start gap-3">
+            <Shield size={20} className="text-jalanea-400 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-bold text-jalanea-900">Your credentials are secure</h4>
+              <p className="text-xs text-jalanea-600 mt-1">
+                We use AES-256 encryption to protect your login information. Credentials are only decrypted when the agent needs to log in on your behalf. We never share or sell your data.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Connect Modal */}
+      {connectingTo && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="p-6 border-b border-jalanea-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                    style={{ backgroundColor: `${SITE_COLORS[connectingTo] || '#666'}15` }}
+                  >
+                    {SITE_ICONS[connectingTo] || '🔗'}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-jalanea-900">
+                      Connect {connectingTo.charAt(0).toUpperCase() + connectingTo.slice(1)}
+                    </h3>
+                    <p className="text-xs text-jalanea-500">Enter your login credentials</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleCloseConnect}
+                  className="p-2 hover:bg-jalanea-100 rounded-lg transition-colors"
+                >
+                  <X size={20} className="text-jalanea-400" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {error && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+                  <AlertCircle size={16} />
+                  {error}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-jalanea-700 mb-2">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="w-full px-4 py-3 border border-jalanea-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent"
+                  autoComplete="email"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-jalanea-700 mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-4 py-3 pr-12 border border-jalanea-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent"
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-jalanea-400 hover:text-jalanea-600"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
                 </div>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleConnect(site.id)}
-                disabled={connecting === site.id}
-              >
-                {connecting === site.id ? (
-                  <Loader size={14} className="animate-spin" />
-                ) : (
-                  'Connect'
-                )}
-              </Button>
+
+              <div className="pt-2 space-y-3">
+                <Button
+                  onClick={handleSaveCredentials}
+                  disabled={saving === connectingTo || !email.trim() || !password.trim()}
+                  className="w-full py-3"
+                >
+                  {saving === connectingTo ? (
+                    <>
+                      <Loader size={18} className="animate-spin mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Shield size={18} className="mr-2" />
+                      Save & Connect
+                    </>
+                  )}
+                </Button>
+
+                <p className="text-xs text-jalanea-400 text-center">
+                  Your password is encrypted before being stored. We'll verify your credentials when running the job agent.
+                </p>
+              </div>
             </div>
-          ))}
+          </div>
         </div>
-        <p className="text-xs text-jalanea-400 mt-4 text-center">
-          Your login credentials are never stored. We only save session cookies for automation.
-        </p>
-      </div>
+      )}
     </Card>
   );
 };
