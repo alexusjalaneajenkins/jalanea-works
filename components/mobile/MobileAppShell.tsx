@@ -91,6 +91,13 @@ export const MobileAppShell: React.FC = () => {
     }
   }, [location.pathname]);
 
+  // Reset scroll to top when switching screens
+  useEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.scrollTop = 0;
+    }
+  }, [activeScreen]);
+
   // Loading state
   if (loading) {
     return (

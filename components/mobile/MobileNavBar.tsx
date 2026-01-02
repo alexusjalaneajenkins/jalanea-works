@@ -76,44 +76,29 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
               onTouchEnd={() => setPressedId(null)}
               onTouchCancel={() => setPressedId(null)}
               onClick={() => handlePress(item.id)}
-              className={`relative flex flex-col items-center justify-center flex-1 h-full rounded-2xl transition-colors ${
-                isActive
-                  ? isLight ? 'bg-gold/10' : 'bg-gold/10'
-                  : ''
-              }`}
+              className="relative flex flex-col items-center justify-center flex-1 h-full"
               animate={{
-                scale: isPressed ? 0.92 : 1
+                scale: isPressed ? 0.9 : 1
               }}
               transition={{ type: 'spring', stiffness: 500, damping: 30 }}
             >
-              {/* Icon container with active state */}
-              <motion.div
-                className={`flex items-center justify-center w-14 h-8 rounded-2xl ${
+              {/* Icon - clean iOS style, just color change */}
+              <Icon
+                size={24}
+                className={
                   isActive
-                    ? 'bg-gold'
-                    : 'bg-transparent'
-                }`}
-                animate={{
-                  scale: isActive ? 1 : 0.95
-                }}
-                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-              >
-                <Icon
-                  size={22}
-                  className={
-                    isActive
-                      ? 'text-black'
-                      : isLight
-                        ? 'text-slate-400'
-                        : 'text-slate-500'
-                  }
-                  strokeWidth={isActive ? 2.5 : 1.8}
-                />
-              </motion.div>
+                    ? 'text-gold'
+                    : isLight
+                      ? 'text-slate-400'
+                      : 'text-slate-500'
+                }
+                strokeWidth={isActive ? 2.2 : 1.5}
+                fill={isActive ? 'currentColor' : 'none'}
+              />
 
               {/* Label */}
               <span
-                className={`text-[10px] font-medium mt-0.5 transition-colors ${
+                className={`text-[10px] font-medium mt-1 transition-colors ${
                   isActive
                     ? 'text-gold'
                     : isLight
