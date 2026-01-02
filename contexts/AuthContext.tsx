@@ -396,15 +396,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    // Helper to remove undefined values from an object (Firebase doesn't accept undefined)
+    const cleanObject = <T extends Record<string, any>>(obj: T): T => {
+        const cleaned = {} as T;
+        for (const key in obj) {
+            if (obj[key] !== undefined) {
+                if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+                    cleaned[key] = cleanObject(obj[key]);
+                } else {
+                    cleaned[key] = obj[key];
+                }
+            }
+        }
+        return cleaned;
+    };
+
     // Save a job to user's saved jobs list
     const saveJob = async (job: Job) => {
         if (!auth.currentUser) {
             throw new Error("You must be signed in to save jobs.");
         }
 
+        // Clean the job object to remove undefined values (Firebase arrayUnion doesn't accept them)
+        const cleanedJob = cleanObject(job);
+
         const savedJob: SavedJob = {
             id: `saved-${job.id}-${Date.now()}`,
-            job: job,
+            job: cleanedJob,
             savedAt: new Date().toISOString(),
             status: 'saved',
         };
