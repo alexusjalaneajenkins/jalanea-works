@@ -11,7 +11,7 @@
 
 import { getMessaging, getToken, onMessage, MessagePayload } from 'firebase/messaging';
 import { app } from './firebase';
-import { supabase, updateNotificationPreferences, NotificationPreferences } from './supabaseService';
+import { updateNotificationPreferences, NotificationPreferences } from './supabaseService';
 
 // Initialize Firebase Messaging
 let messaging: ReturnType<typeof getMessaging> | null = null;

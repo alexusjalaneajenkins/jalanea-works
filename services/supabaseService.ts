@@ -10,18 +10,19 @@
 
 import { createClient, SupabaseClient, User, Session } from '@supabase/supabase-js';
 
-// Initialize Supabase client
+// Initialize Supabase client (only if env vars are present)
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase credentials not found. Some features may be unavailable.');
-}
+// Create a mock client if Supabase is not configured
+// This allows the app to run without Supabase (using cloud agent API instead)
+export const supabase: SupabaseClient | null = (supabaseUrl && supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
-export const supabase: SupabaseClient = createClient(
-  supabaseUrl || '',
-  supabaseAnonKey || ''
-);
+if (!supabase) {
+  console.warn('Supabase not configured. Using cloud agent API for all operations.');
+}
 
 // ============================================
 // Types
@@ -102,6 +103,7 @@ export interface DashboardStats {
 // ============================================
 
 export async function signUp(email: string, password: string, fullName?: string) {
+  if (!supabase) throw new Error('Supabase not configured');
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -117,6 +119,7 @@ export async function signUp(email: string, password: string, fullName?: string)
 }
 
 export async function signIn(email: string, password: string) {
+  if (!supabase) throw new Error('Supabase not configured');
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password
@@ -127,6 +130,7 @@ export async function signIn(email: string, password: string) {
 }
 
 export async function signInWithGoogle() {
+  if (!supabase) throw new Error('Supabase not configured');
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -139,21 +143,25 @@ export async function signInWithGoogle() {
 }
 
 export async function signOut() {
+  if (!supabase) return; // No-op if Supabase not configured
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 }
 
 export async function getSession(): Promise<Session | null> {
+  if (!supabase) return null;
   const { data: { session } } = await supabase.auth.getSession();
   return session;
 }
 
 export async function getUser(): Promise<User | null> {
+  if (!supabase) return null;
   const { data: { user } } = await supabase.auth.getUser();
   return user;
 }
 
 export function onAuthStateChange(callback: (event: string, session: Session | null) => void) {
+  if (!supabase) return { data: { subscription: { unsubscribe: () => {} } } };
   return supabase.auth.onAuthStateChange(callback);
 }
 
@@ -162,6 +170,7 @@ export function onAuthStateChange(callback: (event: string, session: Session | n
 // ============================================
 
 export async function getProfile(userId: string): Promise<Profile | null> {
+  if (!supabase) return null; // Use cloud agent API instead
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
@@ -177,6 +186,7 @@ export async function getProfile(userId: string): Promise<Profile | null> {
 }
 
 export async function updateProfile(userId: string, updates: Partial<Profile>) {
+  if (!supabase) throw new Error('Supabase not configured');
   const { data, error } = await supabase
     .from('profiles')
     .update(updates)
@@ -192,6 +202,10 @@ export async function updateNotificationPreferences(
   userId: string,
   preferences: Partial<NotificationPreferences>
 ) {
+  if (!supabase) {
+    console.warn('Supabase not configured, notification preferences not saved');
+    return null;
+  }
   const { data: profile } = await supabase
     .from('profiles')
     .select('notification_preferences')
@@ -217,6 +231,7 @@ export async function updateNotificationPreferences(
 // ============================================
 
 export async function getSiteConnections(userId: string): Promise<SiteConnection[]> {
+  if (!supabase) return []; // Use cloud agent API instead
   const { data, error } = await supabase
     .from('site_connections')
     .select('*')
@@ -235,6 +250,7 @@ export async function getSiteConnection(
   userId: string,
   siteId: string
 ): Promise<SiteConnection | null> {
+  if (!supabase) return null;
   const { data, error } = await supabase
     .from('site_connections')
     .select('*')
@@ -255,6 +271,7 @@ export async function saveSiteConnection(
   siteName: string,
   sessionData: string
 ) {
+  if (!supabase) throw new Error('Supabase not configured');
   // Upsert the connection
   const { data, error } = await supabase
     .from('site_connections')
@@ -276,6 +293,7 @@ export async function saveSiteConnection(
 }
 
 export async function disconnectSite(userId: string, siteId: string) {
+  if (!supabase) throw new Error('Supabase not configured');
   const { error } = await supabase
     .from('site_connections')
     .update({
@@ -301,6 +319,7 @@ export async function getJobApplications(
     offset?: number;
   }
 ): Promise<JobApplication[]> {
+  if (!supabase) return []; // Use cloud agent API instead
   let query = supabase
     .from('job_applications')
     .select('*')
@@ -342,6 +361,7 @@ export async function getRecentApplications(userId: string, limit = 10): Promise
 // ============================================
 
 export async function getDashboardStats(userId: string): Promise<DashboardStats | null> {
+  if (!supabase) return null; // Use cloud agent API instead
   const { data, error } = await supabase
     .from('user_dashboard_stats')
     .select('*')
@@ -361,6 +381,7 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats 
 // ============================================
 
 export async function canUserApply(userId: string): Promise<boolean> {
+  if (!supabase) return true; // Allow by default if Supabase not configured
   const { data, error } = await supabase.rpc('can_user_apply', {
     p_user_id: userId
   });
@@ -392,6 +413,7 @@ export function subscribeToApplications(
   userId: string,
   callback: (application: JobApplication) => void
 ) {
+  if (!supabase) return { unsubscribe: () => {} }; // No-op subscription
   return supabase
     .channel('job_applications_changes')
     .on(
@@ -413,6 +435,7 @@ export function subscribeToQueueUpdates(
   userId: string,
   callback: (job: { status: string; job_type: string }) => void
 ) {
+  if (!supabase) return { unsubscribe: () => {} }; // No-op subscription
   return supabase
     .channel('job_queue_changes')
     .on(

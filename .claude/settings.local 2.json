@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(screencapture:*)",
+      "Bash(brew install:*)",
+      "Bash(osascript:*)",
+      "Bash(chmod:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(npm install)",
+      "Bash(npx playwright install:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run test:*)",
+      "Bash(pkill:*)",
+      "Bash(timeout 60 npm run test)",
+      "Bash(curl:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(lsof:*)",
+      "Bash(python3:*)",
+      "Bash(kill:*)",
+      "Bash(xargs:*)",
+      "Bash(npm run dev)",
+      "Bash(npm run build:*)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:socket.dev)",
+      "WebFetch(domain:camoufox.com)",
+      "Bash(npm cache clean:*)",
+      "Bash(npx camoufox-js:*)",
+      "WebFetch(domain:docs.capsolver.com)",
+      "Bash(brew list:*)",
+      "Bash(supabase login --help)",
+      "Bash(cd:*)",
+      "Bash(supabase login --token sbp_10209e819e42a5ac33c6a08eb00cc100331eee01)",
+      "Bash(supabase db push --help)",
+      "Bash(supabase db push --include-all)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Add Render Blueprint for cloud deployment\n\n- Add render.yaml at repo root for Render Blueprint deployment\n- Configure API server \\(free tier\\) and Worker \\(starter $7/mo\\)\n- Add notification system integration to worker\n- Add queue and notification endpoints to server\n- Add notification preferences UI to Settings page\n- Include all required environment variables for:\n  - Supabase \\(auth, database\\)\n  - Upstash Redis \\(job queue\\)\n  - Stripe \\(payments\\)\n  - Resend/Twilio \\(notifications\\)\n  - CapSolver \\(CAPTCHA\\)\n  - Claude/Gemini \\(vision AI\\)\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push origin master)",
+      "Bash(git commit:*)"
+    ]
+  }
+}

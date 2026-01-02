@@ -63,7 +63,7 @@ export const MobileProfile: React.FC = () => {
   const [credentials, setCredentials] = useState<SiteCredential[]>([]);
   const [sitesLoading, setSitesLoading] = useState(true);
   const [connectingTo, setConnectingTo] = useState<string | null>(null);
-  const [loginMethod, setLoginMethod] = useState<'choose' | 'credentials' | 'browser' | 'cookies'>('choose');
+  const [loginMethod, setLoginMethod] = useState<'choose' | 'credentials' | 'browser' | 'cookies' | 'browser-login-pending'>('choose');
   const [cookiesJson, setCookiesJson] = useState('');
   const [importingCookies, setImportingCookies] = useState(false);
   const [email, setEmail] = useState('');
@@ -129,7 +129,7 @@ export const MobileProfile: React.FC = () => {
     setSiteError(null);
   };
 
-  // Launch browser login via AI Job Agent
+  // Launch browser login - on mobile, open in new tab since cloud browser is headless
   const handleBrowserLogin = () => {
     if (!connectingTo) return;
     haptics.medium();
@@ -144,17 +144,12 @@ export const MobileProfile: React.FC = () => {
     };
     const loginUrl = site?.loginUrl || loginUrls[connectingTo] || `https://www.${connectingTo}.com/login`;
 
-    // Store login context for the agent to pick up
-    sessionStorage.setItem('agent_login_mode', JSON.stringify({
-      siteId: connectingTo,
-      siteName: site?.name || connectingTo,
-      loginUrl,
-      returnTo: '/account',
-    }));
+    // On mobile/PWA: Open login page in new tab and guide user to cookie import
+    // The cloud browser is headless so users can't interact with it
+    window.open(loginUrl, '_blank');
 
-    // Navigate to job-agent with login mode state
-    handleCloseConnect();
-    navigate('/job-agent', { state: { loginMode: true, siteId: connectingTo, loginUrl } });
+    // Switch to the browser login pending state with instructions
+    setLoginMethod('browser-login-pending');
   };
 
   // Import cookies from user's browser
@@ -406,11 +401,11 @@ export const MobileProfile: React.FC = () => {
           </div>
           <button
             onClick={() => haptics.light()}
-            className={`p-2 shrink-0 rounded-xl active:scale-95 transition-all ${
+            className={`p-3 shrink-0 rounded-xl active:scale-95 transition-all min-w-[44px] min-h-[44px] flex items-center justify-center ${
               isLight ? 'bg-gold/10' : 'bg-gold/20'
             }`}
           >
-            <Edit3 size={16} className="text-gold" />
+            <Edit3 size={18} className="text-gold" />
           </button>
         </div>
 
@@ -602,7 +597,7 @@ export const MobileProfile: React.FC = () => {
                     How would you like to connect your {connectingTo.charAt(0).toUpperCase() + connectingTo.slice(1)} account?
                   </p>
 
-                  {/* Browser Login Option - Best for OAuth (Google, Apple) */}
+                  {/* Browser Login Option - Opens site in new tab */}
                   <button
                     onClick={() => handleBrowserLogin()}
                     className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all active:scale-[0.98] ${
@@ -616,10 +611,10 @@ export const MobileProfile: React.FC = () => {
                     </div>
                     <div className="flex-1 text-left">
                       <div className={`font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                        Sign in with Browser
+                        Open {connectingTo?.charAt(0).toUpperCase()}{connectingTo?.slice(1)} to Login
                       </div>
                       <div className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                        Best for Google, Apple, or social login
+                        Sign in with Google, Apple, or email
                       </div>
                     </div>
                     <ExternalLink size={18} className="text-gold" />
@@ -752,6 +747,100 @@ export const MobileProfile: React.FC = () => {
                       'Connect Account'
                     )}
                   </button>
+                </>
+              )}
+
+              {/* Browser Login Pending - User opened site in new tab */}
+              {loginMethod === 'browser-login-pending' && (
+                <>
+                  <button
+                    onClick={() => setLoginMethod('choose')}
+                    className={`flex items-center gap-1 text-sm mb-4 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}
+                  >
+                    <ChevronRight size={16} className="rotate-180" />
+                    Back to options
+                  </button>
+
+                  <div className="space-y-4">
+                    {/* Success indicator */}
+                    <div className={`p-4 rounded-xl text-center ${isLight ? 'bg-emerald-50' : 'bg-emerald-900/20'}`}>
+                      <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/20 flex items-center justify-center mb-3">
+                        <ExternalLink size={24} className="text-emerald-500" />
+                      </div>
+                      <p className={`font-semibold ${isLight ? 'text-emerald-800' : 'text-emerald-400'}`}>
+                        {connectingTo?.charAt(0).toUpperCase()}{connectingTo?.slice(1)} opened in your browser
+                      </p>
+                      <p className={`text-sm mt-1 ${isLight ? 'text-emerald-700' : 'text-emerald-300/80'}`}>
+                        Complete the login there
+                      </p>
+                    </div>
+
+                    {/* Mobile limitation notice */}
+                    <div className={`p-4 rounded-xl ${isLight ? 'bg-amber-50 border border-amber-200' : 'bg-amber-900/20 border border-amber-500/30'}`}>
+                      <p className={`font-semibold mb-2 flex items-center gap-2 ${isLight ? 'text-amber-800' : 'text-amber-400'}`}>
+                        📱 On a Phone?
+                      </p>
+                      <p className={`text-sm ${isLight ? 'text-amber-700' : 'text-amber-300/80'}`}>
+                        Mobile browsers can't export cookies. For the best experience, <strong>connect your accounts from a computer</strong> first.
+                        Your connection will sync to all devices automatically.
+                      </p>
+                    </div>
+
+                    {/* Desktop instructions */}
+                    <div className={`p-4 rounded-xl ${isLight ? 'bg-blue-50' : 'bg-blue-900/20'}`}>
+                      <p className={`font-semibold mb-3 ${isLight ? 'text-blue-800' : 'text-blue-300'}`}>
+                        💻 On Desktop? Here's what to do:
+                      </p>
+                      <ol className={`space-y-2 text-sm ${isLight ? 'text-blue-700' : 'text-blue-200/80'}`}>
+                        <li className="flex items-start gap-2">
+                          <span className="w-5 h-5 shrink-0 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-bold">1</span>
+                          <span>Sign in to {connectingTo} in the browser</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="w-5 h-5 shrink-0 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-bold">2</span>
+                          <span>Install "Cookie-Editor" extension (Chrome/Firefox)</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="w-5 h-5 shrink-0 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-bold">3</span>
+                          <span>Click the extension → Export as JSON</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="w-5 h-5 shrink-0 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-bold">4</span>
+                          <span>Come back here and paste</span>
+                        </li>
+                      </ol>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          const loginUrls: Record<string, string> = {
+                            indeed: 'https://secure.indeed.com/account/login',
+                            linkedin: 'https://www.linkedin.com/login',
+                            ziprecruiter: 'https://www.ziprecruiter.com/authn/login',
+                            glassdoor: 'https://www.glassdoor.com/profile/login_input.htm',
+                          };
+                          window.open(loginUrls[connectingTo || 'indeed'] || `https://www.${connectingTo}.com/login`, '_blank');
+                        }}
+                        className={`flex-1 py-3 rounded-xl font-medium flex items-center justify-center gap-2 ${
+                          isLight
+                            ? 'bg-slate-100 text-slate-700'
+                            : 'bg-white/10 text-white'
+                        }`}
+                      >
+                        <ExternalLink size={16} />
+                        Open Again
+                      </button>
+                      <button
+                        onClick={() => setLoginMethod('cookies')}
+                        className="flex-1 py-3 bg-gold text-black font-semibold rounded-xl flex items-center justify-center gap-2"
+                      >
+                        <ClipboardPaste size={16} />
+                        Paste Cookies
+                      </button>
+                    </div>
+                  </div>
                 </>
               )}
 

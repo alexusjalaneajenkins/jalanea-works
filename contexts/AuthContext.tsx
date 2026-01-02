@@ -227,6 +227,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [userCredits, setUserCredits] = useState<UserCredits | null>(null);
     const [loading, setLoading] = useState(true);
     const [profileLoading, setProfileLoading] = useState(false);
+    const [authError, setAuthError] = useState<string | null>(null);
 
     // Fetch user credits from Firestore
     const fetchUserCredits = async (user: User) => {
@@ -318,22 +319,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            // IMPORTANT: Clear previous user's data immediately to prevent cross-contamination
-            // This ensures old profile/jobs don't briefly show when switching accounts
-            setUserProfile(null);
-            setUserCredits(null);
-            setCurrentUser(user);
+        let mounted = true;
+        let timeoutId: NodeJS.Timeout;
 
-            if (user) {
-                console.log('[Auth] User changed, loading profile for:', user.uid.slice(-8));
-                await fetchUserProfile(user.uid);
-                await fetchUserCredits(user);
+        // Safety timeout: If Firebase doesn't respond in 10 seconds, stop loading
+        // This prevents infinite loading screen on mobile if Firebase fails
+        timeoutId = setTimeout(() => {
+            if (mounted && loading) {
+                console.warn('[Auth] Firebase auth timeout - assuming not logged in');
+                setLoading(false);
+                setAuthError('Authentication service unavailable. Please refresh the page.');
             }
-            setLoading(false);
-        });
+        }, 10000);
 
-        return unsubscribe;
+        try {
+            const unsubscribe = onAuthStateChanged(auth, async (user) => {
+                if (!mounted) return;
+
+                // Clear timeout since Firebase responded
+                clearTimeout(timeoutId);
+
+                // IMPORTANT: Clear previous user's data immediately to prevent cross-contamination
+                // This ensures old profile/jobs don't briefly show when switching accounts
+                setUserProfile(null);
+                setUserCredits(null);
+                setCurrentUser(user);
+                setAuthError(null);
+
+                if (user) {
+                    console.log('[Auth] User changed, loading profile for:', user.uid.slice(-8));
+                    await fetchUserProfile(user.uid);
+                    await fetchUserCredits(user);
+                }
+                setLoading(false);
+            });
+
+            return () => {
+                mounted = false;
+                clearTimeout(timeoutId);
+                unsubscribe();
+            };
+        } catch (error) {
+            console.error('[Auth] Firebase initialization error:', error);
+            if (mounted) {
+                setLoading(false);
+                setAuthError('Failed to initialize authentication. Please refresh the page.');
+            }
+            return () => {
+                mounted = false;
+                clearTimeout(timeoutId);
+            };
+        }
     }, []);
 
     // Real-time listener for profile updates
@@ -528,9 +564,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         refreshCredits
     };
 
+    // Show loading indicator while checking auth state
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FFC425] to-[#FFD768] flex items-center justify-center shadow-lg animate-pulse mb-4">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                </div>
+                <div className="w-8 h-8 border-2 border-[#FFC425] border-t-transparent rounded-full animate-spin" />
+                <p className="text-slate-500 text-sm mt-4">Loading...</p>
+            </div>
+        );
+    }
+
+    // Show error if auth failed
+    if (authError) {
+        return (
+            <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-red-500/20 flex items-center justify-center mb-4">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                </div>
+                <h2 className="text-white text-lg font-semibold mb-2">Connection Issue</h2>
+                <p className="text-slate-400 text-sm mb-4 max-w-xs">{authError}</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="px-6 py-3 bg-[#FFC425] text-black font-semibold rounded-xl active:scale-95 transition-transform"
+                >
+                    Retry
+                </button>
+            </div>
+        );
+    }
+
     return (
         <AuthContext.Provider value={value}>
-            {!loading && children}
+            {children}
         </AuthContext.Provider>
     );
 };

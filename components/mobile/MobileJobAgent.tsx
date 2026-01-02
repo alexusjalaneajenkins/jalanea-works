@@ -36,9 +36,12 @@ interface AgentStatus {
 }
 
 interface SiteCredential {
-  site_id: string;
-  email: string;
-  status: 'active' | 'expired' | 'error';
+  siteId: string;
+  isVerified: boolean;
+  lastVerifiedAt: string | null;
+  lastLoginAt: string | null;
+  loginStatus: 'pending' | 'success' | 'failed' | 'needs_2fa' | 'needs_captcha';
+  statusMessage: string | null;
 }
 
 export const MobileJobAgent: React.FC<MobileJobAgentProps> = ({
@@ -95,10 +98,11 @@ export const MobileJobAgent: React.FC<MobileJobAgentProps> = ({
     const loadCredentials = async () => {
       if (!currentUser?.uid) return;
       try {
-        const res = await fetch(`${AGENT_API_URL}/credentials?userId=${currentUser.uid}`);
+        const res = await fetch(`${AGENT_API_URL}/credentials/${currentUser.uid}`);
         if (res.ok) {
           const data = await res.json();
-          setCredentials(data.credentials || []);
+          // API returns { success: true, sites: [...] }
+          setCredentials(data.sites || []);
         }
       } catch (err) {
         console.error('Failed to load credentials:', err);
@@ -173,7 +177,7 @@ export const MobileJobAgent: React.FC<MobileJobAgentProps> = ({
   };
 
   const hasCredentialFor = (siteId: string) => {
-    return credentials.some(c => c.site_id === siteId && c.status === 'active');
+    return credentials.some(c => c.siteId === siteId && c.loginStatus === 'success');
   };
 
   const startAgent = async () => {

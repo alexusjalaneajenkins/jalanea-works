@@ -1,5 +1,58 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+
+// Error Boundary to catch rendering errors and show a helpful screen
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('[App] Uncaught error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-red-500/20 flex items-center justify-center mb-4">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <h2 className="text-white text-lg font-semibold mb-2">Something went wrong</h2>
+          <p className="text-slate-400 text-sm mb-4 max-w-xs">
+            {this.state.error?.message || 'An unexpected error occurred'}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-[#FFC425] text-black font-semibold rounded-xl active:scale-95 transition-transform"
+          >
+            Reload App
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
@@ -249,41 +302,43 @@ const AppLayout: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <ToastProvider>
-          <PWAProvider>
-            <BrowserRouter>
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<Home setRoute={() => { }} />} />
-                <Route path="/about" element={<About setRoute={() => { }} />} />
-                <Route path="/mission" element={<Mission setRoute={() => { }} />} />
-                <Route path="/entrepreneur" element={<Entrepreneur setRoute={() => { }} />} />
-                <Route path="/blog" element={<Blog setRoute={() => { }} />} />
-                <Route path="/blog/:slug" element={<BlogArticlePage setRoute={() => { }} />} />
-                <Route path="/pricing" element={<Pricing />} />
-                <Route path="/support" element={<Support />} />
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <PWAProvider>
+              <BrowserRouter>
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/" element={<Home setRoute={() => { }} />} />
+                  <Route path="/about" element={<About setRoute={() => { }} />} />
+                  <Route path="/mission" element={<Mission setRoute={() => { }} />} />
+                  <Route path="/entrepreneur" element={<Entrepreneur setRoute={() => { }} />} />
+                  <Route path="/blog" element={<Blog setRoute={() => { }} />} />
+                  <Route path="/blog/:slug" element={<BlogArticlePage setRoute={() => { }} />} />
+                  <Route path="/pricing" element={<Pricing />} />
+                  <Route path="/support" element={<Support />} />
 
-                {/* Onboarding - Protected but OUTSIDE AppLayout (full-screen, no sidebar) */}
-                <Route path="/onboarding" element={
-                  <ProtectedRoute>
-                    <OnboardingPage />
-                  </ProtectedRoute>
-                } />
+                  {/* Onboarding - Protected but OUTSIDE AppLayout (full-screen, no sidebar) */}
+                  <Route path="/onboarding" element={
+                    <ProtectedRoute>
+                      <OnboardingPage />
+                    </ProtectedRoute>
+                  } />
 
-                {/* Protected Routes - Only accessible after onboarding is complete */}
-                <Route path="/*" element={
-                  <ProtectedRoute>
-                    <AppLayoutWithOnboardingCheck />
-                  </ProtectedRoute>
-                } />
-              </Routes>
-            </BrowserRouter>
-          </PWAProvider>
-        </ToastProvider>
-      </AuthProvider>
-    </ThemeProvider>
+                  {/* Protected Routes - Only accessible after onboarding is complete */}
+                  <Route path="/*" element={
+                    <ProtectedRoute>
+                      <AppLayoutWithOnboardingCheck />
+                    </ProtectedRoute>
+                  } />
+                </Routes>
+              </BrowserRouter>
+            </PWAProvider>
+          </ToastProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 };
 
@@ -291,12 +346,17 @@ const App: React.FC = () => {
 const AppLayoutWithOnboardingCheck: React.FC = () => {
   const needsOnboarding = useNeedsOnboarding();
   const isMobile = useMobile();
+  const { isLight } = useTheme();
 
-  // Still loading
+  // Still loading - show branded loading screen
   if (needsOnboarding === null) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-jalanea-50">
-        <Loader className="animate-spin text-jalanea-600 w-12 h-12" />
+      <div className={`flex flex-col items-center justify-center min-h-screen ${isLight ? 'bg-slate-50' : 'bg-[#020617]'}`}>
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gold to-gold-light flex items-center justify-center shadow-lg shadow-gold/20 mb-4 animate-pulse">
+          <Zap size={24} className="text-black" />
+        </div>
+        <Loader className="animate-spin text-gold w-8 h-8" />
+        <p className={`text-sm mt-3 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Loading your profile...</p>
       </div>
     );
   }
