@@ -327,13 +327,15 @@ app.post('/sites/:siteId/launch', async (req: Request, res: Response) => {
     }
 
     // Create new browser for login
-    // In production (cloud): headless with Playwright
+    // In production (cloud): headless with Camoufox (anti-detect Firefox)
     // In development (local): can use system Chrome for saved passwords
     const isProduction = process.env.NODE_ENV === 'production';
+    const browserType = (process.env.BROWSER_TYPE || 'camoufox') as 'chromium' | 'camoufox';
     loginBrowser = new BrowserController({
       headless: isProduction ? true : false, // Headless in cloud, visible locally
       sessionDir: `./sessions/${site.id}`,
       useSystemChrome: !isProduction, // Only use system Chrome locally
+      browserType, // Use Camoufox in production for anti-detect
     });
 
     await loginBrowser.launch(true); // Load existing session if available
