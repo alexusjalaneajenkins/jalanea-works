@@ -58,19 +58,12 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
         backgroundColor: bgColor,
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
+        // Include safe area in nav height for proper visual sizing
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
-      {/* Safe area fill - extends background to actual screen bottom */}
-      <div
-        className="absolute left-0 right-0 bottom-0"
-        style={{
-          backgroundColor: bgColor,
-          height: 'env(safe-area-inset-bottom, 0px)',
-          transform: 'translateY(100%)',
-        }}
-      />
-      {/* Nav content */}
-      <div className="flex items-center justify-around h-16 px-1">
+      {/* Nav content - iOS standard is 49pt content + 34pt safe area = 83px */}
+      <div className="flex items-center justify-around px-2 pt-2 pb-1" style={{ height: '49px' }}>
         {navItems.map((item) => {
           const isActive = activeScreen === item.id;
           const isPressed = pressedId === item.id;
@@ -83,7 +76,7 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
               onTouchEnd={() => setPressedId(null)}
               onTouchCancel={() => setPressedId(null)}
               onClick={() => handlePress(item.id)}
-              className={`relative flex flex-col items-center justify-center w-16 h-14 rounded-2xl transition-colors ${
+              className={`relative flex flex-col items-center justify-center flex-1 h-full rounded-2xl transition-colors ${
                 isActive
                   ? isLight ? 'bg-gold/10' : 'bg-gold/10'
                   : ''
@@ -95,7 +88,7 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
             >
               {/* Icon container with active state */}
               <motion.div
-                className={`flex items-center justify-center w-10 h-7 rounded-xl ${
+                className={`flex items-center justify-center w-14 h-8 rounded-2xl ${
                   isActive
                     ? 'bg-gold'
                     : 'bg-transparent'
@@ -106,7 +99,7 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
                 transition={{ type: 'spring', stiffness: 400, damping: 25 }}
               >
                 <Icon
-                  size={20}
+                  size={22}
                   className={
                     isActive
                       ? 'text-black'
@@ -114,13 +107,13 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
                         ? 'text-slate-400'
                         : 'text-slate-500'
                   }
-                  strokeWidth={isActive ? 2.5 : 2}
+                  strokeWidth={isActive ? 2.5 : 1.8}
                 />
               </motion.div>
 
               {/* Label */}
               <span
-                className={`text-[10px] font-medium mt-1 transition-colors ${
+                className={`text-[10px] font-medium mt-0.5 transition-colors ${
                   isActive
                     ? 'text-gold'
                     : isLight
