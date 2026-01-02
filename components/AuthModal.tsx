@@ -1245,7 +1245,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                             </div>
                             <button
                                 onClick={() => handleDeleteExperience(idx)}
-                                className="p-2 text-jalanea-500 hover:text-red-400 hover:bg-white/5 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                                className="p-2 text-jalanea-500 hover:text-red-400 hover:bg-white/5 rounded-full transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 min-w-[44px] min-h-[44px] flex items-center justify-center"
                             >
                                 <Trash2 size={16} />
                             </button>

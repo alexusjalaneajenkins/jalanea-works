@@ -5,6 +5,7 @@ import { Input } from '../components/Input';
 import { generateJobIntel, searchJobsWithGrounding } from '../services/geminiService';
 import { searchJobsWithGemini } from '../services/jobService';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { UpgradeModal } from '../components/UpgradeModal';
 import { ATSScoreModal } from '../components/ATSScoreModal';
 import {
@@ -333,6 +334,9 @@ export const Jobs: React.FC<JobsProps> = ({ setRoute }) => {
 
     // Auth context for user profile and job saving
     const { userProfile, saveJob, removeJob, isJobSaved, currentUser, useCredit, canUseCredits, isTrialActive } = useAuth();
+
+    // Theme context
+    const { isLight } = useTheme();
 
     // Credit enforcement state
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -983,11 +987,11 @@ Make it engaging and easy to absorb while commuting!`;
 
 
     return (
-        <div className="min-h-screen bg-[#020617] pb-16 relative">
+        <div className={`min-h-screen pb-16 relative ${isLight ? 'bg-slate-50' : 'bg-[#020617]'}`}>
             {/* Background */}
-            <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-[#020617] to-slate-900 pointer-events-none" />
-            <div className="fixed top-0 left-1/3 w-96 h-96 bg-gold/5 rounded-full blur-3xl pointer-events-none" />
-            <div className="fixed bottom-0 right-1/3 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+            <div className={`fixed inset-0 pointer-events-none ${isLight ? 'bg-gradient-to-br from-slate-100 via-slate-50 to-white' : 'bg-gradient-to-br from-slate-900 via-[#020617] to-slate-900'}`} />
+            <div className={`fixed top-0 left-1/3 w-96 h-96 rounded-full blur-3xl pointer-events-none ${isLight ? 'bg-gold/10' : 'bg-gold/5'}`} />
+            <div className={`fixed bottom-0 right-1/3 w-96 h-96 rounded-full blur-3xl pointer-events-none ${isLight ? 'bg-blue-500/10' : 'bg-blue-500/5'}`} />
 
             <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
@@ -1016,8 +1020,8 @@ Make it engaging and easy to absorb while commuting!`;
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between md:items-end gap-4">
                 <div>
-                    <h1 className="text-3xl md:text-4xl font-bold text-white">Explore Jobs</h1>
-                    <p className="text-slate-400 font-medium mt-1 text-lg">
+                    <h1 className={`text-3xl md:text-4xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>Explore Jobs</h1>
+                    <p className={`font-medium mt-1 text-lg ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
                         Your daily goal: <span className="font-bold text-gold">3 applications</span>. We've found the best matches.
                     </p>
                 </div>
@@ -1025,19 +1029,23 @@ Make it engaging and easy to absorb while commuting!`;
 
             {/* Degree Context Banner - Shows when user has education saved */}
             {(userProfile as any)?.education?.length > 0 && (
-                <div className="bg-gradient-to-r from-gold/10 via-slate-800/50 to-slate-900/50 border border-gold/20 rounded-2xl p-4 flex items-start gap-4 backdrop-blur-xl">
+                <div className={`rounded-2xl p-4 flex items-start gap-4 backdrop-blur-xl border ${
+                    isLight
+                        ? 'bg-gradient-to-r from-gold/10 via-white to-slate-50 border-gold/20'
+                        : 'bg-gradient-to-r from-gold/10 via-slate-800/50 to-slate-900/50 border-gold/20'
+                }`}>
                     <div className="w-10 h-10 rounded-xl bg-gold/20 flex items-center justify-center text-gold shrink-0 border border-gold/30">
                         <GraduationCap size={20} />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-white">
+                        <p className={`text-sm font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
                             {(userProfile as any).education.length === 1
                                 ? `Showing jobs for your ${(userProfile as any).education[0].degreeLevel}`
                                 : `Showing jobs for ${(userProfile as any).education.length} degrees`}
                         </p>
                         <div className="flex flex-wrap gap-2 mt-1">
                             {(userProfile as any).education.map((edu: any, idx: number) => (
-                                <span key={idx} className="text-xs text-slate-400">
+                                <span key={idx} className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                                     {edu.programName} ({edu.institution})
                                     {idx < (userProfile as any).education.length - 1 && ' • '}
                                 </span>
@@ -1060,7 +1068,9 @@ Make it engaging and easy to absorb while commuting!`;
                                         className={`text-xs px-2.5 py-1 rounded-full font-medium transition-all cursor-pointer border
                                             ${!careerFilter
                                                 ? 'bg-gold text-black border-gold'
-                                                : 'bg-slate-800/50 text-slate-400 border-white/10 hover:border-gold/50 hover:text-white'
+                                                : isLight
+                                                    ? 'bg-white text-slate-500 border-slate-200 hover:border-gold/50 hover:text-slate-900'
+                                                    : 'bg-slate-800/50 text-slate-400 border-white/10 hover:border-gold/50 hover:text-white'
                                             }`}
                                     >
                                         All Careers
@@ -1084,7 +1094,9 @@ Make it engaging and easy to absorb while commuting!`;
                                             className={`text-xs px-2.5 py-1 rounded-full font-medium transition-all cursor-pointer border
                                                 ${careerFilter === career
                                                     ? 'bg-gold text-black border-gold shadow-[0_0_10px_rgba(255,196,37,0.3)]'
-                                                    : 'bg-slate-800/50 text-slate-300 border-white/10 hover:border-gold/50 hover:text-white'
+                                                    : isLight
+                                                        ? 'bg-white text-slate-600 border-slate-200 hover:border-gold/50 hover:text-slate-900'
+                                                        : 'bg-slate-800/50 text-slate-300 border-white/10 hover:border-gold/50 hover:text-white'
                                                 }`}
                                         >
                                             {career}
@@ -1103,7 +1115,7 @@ Make it engaging and easy to absorb while commuting!`;
             )}
 
             {/* Sticky Search & Filter Bar */}
-            <div className="sticky top-0 z-20 pt-4 pb-4 bg-[#020617]/80 backdrop-blur-xl border-b border-white/10">
+            <div className={`sticky top-0 z-20 pt-4 pb-4 backdrop-blur-xl border-b ${isLight ? 'bg-slate-50/80 border-slate-200' : 'bg-[#020617]/80 border-white/10'}`}>
                 <div className="space-y-3">
                     <div className="flex flex-col md:flex-row gap-3">
                         <div className="flex-1 relative">
@@ -1112,7 +1124,11 @@ Make it engaging and easy to absorb while commuting!`;
                             </div>
                             <input
                                 placeholder="Search by title (e.g. 'Designer', 'Marketing')..."
-                                className="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-800/50 border border-white/10 focus:border-gold/50 focus:ring-2 focus:ring-gold/20 outline-none text-white placeholder:text-slate-500"
+                                className={`w-full pl-12 pr-4 py-3 rounded-xl outline-none ${
+                                    isLight
+                                        ? 'bg-white border border-slate-200 focus:border-gold/50 focus:ring-2 focus:ring-gold/20 text-slate-900 placeholder:text-slate-400'
+                                        : 'bg-slate-800/50 border border-white/10 focus:border-gold/50 focus:ring-2 focus:ring-gold/20 text-white placeholder:text-slate-500'
+                                }`}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -1124,7 +1140,11 @@ Make it engaging and easy to absorb while commuting!`;
                             </div>
                             <input
                                 placeholder="Location"
-                                className="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-800/50 border border-white/10 focus:border-gold/50 focus:ring-2 focus:ring-gold/20 outline-none text-white placeholder:text-slate-500"
+                                className={`w-full pl-12 pr-4 py-3 rounded-xl outline-none ${
+                                    isLight
+                                        ? 'bg-white border border-slate-200 focus:border-gold/50 focus:ring-2 focus:ring-gold/20 text-slate-900 placeholder:text-slate-400'
+                                        : 'bg-slate-800/50 border border-white/10 focus:border-gold/50 focus:ring-2 focus:ring-gold/20 text-white placeholder:text-slate-500'
+                                }`}
                                 value={searchLocation}
                                 onChange={(e) => setSearchLocation(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -1152,7 +1172,9 @@ Make it engaging and easy to absorb while commuting!`;
                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all
                                 ${orlandoFirst
                                     ? 'bg-orange-500 text-white border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.4)]'
-                                    : 'bg-slate-800/50 text-slate-400 border-white/10 hover:border-orange-400/50 hover:text-orange-400'
+                                    : isLight
+                                        ? 'bg-white text-slate-500 border-slate-200 hover:border-orange-400/50 hover:text-orange-500'
+                                        : 'bg-slate-800/50 text-slate-400 border-white/10 hover:border-orange-400/50 hover:text-orange-400'
                                 }`}
                             title={orlandoFirst ? 'Showing Orlando-area jobs first' : 'Click to prioritize Orlando jobs'}
                         >
@@ -1165,7 +1187,9 @@ Make it engaging and easy to absorb while commuting!`;
                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all
                                 ${orlandoHQOnly
                                     ? 'bg-emerald-600 text-white border-emerald-600 shadow-[0_0_10px_rgba(16,185,129,0.4)]'
-                                    : 'bg-slate-800/50 text-slate-400 border-white/10 hover:border-emerald-400/50 hover:text-emerald-400'
+                                    : isLight
+                                        ? 'bg-white text-slate-500 border-slate-200 hover:border-emerald-400/50 hover:text-emerald-500'
+                                        : 'bg-slate-800/50 text-slate-400 border-white/10 hover:border-emerald-400/50 hover:text-emerald-400'
                                 }`}
                             title={orlandoHQOnly ? 'Only showing Orlando-based companies' : 'Click to show only Orlando-headquartered companies'}
                         >
@@ -1182,7 +1206,9 @@ Make it engaging and easy to absorb while commuting!`;
                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all
                                 ${isRemote || activeFilter === 'remote'
                                     ? 'bg-blue-600 text-white border-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.4)]'
-                                    : 'bg-slate-800/50 text-slate-400 border-white/10 hover:border-blue-400/50 hover:text-blue-400'
+                                    : isLight
+                                        ? 'bg-white text-slate-500 border-slate-200 hover:border-blue-400/50 hover:text-blue-500'
+                                        : 'bg-slate-800/50 text-slate-400 border-white/10 hover:border-blue-400/50 hover:text-blue-400'
                                 }`}
                         >
                             <Home size={14} /> Remote
@@ -1194,7 +1220,9 @@ Make it engaging and easy to absorb while commuting!`;
                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all
                                 ${activeFilter === 'today'
                                     ? 'bg-green-600 text-white border-green-600 shadow-[0_0_10px_rgba(22,163,74,0.4)]'
-                                    : 'bg-slate-800/50 text-slate-400 border-white/10 hover:border-green-400/50 hover:text-green-400'
+                                    : isLight
+                                        ? 'bg-white text-slate-500 border-slate-200 hover:border-green-400/50 hover:text-green-500'
+                                        : 'bg-slate-800/50 text-slate-400 border-white/10 hover:border-green-400/50 hover:text-green-400'
                                 }`}
                         >
                             📅 New Today
@@ -1206,7 +1234,9 @@ Make it engaging and easy to absorb while commuting!`;
                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all
                                 ${activeFilter === 'salary'
                                     ? 'bg-gold text-black border-gold shadow-[0_0_10px_rgba(255,196,37,0.4)]'
-                                    : 'bg-slate-800/50 text-slate-400 border-white/10 hover:border-gold/50 hover:text-gold'
+                                    : isLight
+                                        ? 'bg-white text-slate-500 border-slate-200 hover:border-gold/50 hover:text-gold'
+                                        : 'bg-slate-800/50 text-slate-400 border-white/10 hover:border-gold/50 hover:text-gold'
                                 }`}
                         >
                             <DollarSign size={14} /> $50k+
@@ -1222,7 +1252,9 @@ Make it engaging and easy to absorb while commuting!`;
                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all
                                 ${isOnsite || activeFilter === 'onsite'
                                     ? 'bg-orange-600 text-white border-orange-600 shadow-[0_0_10px_rgba(234,88,12,0.4)]'
-                                    : 'bg-slate-800/50 text-slate-400 border-white/10 hover:border-orange-400/50 hover:text-orange-400'
+                                    : isLight
+                                        ? 'bg-white text-slate-500 border-slate-200 hover:border-orange-400/50 hover:text-orange-500'
+                                        : 'bg-slate-800/50 text-slate-400 border-white/10 hover:border-orange-400/50 hover:text-orange-400'
                                 }`}
                         >
                             <Building2 size={14} /> On-site

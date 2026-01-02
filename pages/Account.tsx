@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
@@ -15,6 +16,7 @@ import { redirectToBillingPortal, SUBSCRIPTION_TIERS, formatPrice } from '../ser
 import { DEGREE_TYPE_OPTIONS } from '../types';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../services/firebase';
+import { haptics } from '../utils/haptics';
 
 // Keep MOCK_PROFILE for backwards compatibility with other pages
 export const MOCK_PROFILE: any = { // Typed as any temporarily to allow flexibility or import UserProfile and cast
@@ -58,6 +60,7 @@ export const MOCK_PROFILE: any = { // Typed as any temporarily to allow flexibil
 export const AccountPage: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, userProfile, userCredits, refreshCredits, saveUserProfile, profileLoading } = useAuth();
+  const { isLight } = useTheme();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSwitchingTier, setIsSwitchingTier] = useState(false);
@@ -130,6 +133,7 @@ export const AccountPage: React.FC = () => {
 
   const handleSave = async () => {
     setIsSaving(true);
+    haptics.medium();
     try {
       await saveUserProfile({
         fullName,
@@ -151,8 +155,10 @@ export const AccountPage: React.FC = () => {
         },
         updatedAt: new Date().toISOString()
       });
+      haptics.success();
       setIsEditing(false);
     } catch (error) {
+      haptics.error();
       console.error("Failed to save profile:", error);
       alert("Failed to save profile. Please try again.");
     } finally {
@@ -295,25 +301,25 @@ export const AccountPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#020617] pb-16 relative">
+    <div className={`min-h-screen pb-16 relative ${isLight ? 'bg-slate-50' : 'bg-[#020617]'}`}>
       {/* Background */}
-      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-[#020617] to-slate-900 pointer-events-none" />
-      <div className="fixed top-0 right-1/3 w-96 h-96 bg-gold/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="fixed bottom-0 left-1/3 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className={`fixed inset-0 pointer-events-none ${isLight ? 'bg-gradient-to-br from-slate-100 via-slate-50 to-white' : 'bg-gradient-to-br from-slate-900 via-[#020617] to-slate-900'}`} />
+      <div className={`fixed top-0 right-1/3 w-96 h-96 rounded-full blur-3xl pointer-events-none ${isLight ? 'bg-gold/10' : 'bg-gold/5'}`} />
+      <div className={`fixed bottom-0 left-1/3 w-96 h-96 rounded-full blur-3xl pointer-events-none ${isLight ? 'bg-purple-500/10' : 'bg-purple-500/5'}`} />
 
       <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-6">
+      <div className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-6 ${isLight ? 'border-slate-200' : 'border-white/10'}`}>
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-white">My Account</h1>
-          <p className="text-slate-400 font-medium mt-1">Manage your career data for better job matching</p>
+          <h1 className={`text-3xl md:text-4xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>My Account</h1>
+          <p className={`font-medium mt-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>Manage your career data for better job matching</p>
         </div>
       </div>
 
       {/* Edit Controls */}
-      <div className="flex items-center justify-between sticky top-4 z-30 bg-[#020617]/90 backdrop-blur-xl p-3 rounded-2xl border border-white/10">
-        <h2 className="text-xl font-bold text-white pl-2">Career Data</h2>
+      <div className={`flex items-center justify-between sticky top-4 z-30 backdrop-blur-xl p-3 rounded-2xl border ${isLight ? 'bg-white/90 border-slate-200' : 'bg-[#020617]/90 border-white/10'}`}>
+        <h2 className={`text-xl font-bold pl-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>Career Data</h2>
         {isEditing ? (
           <div className="flex gap-2">
             <button onClick={handleCancel} disabled={isSaving} className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-400 hover:text-white rounded-xl transition-colors disabled:opacity-50">
@@ -325,7 +331,11 @@ export const AccountPage: React.FC = () => {
             </button>
           </div>
         ) : (
-          <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-slate-800/50 border border-white/10 text-slate-300 hover:text-white hover:border-white/20 rounded-xl transition-all">
+          <button onClick={() => setIsEditing(true)} className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl transition-all ${
+            isLight
+              ? 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-sm'
+              : 'bg-slate-800/50 border border-white/10 text-slate-300 hover:text-white hover:border-white/20'
+          }`}>
             <Edit3 size={16} /> Edit Profile
           </button>
         )}
@@ -359,10 +369,10 @@ export const AccountPage: React.FC = () => {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploadingPic}
-                  className="absolute bottom-0 right-0 p-1.5 bg-jalanea-900 text-white rounded-full hover:bg-gold transition-colors disabled:opacity-50"
+                  className="absolute -bottom-1 -right-1 p-2.5 bg-jalanea-900 text-white rounded-full hover:bg-gold transition-colors disabled:opacity-50 min-w-[44px] min-h-[44px] flex items-center justify-center shadow-lg"
                   title="Upload photo (JPG, PNG, GIF, WebP - Max 5MB)"
                 >
-                  {isUploadingPic ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+                  {isUploadingPic ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
                 </button>
               </>
             )}
@@ -615,6 +625,140 @@ export const AccountPage: React.FC = () => {
         ) : null;
       })()}
 
+      {/* Reality & Challenges Section - from Stage 5 onboarding */}
+      {(() => {
+        const profile = userProfile as any;
+        const challenges = profile?.selectedPrompts || [];
+        const realityContext = profile?.realityContext || profile?.realityChallenges || '';
+
+        // Available challenge prompts for adding new ones
+        const CHALLENGE_OPTIONS = [
+          "I am a single parent",
+          "No reliable car",
+          "Health challenges",
+          "English is my 2nd language",
+          "Need immediate income",
+          "Criminal record",
+          "Limited work experience",
+          "Caregiving responsibilities",
+          "Housing instability",
+          "Limited internet access"
+        ];
+
+        return (
+          <Card variant="solid-white" className="overflow-hidden">
+            <div className="border-b border-jalanea-100 p-6 bg-gradient-to-r from-amber-50/50 to-orange-50/50 flex justify-between items-center">
+              <div>
+                <h3 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider flex items-center gap-2">
+                  <span className="text-lg">🌟</span> Your Reality & Challenges
+                </h3>
+                <p className="text-xs text-jalanea-400 mt-1">We use this to find accommodating employers</p>
+              </div>
+              {isEditing && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    // Open modal or show options
+                    const newChallenge = prompt('Add a challenge (or type your own):');
+                    if (newChallenge && !challenges.includes(newChallenge)) {
+                      const updated = [...challenges, newChallenge];
+                      saveUserProfile({ selectedPrompts: updated });
+                    }
+                  }}
+                  icon={<Plus size={14} />}
+                >
+                  Add
+                </Button>
+              )}
+            </div>
+            <div className="p-6 space-y-4">
+              {/* Current Challenges */}
+              {challenges.length > 0 ? (
+                <div>
+                  <p className="text-xs font-bold text-jalanea-400 uppercase mb-3">Current Considerations</p>
+                  <div className="flex flex-wrap gap-2">
+                    {challenges.map((challenge: string, idx: number) => (
+                      <span
+                        key={idx}
+                        className="group inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-800 rounded-full text-sm font-medium border border-amber-200"
+                      >
+                        {challenge}
+                        {isEditing && (
+                          <button
+                            onClick={() => {
+                              const updated = challenges.filter((_: string, i: number) => i !== idx);
+                              saveUserProfile({ selectedPrompts: updated });
+                            }}
+                            className="text-amber-500 hover:text-red-500 transition-colors p-1 -mr-1 rounded-full hover:bg-red-50"
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-jalanea-400 text-sm mb-2">No challenges added yet</p>
+                  {!isEditing && (
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="text-sm text-gold hover:underline"
+                    >
+                      Click edit to add your circumstances
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Quick Add Buttons when editing */}
+              {isEditing && (
+                <div className="pt-4 border-t border-jalanea-100">
+                  <p className="text-xs font-bold text-jalanea-400 uppercase mb-3">Quick Add Common Challenges</p>
+                  <div className="flex flex-wrap gap-2">
+                    {CHALLENGE_OPTIONS.filter(opt => !challenges.includes(opt)).map((option: string, idx: number) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          const updated = [...challenges, option];
+                          saveUserProfile({ selectedPrompts: updated });
+                        }}
+                        className="px-3 py-1.5 bg-jalanea-50 text-jalanea-600 rounded-full text-sm font-medium border border-jalanea-200 hover:bg-gold/10 hover:border-gold/30 hover:text-jalanea-800 transition-all"
+                      >
+                        + {option}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Reality Context - free text */}
+              {realityContext && (
+                <div className="pt-4 border-t border-jalanea-100">
+                  <p className="text-xs font-bold text-jalanea-400 uppercase mb-2">Your Story</p>
+                  <p className="text-sm text-jalanea-600 bg-jalanea-50 rounded-lg p-3 border border-jalanea-100 italic">
+                    "{realityContext}"
+                  </p>
+                </div>
+              )}
+
+              {/* Help text */}
+              <div className="pt-4 mt-4 border-t border-jalanea-100">
+                <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                  <span className="text-blue-500">💡</span>
+                  <p className="text-xs text-blue-700">
+                    <strong>Why share this?</strong> We use your circumstances to find employers who offer accommodations,
+                    flexible scheduling, second-chance hiring, and other supportive programs. This info is never shared with employers directly.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        );
+      })()}
+
       {/* Experience Section */}
       <Card variant="solid-white" className="overflow-hidden">
         <div className="border-b border-jalanea-100 p-6 bg-jalanea-50/50 flex justify-between items-center">
@@ -681,11 +825,11 @@ export const AccountPage: React.FC = () => {
                 <p className="text-jalanea-400 text-sm italic">No target roles set.</p>
               ) : (
                 targetRoles.map(role => (
-                  <span key={role} className="inline-flex items-center gap-1 px-3 py-1 bg-gold/10 text-jalanea-800 rounded-full text-sm font-medium border border-gold/20">
+                  <span key={role} className="inline-flex items-center gap-1 px-3 py-1.5 bg-gold/10 text-jalanea-800 rounded-full text-sm font-medium border border-gold/20">
                     {role}
                     {isEditing && (
-                      <button onClick={() => removeRole(role)} className="text-jalanea-400 hover:text-red-500">
-                        <X size={12} />
+                      <button onClick={() => removeRole(role)} className="text-jalanea-400 hover:text-red-500 ml-1 p-1 -mr-1 min-w-[28px] min-h-[28px] flex items-center justify-center rounded-full hover:bg-red-50">
+                        <X size={14} />
                       </button>
                     )}
                   </span>

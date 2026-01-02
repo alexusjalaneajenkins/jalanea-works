@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { UpgradeModal } from '../components/UpgradeModal';
@@ -11,6 +11,7 @@ import { saveResume, getUserResumes, deleteResume, SavedResume } from '../servic
 
 export const ResumeBuilder: React.FC = () => {
     const { currentUser, userProfile, useCredit, canUseCredits, isTrialActive, saveUserProfile } = useAuth();
+    const { isLight } = useTheme();
     const [selectedType, setSelectedType] = useState<ResumeType>(ResumeType.CHRONOLOGICAL);
     const [jobDescription, setJobDescription] = useState('');
     const [generatedContent, setGeneratedContent] = useState('');
@@ -373,17 +374,17 @@ export const ResumeBuilder: React.FC = () => {
     const displayedTypes = showAllTypes ? resumeTypes : resumeTypes.slice(0, 3);
 
     return (
-        <div className="min-h-screen bg-[#020617] pb-16 relative">
+        <div className={`min-h-screen pb-16 relative ${isLight ? 'bg-slate-50' : 'bg-[#020617]'}`}>
             {/* Background */}
-            <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-[#020617] to-slate-900 pointer-events-none" />
-            <div className="fixed top-0 right-1/4 w-96 h-96 bg-gold/5 rounded-full blur-3xl pointer-events-none" />
-            <div className="fixed bottom-0 left-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
+            <div className={`fixed inset-0 pointer-events-none ${isLight ? 'bg-gradient-to-br from-slate-100 via-slate-50 to-white' : 'bg-gradient-to-br from-slate-900 via-[#020617] to-slate-900'}`} />
+            <div className={`fixed top-0 right-1/4 w-96 h-96 rounded-full blur-3xl pointer-events-none ${isLight ? 'bg-gold/10' : 'bg-gold/5'}`} />
+            <div className={`fixed bottom-0 left-1/4 w-96 h-96 rounded-full blur-3xl pointer-events-none ${isLight ? 'bg-purple-500/10' : 'bg-purple-500/5'}`} />
 
             <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
                 <div>
-                    <h1 className="text-3xl md:text-4xl font-bold text-white">AI Resume Studio</h1>
-                    <p className="text-slate-400 font-medium mt-1">Generate tailored resumes based on your Valencia degree.</p>
+                    <h1 className={`text-3xl md:text-4xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>AI Resume Studio</h1>
+                    <p className={`font-medium mt-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>Generate tailored resumes based on your Valencia degree.</p>
                 </div>
 
                 <div className="flex items-center gap-2 w-full md:w-auto">
@@ -391,7 +392,11 @@ export const ResumeBuilder: React.FC = () => {
                     <button
                         onClick={handleRestoreData}
                         disabled={isRestoring}
-                        className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800/50 border border-orange-500/30 text-orange-400 hover:bg-orange-500/10 transition-all text-sm font-medium disabled:opacity-50"
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all text-sm font-medium disabled:opacity-50 ${
+                            isLight
+                                ? 'bg-white border-orange-200 text-orange-500 hover:bg-orange-50'
+                                : 'bg-slate-800/50 border-orange-500/30 text-orange-400 hover:bg-orange-500/10'
+                        }`}
                         title="Restore Missing Profile Data"
                     >
                         {isRestoring ? <div className="animate-spin h-3 w-3 border-2 border-orange-400 border-t-transparent rounded-full" /> : <Database size={16} />}
@@ -403,22 +408,36 @@ export const ResumeBuilder: React.FC = () => {
                             placeholder="Resume Title..."
                             value={resumeTitle}
                             onChange={(e) => setResumeTitle(e.target.value)}
-                            className="w-full md:w-64 px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 focus:border-gold/50 focus:ring-2 focus:ring-gold/20 outline-none text-sm font-bold text-white placeholder:text-slate-500"
+                            className={`w-full md:w-64 px-4 py-2.5 rounded-xl border focus:border-gold/50 focus:ring-2 focus:ring-gold/20 outline-none text-sm font-bold ${
+                                isLight
+                                    ? 'bg-white border-slate-200 text-slate-900 placeholder:text-slate-400'
+                                    : 'bg-slate-800/50 border-white/10 text-white placeholder:text-slate-500'
+                            }`}
                         />
                     </div>
 
                     <button
                         onClick={handleSave}
                         disabled={!generatedContent || isSaving}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/50 border border-white/10 text-slate-300 hover:bg-slate-700/50 hover:border-white/20 transition-all text-sm font-medium disabled:opacity-50"
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all disabled:opacity-50 ${
+                            isLight
+                                ? 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                                : 'bg-slate-800/50 border-white/10 text-slate-300 hover:bg-slate-700/50 hover:border-white/20'
+                        }`}
                     >
-                        {isSaving ? <div className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full" /> : <Save size={16} />}
+                        {isSaving ? <div className={`animate-spin h-3 w-3 border-2 border-t-transparent rounded-full ${isLight ? 'border-slate-600' : 'border-white'}`} /> : <Save size={16} />}
                         {isSaving ? 'Saving' : 'Save'}
                     </button>
 
                     <button
                         onClick={() => setShowHistory(!showHistory)}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${showHistory ? 'bg-gold/20 border-gold/30 text-gold' : 'bg-slate-800/50 border-white/10 text-slate-300 hover:border-white/20'}`}
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                            showHistory
+                                ? 'bg-gold/20 border-gold/30 text-gold'
+                                : isLight
+                                    ? 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                                    : 'bg-slate-800/50 border-white/10 text-slate-300 hover:border-white/20'
+                        }`}
                     >
                         <History size={16} />
                         History
@@ -430,19 +449,23 @@ export const ResumeBuilder: React.FC = () => {
             {showHistory && (
                 <div className="fixed inset-0 z-50 flex justify-end">
                     <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowHistory(false)}></div>
-                    <div className="relative w-full max-w-md bg-white h-full shadow-2xl p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+                    <div className={`relative w-full max-w-md h-full shadow-2xl p-6 overflow-y-auto animate-in slide-in-from-right duration-300 ${
+                        isLight ? 'bg-white' : 'bg-slate-900'
+                    }`}>
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold text-jalanea-900 flex items-center gap-2">
+                            <h2 className={`text-xl font-bold flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
                                 <History size={20} /> Saved Resumes
                             </h2>
-                            <button onClick={() => setShowHistory(false)} className="p-2 hover:bg-jalanea-100 rounded-full text-jalanea-500 hover:text-jalanea-900">
+                            <button onClick={() => setShowHistory(false)} className={`p-2 rounded-full transition-colors ${
+                                isLight ? 'hover:bg-slate-100 text-slate-500 hover:text-slate-900' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                            }`}>
                                 <X size={20} />
                             </button>
                         </div>
 
                         <div className="space-y-3">
                             {savedResumes.length === 0 ? (
-                                <div className="text-center py-12 text-jalanea-400">
+                                <div className={`text-center py-12 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
                                     <FileText size={48} className="mx-auto mb-3 opacity-20" />
                                     <p>No saved resumes yet.</p>
                                 </div>
@@ -451,24 +474,28 @@ export const ResumeBuilder: React.FC = () => {
                                     <div
                                         key={resume.id}
                                         onClick={() => handleLoad(resume)}
-                                        className={`p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md group relative
-                                            ${currentResumeId === resume.id ? 'bg-jalanea-50 border-jalanea-900' : 'bg-white border-jalanea-200 hover:border-jalanea-300'}
-                                        `}
+                                        className={`p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md group relative ${
+                                            currentResumeId === resume.id
+                                                ? isLight ? 'bg-slate-50 border-slate-900' : 'bg-slate-800 border-gold'
+                                                : isLight ? 'bg-white border-slate-200 hover:border-slate-300' : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
+                                        }`}
                                     >
                                         <div className="pr-8">
-                                            <h3 className="font-bold text-jalanea-900 truncate">{resume.title}</h3>
-                                            <div className="flex items-center gap-2 mt-1 text-xs text-jalanea-500">
-                                                <span className="uppercase font-bold bg-jalanea-100 px-1.5 py-0.5 rounded">{resume.type}</span>
+                                            <h3 className={`font-bold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>{resume.title}</h3>
+                                            <div className={`flex items-center gap-2 mt-1 text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                                                <span className={`uppercase font-bold px-1.5 py-0.5 rounded ${isLight ? 'bg-slate-100' : 'bg-slate-700'}`}>{resume.type}</span>
                                                 <span>• {new Date(resume.updatedAt).toLocaleDateString()}</span>
                                             </div>
                                             {resume.targetRole && (
-                                                <p className="mt-2 text-xs text-jalanea-600 line-clamp-1 italic">Target: {resume.targetRole}</p>
+                                                <p className={`mt-2 text-xs line-clamp-1 italic ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>Target: {resume.targetRole}</p>
                                             )}
                                         </div>
 
                                         <button
                                             onClick={(e) => handleDelete(e, resume.id || '')}
-                                            className="absolute top-4 right-4 p-1.5 text-jalanea-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                                            className={`absolute top-4 right-4 p-2 rounded-md transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 min-w-[44px] min-h-[44px] flex items-center justify-center ${
+                                                isLight ? 'text-slate-400 hover:text-red-500 hover:bg-red-50' : 'text-slate-500 hover:text-red-400 hover:bg-red-500/10'
+                                            }`}
                                             title="Delete Resume"
                                         >
                                             <Trash2 size={16} />
@@ -484,8 +511,12 @@ export const ResumeBuilder: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Configuration Panel */}
                 <div className="lg:col-span-4 space-y-6 print:hidden">
-                    <Card className="sticky top-6" variant="solid-white">
-                        <h3 className="font-bold text-jalanea-900 mb-4 flex items-center gap-2">
+                    <div className={`sticky top-6 rounded-2xl p-6 border ${
+                        isLight
+                            ? 'bg-white border-slate-200 shadow-lg'
+                            : 'bg-slate-800/60 border-white/10 backdrop-blur-xl'
+                    }`}>
+                        <h3 className={`font-bold mb-4 flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
                             <FileText size={18} /> Resume Configuration
                         </h3>
 
@@ -493,8 +524,10 @@ export const ResumeBuilder: React.FC = () => {
 
                             {/* Quick Start Buttons */}
                             {(userProfile?.preferences?.targetRoles?.length || 0) > 0 && (
-                                <div className="bg-jalanea-50 p-3 rounded-xl border border-jalanea-100">
-                                    <label className="text-xs font-bold text-jalanea-500 uppercase block mb-2">One-Click Quick Start</label>
+                                <div className={`p-3 rounded-xl border ${
+                                    isLight ? 'bg-slate-50 border-slate-100' : 'bg-slate-700/50 border-slate-600'
+                                }`}>
+                                    <label className={`text-xs font-bold uppercase block mb-2 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>One-Click Quick Start</label>
                                     <div className="flex flex-wrap gap-2">
                                         {userProfile?.preferences.targetRoles.map((role: string) => (
                                             <button
@@ -504,7 +537,11 @@ export const ResumeBuilder: React.FC = () => {
                                                     handleGenerate(role);
                                                 }}
                                                 disabled={isGenerating}
-                                                className="px-3 py-1.5 bg-white border border-jalanea-200 hover:border-gold hover:text-jalanea-900 text-jalanea-600 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1"
+                                                className={`px-3 py-1.5 border rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1 ${
+                                                    isLight
+                                                        ? 'bg-white border-slate-200 hover:border-gold text-slate-600 hover:text-slate-900'
+                                                        : 'bg-slate-800 border-slate-600 hover:border-gold text-slate-300 hover:text-white'
+                                                }`}
                                             >
                                                 <Sparkles size={10} className="text-gold" /> {role}
                                             </button>
@@ -514,9 +551,13 @@ export const ResumeBuilder: React.FC = () => {
                             )}
 
                             <div>
-                                <label className="block text-sm font-bold text-jalanea-900 mb-2">Target Job Description</label>
+                                <label className={`block text-sm font-bold mb-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>Target Job Description</label>
                                 <textarea
-                                    className="w-full h-32 p-3 rounded-xl border border-jalanea-200 text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none resize-none bg-jalanea-50"
+                                    className={`w-full h-32 p-3 rounded-xl border text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none resize-none ${
+                                        isLight
+                                            ? 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400'
+                                            : 'bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400'
+                                    }`}
                                     placeholder="Paste the job description here..."
                                     value={jobDescription}
                                     onChange={(e) => setJobDescription(e.target.value)}
@@ -525,12 +566,16 @@ export const ResumeBuilder: React.FC = () => {
 
                             {/* Formatting Controls */}
                             <div>
-                                <label className="block text-sm font-bold text-jalanea-900 mb-2">Formatting</label>
+                                <label className={`block text-sm font-bold mb-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>Formatting</label>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="text-xs font-bold text-jalanea-500 uppercase block mb-1">Font</label>
+                                        <label className={`text-xs font-bold uppercase block mb-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Font</label>
                                         <select
-                                            className="w-full p-2 rounded-lg border border-jalanea-200 text-sm bg-white focus:ring-1 focus:ring-gold"
+                                            className={`w-full p-2 rounded-lg border text-sm focus:ring-1 focus:ring-gold ${
+                                                isLight
+                                                    ? 'bg-white border-slate-200 text-slate-900'
+                                                    : 'bg-slate-700 border-slate-600 text-white'
+                                            }`}
                                             value={fontFamily}
                                             onChange={(e) => setFontFamily(e.target.value)}
                                         >
@@ -540,9 +585,13 @@ export const ResumeBuilder: React.FC = () => {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="text-xs font-bold text-jalanea-500 uppercase block mb-1">Size</label>
+                                        <label className={`text-xs font-bold uppercase block mb-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Size</label>
                                         <select
-                                            className="w-full p-2 rounded-lg border border-jalanea-200 text-sm bg-white focus:ring-1 focus:ring-gold"
+                                            className={`w-full p-2 rounded-lg border text-sm focus:ring-1 focus:ring-gold ${
+                                                isLight
+                                                    ? 'bg-white border-slate-200 text-slate-900'
+                                                    : 'bg-slate-700 border-slate-600 text-white'
+                                            }`}
                                             value={fontSize}
                                             onChange={(e) => setFontSize(e.target.value)}
                                         >
@@ -556,11 +605,15 @@ export const ResumeBuilder: React.FC = () => {
 
                             <div>
                                 <div className="flex justify-between items-center mb-2">
-                                    <label className="block text-sm font-bold text-jalanea-900">Resume Type</label>
+                                    <label className={`block text-sm font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>Resume Type</label>
                                     <button
                                         onClick={handleAiRecommendation}
                                         disabled={!jobDescription || isRecommending}
-                                        className={`text-xs font-bold flex items-center gap-1 transition-colors ${!jobDescription ? 'text-jalanea-300 cursor-not-allowed' : 'text-gold hover:text-jalanea-900'}`}
+                                        className={`text-xs font-bold flex items-center gap-1 transition-colors ${
+                                            !jobDescription
+                                                ? isLight ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 cursor-not-allowed'
+                                                : 'text-gold hover:text-gold-light'
+                                        }`}
                                     >
                                         {isRecommending ? <div className="animate-spin h-3 w-3 border-2 border-gold border-t-transparent rounded-full" /> : <Bot size={14} />}
                                         Help me choose
@@ -568,7 +621,7 @@ export const ResumeBuilder: React.FC = () => {
                                 </div>
 
                                 {recommendation && (
-                                    <div className="mb-4 bg-jalanea-900 text-white p-4 rounded-xl border border-gold/30 shadow-lg animate-in fade-in slide-in-from-top-2">
+                                    <div className="mb-4 bg-slate-900 text-white p-4 rounded-xl border border-gold/30 shadow-lg animate-in fade-in slide-in-from-top-2">
                                         <div className="flex items-start gap-3">
                                             <div className="p-1.5 bg-gold/20 rounded-lg text-gold shrink-0 mt-1">
                                                 <Sparkles size={16} fill="currentColor" />
@@ -576,12 +629,12 @@ export const ResumeBuilder: React.FC = () => {
                                             <div>
                                                 <div className="flex justify-between items-start">
                                                     <h4 className="font-bold text-sm text-gold">Recommended: {recommendation.recommendedType}</h4>
-                                                    <span className="text-[10px] font-bold bg-white/10 px-2 py-0.5 rounded text-jalanea-200">{recommendation.successProbability} Success Rate</span>
+                                                    <span className="text-[10px] font-bold bg-white/10 px-2 py-0.5 rounded text-slate-200">{recommendation.successProbability} Success Rate</span>
                                                 </div>
-                                                <p className="text-xs text-jalanea-200 mt-1 mb-3 leading-relaxed">
+                                                <p className="text-xs text-slate-200 mt-1 mb-3 leading-relaxed">
                                                     {recommendation.reasoning}
                                                 </p>
-                                                <Button size="sm" fullWidth className="h-8 text-xs bg-gold text-jalanea-950 hover:bg-white" onClick={applyRecommendation}>
+                                                <Button size="sm" fullWidth className="h-8 text-xs bg-gold text-slate-950 hover:bg-white" onClick={applyRecommendation}>
                                                     Use {recommendation.recommendedType} Format
                                                 </Button>
                                             </div>
@@ -594,21 +647,37 @@ export const ResumeBuilder: React.FC = () => {
                                         <button
                                             key={rt.type}
                                             onClick={() => setSelectedType(rt.type)}
-                                            className={`w-full text-left p-3 rounded-lg border transition-all text-sm group
+                                            className={`w-full text-left p-3 rounded-lg border transition-all text-sm group relative overflow-hidden
                                             ${selectedType === rt.type
-                                                    ? 'bg-jalanea-50 border-jalanea-900 shadow-sm relative overflow-hidden'
-                                                    : 'bg-white text-jalanea-600 border-jalanea-200 hover:bg-jalanea-50 hover:border-jalanea-300'}
-                                        `}
+                                                    ? isLight
+                                                        ? 'bg-slate-50 border-slate-900 shadow-sm'
+                                                        : 'bg-slate-700 border-gold shadow-sm'
+                                                    : isLight
+                                                        ? 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                                                        : 'bg-slate-800/50 text-slate-300 border-slate-600 hover:bg-slate-700/50 hover:border-slate-500'
+                                            }`}
                                         >
-                                            {selectedType === rt.type && <div className="absolute left-0 top-0 bottom-0 w-1 bg-jalanea-900"></div>}
-                                            <div className={`font-bold ${selectedType === rt.type ? 'text-jalanea-900' : ''}`}>{rt.type}</div>
-                                            <div className={`text-xs mt-1 ${selectedType === rt.type ? 'text-jalanea-600' : 'text-jalanea-400'}`}>{rt.desc}</div>
+                                            {selectedType === rt.type && <div className={`absolute left-0 top-0 bottom-0 w-1 ${isLight ? 'bg-slate-900' : 'bg-gold'}`}></div>}
+                                            <div className={`font-bold ${
+                                                selectedType === rt.type
+                                                    ? isLight ? 'text-slate-900' : 'text-white'
+                                                    : isLight ? 'text-slate-700' : 'text-slate-200'
+                                            }`}>{rt.type}</div>
+                                            <div className={`text-xs mt-1 ${
+                                                selectedType === rt.type
+                                                    ? isLight ? 'text-slate-600' : 'text-slate-300'
+                                                    : isLight ? 'text-slate-400' : 'text-slate-400'
+                                            }`}>{rt.desc}</div>
                                         </button>
                                     ))}
 
                                     <button
                                         onClick={() => setShowAllTypes(!showAllTypes)}
-                                        className="w-full py-2 text-xs font-bold text-jalanea-500 hover:text-jalanea-900 flex items-center justify-center gap-1 transition-colors border border-dashed border-jalanea-200 rounded-lg hover:border-jalanea-400"
+                                        className={`w-full py-2 text-xs font-bold flex items-center justify-center gap-1 transition-colors border border-dashed rounded-lg ${
+                                            isLight
+                                                ? 'text-slate-500 hover:text-slate-900 border-slate-200 hover:border-slate-400'
+                                                : 'text-slate-400 hover:text-white border-slate-600 hover:border-slate-400'
+                                        }`}
                                     >
                                         {showAllTypes ? (
                                             <>Show Less <ChevronUp size={14} /></>
@@ -628,59 +697,82 @@ export const ResumeBuilder: React.FC = () => {
                                 {isGenerating ? 'Generating...' : 'Generate Resume'}
                             </Button>
                         </div>
-                    </Card>
+                    </div>
                 </div>
 
                 {/* Preview Panel */}
                 <div className="lg:col-span-8 print:w-full print:col-span-12">
-                    <div className="bg-white rounded-2xl border border-jalanea-200 shadow-lg min-h-[600px] flex flex-col print:border-none print:shadow-none print:min-h-0">
-                        <div className="p-4 border-b border-jalanea-200 flex justify-between items-center bg-jalanea-50/50 rounded-t-2xl print:hidden">
-                            <div className="flex gap-2 bg-white p-1 rounded-lg border border-jalanea-200">
+                    <div className={`rounded-2xl border shadow-lg min-h-[600px] flex flex-col print:border-none print:shadow-none print:min-h-0 ${
+                        isLight ? 'bg-white border-slate-200' : 'bg-slate-800/60 border-white/10'
+                    }`}>
+                        <div className={`p-4 border-b flex justify-between items-center rounded-t-2xl print:hidden ${
+                            isLight ? 'bg-slate-50/50 border-slate-200' : 'bg-slate-700/50 border-white/10'
+                        }`}>
+                            <div className={`flex gap-2 p-1 rounded-lg border ${
+                                isLight ? 'bg-white border-slate-200' : 'bg-slate-800 border-slate-600'
+                            }`}>
                                 <button
                                     onClick={() => setViewMode('preview')}
-                                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${viewMode === 'preview' ? 'bg-jalanea-900 text-white' : 'text-jalanea-600 hover:bg-jalanea-100'}`}
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${
+                                        viewMode === 'preview'
+                                            ? isLight ? 'bg-slate-900 text-white' : 'bg-gold text-black'
+                                            : isLight ? 'text-slate-600 hover:bg-slate-100' : 'text-slate-300 hover:bg-slate-700'
+                                    }`}
                                 >
                                     Preview
                                 </button>
                                 <button
                                     onClick={() => setViewMode('edit')}
-                                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${viewMode === 'edit' ? 'bg-jalanea-900 text-white' : 'text-jalanea-600 hover:bg-jalanea-100'}`}
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${
+                                        viewMode === 'edit'
+                                            ? isLight ? 'bg-slate-900 text-white' : 'bg-gold text-black'
+                                            : isLight ? 'text-slate-600 hover:bg-slate-100' : 'text-slate-300 hover:bg-slate-700'
+                                    }`}
                                 >
                                     Edit (Markdown)
                                 </button>
                             </div>
                             <div className="flex gap-2">
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    icon={isAnalyzingReadability ? <Loader2 size={14} className="animate-spin" /> : <Heart size={14} />}
+                                <button
                                     onClick={handleReadabilityCheck}
                                     disabled={!generatedContent || isAnalyzingReadability}
-                                    className="text-pink-600 border-pink-200 hover:bg-pink-50"
+                                    className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors disabled:opacity-50 ${
+                                        isLight
+                                            ? 'text-pink-600 border-pink-200 hover:bg-pink-50'
+                                            : 'text-pink-400 border-pink-500/30 hover:bg-pink-500/10'
+                                    }`}
                                 >
+                                    {isAnalyzingReadability ? <Loader2 size={14} className="animate-spin" /> : <Heart size={14} />}
                                     Human Score
-                                </Button>
-                                <Button size="sm" variant="outline" icon={<Copy size={14} />}>Copy</Button>
+                                </button>
+                                <button className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${
+                                    isLight
+                                        ? 'text-slate-600 border-slate-200 hover:bg-slate-50'
+                                        : 'text-slate-300 border-slate-600 hover:bg-slate-700'
+                                }`}>
+                                    <Copy size={14} /> Copy
+                                </button>
                                 <Button size="sm" variant="primary" icon={<Download size={14} />} onClick={handlePrint}>Print/PDF</Button>
                             </div>
                         </div>
 
-                        <div className="flex-1 p-8 bg-white overflow-auto print:p-0">
+                        <div className={`flex-1 p-8 overflow-auto print:p-0 ${isLight ? 'bg-white' : 'bg-slate-800/30'}`}>
                             {!generatedContent ? (
-                                <div className="h-full flex flex-col items-center justify-center text-jalanea-400 opacity-50">
+                                <div className={`h-full flex flex-col items-center justify-center opacity-50 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
                                     <FileText size={64} strokeWidth={1} />
                                     <p className="mt-4 font-medium">Configure and generate to see your resume here.</p>
                                 </div>
                             ) : (
                                 viewMode === 'preview' ? (
                                     <div
-                                        className={`prose max-w-none text-jalanea-800 leading-relaxed print:text-black ${fontFamily} ${fontSize} 
-                                            [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-jalanea-900 [&_h1]:border-b [&_h1]:pb-2 [&_h1]:mb-4
-                                            [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-jalanea-900 [&_h2]:mt-6 [&_h2]:mb-2 [&_h2]:border-l-4 [&_h2]:border-gold [&_h2]:pl-3
-                                            [&_h3]:text-base [&_h3]:font-bold [&_h3]:text-jalanea-800 [&_h3]:mt-4 [&_h3]:mb-1
-                                            [&_strong]:font-bold [&_strong]:text-jalanea-900
+                                        className={`prose max-w-none leading-relaxed print:text-black ${fontFamily} ${fontSize}
+                                            ${isLight ? 'text-slate-800' : 'text-slate-200'}
+                                            ${isLight ? '[&_h1]:text-slate-900' : '[&_h1]:text-white'} [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:border-b [&_h1]:pb-2 [&_h1]:mb-4
+                                            ${isLight ? '[&_h2]:text-slate-900' : '[&_h2]:text-white'} [&_h2]:text-lg [&_h2]:font-bold [&_h2]:mt-6 [&_h2]:mb-2 [&_h2]:border-l-4 [&_h2]:border-gold [&_h2]:pl-3
+                                            ${isLight ? '[&_h3]:text-slate-800' : '[&_h3]:text-slate-100'} [&_h3]:text-base [&_h3]:font-bold [&_h3]:mt-4 [&_h3]:mb-1
+                                            ${isLight ? '[&_strong]:text-slate-900' : '[&_strong]:text-white'} [&_strong]:font-bold
                                             [&_ul]:list-disc [&_ul]:ml-5 [&_ul]:mt-2 [&_ul]:space-y-1
-                                            [&_li]:text-jalanea-700
+                                            ${isLight ? '[&_li]:text-slate-700' : '[&_li]:text-slate-300'}
                                             [&_p]:mt-2 [&_p]:mb-2
                                         `}
                                         dangerouslySetInnerHTML={{
@@ -713,7 +805,11 @@ export const ResumeBuilder: React.FC = () => {
                                     <textarea
                                         value={generatedContent}
                                         onChange={(e) => setGeneratedContent(e.target.value)}
-                                        className="w-full h-full font-mono text-sm bg-jalanea-50 text-jalanea-800 p-6 rounded-xl border border-transparent focus:border-jalanea-300 focus:ring-0 resize-none outline-none leading-relaxed"
+                                        className={`w-full h-full font-mono text-sm p-6 rounded-xl border border-transparent focus:ring-0 resize-none outline-none leading-relaxed ${
+                                            isLight
+                                                ? 'bg-slate-50 text-slate-800 focus:border-slate-300'
+                                                : 'bg-slate-700/50 text-slate-200 focus:border-slate-500'
+                                        }`}
                                         spellCheck={false}
                                     />
                                 )
@@ -727,19 +823,25 @@ export const ResumeBuilder: React.FC = () => {
             {showReadabilityPanel && (
                 <div className="fixed inset-0 z-50 flex justify-end print:hidden">
                     <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowReadabilityPanel(false)}></div>
-                    <div className="relative w-full max-w-lg bg-white h-full shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300">
+                    <div className={`relative w-full max-w-lg h-full shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300 ${
+                        isLight ? 'bg-white' : 'bg-slate-900'
+                    }`}>
                         {/* Header */}
-                        <div className="sticky top-0 bg-white border-b border-jalanea-200 p-4 flex justify-between items-center z-10">
+                        <div className={`sticky top-0 border-b p-4 flex justify-between items-center z-10 ${
+                            isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-700'
+                        }`}>
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg text-white">
                                     <Heart size={20} />
                                 </div>
                                 <div>
-                                    <h2 className="text-lg font-bold text-jalanea-900">Human Readability Score</h2>
-                                    <p className="text-xs text-jalanea-500">Does your resume sound like YOU?</p>
+                                    <h2 className={`text-lg font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>Human Readability Score</h2>
+                                    <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Does your resume sound like YOU?</p>
                                 </div>
                             </div>
-                            <button onClick={() => setShowReadabilityPanel(false)} className="p-2 hover:bg-jalanea-100 rounded-full text-jalanea-500 hover:text-jalanea-900">
+                            <button onClick={() => setShowReadabilityPanel(false)} className={`p-2 rounded-full transition-colors ${
+                                isLight ? 'hover:bg-slate-100 text-slate-500 hover:text-slate-900' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                            }`}>
                                 <X size={20} />
                             </button>
                         </div>
@@ -750,13 +852,13 @@ export const ResumeBuilder: React.FC = () => {
                             {isAnalyzingReadability && (
                                 <div className="flex flex-col items-center justify-center py-16 text-center">
                                     <div className="relative">
-                                        <div className="w-20 h-20 rounded-full bg-pink-100 flex items-center justify-center">
+                                        <div className={`w-20 h-20 rounded-full flex items-center justify-center ${isLight ? 'bg-pink-100' : 'bg-pink-500/20'}`}>
                                             <Loader2 className="text-pink-500 animate-spin" size={40} />
                                         </div>
                                         <div className="absolute inset-0 rounded-full border-4 border-pink-300 animate-ping opacity-20" />
                                     </div>
-                                    <h3 className="text-lg font-bold text-jalanea-900 mt-6">Analyzing authenticity...</h3>
-                                    <p className="text-sm text-jalanea-500 mt-1">Checking for robotic language patterns</p>
+                                    <h3 className={`text-lg font-bold mt-6 ${isLight ? 'text-slate-900' : 'text-white'}`}>Analyzing authenticity...</h3>
+                                    <p className={`text-sm mt-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Checking for robotic language patterns</p>
                                 </div>
                             )}
 
@@ -772,7 +874,7 @@ export const ResumeBuilder: React.FC = () => {
                                                     <div className={`text-4xl font-bold ${getReadabilityColor(readabilityResult.score)}`}>
                                                         {readabilityResult.score}
                                                     </div>
-                                                    <div className="text-sm font-medium text-jalanea-600">
+                                                    <div className={`text-sm font-medium ${isLight ? 'text-slate-600' : 'text-slate-800'}`}>
                                                         {getReadabilityLabel(readabilityResult.score)}
                                                     </div>
                                                 </div>
@@ -786,12 +888,16 @@ export const ResumeBuilder: React.FC = () => {
                                     {/* What's Working (Strengths) */}
                                     {readabilityResult.strengths.length > 0 && (
                                         <div>
-                                            <h3 className="text-sm font-bold text-green-600 flex items-center gap-2 mb-3">
+                                            <h3 className={`text-sm font-bold flex items-center gap-2 mb-3 ${isLight ? 'text-green-600' : 'text-green-400'}`}>
                                                 <CheckCircle size={16} /> What Sounds Authentic
                                             </h3>
                                             <div className="space-y-2">
                                                 {readabilityResult.strengths.map((strength, i) => (
-                                                    <div key={i} className="flex items-start gap-2 text-sm text-jalanea-700 bg-green-50 p-3 rounded-lg border border-green-100">
+                                                    <div key={i} className={`flex items-start gap-2 text-sm p-3 rounded-lg border ${
+                                                        isLight
+                                                            ? 'text-slate-700 bg-green-50 border-green-100'
+                                                            : 'text-slate-200 bg-green-500/10 border-green-500/20'
+                                                    }`}>
                                                         <span className="text-green-500 mt-0.5">✓</span>
                                                         {strength}
                                                     </div>
@@ -803,21 +909,23 @@ export const ResumeBuilder: React.FC = () => {
                                     {/* Robotic Phrases */}
                                     {readabilityResult.roboticPhrases.length > 0 && (
                                         <div>
-                                            <h3 className="text-sm font-bold text-red-600 flex items-center gap-2 mb-3">
+                                            <h3 className={`text-sm font-bold flex items-center gap-2 mb-3 ${isLight ? 'text-red-600' : 'text-red-400'}`}>
                                                 <XCircle size={16} /> Robot Language Detected
                                             </h3>
                                             <div className="space-y-3">
                                                 {readabilityResult.roboticPhrases.map((item, i) => (
-                                                    <div key={i} className="bg-red-50 rounded-xl p-4 border border-red-100">
+                                                    <div key={i} className={`rounded-xl p-4 border ${
+                                                        isLight ? 'bg-red-50 border-red-100' : 'bg-red-500/10 border-red-500/20'
+                                                    }`}>
                                                         <div className="flex items-start gap-2">
                                                             <span className="text-red-400 mt-0.5">🤖</span>
                                                             <div className="flex-1">
-                                                                <p className="text-sm font-medium text-red-700 line-through">
+                                                                <p className={`text-sm font-medium line-through ${isLight ? 'text-red-700' : 'text-red-300'}`}>
                                                                     "{item.phrase}"
                                                                 </p>
                                                                 <div className="mt-2 flex items-start gap-2">
                                                                     <span className="text-green-500 shrink-0">→</span>
-                                                                    <p className="text-sm text-green-700 font-medium">
+                                                                    <p className={`text-sm font-medium ${isLight ? 'text-green-700' : 'text-green-400'}`}>
                                                                         "{item.suggestion}"
                                                                     </p>
                                                                 </div>
@@ -832,12 +940,16 @@ export const ResumeBuilder: React.FC = () => {
                                     {/* Tips */}
                                     {readabilityResult.tips.length > 0 && (
                                         <div>
-                                            <h3 className="text-sm font-bold text-jalanea-700 flex items-center gap-2 mb-3">
+                                            <h3 className={`text-sm font-bold flex items-center gap-2 mb-3 ${isLight ? 'text-slate-700' : 'text-slate-200'}`}>
                                                 <Smile size={16} className="text-gold" /> Tips to Sound More Human
                                             </h3>
                                             <ul className="space-y-2">
                                                 {readabilityResult.tips.map((tip, i) => (
-                                                    <li key={i} className="flex items-start gap-2 text-sm text-jalanea-600 bg-jalanea-50 p-3 rounded-lg border border-jalanea-100">
+                                                    <li key={i} className={`flex items-start gap-2 text-sm p-3 rounded-lg border ${
+                                                        isLight
+                                                            ? 'text-slate-600 bg-slate-50 border-slate-100'
+                                                            : 'text-slate-300 bg-slate-800/50 border-slate-700'
+                                                    }`}>
                                                         <span className="text-gold font-bold">{i + 1}.</span>
                                                         {tip}
                                                     </li>
@@ -847,7 +959,7 @@ export const ResumeBuilder: React.FC = () => {
                                     )}
 
                                     {/* Action Buttons */}
-                                    <div className="pt-4 border-t border-jalanea-200 flex gap-3">
+                                    <div className={`pt-4 border-t flex gap-3 ${isLight ? 'border-slate-200' : 'border-slate-700'}`}>
                                         <Button
                                             variant="outline"
                                             fullWidth
@@ -873,7 +985,7 @@ export const ResumeBuilder: React.FC = () => {
 
                             {/* No Results Yet */}
                             {!isAnalyzingReadability && !readabilityResult && (
-                                <div className="text-center py-12 text-jalanea-400">
+                                <div className={`text-center py-12 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
                                     <Heart size={48} className="mx-auto mb-3 opacity-20" />
                                     <p>Click "Human Score" to analyze your resume</p>
                                 </div>

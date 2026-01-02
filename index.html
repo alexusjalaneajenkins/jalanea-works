@@ -174,12 +174,57 @@
     }
   </script>
   <style>
+    /* Theme CSS Variables */
+    :root {
+      --bg-primary: #020617;
+      --bg-secondary: #0f172a;
+      --bg-tertiary: #1e293b;
+      --bg-card: rgba(15, 23, 42, 0.6);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border-primary: rgba(255, 255, 255, 0.1);
+      --border-secondary: rgba(255, 255, 255, 0.05);
+    }
+
+    .light-mode {
+      --bg-primary: #f8fafc;
+      --bg-secondary: #f1f5f9;
+      --bg-tertiary: #e2e8f0;
+      --bg-card: rgba(255, 255, 255, 0.9);
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --border-primary: rgba(15, 23, 42, 0.1);
+      --border-secondary: rgba(15, 23, 42, 0.05);
+    }
+
+    /* Light mode glass effect overrides */
+    .light-mode .glass-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.98));
+      border-color: rgba(15, 23, 42, 0.1);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .light-mode .glass-panel-dark {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.98));
+      border-color: rgba(15, 23, 42, 0.08);
+    }
+
     /* Base Styles */
     body {
-      background-color: #020617;
-      color: #f8fafc;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
       overscroll-behavior: none;
       -webkit-tap-highlight-color: transparent;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    /* Light mode body override */
+    .light-mode body,
+    html.light-mode body {
+      background-color: #f8fafc;
+      color: #0f172a;
     }
 
     /* Safe area support for notched devices */
@@ -234,10 +279,90 @@
       }
     }
 
-    /* Active states for touch feedback */
+    /* Active states for touch feedback - iOS style */
     .touch-active:active {
-      transform: scale(0.98);
-      opacity: 0.9;
+      transform: scale(0.97);
+      opacity: 0.8;
+      transition: transform 0.1s ease, opacity 0.1s ease;
+    }
+
+    /* Native-like button press effect */
+    button, a, [role="button"] {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    /* Press state for all interactive elements on mobile */
+    @media (max-width: 768px) {
+      button:active, a:active, [role="button"]:active {
+        transform: scale(0.97);
+        opacity: 0.85;
+      }
+
+      /* Prevent text selection on interactive elements */
+      button, a, [role="button"], nav {
+        -webkit-user-select: none;
+        user-select: none;
+      }
+    }
+
+    /* iOS-style momentum scrolling */
+    * {
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Prevent overscroll bounce on html/body only */
+    html {
+      overscroll-behavior: none;
+      height: 100%;
+    }
+
+    body {
+      overscroll-behavior: none;
+      min-height: 100%;
+    }
+
+    #root {
+      min-height: 100%;
+    }
+
+    /* Allow smooth scroll within content areas */
+    main, .scrollable {
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Hide all scrollbars on mobile for cleaner look */
+    @media (max-width: 768px) {
+      *::-webkit-scrollbar {
+        display: none;
+      }
+      * {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    }
+
+    /* Native-like focus states */
+    *:focus {
+      outline: none;
+    }
+
+    *:focus-visible {
+      outline: 2px solid rgba(255, 196, 37, 0.5);
+      outline-offset: 2px;
+    }
+
+    /* Smooth transitions for theme changes */
+    * {
+      transition-property: background-color, border-color, color, fill, stroke;
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      transition-duration: 150ms;
+    }
+
+    /* Disable transitions on elements that shouldn't animate */
+    .no-transition, .no-transition * {
+      transition: none !important;
     }
 
     /* Bottom navigation safe area */
@@ -386,9 +511,87 @@
 
 </head>
 
-<body class="font-sans antialiased selection:bg-gold-light selection:text-jalanea-900 bg-subtle-mesh min-h-screen">
+<body class="font-sans antialiased selection:bg-gold-light selection:text-jalanea-900 min-h-screen" style="background-color: #020617;">
+  <!-- Instant splash screen - shows before React loads -->
+  <div id="splash" style="
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: linear-gradient(135deg, #0f172a 0%, #020617 50%, #0f172a 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.3s ease;
+  ">
+    <div style="
+      width: 80px;
+      height: 80px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #FFC425 0%, #FFD768 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 30px rgba(255, 196, 37, 0.4);
+      animation: pulse 2s ease-in-out infinite;
+    ">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+      </svg>
+    </div>
+    <h1 style="
+      color: white;
+      font-size: 24px;
+      font-weight: 700;
+      margin-top: 24px;
+      font-family: 'Space Grotesk', sans-serif;
+    ">Jalanea<span style="color: #FFC425;">Works</span></h1>
+    <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Career Launchpad</p>
+  </div>
+
+  <style>
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(255, 196, 37, 0.3); }
+      50% { box-shadow: 0 0 40px rgba(255, 196, 37, 0.6); }
+    }
+    #splash.fade-out { opacity: 0; pointer-events: none; }
+
+    /* Hide splash on desktop (768px+) */
+    @media (min-width: 768px) {
+      #splash { display: none !important; }
+    }
+  </style>
+
   <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
+
+  <!-- Hide splash when React is ready or after timeout -->
+  <script>
+    (function() {
+      var splash = document.getElementById('splash');
+      if (!splash) return;
+
+      // Auto-hide after 1.5 seconds (gives React time to render)
+      setTimeout(function() {
+        if (splash && splash.parentNode) {
+          splash.classList.add('fade-out');
+          setTimeout(function() {
+            if (splash && splash.parentNode) splash.remove();
+          }, 300);
+        }
+      }, 1500);
+
+      // Also expose for manual hiding if needed
+      window.hideSplash = function() {
+        if (splash && splash.parentNode) {
+          splash.classList.add('fade-out');
+          setTimeout(function() {
+            if (splash && splash.parentNode) splash.remove();
+          }, 300);
+        }
+      };
+    })();
+  </script>
 </body>
 
 </html>

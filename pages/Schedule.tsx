@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import {
     Calendar, Clock, CheckCircle2, Zap,
     Briefcase, UserPlus, Plus, Trash2, ListChecks, X,
@@ -11,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { generateScheduleSuggestions, ScheduleSuggestion } from '../services/geminiService';
 import { TaskCategory, TimeBlock, ToDoItem } from '../types';
 import { PowerHourSetup, PowerHourSettings } from '../components/PowerHourSetup';
+import { haptics } from '../utils/haptics';
 import { NetworkingHourSetup, NetworkingHourSettings } from '../components/NetworkingHourSetup';
 import { WorkScheduleImportModal } from '../components/WorkScheduleImportModal';
 import { FreeWindowsCard, FreeWindowsSummary } from '../components/FreeWindowsCard';
@@ -23,7 +25,7 @@ const fadeUp = {
 };
 
 const stagger = {
-    visible: { transition: { staggerChildren: 0.08 } }
+    visible: { transition: { staggerChildren: 0.03 } }
 };
 
 // --- Default Data ---
@@ -98,10 +100,14 @@ const isPowerHourActive = (scheduledTime: string): boolean => {
 type CalendarViewMode = 'day' | 'multi' | 'month';
 
 // --- Glass Card Component ---
-const GlassCard: React.FC<{ children: React.ReactNode; className?: string; glow?: boolean }> = ({ children, className = '', glow }) => (
+const GlassCard: React.FC<{ children: React.ReactNode; className?: string; glow?: boolean; isLight?: boolean }> = ({ children, className = '', glow, isLight }) => (
     <motion.div
         variants={fadeUp}
-        className={`rounded-2xl bg-gradient-to-br from-slate-800/60 to-slate-900/60 border border-white/10 backdrop-blur-xl ${glow ? 'shadow-[0_0_30px_rgba(255,196,37,0.15)]' : ''} ${className}`}
+        className={`rounded-2xl backdrop-blur-xl ${
+            isLight
+                ? 'bg-white/90 border border-slate-200 shadow-lg'
+                : 'bg-gradient-to-br from-slate-800/60 to-slate-900/60 border border-white/10'
+        } ${glow ? 'shadow-[0_0_30px_rgba(255,196,37,0.15)]' : ''} ${className}`}
     >
         {children}
     </motion.div>
@@ -116,13 +122,18 @@ const GlassButton: React.FC<{
     icon?: React.ReactNode;
     disabled?: boolean;
     className?: string;
-}> = ({ children, onClick, variant = 'default', size = 'md', icon, disabled, className = '' }) => {
+    isLight?: boolean;
+}> = ({ children, onClick, variant = 'default', size = 'md', icon, disabled, className = '', isLight }) => {
     const baseClasses = 'inline-flex items-center justify-center gap-2 font-medium rounded-xl transition-all';
     const sizeClasses = size === 'sm' ? 'px-3 py-2 text-sm' : 'px-4 py-2.5 text-sm';
     const variantClasses = {
-        default: 'bg-slate-800/50 border border-white/10 text-slate-300 hover:bg-slate-700/50 hover:border-white/20',
+        default: isLight
+            ? 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 shadow-sm'
+            : 'bg-slate-800/50 border border-white/10 text-slate-300 hover:bg-slate-700/50 hover:border-white/20',
         gold: 'bg-gold hover:bg-gold-light text-black font-bold shadow-[0_0_20px_rgba(255,196,37,0.3)]',
-        outline: 'border border-white/20 text-slate-300 hover:border-gold/50 hover:text-gold'
+        outline: isLight
+            ? 'border border-slate-200 text-slate-600 hover:border-gold/50 hover:text-gold'
+            : 'border border-white/20 text-slate-300 hover:border-gold/50 hover:text-gold'
     };
 
     return (
@@ -141,9 +152,13 @@ const GlassButton: React.FC<{
 
 export const Schedule: React.FC = () => {
     const { userProfile, saveUserProfile } = useAuth();
+    const { isLight } = useTheme();
     const navigate = useNavigate();
     const [viewMode, setViewMode] = useState<'calendar' | 'tasks'>('calendar');
-    const [calendarView, setCalendarView] = useState<CalendarViewMode>('multi');
+    // Default to single day view on mobile for better UX
+    const [calendarView, setCalendarView] = useState<CalendarViewMode>(() =>
+        typeof window !== 'undefined' && window.innerWidth < 768 ? 'day' : 'multi'
+    );
     const [isInitialized, setIsInitialized] = useState(false);
 
     // Power Hour state
@@ -286,6 +301,7 @@ export const Schedule: React.FC = () => {
     // CRUD
     const handleSaveBlock = () => {
         if (newBlock.title && newBlock.startTime && newBlock.endTime && newBlock.date) {
+            haptics.success();
             if (editingBlockId) {
                 setSchedule(prev => prev.map(b => b.id === editingBlockId ? { ...newBlock, id: editingBlockId } as TimeBlock : b));
             } else {
@@ -298,6 +314,7 @@ export const Schedule: React.FC = () => {
     };
 
     const handleDeleteBlock = (id: string) => {
+        haptics.warning();
         setSchedule(prev => prev.filter(b => b.id !== id));
         if (editingBlockId === id) setIsAddModalOpen(false);
     };
@@ -552,11 +569,11 @@ export const Schedule: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#020617] pb-16">
+        <div className={`min-h-screen pb-16 ${isLight ? 'bg-slate-50' : 'bg-[#020617]'}`}>
             {/* Background */}
-            <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-[#020617] to-slate-900 pointer-events-none" />
-            <div className="fixed top-0 right-1/4 w-96 h-96 bg-gold/5 rounded-full blur-3xl pointer-events-none" />
-            <div className="fixed bottom-0 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+            <div className={`fixed inset-0 pointer-events-none ${isLight ? 'bg-gradient-to-br from-slate-100 via-slate-50 to-white' : 'bg-gradient-to-br from-slate-900 via-[#020617] to-slate-900'}`} />
+            <div className={`fixed top-0 right-1/4 w-96 h-96 rounded-full blur-3xl pointer-events-none ${isLight ? 'bg-gold/10' : 'bg-gold/5'}`} />
+            <div className={`fixed bottom-0 left-1/4 w-96 h-96 rounded-full blur-3xl pointer-events-none ${isLight ? 'bg-blue-500/10' : 'bg-blue-500/5'}`} />
 
             <motion.div
                 initial="hidden"
@@ -567,15 +584,15 @@ export const Schedule: React.FC = () => {
                 {/* Header */}
                 <motion.div variants={fadeUp} className="flex flex-col lg:flex-row justify-between lg:items-end gap-4">
                     <div>
-                        <h1 className="text-3xl md:text-4xl font-bold text-white">Smart Schedule</h1>
+                        <h1 className={`text-3xl md:text-4xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>Smart Schedule</h1>
                         <div className="flex flex-wrap items-center gap-3 mt-3">
                             {/* View Toggle */}
-                            <div className="flex bg-slate-800/50 rounded-xl border border-white/10 p-1">
+                            <div className={`flex rounded-xl p-1 ${isLight ? 'bg-white border border-slate-200 shadow-sm' : 'bg-slate-800/50 border border-white/10'}`}>
                                 {['calendar', 'tasks'].map((mode) => (
                                     <button
                                         key={mode}
                                         onClick={() => setViewMode(mode as any)}
-                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === mode ? 'bg-gold text-black' : 'text-slate-400 hover:text-white'}`}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === mode ? 'bg-gold text-black' : isLight ? 'text-slate-500 hover:text-slate-900' : 'text-slate-400 hover:text-white'}`}
                                     >
                                         {mode === 'calendar' ? 'Calendar' : 'To-Do'}
                                     </button>
@@ -583,12 +600,16 @@ export const Schedule: React.FC = () => {
                             </div>
 
                             {viewMode === 'calendar' && (
-                                <div className="flex bg-slate-800/50 rounded-xl border border-white/10 p-1">
+                                <div className={`flex rounded-xl p-1 ${isLight ? 'bg-white border border-slate-200 shadow-sm' : 'bg-slate-800/50 border border-white/10'}`}>
                                     {['day', 'multi', 'month'].map((mode) => (
                                         <button
                                             key={mode}
                                             onClick={() => setCalendarView(mode as CalendarViewMode)}
-                                            className={`px-3 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wide transition-all ${calendarView === mode ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-medium uppercase tracking-wide transition-all ${
+                                                calendarView === mode
+                                                    ? isLight ? 'bg-slate-800 text-white' : 'bg-slate-700 text-white'
+                                                    : isLight ? 'text-slate-500 hover:text-slate-700' : 'text-slate-500 hover:text-slate-300'
+                                            }`}
                                         >
                                             {mode}
                                         </button>
@@ -601,26 +622,31 @@ export const Schedule: React.FC = () => {
                     {viewMode === 'calendar' && (
                         <div className="flex flex-wrap gap-3 items-center">
                             {/* Navigation */}
-                            <div className="flex items-center bg-slate-800/50 rounded-xl border border-white/10 p-1">
-                                <button onClick={handlePrevPeriod} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-400 hover:text-white"><ChevronLeft size={20} /></button>
+                            <div className={`flex items-center rounded-xl p-1 ${
+                                isLight
+                                    ? 'bg-white border border-slate-200 shadow-sm'
+                                    : 'bg-slate-800/50 border border-white/10'
+                            }`}>
+                                <button onClick={handlePrevPeriod} className={`p-2 rounded-lg ${isLight ? 'hover:bg-slate-100 text-slate-500 hover:text-slate-900' : 'hover:bg-slate-700/50 text-slate-400 hover:text-white'}`}><ChevronLeft size={20} /></button>
                                 <div className="px-4 text-center min-w-[120px]">
                                     <span className="text-xs text-slate-500 block">
                                         {calendarView === 'day' ? 'Day' : calendarView === 'multi' ? `${daysToShow} Days` : 'Month'}
                                     </span>
-                                    <span className="text-sm font-medium text-white">
+                                    <span className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>
                                         {calendarView === 'day' ? getDisplayDate(currentDate) : currentMonthLabel}
                                     </span>
                                 </div>
-                                <button onClick={handleNextPeriod} className="p-2 hover:bg-slate-700/50 rounded-lg text-slate-400 hover:text-white"><ChevronRight size={20} /></button>
+                                <button onClick={handleNextPeriod} className={`p-2 rounded-lg ${isLight ? 'hover:bg-slate-100 text-slate-500 hover:text-slate-900' : 'hover:bg-slate-700/50 text-slate-400 hover:text-white'}`}><ChevronRight size={20} /></button>
                             </div>
 
                             <div className="flex gap-2">
-                                <GlassButton size="sm" onClick={handleToday}>Today</GlassButton>
-                                <GlassButton size="sm" onClick={() => setIsCategoryModalOpen(true)} icon={<Settings size={16} />}>Types</GlassButton>
+                                <GlassButton size="sm" onClick={handleToday} isLight={isLight}>Today</GlassButton>
+                                <GlassButton size="sm" onClick={() => setIsCategoryModalOpen(true)} icon={<Settings size={16} />} isLight={isLight}>Types</GlassButton>
                                 <GlassButton
                                     size="sm"
                                     onClick={() => setShowScheduleImport(true)}
                                     icon={<Upload size={16} />}
+                                    isLight={isLight}
                                     className={workSchedule || classSchedule ? 'border-green-500/50 text-green-400' : ''}
                                 >
                                     Import
@@ -630,6 +656,7 @@ export const Schedule: React.FC = () => {
                                     variant="gold"
                                     onClick={handleGetSuggestions}
                                     disabled={isLoadingSuggestions}
+                                    isLight={isLight}
                                     icon={isLoadingSuggestions ? <Sparkles className="animate-spin" size={16} /> : <Sparkles size={16} />}
                                 >
                                     Ask JW
@@ -642,7 +669,7 @@ export const Schedule: React.FC = () => {
                 {/* Power Hour Card */}
                 {viewMode === 'calendar' && (
                     <motion.div variants={fadeUp}>
-                        <GlassCard glow={isPowerHourNow} className={`p-4 ${isPowerHourNow ? 'bg-gradient-to-r from-gold/20 to-amber-500/10 border-gold/30' : ''}`}>
+                        <GlassCard isLight={isLight} glow={isPowerHourNow} className={`p-4 ${isPowerHourNow ? 'bg-gradient-to-r from-gold/20 to-amber-500/10 border-gold/30' : ''}`}>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className={`p-2.5 rounded-xl ${isPowerHourNow ? 'bg-gold/30' : 'bg-gold/10'} border border-gold/30`}>
@@ -695,7 +722,7 @@ export const Schedule: React.FC = () => {
                 {/* Networking Hour Card */}
                 {viewMode === 'calendar' && (
                     <motion.div variants={fadeUp}>
-                        <GlassCard glow={isNetworkingNow} className={`p-4 ${isNetworkingNow ? 'bg-gradient-to-r from-blue-500/20 to-indigo-500/10 border-blue-500/30' : ''}`}>
+                        <GlassCard isLight={isLight} glow={isNetworkingNow} className={`p-4 ${isNetworkingNow ? 'bg-gradient-to-r from-blue-500/20 to-indigo-500/10 border-blue-500/30' : ''}`}>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className={`p-2.5 rounded-xl ${isNetworkingNow ? 'bg-blue-500/30' : 'bg-blue-500/10'} border border-blue-500/30`}>
@@ -755,8 +782,8 @@ export const Schedule: React.FC = () => {
                 {/* Month View */}
                 {viewMode === 'calendar' && calendarView === 'month' && (
                     <motion.div variants={fadeUp}>
-                        <GlassCard className="overflow-hidden">
-                            <div className="grid grid-cols-7 border-b border-white/10 bg-slate-800/30">
+                        <GlassCard isLight={isLight} className="overflow-hidden">
+                            <div className={`grid grid-cols-7 border-b ${isLight ? 'border-slate-200 bg-slate-50' : 'border-white/10 bg-slate-800/30'}`}>
                                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
                                     <div key={d} className="p-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wide">{d}</div>
                                 ))}
@@ -770,9 +797,13 @@ export const Schedule: React.FC = () => {
                                         <div
                                             key={idx}
                                             onClick={() => { setCurrentDate(cell.dateStr); setCalendarView('day'); }}
-                                            className={`border-b border-r border-white/5 p-2 min-h-[80px] transition-colors cursor-pointer hover:bg-slate-800/30 ${!cell.isCurrentMonth ? 'opacity-30' : ''}`}
+                                            className={`border-b border-r p-2 min-h-[80px] transition-colors cursor-pointer ${
+                                                isLight
+                                                    ? 'border-slate-100 hover:bg-slate-50'
+                                                    : 'border-white/5 hover:bg-slate-800/30'
+                                            } ${!cell.isCurrentMonth ? 'opacity-30' : ''}`}
                                         >
-                                            <span className={`text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-gold text-black' : 'text-slate-400'}`}>
+                                            <span className={`text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-gold text-black' : isLight ? 'text-slate-600' : 'text-slate-400'}`}>
                                                 {cell.dayNum}
                                             </span>
                                             <div className="mt-1 space-y-1">
@@ -795,10 +826,10 @@ export const Schedule: React.FC = () => {
                 {/* Day/Multi View */}
                 {viewMode === 'calendar' && (calendarView === 'multi' || calendarView === 'day') && (
                     <motion.div variants={fadeUp}>
-                        <GlassCard className="overflow-hidden">
+                        <GlassCard isLight={isLight} className="overflow-hidden">
                             <div
-                                className="grid divide-x divide-white/5"
-                                style={{ gridTemplateColumns: `repeat(${visibleDays.length}, minmax(200px, 1fr))` }}
+                                className={`grid ${isLight ? 'divide-x divide-slate-100' : 'divide-x divide-white/5'}`}
+                                style={{ gridTemplateColumns: visibleDays.length === 1 ? '1fr' : `repeat(${visibleDays.length}, minmax(min(200px, 100%), 1fr))` }}
                             >
                                 {visibleDays.map((dayDate) => {
                                     const isToday = dayDate === getTodayString();
@@ -806,9 +837,9 @@ export const Schedule: React.FC = () => {
 
                                     return (
                                         <div key={dayDate} className="flex flex-col">
-                                            <div className={`p-4 text-center border-b border-white/5 ${isToday ? 'bg-gold/10' : ''}`}>
+                                            <div className={`p-4 text-center border-b ${isLight ? 'border-slate-100' : 'border-white/5'} ${isToday ? 'bg-gold/10' : ''}`}>
                                                 <div className="text-xs font-medium text-slate-500 uppercase mb-1">{getDayName(dayDate)}</div>
-                                                <div className={`text-xl font-bold ${isToday ? 'text-gold' : 'text-white'}`}>{getDisplayDate(dayDate)}</div>
+                                                <div className={`text-xl font-bold ${isToday ? 'text-gold' : isLight ? 'text-slate-900' : 'text-white'}`}>{getDisplayDate(dayDate)}</div>
                                             </div>
 
                                             <div className="flex-1 p-3 space-y-2 min-h-[400px] group/col">
@@ -826,7 +857,9 @@ export const Schedule: React.FC = () => {
                                                                     ? 'bg-gradient-to-r from-gold/10 to-amber-500/5 border-gold/30 hover:border-gold/50'
                                                                     : isNetworkingBlock
                                                                         ? 'bg-gradient-to-r from-blue-500/10 to-indigo-500/5 border-blue-500/30 hover:border-blue-500/50'
-                                                                        : 'bg-slate-800/30 border-white/5 hover:border-white/20'
+                                                                        : isLight
+                                                                            ? 'bg-slate-50 border-slate-200 hover:border-slate-300'
+                                                                            : 'bg-slate-800/30 border-white/5 hover:border-white/20'
                                                             }`}
                                                             style={{ borderLeftWidth: '4px', borderLeftColor: getCatColor(block.categoryId) }}
                                                         >
@@ -839,7 +872,7 @@ export const Schedule: React.FC = () => {
                                                                 </div>
                                                             </div>
                                                             <div className={`font-medium text-sm mt-1 ${
-                                                                isPowerHourBlock ? 'text-gold' : isNetworkingBlock ? 'text-blue-400' : 'text-white'
+                                                                isPowerHourBlock ? 'text-gold' : isNetworkingBlock ? 'text-blue-400' : isLight ? 'text-slate-900' : 'text-white'
                                                             }`}>{block.title}</div>
                                                             {block.description && <div className="text-xs text-slate-500 mt-1 line-clamp-1">{block.description}</div>}
                                                         </motion.div>
@@ -848,7 +881,9 @@ export const Schedule: React.FC = () => {
 
                                                 <button
                                                     onClick={() => openAddModal(dayDate)}
-                                                    className="w-full py-3 border-2 border-dashed border-slate-700 rounded-xl text-slate-600 font-medium text-sm hover:border-gold/50 hover:text-gold transition-all opacity-0 group-hover/col:opacity-100"
+                                                    className={`w-full py-3 border-2 border-dashed rounded-xl font-medium text-sm hover:border-gold/50 hover:text-gold transition-all opacity-100 md:opacity-0 md:group-hover/col:opacity-100 ${
+                                                        isLight ? 'border-slate-300 text-slate-400' : 'border-slate-700 text-slate-600'
+                                                    }`}
                                                 >
                                                     <Plus size={16} className="mx-auto" />
                                                 </button>
@@ -864,23 +899,31 @@ export const Schedule: React.FC = () => {
                 {/* Tasks View */}
                 {viewMode === 'tasks' && (
                     <motion.div variants={fadeUp} className="max-w-3xl mx-auto">
-                        <GlassCard className="overflow-hidden">
-                            <div className="p-4 border-b border-white/10 flex gap-3">
+                        <GlassCard isLight={isLight} className="overflow-hidden">
+                            <div className={`p-4 border-b flex gap-3 ${isLight ? 'border-slate-200' : 'border-white/10'}`}>
                                 <input
-                                    className="flex-1 bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-gold/50 text-white placeholder:text-slate-500"
+                                    className={`flex-1 rounded-xl px-4 py-3 outline-none ${
+                                        isLight
+                                            ? 'bg-slate-50 border border-slate-200 focus:border-gold/50 text-slate-900 placeholder:text-slate-400'
+                                            : 'bg-slate-800/50 border border-white/10 focus:border-gold/50 text-white placeholder:text-slate-500'
+                                    }`}
                                     placeholder="Add a new task..."
                                     value={newTaskText}
                                     onChange={(e) => setNewTaskText(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
                                 />
-                                <GlassButton variant="gold" onClick={handleAddTask} icon={<Plus size={18} />}>Add</GlassButton>
+                                <GlassButton variant="gold" onClick={handleAddTask} isLight={isLight} icon={<Plus size={18} />}>Add</GlassButton>
                             </div>
                             <div className="p-4 space-y-2 max-h-[60vh] overflow-y-auto">
                                 {tasks.map(task => (
                                     <motion.div
                                         key={task.id}
                                         variants={fadeUp}
-                                        className="group flex items-center gap-3 p-4 bg-slate-800/30 border border-white/5 rounded-xl hover:border-white/20 transition-all"
+                                        className={`group flex items-center gap-3 p-4 rounded-xl transition-all ${
+                                            isLight
+                                                ? 'bg-slate-50 border border-slate-200 hover:border-slate-300'
+                                                : 'bg-slate-800/30 border border-white/5 hover:border-white/20'
+                                        }`}
                                     >
                                         <button
                                             onClick={() => toggleTask(task.id)}
@@ -888,16 +931,16 @@ export const Schedule: React.FC = () => {
                                         >
                                             {task.completed ? <CheckCircle2 size={24} /> : <Circle size={24} />}
                                         </button>
-                                        <p className={`flex-1 text-sm ${task.completed ? 'text-slate-600 line-through' : 'text-white'}`}>{task.text}</p>
+                                        <p className={`flex-1 text-sm ${task.completed ? 'text-slate-400 line-through' : isLight ? 'text-slate-900' : 'text-white'}`}>{task.text}</p>
                                         {!task.completed && (
                                             <button
                                                 onClick={() => scheduleTaskAsBlock(task)}
-                                                className="text-slate-600 hover:text-gold opacity-0 group-hover:opacity-100 transition-opacity"
+                                                className="text-slate-600 hover:text-gold opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity min-w-[44px] min-h-[44px] flex items-center justify-center"
                                             >
                                                 <CalendarPlus size={18} />
                                             </button>
                                         )}
-                                        <button onClick={() => deleteTask(task.id)} className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onClick={() => deleteTask(task.id)} className="text-slate-600 hover:text-red-400 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity min-w-[44px] min-h-[44px] flex items-center justify-center">
                                             <Trash2 size={18} />
                                         </button>
                                     </motion.div>
@@ -1182,7 +1225,7 @@ export const Schedule: React.FC = () => {
                                                 <div className="w-6 h-6 rounded-lg" style={{ backgroundColor: cat.color }} />
                                                 <span className="flex-1 font-medium text-white">{cat.label}</span>
                                                 {!['work', 'personal', 'learning', 'wellness', 'interview', 'job_search', 'networking'].includes(cat.id) && (
-                                                    <button onClick={() => deleteCategory(cat.id)} className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100">
+                                                    <button onClick={() => deleteCategory(cat.id)} className="text-slate-600 hover:text-red-400 opacity-100 md:opacity-0 md:group-hover:opacity-100 min-w-[44px] min-h-[44px] flex items-center justify-center">
                                                         <Trash2 size={16} />
                                                     </button>
                                                 )}

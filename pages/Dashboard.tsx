@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
+import { usePullToRefresh, PullToRefreshIndicator } from '../hooks/usePullToRefresh';
+import { haptics } from '../utils/haptics';
 import {
     Rocket, Target, TrendingUp, CheckCircle, AlertCircle,
     ExternalLink, Briefcase, DollarSign, Home, Search,
@@ -15,7 +18,7 @@ const fadeUp = {
 };
 
 const stagger = {
-    visible: { transition: { staggerChildren: 0.08 } }
+    visible: { transition: { staggerChildren: 0.03 } }
 };
 
 // Helper: Get time-based greeting
@@ -40,7 +43,7 @@ const getHousingTier = (maxRent: number): string => {
 // ===========================================
 // COMPONENT: Power Hour Ring
 // ===========================================
-const PowerHourTracker: React.FC<{ current: number; goal: number }> = ({ current, goal }) => {
+const PowerHourTracker: React.FC<{ current: number; goal: number; isLight?: boolean }> = ({ current, goal, isLight }) => {
     const percentage = Math.min((current / goal) * 100, 100);
     const circumference = 2 * Math.PI * 40;
     const strokeDashoffset = circumference - (percentage / 100) * circumference;
@@ -48,11 +51,15 @@ const PowerHourTracker: React.FC<{ current: number; goal: number }> = ({ current
     return (
         <motion.div
             variants={fadeUp}
-            className="flex items-center gap-4 px-5 py-4 rounded-2xl bg-gradient-to-br from-slate-800/60 to-slate-900/60 border border-white/10 backdrop-blur-xl"
+            className={`flex items-center gap-4 px-5 py-4 rounded-2xl backdrop-blur-xl ${
+                isLight
+                    ? 'bg-white/90 border border-slate-200 shadow-lg'
+                    : 'bg-gradient-to-br from-slate-800/60 to-slate-900/60 border border-white/10'
+            }`}
         >
             <div className="relative w-20 h-20">
                 <svg className="w-20 h-20 -rotate-90" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
+                    <circle cx="50" cy="50" r="40" fill="none" stroke={isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'} strokeWidth="8" />
                     <circle
                         cx="50" cy="50" r="40"
                         fill="none"
@@ -66,15 +73,15 @@ const PowerHourTracker: React.FC<{ current: number; goal: number }> = ({ current
                     />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xl font-bold text-white">{current}/{goal}</span>
+                    <span className={`text-xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>{current}/{goal}</span>
                 </div>
             </div>
             <div>
                 <div className="flex items-center gap-2">
                     <Clock size={14} className="text-gold" />
-                    <p className="text-sm font-bold text-white">Power Hour</p>
+                    <p className={`text-sm font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>Power Hour</p>
                 </div>
-                <p className="text-xs text-slate-400">Daily Applications</p>
+                <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Daily Applications</p>
                 {current >= goal && (
                     <span className="inline-flex items-center gap-1 mt-1 text-xs font-bold text-gold">
                         <Sparkles size={12} /> Goal Hit!
@@ -92,16 +99,21 @@ const LaunchpadButton: React.FC<{
     icon: React.ReactNode;
     label: string;
     onClick: () => void;
-}> = ({ icon, label, onClick }) => (
+    isLight?: boolean;
+}> = ({ icon, label, onClick, isLight }) => (
     <motion.button
         variants={fadeUp}
         whileHover={{ scale: 1.02, y: -2 }}
         whileTap={{ scale: 0.98 }}
         onClick={onClick}
-        className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800/50 border border-white/10 hover:border-gold/40 hover:bg-slate-800/80 transition-all group"
+        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
+            isLight
+                ? 'bg-white border border-slate-200 shadow-sm hover:border-gold/40 hover:bg-slate-50 hover:shadow-md'
+                : 'bg-slate-800/50 border border-white/10 hover:border-gold/40 hover:bg-slate-800/80'
+        }`}
     >
-        <span className="text-slate-400 group-hover:text-gold transition-colors">{icon}</span>
-        <span className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">{label}</span>
+        <span className={`group-hover:text-gold transition-colors ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>{icon}</span>
+        <span className={`text-sm font-medium transition-colors ${isLight ? 'text-slate-700 group-hover:text-slate-900' : 'text-slate-300 group-hover:text-white'}`}>{label}</span>
         <ExternalLink size={14} className="ml-auto text-slate-500 group-hover:text-gold/60 transition-colors" />
     </motion.button>
 );
@@ -114,30 +126,35 @@ const MissionCard: React.FC<{
     company: string;
     status: string;
     grade?: string;
-}> = ({ role, company, status, grade }) => {
+    isLight?: boolean;
+}> = ({ role, company, status, grade, isLight }) => {
     const statusColors: Record<string, string> = {
-        'saved': 'bg-slate-700/50 text-slate-300 border-slate-600',
-        'applied': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+        'saved': isLight ? 'bg-slate-200 text-slate-600 border-slate-300' : 'bg-slate-700/50 text-slate-300 border-slate-600',
+        'applied': 'bg-blue-500/20 text-blue-500 border-blue-500/30',
         'interviewing': 'bg-gold/20 text-gold border-gold/30',
-        'offer': 'bg-green-500/20 text-green-400 border-green-500/30',
-        'rejected': 'bg-red-500/20 text-red-400 border-red-500/30',
+        'offer': 'bg-green-500/20 text-green-500 border-green-500/30',
+        'rejected': 'bg-red-500/20 text-red-500 border-red-500/30',
     };
 
     const gradeColors: Record<string, string> = {
         'A': 'bg-gold/20 text-gold border-gold/30',
-        'B': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-        'C': 'bg-slate-700/50 text-slate-400 border-slate-600',
+        'B': 'bg-blue-500/20 text-blue-500 border-blue-500/30',
+        'C': isLight ? 'bg-slate-200 text-slate-500 border-slate-300' : 'bg-slate-700/50 text-slate-400 border-slate-600',
     };
 
     return (
         <motion.div
             variants={fadeUp}
             whileHover={{ scale: 1.01, x: 4 }}
-            className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-slate-800/50 to-slate-900/50 border border-white/5 hover:border-gold/30 transition-all group cursor-pointer"
+            className={`flex items-center justify-between p-4 rounded-xl transition-all group cursor-pointer ${
+                isLight
+                    ? 'bg-white border border-slate-200 hover:border-gold/30 shadow-sm'
+                    : 'bg-gradient-to-r from-slate-800/50 to-slate-900/50 border border-white/5 hover:border-gold/30'
+            }`}
         >
             <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-white truncate group-hover:text-gold transition-colors">{role}</h4>
-                <p className="text-sm text-slate-400 truncate">{company}</p>
+                <h4 className={`font-semibold truncate group-hover:text-gold transition-colors ${isLight ? 'text-slate-900' : 'text-white'}`}>{role}</h4>
+                <p className={`text-sm truncate ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>{company}</p>
             </div>
             <div className="flex items-center gap-2 ml-4">
                 <span className={`px-2.5 py-1 rounded-lg text-xs font-medium capitalize border ${statusColors[status] || statusColors['saved']}`}>
@@ -160,10 +177,15 @@ const GlassCard: React.FC<{
     children: React.ReactNode;
     className?: string;
     glow?: boolean;
-}> = ({ children, className = '', glow }) => (
+    isLight?: boolean;
+}> = ({ children, className = '', glow, isLight }) => (
     <motion.div
         variants={fadeUp}
-        className={`p-5 rounded-2xl bg-gradient-to-br from-slate-800/60 to-slate-900/60 border border-white/10 backdrop-blur-xl ${glow ? 'shadow-[0_0_30px_rgba(255,196,37,0.1)]' : ''} ${className}`}
+        className={`p-5 rounded-2xl backdrop-blur-xl ${
+            isLight
+                ? 'bg-white/90 border border-slate-200 shadow-lg'
+                : 'bg-gradient-to-br from-slate-800/60 to-slate-900/60 border border-white/10'
+        } ${glow ? 'shadow-[0_0_30px_rgba(255,196,37,0.1)]' : ''} ${className}`}
     >
         {children}
     </motion.div>
@@ -174,10 +196,28 @@ const GlassCard: React.FC<{
 // ===========================================
 export const Dashboard: React.FC = () => {
     const navigate = useNavigate();
-    const { userProfile } = useAuth();
+    const { userProfile, refreshCredits } = useAuth();
+    const { isLight } = useTheme();
 
     const [jobUrl, setJobUrl] = useState('');
     const [dailyApps, setDailyApps] = useState(0);
+
+    // Pull-to-refresh handler
+    const handleRefresh = useCallback(async () => {
+        haptics.medium();
+        // Refresh user data
+        if (refreshCredits) {
+            await refreshCredits();
+        }
+        // Add a small delay for visual feedback
+        await new Promise(resolve => setTimeout(resolve, 500));
+        haptics.success();
+    }, [refreshCredits]);
+
+    const { containerRef, pullDistance, isRefreshing } = usePullToRefresh({
+        onRefresh: handleRefresh,
+        threshold: 80,
+    });
 
     const userName = userProfile?.fullName?.split(' ')[0] || userProfile?.displayName?.split(' ')[0] || 'there';
     const applications = userProfile?.savedJobs || [];
@@ -211,41 +251,53 @@ export const Dashboard: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#020617] pb-16">
+        <div className={`min-h-screen pb-16 relative ${isLight ? 'bg-slate-50' : 'bg-[#020617]'}`}>
             {/* Background gradient */}
-            <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-[#020617] to-slate-900 pointer-events-none" />
-            <div className="fixed top-0 left-1/4 w-96 h-96 bg-gold/5 rounded-full blur-3xl pointer-events-none" />
-            <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-gold/3 rounded-full blur-3xl pointer-events-none" />
+            <div className={`fixed inset-0 pointer-events-none ${isLight ? 'bg-gradient-to-br from-slate-100 via-slate-50 to-white' : 'bg-gradient-to-br from-slate-900 via-[#020617] to-slate-900'}`} />
+            <div className={`fixed top-0 left-1/4 w-96 h-96 rounded-full blur-3xl pointer-events-none ${isLight ? 'bg-gold/10' : 'bg-gold/5'}`} />
+            <div className={`fixed bottom-0 right-1/4 w-96 h-96 rounded-full blur-3xl pointer-events-none ${isLight ? 'bg-gold/8' : 'bg-gold/3'}`} />
 
-            <motion.div
-                initial="hidden"
-                animate="visible"
-                variants={stagger}
-                className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8"
+            {/* Pull-to-refresh indicator */}
+            <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} />
+
+            <div
+                ref={containerRef}
+                className="h-full overflow-y-auto overscroll-contain"
+                style={{ transform: pullDistance > 0 ? `translateY(${pullDistance * 0.5}px)` : undefined }}
             >
+                <motion.div
+                    initial="hidden"
+                    animate="visible"
+                    variants={stagger}
+                    className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8"
+                >
                 {/* Header */}
                 <motion.div variants={stagger} className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <motion.div variants={fadeUp}>
-                        <h1 className="text-3xl md:text-4xl font-bold text-white">
+                        <h1 className={`text-3xl md:text-4xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
                             {getGreeting()}, <span className="text-gold">{userName}</span>.
                         </h1>
-                        <p className="text-lg text-slate-400 mt-1">Ready to execute?</p>
+                        <p className={`text-lg mt-1 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>Ready to execute?</p>
                     </motion.div>
-                    <PowerHourTracker current={dailyApps} goal={3} />
+                    <PowerHourTracker current={dailyApps} goal={3} isLight={isLight} />
                 </motion.div>
 
                 {/* Input Nexus */}
                 <motion.div
                     variants={fadeUp}
-                    className="p-6 md:p-8 rounded-2xl bg-gradient-to-br from-slate-800/60 to-slate-900/60 border border-white/10 backdrop-blur-xl"
+                    className={`p-6 md:p-8 rounded-2xl backdrop-blur-xl ${
+                        isLight
+                            ? 'bg-white/90 border border-slate-200 shadow-lg'
+                            : 'bg-gradient-to-br from-slate-800/60 to-slate-900/60 border border-white/10'
+                    }`}
                 >
                     <div className="flex items-center gap-3 mb-6">
                         <div className="p-2.5 rounded-xl bg-gold/20 border border-gold/30">
                             <Target size={24} className="text-gold" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-white">The Input Nexus</h2>
-                            <p className="text-sm text-slate-400">Paste a job link to get your Jalanea Grade</p>
+                            <h2 className={`text-xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>The Input Nexus</h2>
+                            <p className={`text-sm ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>Paste a job link to get your Jalanea Grade</p>
                         </div>
                     </div>
 
@@ -257,7 +309,11 @@ export const Dashboard: React.FC = () => {
                                 value={jobUrl}
                                 onChange={(e) => setJobUrl(e.target.value)}
                                 placeholder="Paste job link (LinkedIn, Indeed, etc)..."
-                                className="w-full pl-12 pr-4 py-4 rounded-xl bg-slate-800/50 border border-white/10 focus:border-gold/50 focus:ring-2 focus:ring-gold/20 outline-none text-white placeholder:text-slate-500 transition-all"
+                                className={`w-full pl-12 pr-4 py-4 rounded-xl outline-none transition-all ${
+                                    isLight
+                                        ? 'bg-slate-100 border border-slate-200 focus:border-gold/50 focus:ring-2 focus:ring-gold/20 text-slate-900 placeholder:text-slate-400'
+                                        : 'bg-slate-800/50 border border-white/10 focus:border-gold/50 focus:ring-2 focus:ring-gold/20 text-white placeholder:text-slate-500'
+                                }`}
                                 onKeyDown={(e) => e.key === 'Enter' && handleAnalyzeJob()}
                             />
                         </div>
@@ -273,27 +329,31 @@ export const Dashboard: React.FC = () => {
                     </div>
 
                     <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">Smart Launchpads</p>
+                        <p className={`text-xs font-medium uppercase tracking-wider mb-3 ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>Smart Launchpads</p>
                         <motion.div variants={stagger} className="grid grid-cols-2 md:grid-cols-4 gap-3">
                             <LaunchpadButton
                                 icon={<img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />}
                                 label="Google Jobs"
                                 onClick={() => handleLaunchpad('google')}
+                                isLight={isLight}
                             />
                             <LaunchpadButton
                                 icon={<Linkedin size={20} />}
                                 label="LinkedIn"
                                 onClick={() => handleLaunchpad('linkedin')}
+                                isLight={isLight}
                             />
                             <LaunchpadButton
                                 icon={<Building2 size={20} />}
                                 label="Indeed"
                                 onClick={() => handleLaunchpad('indeed')}
+                                isLight={isLight}
                             />
                             <LaunchpadButton
                                 icon={<Rocket size={20} />}
                                 label="ZipRecruiter"
                                 onClick={() => handleLaunchpad('ziprecruiter')}
+                                isLight={isLight}
                             />
                         </motion.div>
                     </div>
@@ -304,13 +364,13 @@ export const Dashboard: React.FC = () => {
                     {/* Active Missions */}
                     <div className="lg:col-span-2 space-y-4">
                         <motion.div variants={fadeUp} className="flex items-center justify-between">
-                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                            <h3 className={`text-lg font-bold flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
                                 <Briefcase size={20} className="text-gold" />
                                 Active Missions
                             </h3>
                             <button
                                 onClick={() => navigate('/jobs')}
-                                className="text-sm font-medium text-slate-400 hover:text-gold transition-colors"
+                                className={`text-sm font-medium hover:text-gold transition-colors ${isLight ? 'text-slate-500' : 'text-slate-400'}`}
                             >
                                 View All →
                             </button>
@@ -319,13 +379,17 @@ export const Dashboard: React.FC = () => {
                         {applications.length === 0 ? (
                             <motion.div
                                 variants={fadeUp}
-                                className="p-8 text-center rounded-2xl border-2 border-dashed border-slate-700 bg-slate-800/30"
+                                className={`p-8 text-center rounded-2xl border-2 border-dashed ${
+                                    isLight
+                                        ? 'border-slate-300 bg-white/50'
+                                        : 'border-slate-700 bg-slate-800/30'
+                                }`}
                             >
                                 <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-gold/10 border border-gold/30">
                                     <Target size={32} className="text-gold" />
                                 </div>
-                                <h4 className="font-bold text-white mb-2">No Active Missions</h4>
-                                <p className="text-sm text-slate-400 mb-4">Launch a search to begin tracking your applications.</p>
+                                <h4 className={`font-bold mb-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>No Active Missions</h4>
+                                <p className={`text-sm mb-4 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Launch a search to begin tracking your applications.</p>
                                 <motion.button
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
@@ -345,6 +409,7 @@ export const Dashboard: React.FC = () => {
                                         company={app.job.company}
                                         status={app.status}
                                         grade={undefined}
+                                        isLight={isLight}
                                     />
                                 ))}
                             </motion.div>
@@ -354,22 +419,22 @@ export const Dashboard: React.FC = () => {
                     {/* Right Column */}
                     <motion.div variants={stagger} className="space-y-6">
                         {/* Market Readiness */}
-                        <GlassCard>
+                        <GlassCard isLight={isLight}>
                             <div className="flex items-center gap-2 mb-4">
                                 <TrendingUp size={18} className="text-gold" />
-                                <h4 className="font-bold text-white">Market Readiness</h4>
+                                <h4 className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>Market Readiness</h4>
                             </div>
                             <div className="flex items-center justify-between mb-3">
-                                <span className="text-sm text-slate-400">Profile Strength</span>
+                                <span className={`text-sm ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Profile Strength</span>
                                 <span className={`px-2.5 py-1 rounded-lg text-sm font-medium border ${
                                     profileGrade === 'A' ? 'bg-gold/20 text-gold border-gold/30' :
-                                    profileGrade.startsWith('B') ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
-                                    'bg-slate-700/50 text-slate-400 border-slate-600'
+                                    profileGrade.startsWith('B') ? 'bg-blue-500/20 text-blue-500 border-blue-500/30' :
+                                    isLight ? 'bg-slate-200 text-slate-500 border-slate-300' : 'bg-slate-700/50 text-slate-400 border-slate-600'
                                 }`}>
                                     {profileGrade} Candidate
                                 </span>
                             </div>
-                            <div className="w-full bg-slate-700/50 rounded-full h-2.5 overflow-hidden">
+                            <div className={`w-full rounded-full h-2.5 overflow-hidden ${isLight ? 'bg-slate-200' : 'bg-slate-700/50'}`}>
                                 <motion.div
                                     initial={{ width: 0 }}
                                     animate={{ width: `${(profileScore / 4) * 100}%` }}
@@ -384,28 +449,28 @@ export const Dashboard: React.FC = () => {
                         </GlassCard>
 
                         {/* Financial Pulse */}
-                        <GlassCard>
+                        <GlassCard isLight={isLight}>
                             <div className="flex items-center gap-2 mb-4">
                                 <DollarSign size={18} className="text-gold" />
-                                <h4 className="font-bold text-white">Financial Pulse</h4>
+                                <h4 className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>Financial Pulse</h4>
                             </div>
                             <div className="space-y-4">
                                 <div>
                                     <span className="text-xs text-slate-500 uppercase tracking-wider">Target Salary</span>
-                                    <p className="text-2xl font-bold text-white mt-1">
+                                    <p className={`text-2xl font-bold mt-1 ${isLight ? 'text-slate-900' : 'text-white'}`}>
                                         ${(salaryMin / 1000).toFixed(0)}k – ${(salaryMax / 1000).toFixed(0)}k
                                     </p>
                                 </div>
-                                <div className="flex justify-between items-center pt-3 border-t border-white/10">
-                                    <span className="text-sm text-slate-400">Lifestyle Tier</span>
+                                <div className={`flex justify-between items-center pt-3 border-t ${isLight ? 'border-slate-200' : 'border-white/10'}`}>
+                                    <span className={`text-sm ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Lifestyle Tier</span>
                                     <div className="flex items-center gap-2">
                                         <Home size={14} className="text-slate-500" />
                                         <span className="text-sm font-medium text-gold">{housingTier}</span>
                                     </div>
                                 </div>
-                                <div className="pt-3 border-t border-white/10">
+                                <div className={`pt-3 border-t ${isLight ? 'border-slate-200' : 'border-white/10'}`}>
                                     {maxRent > 0 ? (
-                                        <div className="flex items-center gap-2 text-green-400">
+                                        <div className="flex items-center gap-2 text-green-500">
                                             <CheckCircle size={16} />
                                             <span className="text-sm font-medium">Budget Aligned</span>
                                         </div>
@@ -420,20 +485,20 @@ export const Dashboard: React.FC = () => {
                         </GlassCard>
 
                         {/* Start a Business */}
-                        <GlassCard glow className="bg-gradient-to-br from-gold/10 to-slate-900/60 border-gold/20">
+                        <GlassCard glow isLight={isLight} className={isLight ? 'bg-gradient-to-br from-gold/5 to-white border-gold/20' : 'bg-gradient-to-br from-gold/10 to-slate-900/60 border-gold/20'}>
                             <div className="flex items-center gap-2 mb-3">
                                 <div className="p-1.5 bg-gold/20 rounded-lg border border-gold/30">
                                     <Lightbulb size={16} className="text-gold" />
                                 </div>
-                                <h4 className="font-bold text-white">Start a Business</h4>
+                                <h4 className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>Start a Business</h4>
                             </div>
-                            <p className="text-sm text-slate-400 mb-4">
+                            <p className={`text-sm mb-4 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                                 Not finding the right job? Create your own opportunity.
                             </p>
                             <div className="space-y-2 mb-4">
                                 {['150+ local small business resources', 'Free SBDC consultations available', 'Orlando ranked #3 for startups'].map((item, i) => (
-                                    <div key={i} className="flex items-center gap-2 text-xs text-slate-300">
-                                        <CheckCircle size={12} className="text-green-400 flex-shrink-0" />
+                                    <div key={i} className={`flex items-center gap-2 text-xs ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>
+                                        <CheckCircle size={12} className="text-green-500 flex-shrink-0" />
                                         <span>{item}</span>
                                     </div>
                                 ))}
@@ -460,7 +525,11 @@ export const Dashboard: React.FC = () => {
                                     variants={fadeUp}
                                     whileHover={{ scale: 1.01, x: 4 }}
                                     onClick={() => navigate(action.path)}
-                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800/50 border border-white/10 hover:border-gold/30 text-slate-300 hover:text-white font-medium transition-all text-left"
+                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all text-left ${
+                                        isLight
+                                            ? 'bg-white border border-slate-200 hover:border-gold/30 text-slate-700 hover:text-slate-900 shadow-sm'
+                                            : 'bg-slate-800/50 border border-white/10 hover:border-gold/30 text-slate-300 hover:text-white'
+                                    }`}
                                 >
                                     {action.emoji} {action.label}
                                 </motion.button>
@@ -469,6 +538,7 @@ export const Dashboard: React.FC = () => {
                     </motion.div>
                 </motion.div>
             </motion.div>
+            </div>
         </div>
     );
 };

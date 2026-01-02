@@ -9,6 +9,7 @@ import { SavedConversations } from '../components/SavedConversations';
 import { SocialPostAssistant } from '../components/SocialPostAssistant';
 import { ScheduleConnection } from '../components/ScheduleConnection';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { getCareerAdvice } from '../services/geminiService';
 import { ChatMessage } from '../types';
@@ -97,6 +98,7 @@ const QUICK_PROMPTS = [
 
 export const AIAssistant: React.FC = () => {
     const { currentUser, userProfile, useCredit, canUseCredits, isTrialActive } = useAuth();
+    const { isLight } = useTheme();
     const {
         name,
         primarySchool,
@@ -365,11 +367,11 @@ export const AIAssistant: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#020617] relative">
+        <div className={`min-h-screen relative ${isLight ? 'bg-slate-50' : 'bg-[#020617]'}`}>
             {/* Background */}
-            <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-[#020617] to-slate-900 pointer-events-none" />
-            <div className="fixed top-0 left-1/4 w-96 h-96 bg-gold/5 rounded-full blur-3xl pointer-events-none" />
-            <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+            <div className={`fixed inset-0 pointer-events-none ${isLight ? 'bg-gradient-to-br from-slate-100 via-slate-50 to-white' : 'bg-gradient-to-br from-slate-900 via-[#020617] to-slate-900'}`} />
+            <div className={`fixed top-0 left-1/4 w-96 h-96 rounded-full blur-3xl pointer-events-none ${isLight ? 'bg-gold/10' : 'bg-gold/5'}`} />
+            <div className={`fixed bottom-0 right-1/4 w-96 h-96 rounded-full blur-3xl pointer-events-none ${isLight ? 'bg-blue-500/10' : 'bg-blue-500/5'}`} />
 
         <div className="relative max-w-4xl mx-auto px-4 py-6 h-[calc(100vh-80px)] flex flex-col">
             {/* Header - Mobile optimized */}
@@ -379,8 +381,8 @@ export const AIAssistant: React.FC = () => {
                         <Sparkles size={20} className="md:w-6 md:h-6" />
                     </div>
                     <div>
-                        <h1 className="text-lg md:text-2xl font-bold text-white">AI Career Coach</h1>
-                        <p className="text-xs md:text-sm text-slate-400 hidden sm:block">Your personal career intelligence assistant</p>
+                        <h1 className={`text-lg md:text-2xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>AI Career Coach</h1>
+                        <p className={`text-xs md:text-sm hidden sm:block ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>Your personal career intelligence assistant</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -388,7 +390,11 @@ export const AIAssistant: React.FC = () => {
                     <button
                         onClick={saveCurrentConversation}
                         disabled={!messages.some(m => m.role === 'user')}
-                        className="flex items-center gap-1.5 px-2.5 py-2 text-xs md:text-sm text-slate-400 hover:text-green-400 hover:bg-green-500/10 rounded-xl border border-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className={`flex items-center gap-1.5 px-2.5 py-2 text-xs md:text-sm rounded-xl border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                            isLight
+                                ? 'text-slate-500 hover:text-green-600 hover:bg-green-50 border-slate-200'
+                                : 'text-slate-400 hover:text-green-400 hover:bg-green-500/10 border-white/10'
+                        }`}
                         title="Save conversation"
                     >
                         <Save size={14} />
@@ -397,7 +403,11 @@ export const AIAssistant: React.FC = () => {
                     {/* Open Saved Conversations */}
                     <button
                         onClick={() => setShowSavedConversations(true)}
-                        className="flex items-center gap-1.5 px-2.5 py-2 text-xs md:text-sm text-slate-400 hover:text-gold hover:bg-gold/10 rounded-xl border border-white/10 transition-colors"
+                        className={`flex items-center gap-1.5 px-2.5 py-2 text-xs md:text-sm rounded-xl border transition-colors ${
+                            isLight
+                                ? 'text-slate-500 hover:text-gold hover:bg-gold/10 border-slate-200'
+                                : 'text-slate-400 hover:text-gold hover:bg-gold/10 border-white/10'
+                        }`}
                         title="Saved conversations"
                     >
                         <FolderOpen size={14} />
@@ -411,7 +421,11 @@ export const AIAssistant: React.FC = () => {
                     {/* Clear Chat */}
                     <button
                         onClick={handleClearChat}
-                        className="flex items-center gap-1.5 px-2.5 py-2 text-xs md:text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl border border-white/10 transition-colors"
+                        className={`flex items-center gap-1.5 px-2.5 py-2 text-xs md:text-sm rounded-xl border transition-colors ${
+                            isLight
+                                ? 'text-slate-500 hover:text-red-600 hover:bg-red-50 border-slate-200'
+                                : 'text-slate-400 hover:text-red-400 hover:bg-red-500/10 border-white/10'
+                        }`}
                     >
                         <Trash2 size={14} />
                         <span className="hidden sm:inline">Clear</span>
@@ -420,7 +434,11 @@ export const AIAssistant: React.FC = () => {
             </div>
 
             {/* Main Chat Area */}
-            <div className="flex-1 flex flex-col overflow-hidden min-h-0 rounded-2xl bg-gradient-to-br from-slate-800/60 to-slate-900/60 border border-white/10 backdrop-blur-xl">
+            <div className={`flex-1 flex flex-col overflow-hidden min-h-0 rounded-2xl border backdrop-blur-xl ${
+                isLight
+                    ? 'bg-white/80 border-slate-200 shadow-lg'
+                    : 'bg-gradient-to-br from-slate-800/60 to-slate-900/60 border-white/10'
+            }`}>
                 {/* Messages */}
                 <div
                     ref={scrollRef}
@@ -458,7 +476,7 @@ export const AIAssistant: React.FC = () => {
                                         />
                                     )}
                                 </div>
-                                <p className={`text-[10px] md:text-xs text-jalanea-400 mt-1 ${msg.role === 'user' ? 'text-right' : ''}`}>
+                                <p className={`text-[10px] md:text-xs mt-1 ${msg.role === 'user' ? 'text-right' : ''} ${isLight ? 'text-slate-400' : 'text-jalanea-400'}`}>
                                     {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </p>
                             </div>
@@ -484,8 +502,8 @@ export const AIAssistant: React.FC = () => {
 
                 {/* Quick Prompts - Only show when few messages */}
                 {messages.length <= 2 && (
-                    <div className="px-3 md:px-6 pb-3 md:pb-4 border-t border-jalanea-100 pt-3">
-                        <p className="text-[10px] md:text-xs font-bold text-jalanea-400 uppercase tracking-wider mb-2">Quick Actions</p>
+                    <div className={`px-3 md:px-6 pb-3 md:pb-4 border-t pt-3 ${isLight ? 'border-slate-200' : 'border-jalanea-100'}`}>
+                        <p className={`text-[10px] md:text-xs font-bold uppercase tracking-wider mb-2 ${isLight ? 'text-slate-500' : 'text-jalanea-400'}`}>Quick Actions</p>
                         <div className="flex flex-wrap gap-1.5 md:gap-2">
                             {QUICK_PROMPTS.map((prompt, i) => (
                                 <button
@@ -543,7 +561,7 @@ export const AIAssistant: React.FC = () => {
                 )}
 
                 {/* Input Area */}
-                <div className="border-t border-jalanea-100 p-3 md:p-4 bg-white">
+                <div className={`border-t p-3 md:p-4 ${isLight ? 'border-slate-200 bg-slate-50' : 'border-jalanea-100 bg-slate-800/50'}`}>
                     <div className="flex gap-2 md:gap-3 items-end">
                         <div className="flex-1">
                             <textarea
@@ -553,7 +571,11 @@ export const AIAssistant: React.FC = () => {
                                 onKeyDown={handleKeyDown}
                                 placeholder="Ask me anything about your career..."
                                 rows={1}
-                                className="w-full px-3 py-2.5 md:px-4 md:py-3 bg-jalanea-50 border border-jalanea-200 rounded-xl text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none resize-none placeholder-jalanea-400 max-h-[120px]"
+                                className={`w-full px-3 py-2.5 md:px-4 md:py-3 rounded-xl text-sm focus:ring-2 focus:ring-gold focus:border-transparent outline-none resize-none max-h-[120px] ${
+                                    isLight
+                                        ? 'bg-white border border-slate-200 text-slate-900 placeholder-slate-400'
+                                        : 'bg-slate-700/50 border border-slate-600 text-white placeholder-slate-400'
+                                }`}
                             />
                         </div>
                         <Button
@@ -565,8 +587,8 @@ export const AIAssistant: React.FC = () => {
                             <Send size={18} />
                         </Button>
                     </div>
-                    <p className="text-[10px] md:text-xs text-slate-500 mt-2 text-center hidden md:block">
-                        Press <kbd className="px-1 py-0.5 bg-slate-700 rounded text-slate-300 font-mono text-[10px]">Enter</kbd> to send
+                    <p className={`text-[10px] md:text-xs mt-2 text-center hidden md:block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                        Press <kbd className={`px-1 py-0.5 rounded font-mono text-[10px] ${isLight ? 'bg-slate-200 text-slate-600' : 'bg-slate-700 text-slate-300'}`}>Enter</kbd> to send
                     </p>
                 </div>
             </div>

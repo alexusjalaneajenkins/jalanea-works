@@ -28,14 +28,66 @@ import {
 
 // User profile type matching what we save during onboarding
 interface UserProfileData {
+    // Identity (Stage 1)
     fullName?: string;
     displayName?: string;
+    name?: string;
     photoURL?: string;
     location?: string;
+    commuteCoords?: string;
     linkedinUrl?: string;
     portfolioUrl?: string;
+
+    // Education & Skills (Stage 2)
     education?: any[];
+    credentials?: any[];
     experience?: any[];
+    skills?: {
+        technical: string[];
+        design: string[];
+        soft: string[];
+    };
+
+    // Logistics (Stage 3)
+    transport?: string[];
+    commuteMethod?: string[];
+    commuteTolerance?: 'local' | 'standard' | 'extended';
+    commuteWillingness?: 'local' | 'standard' | 'extended';
+    availability?: 'open' | 'weekdays' | 'weekends' | 'flexible' | 'limited';
+    selectedDays?: string[];
+    shiftPreference?: string[];
+
+    // Salary & Budget (Stage 4)
+    salaryMin?: number;
+    salaryMax?: number;
+    salaryTier?: string;
+    budgetData?: {
+        grossAnnual: number;
+        netAnnual: number;
+        monthlyGross: number;
+        monthlyNet: number;
+        housing: number;
+        utilities: number;
+        carPayment: number;
+        carInsurance: number;
+        food: number;
+        wants: number;
+        savings: number;
+        housingPercent: number;
+        utilitiesPercent: number;
+        transportPercent: number;
+        foodPercent: number;
+        wantsPercent: number;
+        savingsPercent: number;
+        maxQualifyingRent: number;
+    };
+
+    // Reality & Challenges (Stage 5)
+    realityContext?: string;
+    realityChallenges?: string;
+    selectedPrompts?: string[];
+
+    // Legacy preferences (keep for compatibility)
     preferences?: {
         targetRoles?: string[];
         workStyles?: string[];
@@ -47,8 +99,17 @@ interface UserProfileData {
         isParent?: boolean;
         childCount?: number;
         employmentStatus?: string;
+        transportMode?: string | string[];
+        commuteTolerance?: 'local' | 'standard' | 'extended';
+        availability?: 'open' | 'weekdays' | 'weekends' | 'flexible' | 'limited';
+        selectedDays?: string[];
+        shiftPreference?: string[];
+        realityContext?: string;
+        selectedPrompts?: string[];
+        urgencyLevel?: 'emergency' | 'bridge' | 'career';
     };
     onboardingCompleted?: boolean;
+    onboardingCompletedAt?: string;
     updatedAt?: string;
     // Schedule and tasks (for persistence)
     scheduleBlocks?: any[];

@@ -1,9 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NavRoute } from '../types';
-import { LayoutDashboard, User, LogOut, Compass, FileText, Zap, CalendarClock, MessageSquare, Sparkles, CreditCard } from 'lucide-react';
+import { LayoutDashboard, User, LogOut, Compass, FileText, Zap, CalendarClock, MessageSquare, Sparkles, CreditCard, Bot } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { redirectToBillingPortal } from '../services/stripeService';
+import { ThemeToggle } from './ThemeToggle';
 
 interface SidebarProps {
   currentRoute: NavRoute;
@@ -23,6 +24,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRoute, setRoute, isMobi
     { id: NavRoute.JOBS, label: 'Explore Jobs', icon: <Compass size={20} />, path: '/jobs' },
     { id: NavRoute.RESUME, label: 'AI Resume Studio', icon: <FileText size={20} />, path: '/resume' },
     { id: NavRoute.AI_ASSISTANT, label: 'AI Career Coach', icon: <Sparkles size={20} />, path: '/ai-assistant' },
+    { id: NavRoute.JOB_AGENT, label: 'AI Job Agent', icon: <Bot size={20} />, path: '/job-agent' },
     { id: NavRoute.ACCOUNT, label: 'Account', icon: <User size={20} />, path: '/account' },
   ];
 
@@ -58,8 +60,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRoute, setRoute, isMobi
 
       {/* Sidebar Container */}
       <aside className={`
-        fixed top-0 left-0 z-50 h-full w-64 bg-jalanea-950 text-white transition-transform duration-300 ease-in-out border-r border-white/5 flex flex-col shrink-0
-        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:static
+        w-64 bg-jalanea-900 text-white border-r border-white/10 flex flex-col shrink-0 h-full
+        fixed top-0 left-0 z-50 transition-transform duration-300 ease-in-out
+        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
+        md:relative md:translate-x-0
       `}>
         {/* Logo */}
         <div className="p-8 pb-10">
@@ -120,6 +124,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRoute, setRoute, isMobi
 
         {/* Footer Actions */}
         <div className="p-4 mt-auto border-t border-white/5 space-y-2">
+          <ThemeToggle />
+
           <button
             onClick={() => {
               setIsMobileOpen(false);
