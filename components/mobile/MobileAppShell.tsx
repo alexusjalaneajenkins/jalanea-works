@@ -122,52 +122,40 @@ export const MobileAppShell: React.FC = () => {
     }
   };
 
-  // Calculate heights for absolute positioning
-  const headerHeight = 'calc(56px + max(env(safe-area-inset-top, 20px), 20px) + 8px)';
-  const navHeight = 'calc(64px + env(safe-area-inset-bottom, 0px))';
-
   return (
     <div
       className={isLight ? 'bg-slate-50' : 'bg-[#020617]'}
       style={{
+        display: 'flex',
+        flexDirection: 'column',
         position: 'fixed',
         top: 0,
         left: 0,
         right: 0,
-        bottom: 0,
-        overflow: 'hidden'
+        bottom: 0
       }}
     >
-      {/* Header - fixed at top */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>
-        <MobileHeader title={screenTitles[activeScreen]} />
-      </div>
+      {/* Header - handles its own safe-area-inset-top */}
+      <MobileHeader title={screenTitles[activeScreen]} />
 
-      {/* Main Content - scrollable area between header and nav */}
+      {/* Main Content - takes remaining space and scrolls */}
       <div
         ref={contentRef}
         style={{
-          position: 'absolute',
-          top: headerHeight,
-          left: 0,
-          right: 0,
-          bottom: navHeight,
+          flex: 1,
           overflowY: 'scroll',
           overflowX: 'hidden',
-          WebkitOverflowScrolling: 'touch',
-          overscrollBehavior: 'contain'
+          WebkitOverflowScrolling: 'touch'
         }}
       >
         {renderScreen()}
       </div>
 
-      {/* Bottom Navigation - fixed at bottom */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10 }}>
-        <MobileNavBar
-          activeScreen={activeScreen}
-          onNavigate={setActiveScreen}
-        />
-      </div>
+      {/* Bottom Navigation - handles its own safe-area-inset-bottom */}
+      <MobileNavBar
+        activeScreen={activeScreen}
+        onNavigate={setActiveScreen}
+      />
     </div>
   );
 };

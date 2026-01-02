@@ -21,15 +21,14 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
 
   return (
     <header
-      className={`flex-shrink-0 px-4 flex items-center justify-between ${
+      className={`flex-shrink-0 px-4 pb-3 flex items-end justify-between ${
         isLight
           ? 'bg-slate-50 border-b border-slate-200/50'
           : 'bg-[#020617] border-b border-white/5'
       }`}
       style={{
-        // Status bar: 20px on regular phones, more on notched/Dynamic Island phones
-        paddingTop: 'calc(max(env(safe-area-inset-top, 20px), 20px) + 8px)',
-        minHeight: '56px'
+        paddingTop: 'env(safe-area-inset-top, 20px)',
+        minHeight: '60px'
       }}
     >
       {/* Left side */}
