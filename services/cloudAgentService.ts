@@ -169,3 +169,69 @@ export async function checkHealth(): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Get user's connected sites
+ */
+export async function getConnectedSites(userId: string): Promise<{
+  siteId: string;
+  siteName: string;
+  isConnected: boolean;
+  lastVerifiedAt: string | null;
+}[]> {
+  // Get all available sites
+  const sites = await getJobSites();
+
+  // For now, return sites with mock connection status
+  // TODO: Fetch actual connection status from API
+  return sites.map(site => ({
+    siteId: site.id,
+    siteName: site.name,
+    isConnected: false,
+    lastVerifiedAt: null,
+  }));
+}
+
+/**
+ * Launch a job site for login (opens browser window on server)
+ */
+export async function launchSiteForLogin(siteId: string): Promise<{
+  success: boolean;
+  isLoggedIn: boolean;
+  message: string;
+}> {
+  const response = await fetch(`${API_URL}/sites/${siteId}/launch`, {
+    method: 'POST',
+  });
+  if (!response.ok) throw new Error('Failed to launch site');
+  return response.json();
+}
+
+/**
+ * Check login status for a site
+ */
+export async function checkLoginStatus(siteId: string): Promise<{
+  isLoggedIn: boolean;
+  message: string;
+}> {
+  const response = await fetch(`${API_URL}/sites/${siteId}/login-status`);
+  if (!response.ok) throw new Error('Failed to check login status');
+  return response.json();
+}
+
+/**
+ * Store session to cloud for a user
+ */
+export async function storeSession(
+  siteId: string,
+  userId: string,
+  sessionData: string
+): Promise<{ success: boolean }> {
+  const response = await fetch(`${API_URL}/sites/${siteId}/store-session`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, sessionData }),
+  });
+  if (!response.ok) throw new Error('Failed to store session');
+  return response.json();
+}

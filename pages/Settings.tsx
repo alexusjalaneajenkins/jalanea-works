@@ -13,9 +13,11 @@ import {
   getApplicationHistory,
   createCheckoutSession,
   createPortalSession,
+  getJobSites,
   Tier,
   DashboardStats,
   JobApplication,
+  JobSite,
 } from '../services/cloudAgentService';
 
 // Mock Profile Data matching the screenshot
@@ -387,6 +389,119 @@ const ApplicationHistory: React.FC = () => {
             </div>
           ))
         )}
+      </div>
+    </Card>
+  );
+};
+
+// Site icons mapping
+const SITE_ICONS: Record<string, string> = {
+  indeed: '💼',
+  linkedin: '💎',
+  ziprecruiter: '🎯',
+  glassdoor: '🚪',
+};
+
+const SITE_COLORS: Record<string, string> = {
+  indeed: '#2164f3',
+  linkedin: '#0a66c2',
+  ziprecruiter: '#5ba829',
+  glassdoor: '#0caa41',
+};
+
+// Connected Sites Component
+const ConnectedSites: React.FC = () => {
+  const { currentUser } = useAuth();
+  const [sites, setSites] = useState<JobSite[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [connecting, setConnecting] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadSites = async () => {
+      try {
+        const data = await getJobSites();
+        setSites(data);
+      } catch (err) {
+        console.error('Error loading sites:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSites();
+  }, []);
+
+  const handleConnect = (siteId: string) => {
+    // For now, show instructions since the actual connection flow
+    // requires the user to log in via a browser window on the server
+    setConnecting(siteId);
+
+    // Open a modal or show instructions
+    alert(`To connect ${siteId.charAt(0).toUpperCase() + siteId.slice(1)}:\n\n1. The Job Agent will open a browser window\n2. Log into your account\n3. Complete any CAPTCHAs\n4. Your session will be saved for automation\n\nThis feature requires the desktop app or running the agent locally.`);
+    setConnecting(null);
+  };
+
+  if (loading) {
+    return (
+      <Card variant="solid-white" className="overflow-hidden">
+        <div className="p-6 flex items-center justify-center">
+          <Loader className="w-6 h-6 animate-spin text-jalanea-400" />
+        </div>
+      </Card>
+    );
+  }
+
+  if (!currentUser) {
+    return null;
+  }
+
+  return (
+    <Card variant="solid-white" className="overflow-hidden">
+      <div className="border-b border-jalanea-100 p-6 bg-jalanea-50/50">
+        <h3 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider flex items-center gap-2">
+          <Link2 size={16} /> Connected Job Sites
+        </h3>
+      </div>
+      <div className="p-6">
+        <p className="text-sm text-jalanea-600 mb-4">
+          Connect your job site accounts to enable automatic applications.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {sites.map(site => (
+            <div
+              key={site.id}
+              className="flex items-center justify-between p-4 rounded-lg border border-jalanea-100 hover:border-jalanea-200 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
+                  style={{ backgroundColor: `${SITE_COLORS[site.id] || '#666'}15` }}
+                >
+                  {SITE_ICONS[site.id] || '🔗'}
+                </div>
+                <div>
+                  <h4 className="font-medium text-jalanea-900">{site.name}</h4>
+                  <p className="text-xs text-jalanea-500">Not connected</p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleConnect(site.id)}
+                disabled={connecting === site.id}
+              >
+                {connecting === site.id ? (
+                  <Loader size={14} className="animate-spin" />
+                ) : (
+                  'Connect'
+                )}
+              </Button>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-jalanea-400 mt-4 text-center">
+          Your login credentials are never stored. We only save session cookies for automation.
+        </p>
       </div>
     </Card>
   );
@@ -833,6 +948,7 @@ export const SettingsPage: React.FC = () => {
           <h2 className="text-xl font-bold text-jalanea-900 mb-6">AI Job Agent</h2>
           <div className="space-y-6">
             <SubscriptionPlan />
+            <ConnectedSites />
             <ApplicationHistory />
           </div>
         </div>
