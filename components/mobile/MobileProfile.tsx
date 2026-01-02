@@ -28,7 +28,10 @@ import {
   Clock,
   Trash2,
   ExternalLink,
-  Chrome
+  Chrome,
+  Cookie,
+  Copy,
+  ClipboardPaste
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -60,7 +63,9 @@ export const MobileProfile: React.FC = () => {
   const [credentials, setCredentials] = useState<SiteCredential[]>([]);
   const [sitesLoading, setSitesLoading] = useState(true);
   const [connectingTo, setConnectingTo] = useState<string | null>(null);
-  const [loginMethod, setLoginMethod] = useState<'choose' | 'credentials' | 'browser'>('choose');
+  const [loginMethod, setLoginMethod] = useState<'choose' | 'credentials' | 'browser' | 'cookies'>('choose');
+  const [cookiesJson, setCookiesJson] = useState('');
+  const [importingCookies, setImportingCookies] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -120,6 +125,7 @@ export const MobileProfile: React.FC = () => {
     setEmail('');
     setPassword('');
     setShowPassword(false);
+    setCookiesJson('');
     setSiteError(null);
   };
 
@@ -149,6 +155,96 @@ export const MobileProfile: React.FC = () => {
     // Navigate to job-agent with login mode state
     handleCloseConnect();
     navigate('/job-agent', { state: { loginMode: true, siteId: connectingTo, loginUrl } });
+  };
+
+  // Import cookies from user's browser
+  const handleImportCookies = async () => {
+    if (!currentUser?.uid || !connectingTo) return;
+    if (!cookiesJson.trim()) {
+      setSiteError('Please paste your exported cookies');
+      return;
+    }
+
+    haptics.medium();
+    setImportingCookies(true);
+    setSiteError(null);
+
+    try {
+      // Parse the cookies JSON
+      let cookies;
+      try {
+        cookies = JSON.parse(cookiesJson.trim());
+      } catch {
+        setSiteError('Invalid JSON format. Make sure you copied the complete export.');
+        setImportingCookies(false);
+        return;
+      }
+
+      // Validate it's an array
+      if (!Array.isArray(cookies)) {
+        setSiteError('Cookies should be a JSON array. Check that you exported correctly.');
+        setImportingCookies(false);
+        return;
+      }
+
+      // Filter to only include cookies for this site's domain
+      const siteDomains: Record<string, string[]> = {
+        indeed: ['indeed.com', '.indeed.com', 'secure.indeed.com'],
+        linkedin: ['linkedin.com', '.linkedin.com', 'www.linkedin.com'],
+        ziprecruiter: ['ziprecruiter.com', '.ziprecruiter.com'],
+        glassdoor: ['glassdoor.com', '.glassdoor.com'],
+      };
+      const allowedDomains = siteDomains[connectingTo] || [connectingTo];
+      const filteredCookies = cookies.filter((c: any) => {
+        const domain = c.domain || '';
+        return allowedDomains.some(d => domain.includes(d.replace('.', '')));
+      });
+
+      if (filteredCookies.length === 0) {
+        setSiteError(`No ${connectingTo} cookies found. Make sure you're logged into ${connectingTo} before exporting.`);
+        setImportingCookies(false);
+        return;
+      }
+
+      // Send to the cloud agent API
+      const AGENT_API_URL = import.meta.env.VITE_CLOUD_AGENT_URL || 'http://localhost:3001';
+      const res = await fetch(`${AGENT_API_URL}/sites/${connectingTo}/import-cookies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cookies: filteredCookies }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to import cookies');
+      }
+
+      const data = await res.json();
+
+      // Update local state
+      const newCred: SiteCredential = {
+        siteId: connectingTo,
+        isVerified: true,
+        lastVerifiedAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+        loginStatus: 'success',
+        statusMessage: `Imported ${data.cookiesImported} cookies`,
+      };
+      const existingIndex = credentials.findIndex(c => c.siteId === connectingTo);
+      if (existingIndex >= 0) {
+        setCredentials(prev => prev.map((c, i) => i === existingIndex ? newCred : c));
+      } else {
+        setCredentials(prev => [...prev, newCred]);
+      }
+
+      setSiteSuccess(`${connectingTo.charAt(0).toUpperCase() + connectingTo.slice(1)} connected via cookies!`);
+      setTimeout(() => setSiteSuccess(null), 3000);
+      handleCloseConnect();
+    } catch (err) {
+      setSiteError(err instanceof Error ? err.message : 'Failed to import cookies');
+    } finally {
+      setImportingCookies(false);
+    }
   };
 
   const handleSaveCredentials = async () => {
@@ -553,6 +649,31 @@ export const MobileProfile: React.FC = () => {
                     </div>
                     <ChevronRight size={18} className={isLight ? 'text-slate-400' : 'text-slate-500'} />
                   </button>
+
+                  {/* Cookie Import Option */}
+                  <button
+                    onClick={() => setLoginMethod('cookies')}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all active:scale-[0.98] ${
+                      isLight
+                        ? 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                        : 'border-white/10 bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                      isLight ? 'bg-slate-200' : 'bg-white/10'
+                    }`}>
+                      <Cookie size={24} className={isLight ? 'text-slate-600' : 'text-slate-400'} />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <div className={`font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                        Import Cookies
+                      </div>
+                      <div className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                        Export from your browser (advanced)
+                      </div>
+                    </div>
+                    <ChevronRight size={18} className={isLight ? 'text-slate-400' : 'text-slate-500'} />
+                  </button>
                 </div>
               )}
 
@@ -629,6 +750,72 @@ export const MobileProfile: React.FC = () => {
                       </>
                     ) : (
                       'Connect Account'
+                    )}
+                  </button>
+                </>
+              )}
+
+              {/* Cookie Import Form */}
+              {loginMethod === 'cookies' && (
+                <>
+                  <button
+                    onClick={() => setLoginMethod('choose')}
+                    className={`flex items-center gap-1 text-sm mb-4 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}
+                  >
+                    <ChevronRight size={16} className="rotate-180" />
+                    Back to options
+                  </button>
+
+                  <div className="space-y-4">
+                    {/* Instructions */}
+                    <div className={`p-3 rounded-xl text-sm ${isLight ? 'bg-blue-50 text-blue-800' : 'bg-blue-900/30 text-blue-200'}`}>
+                      <p className="font-medium mb-2">How to export cookies:</p>
+                      <ol className="list-decimal list-inside space-y-1 text-xs">
+                        <li>Install "Cookie-Editor" or "EditThisCookie" browser extension</li>
+                        <li>Go to <a href={`https://www.${connectingTo}.com`} target="_blank" rel="noopener" className="underline">www.{connectingTo}.com</a> and log in</li>
+                        <li>Click the extension icon → "Export" (JSON format)</li>
+                        <li>Paste the JSON below</li>
+                      </ol>
+                    </div>
+
+                    {/* Textarea for cookies */}
+                    <div>
+                      <label className={`block text-sm font-medium mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                        Paste Cookies JSON
+                      </label>
+                      <textarea
+                        value={cookiesJson}
+                        onChange={e => setCookiesJson(e.target.value)}
+                        placeholder='[{"name":"session","value":"...","domain":".indeed.com",...}]'
+                        rows={6}
+                        className={`w-full px-4 py-3 rounded-xl text-sm font-mono ${
+                          isLight
+                            ? 'bg-slate-100 text-slate-900 placeholder:text-slate-400'
+                            : 'bg-white/10 text-white placeholder:text-slate-500'
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  <div className={`mt-3 p-2.5 rounded-xl text-xs ${isLight ? 'bg-gold/10 text-amber-700' : 'bg-gold/10 text-gold/80'}`}>
+                    🔒 Cookies are stored securely on our servers
+                  </div>
+
+                  <button
+                    onClick={handleImportCookies}
+                    disabled={importingCookies || !cookiesJson.trim()}
+                    className="w-full mt-4 py-3.5 bg-gold text-black font-semibold rounded-xl active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {importingCookies ? (
+                      <>
+                        <Loader size={18} className="animate-spin" />
+                        Importing...
+                      </>
+                    ) : (
+                      <>
+                        <ClipboardPaste size={18} />
+                        Import Cookies
+                      </>
                     )}
                   </button>
                 </>
