@@ -6,17 +6,21 @@ import { Check, Zap, Star, Crown, ArrowLeft, Coffee, Heart } from 'lucide-react'
 import { Button } from '../components/Button';
 
 // Price IDs from Stripe (will be set after creating products)
-const PRICE_IDS: Record<SubscriptionTier, string> = {
+const PRICE_IDS: Record<string, string> = {
     starter: import.meta.env.VITE_STRIPE_PRICE_STARTER || '',
     pro: import.meta.env.VITE_STRIPE_PRICE_PRO || '',
     unlimited: import.meta.env.VITE_STRIPE_PRICE_UNLIMITED || '',
 };
 
-const TIER_ICONS = {
+const TIER_ICONS: Record<string, typeof Zap> = {
+    free: Zap,
     starter: Zap,
     pro: Star,
     unlimited: Crown,
 };
+
+// Only show paid tiers on pricing page
+const PAID_TIERS = ['starter', 'pro', 'unlimited'] as const;
 
 export const Pricing: React.FC = () => {
     const navigate = useNavigate();
@@ -88,83 +92,86 @@ export const Pricing: React.FC = () => {
 
                 {/* Pricing Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-                    {(Object.entries(SUBSCRIPTION_TIERS) as [SubscriptionTier, typeof SUBSCRIPTION_TIERS[SubscriptionTier]][]).map(
-                        ([tier, config]) => {
-                            const Icon = TIER_ICONS[tier];
-                            const isPopular = config.highlighted;
+                    {PAID_TIERS.map((tier) => {
+                        const config = SUBSCRIPTION_TIERS[tier];
+                        const Icon = TIER_ICONS[tier];
+                        const isPopular = config.highlighted;
 
-                            return (
-                                <div
-                                    key={tier}
-                                    className={`relative rounded-2xl p-8 transition-all duration-300 ${isPopular
-                                            ? 'bg-gradient-to-b from-gold/20 to-gold/5 border-2 border-gold shadow-xl shadow-gold/10 scale-105'
-                                            : 'bg-jalanea-900/50 border border-white/10 hover:border-white/20'
-                                        }`}
-                                >
-                                    {isPopular && (
-                                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gold text-jalanea-950 text-sm font-bold rounded-full">
-                                            Most Popular
-                                        </div>
-                                    )}
-
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <div
-                                            className={`p-2 rounded-lg ${isPopular ? 'bg-gold/20 text-gold' : 'bg-white/5 text-jalanea-400'
-                                                }`}
-                                        >
-                                            <Icon size={24} />
-                                        </div>
-                                        <h3 className="text-2xl font-display font-bold">{config.name}</h3>
+                        return (
+                            <div
+                                key={tier}
+                                className={`relative rounded-2xl p-8 transition-all duration-300 ${isPopular
+                                        ? 'bg-gradient-to-b from-gold/20 to-gold/5 border-2 border-gold shadow-xl shadow-gold/10 scale-105'
+                                        : 'bg-jalanea-900/50 border border-white/10 hover:border-white/20'
+                                    }`}
+                            >
+                                {isPopular && (
+                                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gold text-jalanea-950 text-sm font-bold rounded-full">
+                                        Most Popular
                                     </div>
+                                )}
 
-                                    <div className="mb-6">
-                                        <span className="text-4xl font-bold">{formatPrice(config.price)}</span>
-                                        <span className="text-jalanea-400">/month</span>
-                                    </div>
-
-                                    <div className="mb-4 text-sm text-jalanea-300">
-                                        {config.credits === Infinity ? (
-                                            <span className="text-gold font-bold">Unlimited credits</span>
-                                        ) : (
-                                            <>
-                                                <span className="text-white font-bold">{config.credits.toLocaleString()}</span> credits/month
-                                            </>
-                                        )}
-                                    </div>
-
-                                    <ul className="space-y-3 mb-8">
-                                        {config.features.map((feature, index) => (
-                                            <li key={index} className="flex items-start gap-2 text-sm">
-                                                <Check
-                                                    size={16}
-                                                    className={`mt-0.5 flex-shrink-0 ${isPopular ? 'text-gold' : 'text-green-400'}`}
-                                                />
-                                                <span className="text-jalanea-200">{feature}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-
-                                    <button
-                                        onClick={() => handleSubscribe(tier)}
-                                        disabled={loading !== null}
-                                        className={`w-full py-3 px-6 rounded-lg font-bold transition-all disabled:opacity-50 ${
-                                            isPopular
-                                                ? 'bg-gold hover:bg-gold-light text-jalanea-950'
-                                                : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
-                                        }`}
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div
+                                        className={`p-2 rounded-lg ${isPopular ? 'bg-gold/20 text-gold' : 'bg-white/5 text-jalanea-400'
+                                            }`}
                                     >
-                                        {loading === tier ? (
-                                            <span className="flex items-center justify-center gap-2">
-                                                <span className="animate-spin">⏳</span> Processing...
-                                            </span>
-                                        ) : (
-                                            'Start Free Trial'
-                                        )}
-                                    </button>
+                                        <Icon size={24} />
+                                    </div>
+                                    <h3 className="text-2xl font-display font-bold">{config.name}</h3>
                                 </div>
-                            );
-                        }
-                    )}
+
+                                <div className="mb-6">
+                                    <span className="text-4xl font-bold">{formatPrice(config.price)}</span>
+                                    <span className="text-jalanea-400">/month</span>
+                                </div>
+
+                                {/* Unified: Show both AI credits and auto-applications */}
+                                <div className="mb-4 text-sm text-jalanea-300 space-y-1">
+                                    {config.aiCredits === Infinity ? (
+                                        <div><span className="text-gold font-bold">Unlimited</span> AI credits</div>
+                                    ) : (
+                                        <div><span className="text-white font-bold">{config.aiCredits.toLocaleString()}</span> AI credits/month</div>
+                                    )}
+                                    {config.autoApplications === Infinity ? (
+                                        <div><span className="text-gold font-bold">Unlimited</span> auto-applications</div>
+                                    ) : (
+                                        <div><span className="text-white font-bold">{config.autoApplications}</span> auto-applications/month</div>
+                                    )}
+                                </div>
+
+                                <ul className="space-y-3 mb-8">
+                                    {config.features.map((feature, index) => (
+                                        <li key={index} className="flex items-start gap-2 text-sm">
+                                            <Check
+                                                size={16}
+                                                className={`mt-0.5 flex-shrink-0 ${isPopular ? 'text-gold' : 'text-green-400'}`}
+                                            />
+                                            <span className="text-jalanea-200">{feature}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+
+                                <button
+                                    onClick={() => handleSubscribe(tier)}
+                                    disabled={loading !== null}
+                                    className={`w-full py-3 px-6 rounded-lg font-bold transition-all disabled:opacity-50 ${
+                                        isPopular
+                                            ? 'bg-gold hover:bg-gold-light text-jalanea-950'
+                                            : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+                                    }`}
+                                >
+                                    {loading === tier ? (
+                                        <span className="flex items-center justify-center gap-2">
+                                            <span className="animate-spin">⏳</span> Processing...
+                                        </span>
+                                    ) : (
+                                        'Start Free Trial'
+                                    )}
+                                </button>
+                            </div>
+                        );
+                    })}
                 </div>
 
                 {/* Community Impact Section */}

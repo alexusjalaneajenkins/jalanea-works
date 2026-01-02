@@ -21,15 +21,47 @@ export const PRICE_IDS = {
   unlimited: process.env.STRIPE_PRICE_UNLIMITED || 'price_1ShWMCFey3ZUkuBY4JE65dFO',
 } as const;
 
-// Tier limits for reference
-export const TIER_LIMITS = {
-  free: 10,
-  starter: 50,
-  pro: 200,
-  unlimited: 999999,
+// Unified tier configuration - bundles AI credits + auto-applications
+export const TIER_CONFIG = {
+  free: {
+    name: 'Free',
+    price: 0,
+    aiCredits: 25,           // For resume/cover letter AI
+    autoApplications: 5,      // Job agent applications per month
+    features: ['Basic AI tools', '5 auto-applications/month', 'Resume builder'],
+  },
+  starter: {
+    name: 'Starter',
+    price: 15,
+    aiCredits: 150,
+    autoApplications: 30,
+    features: ['150 AI credits/month', '30 auto-applications/month', 'AI resume tailoring', 'Cover letter generation'],
+  },
+  pro: {
+    name: 'Pro',
+    price: 29,
+    aiCredits: 500,
+    autoApplications: 100,
+    features: ['500 AI credits/month', '100 auto-applications/month', 'Interview prep', 'Company research', 'Priority support'],
+  },
+  unlimited: {
+    name: 'Unlimited',
+    price: 49,
+    aiCredits: 999999,
+    autoApplications: 999999,
+    features: ['Unlimited AI credits', 'Unlimited applications', 'Priority queue', '1:1 coaching access', 'All Pro features'],
+  },
 } as const;
 
-export type SubscriptionTier = keyof typeof TIER_LIMITS;
+// Legacy compatibility - application limits only
+export const TIER_LIMITS = {
+  free: TIER_CONFIG.free.autoApplications,
+  starter: TIER_CONFIG.starter.autoApplications,
+  pro: TIER_CONFIG.pro.autoApplications,
+  unlimited: TIER_CONFIG.unlimited.autoApplications,
+} as const;
+
+export type SubscriptionTier = keyof typeof TIER_CONFIG;
 
 /**
  * Get or create a Stripe customer for a user

@@ -1435,6 +1435,7 @@ app.post('/billing/webhook', express.raw({ type: 'application/json' }), async (r
 /**
  * Get pricing tiers info (public endpoint)
  * GET /billing/tiers
+ * Returns unified tier config with AI credits + auto-applications bundled
  */
 app.get('/billing/tiers', (req: Request, res: Response) => {
   res.json({
@@ -1443,29 +1444,33 @@ app.get('/billing/tiers', (req: Request, res: Response) => {
         id: 'free',
         name: 'Free',
         price: 0,
-        applicationsPerMonth: TIER_LIMITS.free,
-        features: ['Basic automation', 'Email support', '1 job site']
+        aiCredits: 25,
+        autoApplications: 5,
+        features: ['25 AI credits/month', '5 auto-applications/month', 'Resume builder', 'Basic job search']
       },
       {
         id: 'starter',
         name: 'Starter',
         price: 15,
-        applicationsPerMonth: TIER_LIMITS.starter,
-        features: ['Auto CAPTCHA solving', 'Priority queue', 'All job sites', 'Email notifications']
+        aiCredits: 150,
+        autoApplications: 30,
+        features: ['150 AI credits/month', '30 auto-applications/month', 'AI resume tailoring', 'Cover letter generation', 'All job sites']
       },
       {
         id: 'pro',
         name: 'Pro',
-        price: 35,
-        applicationsPerMonth: TIER_LIMITS.pro,
-        features: ['Everything in Starter', 'Resume optimization', 'Advanced matching', 'SMS notifications']
+        price: 29,
+        aiCredits: 500,
+        autoApplications: 100,
+        features: ['500 AI credits/month', '100 auto-applications/month', 'Interview prep', 'Company research', 'Priority support']
       },
       {
         id: 'unlimited',
         name: 'Unlimited',
-        price: 79,
-        applicationsPerMonth: TIER_LIMITS.unlimited,
-        features: ['Everything in Pro', 'Unlimited applications', 'Dedicated worker', 'API access', 'Priority support']
+        price: 49,
+        aiCredits: 999999,
+        autoApplications: 999999,
+        features: ['Unlimited AI credits', 'Unlimited applications', 'Priority queue', '1:1 coaching access', 'All features']
       }
     ]
   });

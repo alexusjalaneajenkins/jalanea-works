@@ -1009,7 +1009,7 @@ export const AccountPage: React.FC = () => {
                 onClick={async () => {
                   setIsLoadingPortal(true);
                   try {
-                    await redirectToBillingPortal(userCredits.stripeCustomerId!);
+                    await redirectToBillingPortal(userCredits.stripeCustomerId!, currentUser?.uid, currentUser?.email || undefined);
                   } catch (err) {
                     console.error('Portal error:', err);
                     alert('Unable to access billing portal. Please try again.');

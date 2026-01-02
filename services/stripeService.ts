@@ -11,30 +11,43 @@ export const getStripe = () => {
     return stripePromise;
 };
 
-// Subscription tier configuration
+// Unified subscription tiers - bundles AI credits + auto-applications
 export const SUBSCRIPTION_TIERS = {
+    free: {
+        name: 'Free',
+        price: 0,
+        aiCredits: 25,
+        autoApplications: 5,
+        features: [
+            '25 AI credits/month',
+            '5 auto-applications/month',
+            'Resume builder',
+            'Basic job search',
+        ],
+        highlighted: false,
+    },
     starter: {
         name: 'Starter',
-        price: 12,
-        credits: 300,
+        price: 15,
+        aiCredits: 150,
+        autoApplications: 30,
         features: [
-            '300 credits per month',
-            '~10 full applications',
+            '150 AI credits/month',
+            '30 auto-applications/month',
             'AI resume tailoring',
             'Cover letter generation',
-            'Email support',
+            'All job sites',
         ],
         highlighted: false,
     },
     pro: {
         name: 'Pro',
-        price: 24,
-        credits: 1200,
+        price: 29,
+        aiCredits: 500,
+        autoApplications: 100,
         features: [
-            '1,200 credits per month',
-            '3 applications per day',
-            'AI resume tailoring',
-            'Cover letter generation',
+            '500 AI credits/month',
+            '100 auto-applications/month',
             'Interview prep',
             'Company research',
             'Priority support',
@@ -43,15 +56,15 @@ export const SUBSCRIPTION_TIERS = {
     },
     unlimited: {
         name: 'Unlimited',
-        price: 39,
-        credits: Infinity,
+        price: 49,
+        aiCredits: Infinity,
+        autoApplications: Infinity,
         features: [
-            'Unlimited credits',
+            'Unlimited AI credits',
             'Unlimited applications',
-            'All Pro features',
-            'Smart Schedule',
+            'Priority queue',
             '1:1 coaching access',
-            'Priority support',
+            'All features included',
         ],
         highlighted: false,
     },
@@ -59,8 +72,8 @@ export const SUBSCRIPTION_TIERS = {
 
 export type SubscriptionTier = keyof typeof SUBSCRIPTION_TIERS;
 
-// API base URL
-const API_BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:5173';
+// API base URL - use Cloud Agent API on Render
+const API_URL = import.meta.env.VITE_CLOUD_AGENT_URL || 'https://jalanea-api.onrender.com';
 
 /**
  * Create a Stripe Checkout session and redirect to payment
@@ -70,15 +83,23 @@ export async function createCheckoutSession(
     userId?: string,
     userEmail?: string
 ): Promise<{ sessionId: string; url: string }> {
-    const response = await fetch(`${API_BASE_URL}/api/stripe-checkout`, {
+    // Map price IDs to tier names for the backend
+    const tierMap: Record<string, string> = {
+        [import.meta.env.VITE_STRIPE_PRICE_STARTER || '']: 'starter',
+        [import.meta.env.VITE_STRIPE_PRICE_PRO || '']: 'pro',
+        [import.meta.env.VITE_STRIPE_PRICE_UNLIMITED || '']: 'unlimited',
+    };
+    const tier = tierMap[priceId] || 'starter';
+
+    const response = await fetch(`${API_URL}/billing/checkout`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            priceId,
             userId,
-            userEmail,
+            email: userEmail,
+            tier,
             successUrl: `${window.location.origin}/dashboard?subscription=success`,
             cancelUrl: `${window.location.origin}/pricing`,
         }),
@@ -128,14 +149,15 @@ export function formatPrice(amount: number): string {
 /**
  * Redirect to Stripe Customer Portal for billing management
  */
-export async function redirectToBillingPortal(customerId: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/stripe-portal`, {
+export async function redirectToBillingPortal(customerId: string, userId?: string, email?: string): Promise<void> {
+    const response = await fetch(`${API_URL}/billing/portal`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            customerId,
+            userId,
+            email,
             returnUrl: window.location.href,
         }),
     });

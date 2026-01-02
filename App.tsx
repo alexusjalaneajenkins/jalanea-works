@@ -6,6 +6,7 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { Home } from './pages/Home';
 import { Dashboard } from './pages/Dashboard';
 import { AccountPage } from './pages/Account';
+import { SettingsPage } from './pages/Settings';
 import { Jobs } from './pages/Jobs';
 import { ResumeBuilder } from './pages/ResumeBuilder';
 import { Onboarding } from './pages/Onboarding';
@@ -209,7 +210,8 @@ const AppLayout: React.FC = () => {
             <motion.div key={location.pathname} initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="min-h-full">
               <Routes location={location}>
                 <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/account" element={<AccountPage />} />
+                <Route path="/account" element={<SettingsPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/jobs" element={<Jobs setRoute={handleSetRoute} />} />
                 <Route path="/resume" element={<ResumeBuilder />} />
                 <Route path="/schedule" element={<Schedule />} />
