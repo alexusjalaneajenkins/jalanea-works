@@ -1,6 +1,6 @@
 // Jalanea Works Service Worker
 // Version-based cache for easy updates
-const CACHE_VERSION = 'v1.0.0';
+const CACHE_VERSION = 'v1.1.0'; // Updated for job preferences feature
 const STATIC_CACHE = `jalanea-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `jalanea-dynamic-${CACHE_VERSION}`;
 const IMAGE_CACHE = `jalanea-images-${CACHE_VERSION}`;
