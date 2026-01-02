@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileText,
   Briefcase,
@@ -16,11 +16,28 @@ import {
   MapPin,
   Mail,
   CheckCircle2,
-  Zap
+  Zap,
+  Link2,
+  Eye,
+  EyeOff,
+  X,
+  Loader,
+  XCircle,
+  RefreshCw,
+  Clock,
+  Trash2
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { haptics } from '../../utils/haptics';
+import {
+  getJobSites,
+  getSiteCredentials,
+  saveSiteCredentials,
+  deleteSiteCredentials,
+  JobSite,
+  SiteCredential,
+} from '../../services/cloudAgentService';
 
 /**
  * MobileProfile - Research-driven design applying:
@@ -33,6 +50,131 @@ import { haptics } from '../../utils/haptics';
 export const MobileProfile: React.FC = () => {
   const { isLight, toggleTheme } = useTheme();
   const { currentUser, userProfile, signOut } = useAuth();
+
+  // Connected Sites state
+  const [sites, setSites] = useState<JobSite[]>([]);
+  const [credentials, setCredentials] = useState<SiteCredential[]>([]);
+  const [sitesLoading, setSitesLoading] = useState(true);
+  const [connectingTo, setConnectingTo] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [siteError, setSiteError] = useState<string | null>(null);
+  const [siteSuccess, setSiteSuccess] = useState<string | null>(null);
+
+  // Load job sites and credentials
+  useEffect(() => {
+    const loadSitesData = async () => {
+      if (!currentUser?.uid) {
+        setSitesLoading(false);
+        return;
+      }
+      try {
+        const [sitesData, credsData] = await Promise.all([
+          getJobSites(),
+          getSiteCredentials(currentUser.uid),
+        ]);
+        setSites(sitesData);
+        setCredentials(credsData);
+      } catch (err) {
+        console.error('Error loading sites:', err);
+      } finally {
+        setSitesLoading(false);
+      }
+    };
+    loadSitesData();
+  }, [currentUser]);
+
+  const getCredentialStatus = (siteId: string): SiteCredential | undefined => {
+    return credentials.find(c => c.siteId === siteId);
+  };
+
+  const handleOpenConnect = (siteId: string) => {
+    haptics.light();
+    setConnectingTo(siteId);
+    setEmail('');
+    setPassword('');
+    setShowPassword(false);
+    setSiteError(null);
+  };
+
+  const handleCloseConnect = () => {
+    setConnectingTo(null);
+    setEmail('');
+    setPassword('');
+    setShowPassword(false);
+    setSiteError(null);
+  };
+
+  const handleSaveCredentials = async () => {
+    if (!currentUser?.uid || !connectingTo) return;
+    if (!email.trim() || !password.trim()) {
+      setSiteError('Please enter both email and password');
+      return;
+    }
+
+    haptics.medium();
+    setSaving(true);
+    setSiteError(null);
+    try {
+      await saveSiteCredentials(currentUser.uid, connectingTo, email.trim(), password);
+      const newCred: SiteCredential = {
+        siteId: connectingTo,
+        isVerified: false,
+        lastVerifiedAt: null,
+        lastLoginAt: null,
+        loginStatus: 'pending',
+        statusMessage: 'Credentials saved - will verify on next job run',
+      };
+      const existingIndex = credentials.findIndex(c => c.siteId === connectingTo);
+      if (existingIndex >= 0) {
+        setCredentials(prev => prev.map((c, i) => i === existingIndex ? newCred : c));
+      } else {
+        setCredentials(prev => [...prev, newCred]);
+      }
+      setSiteSuccess(`${connectingTo.charAt(0).toUpperCase() + connectingTo.slice(1)} connected!`);
+      setTimeout(() => setSiteSuccess(null), 3000);
+      handleCloseConnect();
+    } catch (err) {
+      setSiteError(err instanceof Error ? err.message : 'Failed to save credentials');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDisconnect = async (siteId: string) => {
+    if (!currentUser?.uid) return;
+    haptics.medium();
+    setDeleting(siteId);
+    try {
+      await deleteSiteCredentials(currentUser.uid, siteId);
+      setCredentials(prev => prev.filter(c => c.siteId !== siteId));
+      setSiteSuccess(`${siteId.charAt(0).toUpperCase() + siteId.slice(1)} disconnected`);
+      setTimeout(() => setSiteSuccess(null), 3000);
+    } catch (err) {
+      setSiteError('Failed to disconnect');
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const getStatusBadge = (cred: SiteCredential) => {
+    const baseClasses = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium';
+    switch (cred.loginStatus) {
+      case 'success':
+        return <span className={`${baseClasses} bg-green-100 text-green-700`}><CheckCircle2 size={10} /> Connected</span>;
+      case 'failed':
+        return <span className={`${baseClasses} bg-red-100 text-red-700`}><XCircle size={10} /> Failed</span>;
+      case 'needs_2fa':
+        return <span className={`${baseClasses} bg-yellow-100 text-yellow-700`}><Shield size={10} /> 2FA Needed</span>;
+      case 'needs_captcha':
+        return <span className={`${baseClasses} bg-orange-100 text-orange-700`}><RefreshCw size={10} /> CAPTCHA</span>;
+      default:
+        return <span className={`${baseClasses} bg-gold/20 text-gold`}><Clock size={10} /> Pending</span>;
+    }
+  };
 
   // Glass panel styles matching desktop design system
   const glassPanel = isLight
@@ -195,6 +337,193 @@ export const MobileProfile: React.FC = () => {
           ))}
         </div>
       </motion.div>
+
+      {/* Connected Job Sites - Critical for mobile job agent */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.07 }}
+        className={`p-4 rounded-2xl mb-4 ${glassPanel}`}
+      >
+        <h3 className={`text-xs font-semibold uppercase tracking-wide mb-3 flex items-center gap-2 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
+          <Link2 size={14} /> Connected Job Sites
+        </h3>
+
+        {siteSuccess && (
+          <div className="flex items-center gap-2 p-2.5 mb-3 bg-green-100 text-green-700 rounded-xl text-xs">
+            <CheckCircle2 size={14} />
+            {siteSuccess}
+          </div>
+        )}
+
+        <p className={`text-xs mb-3 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+          Connect your job accounts to enable automatic applications from your phone.
+        </p>
+
+        {sitesLoading ? (
+          <div className="flex justify-center py-4">
+            <Loader className="w-5 h-5 animate-spin text-gold" />
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {sites.map(site => {
+              const cred = getCredentialStatus(site.id);
+              const isConnected = !!cred;
+              const isDeleting = deleting === site.id;
+
+              return (
+                <div
+                  key={site.id}
+                  className={`flex items-center gap-3 p-3 rounded-xl ${
+                    isLight ? 'bg-slate-50' : 'bg-white/5'
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg ${
+                    isLight ? 'bg-white shadow-sm' : 'bg-slate-800'
+                  }`}>
+                    {site.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className={`font-medium text-sm ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                      {site.name}
+                    </div>
+                    {isConnected && cred && (
+                      <div className="mt-0.5">{getStatusBadge(cred)}</div>
+                    )}
+                  </div>
+                  {isConnected ? (
+                    <button
+                      onClick={() => handleDisconnect(site.id)}
+                      disabled={isDeleting}
+                      className={`p-2 rounded-lg active:scale-95 transition-all ${
+                        isLight ? 'bg-red-50 text-red-500' : 'bg-red-500/20 text-red-400'
+                      }`}
+                    >
+                      {isDeleting ? <Loader size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleOpenConnect(site.id)}
+                      className="px-3 py-1.5 bg-gold text-black text-xs font-semibold rounded-lg active:scale-95 transition-all"
+                    >
+                      Connect
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </motion.div>
+
+      {/* Connection Modal */}
+      <AnimatePresence>
+        {connectingTo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/50"
+            onClick={handleCloseConnect}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25 }}
+              onClick={e => e.stopPropagation()}
+              className={`w-full max-w-md rounded-t-3xl p-5 pb-8 ${
+                isLight ? 'bg-white' : 'bg-slate-900'
+              }`}
+              style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))' }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className={`text-lg font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                  Connect {connectingTo.charAt(0).toUpperCase() + connectingTo.slice(1)}
+                </h3>
+                <button
+                  onClick={handleCloseConnect}
+                  className={`p-2 rounded-full ${isLight ? 'bg-slate-100' : 'bg-white/10'}`}
+                >
+                  <X size={18} className={isLight ? 'text-slate-500' : 'text-slate-400'} />
+                </button>
+              </div>
+
+              {siteError && (
+                <div className="flex items-center gap-2 p-3 mb-4 bg-red-100 text-red-700 rounded-xl text-sm">
+                  <XCircle size={16} />
+                  {siteError}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div>
+                  <label className={`block text-sm font-medium mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className={`w-full px-4 py-3 rounded-xl text-base ${
+                      isLight
+                        ? 'bg-slate-100 text-slate-900 placeholder:text-slate-400'
+                        : 'bg-white/10 text-white placeholder:text-slate-500'
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className={`w-full px-4 py-3 pr-12 rounded-xl text-base ${
+                        isLight
+                          ? 'bg-slate-100 text-slate-900 placeholder:text-slate-400'
+                          : 'bg-white/10 text-white placeholder:text-slate-500'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 ${
+                        isLight ? 'text-slate-400' : 'text-slate-500'
+                      }`}
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className={`mt-3 p-2.5 rounded-xl text-xs ${isLight ? 'bg-gold/10 text-amber-700' : 'bg-gold/10 text-gold/80'}`}>
+                🔒 Your credentials are encrypted and stored securely
+              </div>
+
+              <button
+                onClick={handleSaveCredentials}
+                disabled={saving}
+                className="w-full mt-4 py-3.5 bg-gold text-black font-semibold rounded-xl active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {saving ? (
+                  <>
+                    <Loader size={18} className="animate-spin" />
+                    Connecting...
+                  </>
+                ) : (
+                  'Connect Account'
+                )}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Reality & Challenges - Unified glassmorphism style with gold accent */}
       <motion.div
