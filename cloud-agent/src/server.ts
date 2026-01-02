@@ -2042,12 +2042,28 @@ app.post('/stream/start', async (req: Request, res: Response) => {
     // Check if user already has an active session
     for (const [sid, session] of streamingSessions) {
       if (session.userId === userId) {
-        // Return existing session
+        // Return existing session with current screenshot if browser is ready
+        try {
+          if (session.browser) {
+            const screenshot = await session.browser.screenshot();
+            return res.json({
+              sessionId: sid,
+              siteId: session.siteId,
+              status: 'existing',
+              initialScreenshot: `data:image/jpeg;base64,${screenshot.base64}`,
+              viewport: { width: screenshot.width, height: screenshot.height },
+              url: session.browser.getUrl(),
+              message: 'Returning existing session'
+            });
+          }
+        } catch {
+          // Browser not ready yet, return without screenshot
+        }
         return res.json({
           sessionId: sid,
           siteId: session.siteId,
           status: 'existing',
-          message: 'Returning existing session'
+          message: 'Returning existing session (loading...)'
         });
       }
     }
@@ -2055,30 +2071,9 @@ app.post('/stream/start', async (req: Request, res: Response) => {
     const sessionId = generateSessionId();
     console.log(`[Stream] Creating new session ${sessionId} for user ${userId} on ${siteId}`);
 
-    // Create browser with mobile-friendly viewport
-    const browserType = (process.env.BROWSER_TYPE || 'chromium') as 'chromium' | 'camoufox';
-    const sessionDir = path.join(process.cwd(), 'sessions', siteId);
-
-    const browser = new BrowserController({
-      headless: true, // Must be headless in cloud
-      browserType,
-      sessionDir,
-      viewport: { width: 390, height: 844 }, // iPhone 14 Pro size
-      capsolverApiKey: process.env.CAPSOLVER_API_KEY,
-    });
-
-    await browser.launch();
-
-    // Navigate to login URL
-    const targetUrl = url || site.loginUrl;
-    await browser.navigate(targetUrl);
-
-    // Wait for page to load
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Create session
-    const session: StreamingSession = {
-      browser,
+    // Create placeholder session immediately so we can respond fast
+    const placeholderSession: StreamingSession = {
+      browser: null as any, // Will be set when browser launches
       siteId,
       userId,
       isStreaming: false,
@@ -2087,21 +2082,90 @@ app.post('/stream/start', async (req: Request, res: Response) => {
       clients: new Set(),
       lastActivity: Date.now(),
     };
+    streamingSessions.set(sessionId, placeholderSession);
 
-    streamingSessions.set(sessionId, session);
-
-    // Take initial screenshot
-    const screenshot = await browser.screenshot();
-
+    // Respond immediately - browser will start in background
     res.json({
       sessionId,
       siteId,
-      status: 'created',
-      initialScreenshot: `data:image/jpeg;base64,${screenshot.base64}`,
-      viewport: { width: screenshot.width, height: screenshot.height },
-      url: browser.getUrl(),
-      message: 'Session created. Connect via WebSocket to start streaming.'
+      status: 'starting',
+      message: 'Session created. Browser is starting... Connect via WebSocket for updates.'
     });
+
+    // Start browser in background (don't await)
+    (async () => {
+      try {
+        const browserType = (process.env.BROWSER_TYPE || 'chromium') as 'chromium' | 'camoufox';
+        const sessionDir = path.join(process.cwd(), 'sessions', siteId);
+
+        const browser = new BrowserController({
+          headless: true,
+          browserType,
+          sessionDir,
+          viewport: { width: 390, height: 844 },
+          capsolverApiKey: process.env.CAPSOLVER_API_KEY,
+        });
+
+        console.log(`[Stream] Launching browser for session ${sessionId}...`);
+        await browser.launch();
+
+        // Navigate to login URL
+        const targetUrl = url || site.loginUrl;
+        console.log(`[Stream] Navigating to ${targetUrl}...`);
+        await browser.navigate(targetUrl);
+
+        // Wait for page to load
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Update session with real browser
+        const session = streamingSessions.get(sessionId);
+        if (session) {
+          session.browser = browser;
+          session.lastActivity = Date.now();
+
+          // Take initial screenshot
+          let screenshot: string | undefined;
+          try {
+            const ss = await browser.screenshot();
+            screenshot = `data:image/jpeg;base64,${ss.base64}`;
+          } catch (e) {
+            console.error('[Stream] Failed to take initial screenshot:', e);
+          }
+
+          // Notify connected clients that browser is ready with initial screenshot
+          broadcastToSession(sessionId, {
+            type: 'stream:ready',
+            sessionId,
+            data: {
+              url: browser.getUrl(),
+              screenshot,
+              viewport: { width: 390, height: 844 },
+              message: 'Browser ready!'
+            }
+          });
+
+          // If clients are waiting, start streaming immediately
+          if (session.clients.size > 0) {
+            session.isStreaming = true;
+            startScreenshotStreaming(sessionId);
+          }
+
+          console.log(`[Stream] Session ${sessionId} browser ready!`);
+        }
+      } catch (error) {
+        console.error(`[Stream] Failed to start browser for ${sessionId}:`, error);
+
+        // Notify clients of error
+        broadcastToSession(sessionId, {
+          type: 'stream:error',
+          sessionId,
+          data: { error: (error as Error).message }
+        });
+
+        // Clean up failed session
+        streamingSessions.delete(sessionId);
+      }
+    })();
 
   } catch (error) {
     console.error('[Stream] Error starting session:', error);

@@ -86,9 +86,16 @@ export const LiveBrowser: React.FC<LiveBrowserProps> = ({
 
       const data = await res.json();
       setSessionId(data.sessionId);
-      setScreenshot(data.initialScreenshot);
-      setViewport(data.viewport);
-      setCurrentUrl(data.url);
+
+      // Browser starts in background - connect WebSocket immediately
+      // We'll receive stream:ready when browser is actually ready
+      if (data.initialScreenshot) {
+        // Old behavior: got screenshot immediately
+        setScreenshot(data.initialScreenshot);
+        setViewport(data.viewport);
+        setCurrentUrl(data.url);
+      }
+      // New behavior: status: 'starting' means browser launching in background
 
       // Connect WebSocket for streaming
       connectWebSocket(data.sessionId);
@@ -119,7 +126,24 @@ export const LiveBrowser: React.FC<LiveBrowserProps> = ({
 
         switch (data.type) {
           case 'stream:subscribed':
+            // Subscribed to session, but browser may still be starting
+            // Don't set connected until we get stream:ready or first screenshot
+            console.log('[LiveBrowser] Subscribed to session');
+            break;
+
+          case 'stream:ready':
+            // Browser finished launching in background
+            console.log('[LiveBrowser] Browser ready, starting stream');
             setConnectionState('connected');
+            if (data.data?.screenshot) {
+              setScreenshot(data.data.screenshot);
+            }
+            if (data.data?.url) {
+              setCurrentUrl(data.data.url);
+            }
+            if (data.data?.viewport) {
+              setViewport(data.data.viewport);
+            }
             break;
 
           case 'stream:screenshot':
@@ -127,6 +151,10 @@ export const LiveBrowser: React.FC<LiveBrowserProps> = ({
               setScreenshot(data.data.image);
               setCurrentUrl(data.data.url);
               setViewport({ width: data.data.width, height: data.data.height });
+              // First screenshot also means connected
+              if (connectionState === 'connecting') {
+                setConnectionState('connected');
+              }
             }
             break;
 
@@ -143,8 +171,14 @@ export const LiveBrowser: React.FC<LiveBrowserProps> = ({
             setConnectionState('disconnected');
             break;
 
+          case 'stream:error':
+            console.error('[LiveBrowser] Stream error:', data.data?.error);
+            setError(data.data?.error || 'Browser failed to start');
+            setConnectionState('error');
+            break;
+
           case 'error':
-            console.error('[LiveBrowser] WebSocket error:', data.data.message);
+            console.error('[LiveBrowser] WebSocket error:', data.data?.message);
             break;
         }
       } catch (err) {
@@ -434,7 +468,8 @@ export const LiveBrowser: React.FC<LiveBrowserProps> = ({
         {connectionState === 'connecting' && !screenshot && (
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <Loader size={32} className="text-gold animate-spin mb-4" />
-            <p className="text-slate-400 text-sm">Opening {siteName}...</p>
+            <p className="text-slate-400 text-sm">Starting browser...</p>
+            <p className="text-slate-500 text-xs mt-2">This may take 30-60 seconds</p>
           </div>
         )}
 
