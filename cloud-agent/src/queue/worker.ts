@@ -18,6 +18,7 @@ import {
   incrementApplicationCount,
   logUsage,
 } from '../db/client.js';
+import { notify } from '../notifications.js';
 
 const QUEUE_NAME = 'job-applications';
 
@@ -109,6 +110,13 @@ async function processJobApply(
         siteId: data.siteId,
       });
 
+      // Notify user of success
+      await notify(data.userId, 'application_success', {
+        jobTitle: data.jobTitle,
+        company: data.companyName,
+        siteId: data.siteId,
+      });
+
       return { applied: true };
     } else if (state.status === 'error') {
       const errorMsg = state.errors[0] || 'Unknown error';
@@ -119,6 +127,13 @@ async function processJobApply(
           errorMessage: errorMsg,
         });
       }
+
+      // Notify user of failure
+      await notify(data.userId, 'application_failed', {
+        jobTitle: data.jobTitle,
+        company: data.companyName,
+        reason: errorMsg,
+      });
 
       return { applied: false, error: errorMsg };
     } else {

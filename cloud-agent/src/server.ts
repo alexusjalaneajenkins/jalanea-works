@@ -996,6 +996,160 @@ app.get('/dashboard/:userId', async (req: Request, res: Response) => {
 });
 
 // ============================================
+// Queue Management Endpoints
+// ============================================
+
+import {
+  getJobQueue,
+  getQueueStats,
+  getUserJobs,
+  queueJobApply,
+  queueJobSearch,
+  cancelJob,
+  pauseQueue,
+  resumeQueue
+} from './queue/jobs.js';
+
+/**
+ * Get queue statistics
+ */
+app.get('/queue/stats', async (req: Request, res: Response) => {
+  try {
+    const stats = await getQueueStats();
+    res.json({
+      success: true,
+      stats
+    });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Get jobs for a specific user
+ */
+app.get('/queue/user/:userId', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { status } = req.query;
+
+    const jobs = await getUserJobs(
+      userId,
+      (status as 'waiting' | 'active' | 'completed' | 'failed') || 'waiting'
+    );
+
+    res.json({
+      success: true,
+      jobs,
+      count: jobs.length
+    });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Add a job search task to the queue
+ */
+app.post('/queue/search', async (req: Request, res: Response) => {
+  try {
+    const { userId, siteId, searchQuery, location, priority } = req.body;
+
+    if (!userId || !siteId || !searchQuery) {
+      return res.status(400).json({ error: 'userId, siteId, and searchQuery are required' });
+    }
+
+    const jobId = await queueJobSearch(
+      { userId, siteId, searchQuery, location: location || '' },
+      priority || 0
+    );
+
+    res.json({
+      success: true,
+      jobId,
+      message: 'Search job queued'
+    });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Add a job application task to the queue
+ */
+app.post('/queue/apply', async (req: Request, res: Response) => {
+  try {
+    const { userId, siteId, jobUrl, jobTitle, companyName, applicationId, priority } = req.body;
+
+    if (!userId || !siteId || !jobUrl || !jobTitle) {
+      return res.status(400).json({ error: 'userId, siteId, jobUrl, and jobTitle are required' });
+    }
+
+    const jobId = await queueJobApply(
+      { userId, siteId, jobUrl, jobTitle, companyName, applicationId },
+      priority || 0
+    );
+
+    res.json({
+      success: true,
+      jobId,
+      message: 'Application job queued'
+    });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Cancel a queued job
+ */
+app.delete('/queue/job/:jobId', async (req: Request, res: Response) => {
+  try {
+    const { jobId } = req.params;
+
+    const cancelled = await cancelJob(jobId);
+
+    if (!cancelled) {
+      return res.status(400).json({
+        error: 'Could not cancel job',
+        message: 'Job may be in progress or already completed'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Job cancelled'
+    });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Pause the queue (admin only)
+ */
+app.post('/queue/pause', async (req: Request, res: Response) => {
+  try {
+    await pauseQueue();
+    res.json({ success: true, message: 'Queue paused' });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Resume the queue (admin only)
+ */
+app.post('/queue/resume', async (req: Request, res: Response) => {
+  try {
+    await resumeQueue();
+    res.json({ success: true, message: 'Queue resumed' });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+// ============================================
 // Notification Endpoints
 // ============================================
 
