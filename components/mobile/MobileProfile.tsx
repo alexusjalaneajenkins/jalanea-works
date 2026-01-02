@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import {
   FileText,
   Briefcase,
@@ -25,7 +26,9 @@ import {
   XCircle,
   RefreshCw,
   Clock,
-  Trash2
+  Trash2,
+  ExternalLink,
+  Chrome
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -50,12 +53,14 @@ import {
 export const MobileProfile: React.FC = () => {
   const { isLight, toggleTheme } = useTheme();
   const { currentUser, userProfile, signOut } = useAuth();
+  const navigate = useNavigate();
 
   // Connected Sites state
   const [sites, setSites] = useState<JobSite[]>([]);
   const [credentials, setCredentials] = useState<SiteCredential[]>([]);
   const [sitesLoading, setSitesLoading] = useState(true);
   const [connectingTo, setConnectingTo] = useState<string | null>(null);
+  const [loginMethod, setLoginMethod] = useState<'choose' | 'credentials' | 'browser'>('choose');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -102,6 +107,7 @@ export const MobileProfile: React.FC = () => {
   const handleOpenConnect = (siteId: string) => {
     haptics.light();
     setConnectingTo(siteId);
+    setLoginMethod('choose'); // Start with method selection
     setEmail('');
     setPassword('');
     setShowPassword(false);
@@ -110,10 +116,39 @@ export const MobileProfile: React.FC = () => {
 
   const handleCloseConnect = () => {
     setConnectingTo(null);
+    setLoginMethod('choose');
     setEmail('');
     setPassword('');
     setShowPassword(false);
     setSiteError(null);
+  };
+
+  // Launch browser login via AI Job Agent
+  const handleBrowserLogin = () => {
+    if (!connectingTo) return;
+    haptics.medium();
+
+    // Get the site's login URL from site config
+    const site = sites.find(s => s.id === connectingTo);
+    const loginUrls: Record<string, string> = {
+      indeed: 'https://secure.indeed.com/account/login',
+      linkedin: 'https://www.linkedin.com/login',
+      ziprecruiter: 'https://www.ziprecruiter.com/authn/login',
+      glassdoor: 'https://www.glassdoor.com/profile/login_input.htm',
+    };
+    const loginUrl = site?.loginUrl || loginUrls[connectingTo] || `https://www.${connectingTo}.com/login`;
+
+    // Store login context for the agent to pick up
+    sessionStorage.setItem('agent_login_mode', JSON.stringify({
+      siteId: connectingTo,
+      siteName: site?.name || connectingTo,
+      loginUrl,
+      returnTo: '/account',
+    }));
+
+    // Navigate to job-agent with login mode state
+    handleCloseConnect();
+    navigate('/job-agent', { state: { loginMode: true, siteId: connectingTo, loginUrl } });
   };
 
   const handleSaveCredentials = async () => {
@@ -464,70 +499,140 @@ export const MobileProfile: React.FC = () => {
                 </div>
               )}
 
-              <div className="space-y-4">
-                <div>
-                  <label className={`block text-sm font-medium mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder="your@email.com"
-                    className={`w-full px-4 py-3 rounded-xl text-base ${
+              {/* Method Selection */}
+              {loginMethod === 'choose' && (
+                <div className="space-y-3">
+                  <p className={`text-sm mb-4 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                    How would you like to connect your {connectingTo.charAt(0).toUpperCase() + connectingTo.slice(1)} account?
+                  </p>
+
+                  {/* Browser Login Option - Best for OAuth (Google, Apple) */}
+                  <button
+                    onClick={() => handleBrowserLogin()}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all active:scale-[0.98] ${
                       isLight
-                        ? 'bg-slate-100 text-slate-900 placeholder:text-slate-400'
-                        : 'bg-white/10 text-white placeholder:text-slate-500'
+                        ? 'border-gold bg-gold/5 hover:bg-gold/10'
+                        : 'border-gold/50 bg-gold/10 hover:bg-gold/20'
                     }`}
-                  />
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-gold/20 flex items-center justify-center">
+                      <Chrome size={24} className="text-gold" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <div className={`font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                        Sign in with Browser
+                      </div>
+                      <div className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                        Best for Google, Apple, or social login
+                      </div>
+                    </div>
+                    <ExternalLink size={18} className="text-gold" />
+                  </button>
+
+                  {/* Credentials Option */}
+                  <button
+                    onClick={() => setLoginMethod('credentials')}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all active:scale-[0.98] ${
+                      isLight
+                        ? 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                        : 'border-white/10 bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                      isLight ? 'bg-slate-200' : 'bg-white/10'
+                    }`}>
+                      <Mail size={24} className={isLight ? 'text-slate-600' : 'text-slate-400'} />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <div className={`font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                        Email & Password
+                      </div>
+                      <div className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                        Use your {connectingTo} login credentials
+                      </div>
+                    </div>
+                    <ChevronRight size={18} className={isLight ? 'text-slate-400' : 'text-slate-500'} />
+                  </button>
                 </div>
-                <div>
-                  <label className={`block text-sm font-medium mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-                    Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className={`w-full px-4 py-3 pr-12 rounded-xl text-base ${
-                        isLight
-                          ? 'bg-slate-100 text-slate-900 placeholder:text-slate-400'
-                          : 'bg-white/10 text-white placeholder:text-slate-500'
-                      }`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 ${
-                        isLight ? 'text-slate-400' : 'text-slate-500'
-                      }`}
-                    >
-                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
+              )}
+
+              {/* Credentials Form */}
+              {loginMethod === 'credentials' && (
+                <>
+                  <button
+                    onClick={() => setLoginMethod('choose')}
+                    className={`flex items-center gap-1 text-sm mb-4 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}
+                  >
+                    <ChevronRight size={16} className="rotate-180" />
+                    Back to options
+                  </button>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className={`block text-sm font-medium mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        placeholder="your@email.com"
+                        className={`w-full px-4 py-3 rounded-xl text-base ${
+                          isLight
+                            ? 'bg-slate-100 text-slate-900 placeholder:text-slate-400'
+                            : 'bg-white/10 text-white placeholder:text-slate-500'
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-sm font-medium mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                        Password
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={password}
+                          onChange={e => setPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className={`w-full px-4 py-3 pr-12 rounded-xl text-base ${
+                            isLight
+                              ? 'bg-slate-100 text-slate-900 placeholder:text-slate-400'
+                              : 'bg-white/10 text-white placeholder:text-slate-500'
+                          }`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 ${
+                            isLight ? 'text-slate-400' : 'text-slate-500'
+                          }`}
+                        >
+                          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <div className={`mt-3 p-2.5 rounded-xl text-xs ${isLight ? 'bg-gold/10 text-amber-700' : 'bg-gold/10 text-gold/80'}`}>
-                🔒 Your credentials are encrypted and stored securely
-              </div>
+                  <div className={`mt-3 p-2.5 rounded-xl text-xs ${isLight ? 'bg-gold/10 text-amber-700' : 'bg-gold/10 text-gold/80'}`}>
+                    🔒 Your credentials are encrypted and stored securely
+                  </div>
 
-              <button
-                onClick={handleSaveCredentials}
-                disabled={saving}
-                className="w-full mt-4 py-3.5 bg-gold text-black font-semibold rounded-xl active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {saving ? (
-                  <>
-                    <Loader size={18} className="animate-spin" />
-                    Connecting...
-                  </>
-                ) : (
-                  'Connect Account'
-                )}
-              </button>
+                  <button
+                    onClick={handleSaveCredentials}
+                    disabled={saving}
+                    className="w-full mt-4 py-3.5 bg-gold text-black font-semibold rounded-xl active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader size={18} className="animate-spin" />
+                        Connecting...
+                      </>
+                    ) : (
+                      'Connect Account'
+                    )}
+                  </button>
+                </>
+              )}
             </motion.div>
           </motion.div>
         )}

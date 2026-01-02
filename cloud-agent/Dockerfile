@@ -71,6 +71,10 @@ COPY --from=builder /app/dist ./dist
 # Download Camoufox browser
 RUN npx camoufox-js fetch
 
+# Install Playwright browsers (chromium for fallback)
+RUN npx playwright install chromium
+RUN npx playwright install-deps chromium
+
 # Create session storage directory
 RUN mkdir -p ./sessions && chmod 755 ./sessions
 

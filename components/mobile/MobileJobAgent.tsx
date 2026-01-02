@@ -22,6 +22,10 @@ const JOB_SITES = [
 
 interface MobileJobAgentProps {
   onBack: () => void;
+  // Login mode props (for OAuth/browser-based login)
+  loginMode?: boolean;
+  loginSiteId?: string;
+  loginUrl?: string;
 }
 
 interface AgentStatus {
@@ -37,7 +41,12 @@ interface SiteCredential {
   status: 'active' | 'expired' | 'error';
 }
 
-export const MobileJobAgent: React.FC<MobileJobAgentProps> = ({ onBack }) => {
+export const MobileJobAgent: React.FC<MobileJobAgentProps> = ({
+  onBack,
+  loginMode,
+  loginSiteId,
+  loginUrl
+}) => {
   const { isLight } = useTheme();
   const { currentUser, userProfile } = useAuth();
 
@@ -53,6 +62,10 @@ export const MobileJobAgent: React.FC<MobileJobAgentProps> = ({ onBack }) => {
   // Search params from preferences
   const [jobTitle, setJobTitle] = useState('');
   const [location, setLocation] = useState('');
+
+  // Login mode state
+  const [loginStatus, setLoginStatus] = useState<'idle' | 'launching' | 'waiting' | 'success' | 'error'>('idle');
+  const [loginMessage, setLoginMessage] = useState('');
 
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -224,6 +237,138 @@ export const MobileJobAgent: React.FC<MobileJobAgentProps> = ({ onBack }) => {
   const connectedSites = JOB_SITES.filter(s => hasCredentialFor(s.id));
   const canStart = selectedSite && jobTitle && agentConnected && hasCredentialFor(selectedSite);
 
+  // Login mode: Launch browser for OAuth login
+  const startLoginFlow = async () => {
+    if (!loginSiteId || !loginUrl) return;
+
+    setLoginStatus('launching');
+    setLoginMessage('Launching browser...');
+    haptics.medium();
+    addEvent(`Opening ${loginSiteId} login page...`);
+
+    try {
+      // Call the agent to launch the site for login
+      const res = await fetch(`${AGENT_API_URL}/sites/${loginSiteId}/launch`, {
+        method: 'POST',
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.isLoggedIn) {
+          setLoginStatus('success');
+          setLoginMessage('Already logged in! Session saved.');
+          addEvent('Already logged in - session captured');
+          haptics.success();
+
+          // Save session to Supabase
+          await saveLoginSession();
+        } else {
+          setLoginStatus('waiting');
+          setLoginMessage(data.isCloudflareChallenge
+            ? 'Complete the Cloudflare check in the browser, then sign in'
+            : 'Sign in to your account in the browser window');
+          addEvent(data.message);
+
+          // Start polling for login success
+          startLoginStatusPolling();
+        }
+      } else {
+        const err = await res.json();
+        setLoginStatus('error');
+        setLoginMessage(err.error || 'Failed to launch browser');
+        addEvent(`Error: ${err.error}`);
+        haptics.error();
+      }
+    } catch (e) {
+      setLoginStatus('error');
+      setLoginMessage('Could not connect to agent');
+      addEvent('Failed to connect to agent');
+      haptics.error();
+    }
+  };
+
+  // Poll for login status
+  const loginPollRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startLoginStatusPolling = () => {
+    // Clear any existing poll
+    if (loginPollRef.current) clearInterval(loginPollRef.current);
+
+    loginPollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`${AGENT_API_URL}/sites/${loginSiteId}/login-status`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.isLoggedIn) {
+            // Success!
+            if (loginPollRef.current) clearInterval(loginPollRef.current);
+            setLoginStatus('success');
+            setLoginMessage('Login successful! Session saved.');
+            addEvent('Login detected - saving session');
+            haptics.success();
+
+            // Save session
+            await saveLoginSession();
+          }
+        }
+      } catch (e) {
+        console.error('Login poll error:', e);
+      }
+    }, 2000); // Poll every 2 seconds
+  };
+
+  // Save login session to Supabase
+  const saveLoginSession = async () => {
+    if (!currentUser?.uid || !loginSiteId) return;
+
+    try {
+      // Get session data from agent
+      const sessionRes = await fetch(`${AGENT_API_URL}/sites/${loginSiteId}/session`);
+      if (sessionRes.ok) {
+        const sessionData = await sessionRes.json();
+
+        // Store session in Supabase
+        const storeRes = await fetch(`${AGENT_API_URL}/sites/${loginSiteId}/store-session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: currentUser.uid,
+            sessionData: sessionData.sessionData,
+          }),
+        });
+
+        if (storeRes.ok) {
+          addEvent('Session saved to cloud!');
+
+          // Close the browser
+          await fetch(`${AGENT_API_URL}/sites/close`, { method: 'POST' });
+
+          // Wait a moment then go back to profile
+          setTimeout(() => {
+            onBack();
+          }, 1500);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to save session:', e);
+      addEvent('Warning: Could not save session to cloud');
+    }
+  };
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (loginPollRef.current) clearInterval(loginPollRef.current);
+    };
+  }, []);
+
+  // Auto-start login flow when in login mode and agent is connected
+  useEffect(() => {
+    if (loginMode && agentConnected && loginStatus === 'idle') {
+      startLoginFlow();
+    }
+  }, [loginMode, agentConnected, loginStatus]);
+
   return (
     <div className={`min-h-full ${isLight ? 'bg-slate-50' : 'bg-[#020617]'}`}>
       {/* Header */}
@@ -240,10 +385,10 @@ export const MobileJobAgent: React.FC<MobileJobAgentProps> = ({ onBack }) => {
         </button>
         <div className="flex-1">
           <h1 className={`font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-            AI Job Agent
+            {loginMode ? `Connect ${loginSiteId?.charAt(0).toUpperCase()}${loginSiteId?.slice(1)}` : 'AI Job Agent'}
           </h1>
           <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-            Auto-apply while you sleep
+            {loginMode ? 'Sign in with your browser' : 'Auto-apply while you sleep'}
           </p>
         </div>
         <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium ${
@@ -256,6 +401,128 @@ export const MobileJobAgent: React.FC<MobileJobAgentProps> = ({ onBack }) => {
         </div>
       </div>
 
+      {/* Login Mode UI */}
+      {loginMode && (
+        <div className="px-4 py-8 space-y-6">
+          {/* Status Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`p-6 rounded-2xl text-center ${
+              isLight ? 'bg-white border border-slate-200' : 'bg-slate-800/50 border border-white/10'
+            }`}
+          >
+            {/* Status Icon */}
+            <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 ${
+              loginStatus === 'success' ? 'bg-emerald-500/20' :
+              loginStatus === 'error' ? 'bg-red-500/20' :
+              loginStatus === 'waiting' ? 'bg-gold/20' :
+              isLight ? 'bg-slate-100' : 'bg-white/10'
+            }`}>
+              {loginStatus === 'launching' && (
+                <Loader size={28} className="text-gold animate-spin" />
+              )}
+              {loginStatus === 'waiting' && (
+                <Bot size={28} className="text-gold animate-pulse" />
+              )}
+              {loginStatus === 'success' && (
+                <CheckCircle size={28} className="text-emerald-500" />
+              )}
+              {loginStatus === 'error' && (
+                <AlertCircle size={28} className="text-red-400" />
+              )}
+              {loginStatus === 'idle' && !agentConnected && (
+                <WifiOff size={28} className={isLight ? 'text-slate-400' : 'text-slate-500'} />
+              )}
+              {loginStatus === 'idle' && agentConnected && (
+                <Zap size={28} className="text-gold" />
+              )}
+            </div>
+
+            {/* Status Message */}
+            <h2 className={`text-lg font-bold mb-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+              {loginStatus === 'idle' && !agentConnected && 'Connecting to Agent...'}
+              {loginStatus === 'idle' && agentConnected && 'Ready to Connect'}
+              {loginStatus === 'launching' && 'Opening Browser...'}
+              {loginStatus === 'waiting' && 'Waiting for Login'}
+              {loginStatus === 'success' && 'Connected!'}
+              {loginStatus === 'error' && 'Connection Failed'}
+            </h2>
+            <p className={`text-sm ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+              {loginMessage || (loginStatus === 'idle' && !agentConnected
+                ? 'Please wait while we connect to the cloud agent...'
+                : 'We\'ll open a browser window for you to sign in')}
+            </p>
+
+            {/* Instructions for waiting state */}
+            {loginStatus === 'waiting' && (
+              <div className={`mt-4 p-4 rounded-xl text-left ${
+                isLight ? 'bg-gold/10' : 'bg-gold/10'
+              }`}>
+                <p className={`text-sm font-semibold mb-2 ${isLight ? 'text-amber-800' : 'text-gold'}`}>
+                  Instructions:
+                </p>
+                <ol className={`text-xs space-y-1 ${isLight ? 'text-amber-700' : 'text-gold/80'}`}>
+                  <li>1. A browser window should have opened</li>
+                  <li>2. Sign in using Google, Apple, or your email</li>
+                  <li>3. Complete any security checks (CAPTCHA)</li>
+                  <li>4. Once logged in, we'll detect it automatically</li>
+                </ol>
+              </div>
+            )}
+
+            {/* Retry button for errors */}
+            {loginStatus === 'error' && (
+              <button
+                onClick={startLoginFlow}
+                className="mt-4 px-6 py-2.5 bg-gold text-black font-semibold rounded-xl active:scale-[0.98] transition-all"
+              >
+                Try Again
+              </button>
+            )}
+          </motion.div>
+
+          {/* Activity Log */}
+          <div className={`rounded-2xl overflow-hidden ${
+            isLight ? 'bg-white border border-slate-200' : 'bg-slate-800/50 border border-white/10'
+          }`}>
+            <div className={`p-4 ${isLight ? 'border-b border-slate-100' : 'border-b border-white/5'}`}>
+              <span className={`font-semibold text-sm ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                Activity Log
+              </span>
+            </div>
+            <div className="px-4 py-3 max-h-32 overflow-y-auto space-y-1">
+              {events.length === 0 ? (
+                <p className={`text-xs ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Waiting for activity...
+                </p>
+              ) : (
+                events.map((event, i) => (
+                  <p key={i} className={`text-xs font-mono ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                    {event}
+                  </p>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Cancel Button */}
+          <button
+            onClick={onBack}
+            className={`w-full py-3.5 rounded-xl font-medium transition-all ${
+              isLight
+                ? 'bg-slate-100 text-slate-600 active:bg-slate-200'
+                : 'bg-white/5 text-slate-400 active:bg-white/10'
+            }`}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {/* Regular Agent UI (not login mode) */}
+      {!loginMode && (
+      <>
       <div className="px-4 pb-32 space-y-4">
         {/* Agent Not Connected Warning */}
         {!agentConnected && (
@@ -533,6 +800,8 @@ export const MobileJobAgent: React.FC<MobileJobAgentProps> = ({ onBack }) => {
           </p>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 };

@@ -51,6 +51,11 @@ export const MobileAppShell: React.FC = () => {
   // Initialize screen from URL for cross-platform support (Android, Windows, Linux)
   const [activeScreen, setActiveScreen] = useState<MobileScreen>(() => getScreenFromUrl(location.pathname));
   const [menuScreen, setMenuScreen] = useState<MenuScreen>(null);
+  const [loginModeContext, setLoginModeContext] = useState<{
+    loginMode: boolean;
+    siteId: string;
+    loginUrl: string;
+  } | null>(null);
   const { currentUser, loading } = useAuth();
   const { isLight } = useTheme();
 
@@ -62,6 +67,7 @@ export const MobileAppShell: React.FC = () => {
   // Close menu overlay
   const closeMenuScreen = () => {
     setMenuScreen(null);
+    setLoginModeContext(null); // Clear login mode when closing
   };
 
   // Reference to the scrollable content area
@@ -107,6 +113,22 @@ export const MobileAppShell: React.FC = () => {
     }
   }, [location.pathname]);
 
+  // Detect login mode navigation (from Profile -> Browser Login flow)
+  useEffect(() => {
+    const state = location.state as { loginMode?: boolean; siteId?: string; loginUrl?: string } | null;
+    if (state?.loginMode && state?.siteId && state?.loginUrl) {
+      // Open the job agent in login mode
+      setLoginModeContext({
+        loginMode: true,
+        siteId: state.siteId,
+        loginUrl: state.loginUrl,
+      });
+      setMenuScreen('job-agent');
+      // Clear the state from URL to prevent re-triggering
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.state]);
+
   // Reset scroll to top when switching screens
   useEffect(() => {
     if (contentRef.current) {
@@ -149,7 +171,14 @@ export const MobileAppShell: React.FC = () => {
   const renderMenuScreen = () => {
     switch (menuScreen) {
       case 'job-agent':
-        return <MobileJobAgent onBack={closeMenuScreen} />;
+        return (
+          <MobileJobAgent
+            onBack={closeMenuScreen}
+            loginMode={loginModeContext?.loginMode}
+            loginSiteId={loginModeContext?.siteId}
+            loginUrl={loginModeContext?.loginUrl}
+          />
+        );
       case 'preferences':
         // TODO: Create MobilePreferences component
         return null;

@@ -326,12 +326,14 @@ app.post('/sites/:siteId/launch', async (req: Request, res: Response) => {
       await loginBrowser.close();
     }
 
-    // Create new browser (NON-HEADLESS for user login)
-    // Uses system Chrome with persistent profile for saved passwords
+    // Create new browser for login
+    // In production (cloud): headless with Playwright
+    // In development (local): can use system Chrome for saved passwords
+    const isProduction = process.env.NODE_ENV === 'production';
     loginBrowser = new BrowserController({
-      headless: false, // User needs to see the browser!
+      headless: isProduction ? true : false, // Headless in cloud, visible locally
       sessionDir: `./sessions/${site.id}`,
-      useSystemChrome: true, // Use Chrome with saved passwords!
+      useSystemChrome: !isProduction, // Only use system Chrome locally
     });
 
     await loginBrowser.launch(true); // Load existing session if available
