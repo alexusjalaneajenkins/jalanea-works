@@ -532,7 +532,10 @@ app.post('/sites/:siteId/import-cookies', async (req: Request, res: Response) =>
     console.log(`[Server] Imported ${playwrightCookies.length} cookies for ${site.name}`);
 
     // If userId provided, save to database as well
+    let dbSaveResult = { attempted: false, success: false, error: null as string | null };
+
     if (userId && supabaseAdmin) {
+      dbSaveResult.attempted = true;
       try {
         // Encrypt the session data using base encrypt function
         const sessionData = JSON.stringify(storageState);
@@ -556,19 +559,25 @@ app.post('/sites/:siteId/import-cookies', async (req: Request, res: Response) =>
 
         if (dbError) {
           console.error('[Server] Failed to save credential to DB:', dbError);
+          dbSaveResult.error = dbError.message;
         } else {
           console.log(`[Server] Saved credential for user ${userId} on ${site.id}`);
+          dbSaveResult.success = true;
         }
       } catch (dbErr) {
         console.error('[Server] DB error saving credential:', dbErr);
+        dbSaveResult.error = (dbErr as Error).message;
       }
+    } else {
+      dbSaveResult.error = userId ? 'supabaseAdmin not configured' : 'userId not provided';
     }
 
     res.json({
       success: true,
       siteId: site.id,
       message: `Imported ${playwrightCookies.length} cookies for ${site.name}. Session saved!`,
-      cookiesImported: playwrightCookies.length
+      cookiesImported: playwrightCookies.length,
+      dbSave: dbSaveResult // Debug info
     });
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
