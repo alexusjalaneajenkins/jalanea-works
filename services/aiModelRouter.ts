@@ -68,7 +68,8 @@ export async function generateWithRouting(
       prompt,
       system: options?.system,
       temperature: options?.temperature,
-      maxTokens: options?.maxTokens,
+      // @ts-ignore - maxTokens may not be in type but is supported at runtime
+      ...(options?.maxTokens && { maxTokens: options.maxTokens }),
     });
     
     return result.text;

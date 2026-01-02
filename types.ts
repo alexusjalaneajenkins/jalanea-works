@@ -17,13 +17,13 @@ export interface Job {
   title: string;
   company: string;
   location: string;
-  type: 'Full-time' | 'Contract' | 'Remote' | 'Internship';
+  type: 'Full-time' | 'Part-time' | 'Contract' | 'Remote' | 'Internship';
   salaryRange: string;
   postedAt: string;
   matchScore: number;
   skills: string[];
   description?: string; // Added for resume tailoring context
-  experienceLevel: 'Entry Level' | 'Internship' | 'Associate' | 'Mid-Senior';
+  experienceLevel: 'Entry Level' | 'Internship' | 'Associate' | 'Mid-Senior' | string;
   bulletPoints?: string[]; // Added for scannable descriptions
 
   // Extended UI Fields
