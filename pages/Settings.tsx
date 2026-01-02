@@ -3,10 +3,20 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { UserProfile } from '../types';
-import { GraduationCap, Briefcase, Award, PenTool, Edit3, Bell, Mail, MessageSquare, Smartphone, CheckCircle, AlertCircle, Loader } from 'lucide-react';
+import { GraduationCap, Briefcase, Award, PenTool, Edit3, Bell, Mail, MessageSquare, Smartphone, CheckCircle, AlertCircle, Loader, Zap, Crown, ExternalLink, Link2, Clock, CheckCircle2, XCircle, Rocket } from 'lucide-react';
 import { isPushSupported, registerForPushNotifications, getPushPermissionStatus } from '../services/notificationService';
 import { updateNotificationPreferences, NotificationPreferences, getProfile } from '../services/supabaseService';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  getPricingTiers,
+  getDashboardStats,
+  getApplicationHistory,
+  createCheckoutSession,
+  createPortalSession,
+  Tier,
+  DashboardStats,
+  JobApplication,
+} from '../services/cloudAgentService';
 
 // Mock Profile Data matching the screenshot
 export const MOCK_PROFILE: UserProfile = {
@@ -84,6 +94,302 @@ export const MOCK_PROFILE: UserProfile = {
   },
   onboardingCompleted: true,
   updatedAt: new Date().toISOString()
+};
+
+// Subscription Plan Component
+const SubscriptionPlan: React.FC = () => {
+  const { currentUser } = useAuth();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [tiers, setTiers] = useState<Tier[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [upgrading, setUpgrading] = useState(false);
+
+  useEffect(() => {
+    const loadData = async () => {
+      if (!currentUser?.uid) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const [statsData, tiersData] = await Promise.all([
+          getDashboardStats(currentUser.uid),
+          getPricingTiers(),
+        ]);
+        setStats(statsData);
+        setTiers(tiersData);
+      } catch (err) {
+        console.error('Error loading subscription data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [currentUser]);
+
+  const handleUpgrade = async (tier: 'starter' | 'pro' | 'unlimited') => {
+    if (!currentUser?.uid || !currentUser?.email) return;
+    setUpgrading(true);
+    try {
+      const { url } = await createCheckoutSession(currentUser.uid, currentUser.email, tier);
+      window.location.href = url;
+    } catch (err) {
+      console.error('Error creating checkout:', err);
+    } finally {
+      setUpgrading(false);
+    }
+  };
+
+  const handleManageBilling = async () => {
+    if (!currentUser?.uid || !currentUser?.email) return;
+    setUpgrading(true);
+    try {
+      const { url } = await createPortalSession(currentUser.uid, currentUser.email);
+      window.location.href = url;
+    } catch (err) {
+      console.error('Error opening portal:', err);
+    } finally {
+      setUpgrading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card variant="solid-white" className="overflow-hidden">
+        <div className="p-6 flex items-center justify-center">
+          <Loader className="w-6 h-6 animate-spin text-jalanea-400" />
+        </div>
+      </Card>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <Card variant="solid-white" className="overflow-hidden">
+        <div className="border-b border-jalanea-100 p-6 bg-gradient-to-r from-jalanea-50 to-accent/5">
+          <h3 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider flex items-center gap-2">
+            <Rocket size={16} /> AI Job Agent
+          </h3>
+        </div>
+        <div className="p-6 text-center text-jalanea-600">
+          <p>Sign in to access the AI Job Agent</p>
+        </div>
+      </Card>
+    );
+  }
+
+  const currentTier = tiers.find(t => t.id === (stats?.subscriptionTier || 'free'));
+  const usagePercent = stats ? (stats.applicationsThisMonth / stats.applicationsLimit) * 100 : 0;
+
+  return (
+    <Card variant="solid-white" className="overflow-hidden">
+      <div className="border-b border-jalanea-100 p-6 bg-gradient-to-r from-jalanea-50 to-accent/5">
+        <h3 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider flex items-center gap-2">
+          <Rocket size={16} /> AI Job Agent
+        </h3>
+      </div>
+      <div className="p-6 space-y-6">
+        {/* Current Plan */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${currentTier?.id === 'free' ? 'bg-jalanea-100' : 'bg-accent/10'}`}>
+              {currentTier?.id === 'free' ? <Zap size={24} className="text-jalanea-600" /> : <Crown size={24} className="text-accent" />}
+            </div>
+            <div>
+              <h4 className="font-bold text-jalanea-900">{currentTier?.name || 'Free'} Plan</h4>
+              <p className="text-sm text-jalanea-500">
+                {currentTier?.id === 'free' ? 'Basic job automation' : `${currentTier?.applicationsPerMonth} applications/month`}
+              </p>
+            </div>
+          </div>
+          {stats?.subscriptionTier !== 'free' && (
+            <Button size="sm" variant="outline" onClick={handleManageBilling} disabled={upgrading}>
+              <ExternalLink size={14} className="mr-1" /> Manage
+            </Button>
+          )}
+        </div>
+
+        {/* Usage Bar */}
+        <div>
+          <div className="flex justify-between text-sm mb-2">
+            <span className="text-jalanea-600">Applications this month</span>
+            <span className="font-bold text-jalanea-900">
+              {stats?.applicationsThisMonth || 0} / {stats?.applicationsLimit || 10}
+            </span>
+          </div>
+          <div className="h-2 bg-jalanea-100 rounded-full overflow-hidden">
+            <div
+              className={`h-full transition-all duration-500 ${usagePercent >= 90 ? 'bg-red-500' : usagePercent >= 70 ? 'bg-yellow-500' : 'bg-accent'}`}
+              style={{ width: `${Math.min(usagePercent, 100)}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="text-center p-3 bg-jalanea-50 rounded-lg">
+            <p className="text-2xl font-bold text-jalanea-900">{stats?.totalApplied || 0}</p>
+            <p className="text-xs text-jalanea-500">Total Applied</p>
+          </div>
+          <div className="text-center p-3 bg-jalanea-50 rounded-lg">
+            <p className="text-2xl font-bold text-jalanea-900">{stats?.pendingApplications || 0}</p>
+            <p className="text-xs text-jalanea-500">In Queue</p>
+          </div>
+          <div className="text-center p-3 bg-jalanea-50 rounded-lg">
+            <p className="text-2xl font-bold text-jalanea-900">{stats?.connectedSites || 0}</p>
+            <p className="text-xs text-jalanea-500">Sites Connected</p>
+          </div>
+        </div>
+
+        {/* Upgrade Options (only show for free/starter users) */}
+        {(stats?.subscriptionTier === 'free' || stats?.subscriptionTier === 'starter') && (
+          <div className="pt-4 border-t border-jalanea-100">
+            <h4 className="text-sm font-bold text-jalanea-900 mb-3">Upgrade for more applications</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {tiers.filter(t => t.id !== 'free' && t.id !== stats?.subscriptionTier).map(tier => (
+                <button
+                  key={tier.id}
+                  onClick={() => handleUpgrade(tier.id as 'starter' | 'pro' | 'unlimited')}
+                  disabled={upgrading}
+                  className="p-4 rounded-lg border-2 border-jalanea-100 hover:border-accent hover:bg-accent/5 transition-all text-left"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-jalanea-900">{tier.name}</span>
+                    <span className="text-accent font-bold">${tier.price}/mo</span>
+                  </div>
+                  <p className="text-xs text-jalanea-500">{tier.applicationsPerMonth} apps/month</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+};
+
+// Application History Component
+const ApplicationHistory: React.FC = () => {
+  const { currentUser } = useAuth();
+  const [applications, setApplications] = useState<JobApplication[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadApplications = async () => {
+      if (!currentUser?.uid) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const data = await getApplicationHistory(currentUser.uid, { limit: 10 });
+        setApplications(data);
+      } catch (err) {
+        console.error('Error loading applications:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadApplications();
+  }, [currentUser]);
+
+  if (loading) {
+    return (
+      <Card variant="solid-white" className="overflow-hidden">
+        <div className="p-6 flex items-center justify-center">
+          <Loader className="w-6 h-6 animate-spin text-jalanea-400" />
+        </div>
+      </Card>
+    );
+  }
+
+  if (!currentUser) {
+    return null;
+  }
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'applied':
+        return <CheckCircle2 size={16} className="text-green-500" />;
+      case 'failed':
+        return <XCircle size={16} className="text-red-500" />;
+      case 'pending':
+      case 'in_progress':
+        return <Clock size={16} className="text-yellow-500" />;
+      default:
+        return <Clock size={16} className="text-jalanea-400" />;
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'applied':
+        return 'Applied';
+      case 'failed':
+        return 'Failed';
+      case 'pending':
+        return 'Pending';
+      case 'in_progress':
+        return 'In Progress';
+      case 'skipped':
+        return 'Skipped';
+      default:
+        return status;
+    }
+  };
+
+  return (
+    <Card variant="solid-white" className="overflow-hidden">
+      <div className="border-b border-jalanea-100 p-6 bg-jalanea-50/50">
+        <h3 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider flex items-center gap-2">
+          <Briefcase size={16} /> Recent Applications
+        </h3>
+      </div>
+      <div className="divide-y divide-jalanea-100">
+        {applications.length === 0 ? (
+          <div className="p-6 text-center text-jalanea-500">
+            <p>No applications yet. Connect a job site to get started!</p>
+          </div>
+        ) : (
+          applications.map(app => (
+            <div key={app.id} className="p-4 hover:bg-jalanea-50 transition-colors">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium text-jalanea-900 truncate">{app.job_title}</h4>
+                  <p className="text-sm text-jalanea-600">{app.company_name || 'Unknown Company'}</p>
+                  {app.job_location && (
+                    <p className="text-xs text-jalanea-400 mt-1">{app.job_location}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 ml-4">
+                  {getStatusIcon(app.status)}
+                  <span className={`text-xs font-medium ${
+                    app.status === 'applied' ? 'text-green-600' :
+                    app.status === 'failed' ? 'text-red-600' :
+                    'text-jalanea-500'
+                  }`}>
+                    {getStatusLabel(app.status)}
+                  </span>
+                </div>
+              </div>
+              {app.job_url && (
+                <a
+                  href={app.job_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-accent hover:underline mt-2"
+                >
+                  <Link2 size={12} /> View Job
+                </a>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+    </Card>
+  );
 };
 
 // Notification Preferences Component
@@ -520,6 +826,15 @@ export const SettingsPage: React.FC = () => {
               ))}
             </div>
           </Card>
+        </div>
+
+        {/* AI Job Agent Section */}
+        <div className="pt-8 border-t border-jalanea-200">
+          <h2 className="text-xl font-bold text-jalanea-900 mb-6">AI Job Agent</h2>
+          <div className="space-y-6">
+            <SubscriptionPlan />
+            <ApplicationHistory />
+          </div>
         </div>
 
         {/* Notification Preferences */}
