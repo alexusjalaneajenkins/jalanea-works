@@ -11,6 +11,10 @@
  * 4. Agent starts applying to jobs
  */
 
+// Load environment variables from .env file
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express, { Request, Response } from 'express';
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer } from 'http';
@@ -77,12 +81,16 @@ function getOrCreateAgent(sessionDir?: string): JobApplicationAgent {
   if (!agent) {
     // Determine which vision provider to use
     const visionProvider = (process.env.VISION_PROVIDER || 'mock') as 'claude' | 'gemini' | 'deepseek' | 'mock';
+    // Determine which browser to use (camoufox for better stealth against Cloudflare)
+    const browserType = (process.env.BROWSER_TYPE || 'chromium') as 'chromium' | 'camoufox';
 
     const config: any = {
       visionProvider,
+      browserType,
       headless: process.env.HEADLESS !== 'false',
       maxActions: parseInt(process.env.MAX_ACTIONS || '100'),
       sessionDir, // Pass site-specific session directory
+      capsolverApiKey: process.env.CAPSOLVER_API_KEY, // For auto CAPTCHA solving
     };
 
     // Only require API keys for non-mock modes
@@ -103,7 +111,7 @@ function getOrCreateAgent(sessionDir?: string): JobApplicationAgent {
       }
     }
 
-    console.log(`[Server] Initializing agent with vision provider: ${visionProvider}, sessionDir: ${sessionDir || 'default'}`);
+    console.log(`[Server] Initializing agent with vision: ${visionProvider}, browser: ${browserType}, sessionDir: ${sessionDir || 'default'}`);
 
     agent = new JobApplicationAgent(config);
     agentSessionDir = sessionDir || null;

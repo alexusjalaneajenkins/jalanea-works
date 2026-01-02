@@ -21,15 +21,11 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
 
   return (
     <header
-      className={`sticky top-0 z-40 px-4 h-14 flex items-center justify-between ${
+      className={`flex-shrink-0 px-4 h-14 flex items-center justify-between ${
         isLight
-          ? 'bg-slate-50/95 border-b border-slate-200/50'
-          : 'bg-[#020617]/95 border-b border-white/5'
+          ? 'bg-slate-50 border-b border-slate-200/50'
+          : 'bg-[#020617] border-b border-white/5'
       }`}
-      style={{
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)'
-      }}
     >
       {/* Left side */}
       <div className="flex items-center gap-3">

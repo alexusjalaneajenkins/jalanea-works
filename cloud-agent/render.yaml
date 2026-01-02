@@ -1,0 +1,88 @@
+# Jalanea Works Cloud Agent - Render Blueprint
+# Deploy with: https://render.com/deploy
+#
+# Services:
+# - api: Express server for REST API
+# - worker: BullMQ worker for job processing
+
+services:
+  # ============================================
+  # API Server (Free Tier)
+  # ============================================
+  - type: web
+    name: jalanea-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: node dist/index.js
+    plan: free  # Upgrade to starter ($7/mo) when needed
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3001"
+      - key: HEADLESS
+        value: "true"
+      # Vision & AI (sync with Render dashboard)
+      - key: VISION_PROVIDER
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      # CAPTCHA
+      - key: CAPSOLVER_API_KEY
+        sync: false
+      # Supabase
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      # Redis
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
+
+  # ============================================
+  # Job Queue Worker (Starter Plan - $7/mo)
+  # ============================================
+  - type: worker
+    name: jalanea-worker
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: node dist/queue/worker.js
+    plan: starter  # Needs always-on for queue processing
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HEADLESS
+        value: "true"
+      - key: BROWSER_TYPE
+        value: camoufox
+      - key: MAX_ACTIONS
+        value: "50"
+      # Vision & AI (sync with Render dashboard)
+      - key: VISION_PROVIDER
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      # CAPTCHA
+      - key: CAPSOLVER_API_KEY
+        sync: false
+      # Supabase
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      # Redis
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false

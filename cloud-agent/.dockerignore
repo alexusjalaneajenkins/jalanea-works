@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+
+# Build output (rebuilt in container)
+dist/
+
+# Development files
+*.log
+npm-debug.log*
+
+# Local sessions (sensitive)
+sessions/
+
+# Environment (secrets handled via env vars)
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# Test files
+*.test.ts
+*.spec.ts
+__tests__/
+
+# Supabase local
+supabase/.temp/
+
+# macOS
+.DS_Store
+
+# Screenshots (debugging)
+*.png
+screenshots/

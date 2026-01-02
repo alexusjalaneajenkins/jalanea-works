@@ -9,6 +9,7 @@ import { MobileJobs } from './MobileJobs';
 import { MobileCoach } from './MobileCoach';
 import { MobileTracker } from './MobileTracker';
 import { MobileProfile } from './MobileProfile';
+import { MobileLogin } from './MobileLogin';
 
 export type MobileScreen = 'home' | 'jobs' | 'coach' | 'tracker' | 'profile';
 
@@ -47,6 +48,52 @@ export const MobileAppShell: React.FC = () => {
   const { currentUser, loading } = useAuth();
   const { isLight } = useTheme();
 
+  // Reference to the scrollable content area
+  const contentRef = React.useRef<HTMLDivElement>(null);
+
+  // iOS Safari fix: Prevent ALL touch scrolling except in the content area
+  useEffect(() => {
+    // Prevent default touch behavior on document
+    const preventScroll = (e: TouchEvent) => {
+      // Allow scrolling only if the touch is inside our content area
+      if (contentRef.current && contentRef.current.contains(e.target as Node)) {
+        // Allow scroll in content area
+        return;
+      }
+      // Block scroll everywhere else
+      e.preventDefault();
+    };
+
+    // Also prevent touchmove on body
+    const preventBodyScroll = (e: TouchEvent) => {
+      if (contentRef.current && contentRef.current.contains(e.target as Node)) {
+        return;
+      }
+      e.preventDefault();
+    };
+
+    // Add listeners with passive: false to allow preventDefault
+    document.addEventListener('touchmove', preventScroll, { passive: false });
+    document.body.addEventListener('touchmove', preventBodyScroll, { passive: false });
+
+    // Lock body styles
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.height = '100%';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.removeEventListener('touchmove', preventScroll);
+      document.body.removeEventListener('touchmove', preventBodyScroll);
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, []);
+
   // Sync URL with screen changes (for browser back/forward and bookmarking)
   useEffect(() => {
     const currentUrl = screenToUrl[activeScreen];
@@ -72,29 +119,9 @@ export const MobileAppShell: React.FC = () => {
     );
   }
 
-  // Not logged in - show login prompt
+  // Not logged in - show mobile login screen
   if (!currentUser) {
-    return (
-      <div className={`min-h-screen flex flex-col items-center justify-center p-6 ${isLight ? 'bg-slate-50' : 'bg-[#020617]'}`}>
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-gold to-amber-500 flex items-center justify-center mb-4">
-          <svg className="w-8 h-8 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-          </svg>
-        </div>
-        <h1 className={`text-xl font-bold mb-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
-          Jalanea<span className="text-gold">Works</span>
-        </h1>
-        <p className={`text-sm mb-6 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-          Sign in to access your career dashboard
-        </p>
-        <a
-          href="/"
-          className="px-6 py-3 bg-gold text-black font-semibold rounded-xl"
-        >
-          Sign In
-        </a>
-      </div>
-    );
+    return <MobileLogin />;
   }
 
   const renderScreen = () => {
@@ -116,21 +143,38 @@ export const MobileAppShell: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen flex flex-col ${isLight ? 'bg-slate-50' : 'bg-[#020617]'}`}
+      className={`flex flex-col ${isLight ? 'bg-slate-50' : 'bg-[#020617]'}`}
       style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: '100dvh', // Dynamic viewport height for PWA
+        maxHeight: '-webkit-fill-available',
         paddingTop: 'env(safe-area-inset-top)',
-        paddingBottom: 'env(safe-area-inset-bottom)'
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        touchAction: 'none',
+        overscrollBehavior: 'none',
+        overflow: 'hidden'
       }}
     >
-      {/* Header */}
+      {/* Header - stays at top */}
       <MobileHeader title={screenTitles[activeScreen]} />
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto overscroll-contain pb-20">
+      {/* Main Content - this is the ONLY thing that scrolls */}
+      <div
+        ref={contentRef}
+        className="flex-1 overflow-y-auto overscroll-contain"
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-y'
+        }}
+      >
         {renderScreen()}
-      </main>
+      </div>
 
-      {/* Bottom Navigation */}
+      {/* Bottom Navigation - stays at bottom */}
       <MobileNavBar
         activeScreen={activeScreen}
         onNavigate={setActiveScreen}

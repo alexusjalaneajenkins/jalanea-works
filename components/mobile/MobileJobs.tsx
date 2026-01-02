@@ -1,9 +1,17 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { Heart, X, MapPin, DollarSign, Building2, Filter, List, Layers } from 'lucide-react';
+import { Heart, X, MapPin, DollarSign, Building2, Filter, List, Layers, Bookmark, Send } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { haptics } from '../../utils/haptics';
+
+/**
+ * MobileJobs - Research-driven design applying:
+ * - Reduced cognitive load: Progressive disclosure on job cards
+ * - Clear visual hierarchy: Match score is the primary differentiator
+ * - Friction reduction: One-tap actions, swipe gestures
+ * - Brand consistency: Gold accents, glassmorphism
+ */
 
 // Mock job data for demo
 const mockJobs = [
@@ -62,6 +70,11 @@ export const MobileJobs: React.FC = () => {
   const currentJob = mockJobs[currentIndex];
   const hasMoreJobs = currentIndex < mockJobs.length;
 
+  // Glass panel styles matching desktop design system
+  const glassPanel = isLight
+    ? 'bg-white/80 backdrop-blur-xl border border-slate-200/50 shadow-lg'
+    : 'bg-slate-900/60 backdrop-blur-xl border border-white/10';
+
   const handleSwipe = (direction: 'left' | 'right') => {
     if (!hasMoreJobs) return;
 
@@ -89,42 +102,66 @@ export const MobileJobs: React.FC = () => {
     haptics.medium();
   };
 
+  // Get match score color - GOLD for brand consistency
+  const getMatchColor = (_score: number) => {
+    return 'text-gold'; // All match scores use gold for brand consistency
+  };
+
   return (
     <div className="flex flex-col min-h-[calc(100vh-8rem)]">
-      {/* Header Actions */}
+      {/* Header Actions - Simplified, clear toggle */}
       <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2">
+        <div className={`flex items-center p-1 rounded-xl ${isLight ? 'bg-slate-100' : 'bg-slate-800/50'}`}>
           <button
             onClick={() => { haptics.light(); setViewMode('cards'); }}
-            className={`p-2 rounded-lg ${viewMode === 'cards' ? 'bg-gold text-black' : isLight ? 'bg-slate-100 text-slate-600' : 'bg-slate-800 text-slate-400'}`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              viewMode === 'cards'
+                ? 'bg-gold text-black shadow-sm'
+                : isLight ? 'text-slate-500' : 'text-slate-400'
+            }`}
           >
-            <Layers size={18} />
+            <Layers size={16} />
+            Swipe
           </button>
           <button
             onClick={() => { haptics.light(); setViewMode('list'); }}
-            className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-gold text-black' : isLight ? 'bg-slate-100 text-slate-600' : 'bg-slate-800 text-slate-400'}`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              viewMode === 'list'
+                ? 'bg-gold text-black shadow-sm'
+                : isLight ? 'text-slate-500' : 'text-slate-400'
+            }`}
           >
-            <List size={18} />
+            <List size={16} />
+            List
           </button>
         </div>
-        <button className={`flex items-center gap-2 px-3 py-2 rounded-lg ${isLight ? 'bg-slate-100 text-slate-600' : 'bg-slate-800 text-slate-400'}`}>
+        <button className={`flex items-center gap-2 px-3 py-2 rounded-xl active:scale-95 transition-all ${
+          isLight ? 'bg-slate-100 text-slate-600' : 'bg-slate-800/50 text-slate-400'
+        }`}>
           <Filter size={16} />
           <span className="text-sm font-medium">Filters</span>
         </button>
       </div>
 
       {viewMode === 'cards' ? (
-        /* Card Stack View */
-        <div className="flex-1 flex flex-col items-center justify-center px-4">
+        /* Card Stack View - Redesigned for clarity and brand consistency */
+        <div className="flex-1 flex flex-col items-center pt-2 px-4">
           {hasMoreJobs ? (
             <>
+              {/* Progress indicator */}
+              <div className={`flex items-center gap-1 mb-3 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
+                <span className="text-xs font-medium">{currentIndex + 1} of {mockJobs.length}</span>
+              </div>
+
               {/* Card Stack */}
-              <div className="relative w-full max-w-sm h-[420px]">
+              <div className="relative w-full max-w-sm h-[400px]">
                 <AnimatePresence>
                   <motion.div
                     key={currentJob.id}
-                    className={`absolute inset-0 rounded-3xl overflow-hidden shadow-xl ${
-                      isLight ? 'bg-white' : 'bg-slate-800'
+                    className={`absolute inset-0 rounded-3xl overflow-hidden ${
+                      isLight
+                        ? 'bg-white/90 backdrop-blur-xl border border-slate-200/50 shadow-xl'
+                        : 'bg-slate-900/80 backdrop-blur-xl border border-white/10 shadow-2xl'
                     }`}
                     drag="x"
                     dragConstraints={{ left: 0, right: 0 }}
@@ -135,143 +172,178 @@ export const MobileJobs: React.FC = () => {
                     transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                     whileDrag={{ cursor: 'grabbing' }}
                   >
+                    {/* Match Score Badge - Primary visual hierarchy (GOLD for brand consistency) */}
+                    <div className="absolute top-4 right-4 z-10">
+                      <div className="px-3 py-1.5 rounded-full font-bold text-sm bg-gold/20 text-gold border border-gold/30">
+                        {currentJob.matchScore}% match
+                      </div>
+                    </div>
+
                     {/* Company Logo */}
-                    <div className={`h-32 flex items-center justify-center ${isLight ? 'bg-slate-100' : 'bg-slate-700'}`}>
+                    <div className={`h-28 flex items-center justify-center ${
+                      isLight ? 'bg-slate-50' : 'bg-slate-800/50'
+                    }`}>
                       <img
                         src={currentJob.logo}
                         alt={currentJob.company}
-                        className="w-16 h-16 rounded-xl object-contain bg-white p-2"
+                        className="w-14 h-14 rounded-xl object-contain bg-white p-2 shadow-sm"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${currentJob.company}&background=FFC425&color=000`;
                         }}
                       />
                     </div>
 
-                    {/* Job Details */}
+                    {/* Job Details - Clear hierarchy */}
                     <div className="p-5">
                       <h2 className={`text-xl font-bold mb-1 ${isLight ? 'text-slate-900' : 'text-white'}`}>
                         {currentJob.title}
                       </h2>
-                      <div className={`flex items-center gap-2 mb-3 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                      <div className={`flex items-center gap-2 mb-4 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                         <Building2 size={14} />
-                        <span className="text-sm">{currentJob.company}</span>
+                        <span className="text-sm font-medium">{currentJob.company}</span>
                       </div>
 
+                      {/* Key info - Reduced to essentials */}
                       <div className="flex flex-wrap gap-2 mb-4">
-                        <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs ${isLight ? 'bg-slate-100 text-slate-600' : 'bg-slate-700 text-slate-300'}`}>
-                          <MapPin size={12} />
+                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm ${
+                          isLight ? 'bg-slate-100 text-slate-600' : 'bg-slate-800 text-slate-300'
+                        }`}>
+                          <MapPin size={14} />
                           {currentJob.location}
                         </div>
-                        <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs ${isLight ? 'bg-green-100 text-green-700' : 'bg-green-500/20 text-green-400'}`}>
-                          <DollarSign size={12} />
+                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium ${
+                          isLight ? 'bg-gold/10 text-amber-700 border border-gold/20' : 'bg-gold/10 text-gold border border-gold/20'
+                        }`}>
+                          <DollarSign size={14} />
                           {currentJob.salary}
                         </div>
                       </div>
 
+                      {/* Tags - Gold-themed for brand consistency */}
                       <div className="flex flex-wrap gap-2 mb-4">
                         {currentJob.tags.map(tag => (
                           <span
                             key={tag}
-                            className={`px-2 py-1 rounded-lg text-xs font-medium ${isLight ? 'bg-gold/10 text-gold-dark' : 'bg-gold/20 text-gold'}`}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
+                              isLight ? 'bg-gold/10 text-amber-700' : 'bg-gold/20 text-gold'
+                            }`}
                           >
                             {tag}
                           </span>
                         ))}
                       </div>
 
-                      {/* Match Score */}
-                      <div className="mb-4">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className={`text-xs font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Match Score</span>
-                          <span className="text-sm font-bold text-gold">{currentJob.matchScore}%</span>
-                        </div>
-                        <div className={`h-2 rounded-full overflow-hidden ${isLight ? 'bg-slate-200' : 'bg-slate-700'}`}>
-                          <div
-                            className="h-full bg-gradient-to-r from-gold to-amber-400 rounded-full"
-                            style={{ width: `${currentJob.matchScore}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Swipe Hint */}
-                      <div className={`text-center text-xs ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
-                        ← Swipe to skip • Swipe to save →
-                      </div>
+                      {/* Quick Apply CTA */}
+                      <button
+                        onClick={() => { haptics.success(); handleSwipe('right'); }}
+                        className="w-full py-3 bg-gold text-black font-semibold rounded-xl flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-lg shadow-gold/20"
+                      >
+                        <Send size={18} />
+                        Quick Apply
+                      </button>
                     </div>
                   </motion.div>
                 </AnimatePresence>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center justify-center gap-6 mt-6">
+              {/* Action Buttons - Clearer labels */}
+              {/* Action Buttons - Equal size for better touch targets (44px+) */}
+              <div className="flex items-center justify-center gap-6 mt-4">
                 <button
                   onClick={() => handleSwipe('left')}
-                  className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform ${
-                    isLight ? 'bg-white text-red-500' : 'bg-slate-800 text-red-400'
-                  }`}
+                  className={`flex flex-col items-center gap-1.5 active:scale-90 transition-transform`}
                 >
-                  <X size={28} />
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center shadow-lg border-2 ${
+                    isLight ? 'bg-white text-slate-400 border-slate-200' : 'bg-slate-800 text-slate-400 border-slate-700'
+                  }`}>
+                    <X size={28} />
+                  </div>
+                  <span className={`text-xs font-medium ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Skip</span>
                 </button>
                 <button
                   onClick={() => handleSwipe('right')}
-                  className="w-16 h-16 rounded-full bg-gold flex items-center justify-center shadow-lg active:scale-90 transition-transform"
+                  className="flex flex-col items-center gap-1.5 active:scale-90 transition-transform"
                 >
-                  <Heart size={32} className="text-black" />
+                  <div className="w-16 h-16 rounded-full bg-gold flex items-center justify-center shadow-lg shadow-gold/30">
+                    <Bookmark size={28} className="text-black" />
+                  </div>
+                  <span className="text-xs text-gold font-semibold">Save</span>
                 </button>
               </div>
             </>
           ) : (
-            /* No More Cards */
-            <div className="text-center">
-              <div className={`w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center ${isLight ? 'bg-slate-100' : 'bg-slate-800'}`}>
-                <Heart size={32} className="text-gold" />
+            /* No More Cards - Clearer next action */
+            <div className="text-center px-6">
+              <div className={`w-20 h-20 rounded-2xl mx-auto mb-4 flex items-center justify-center ${
+                isLight ? 'bg-gold/10' : 'bg-gold/20'
+              }`}>
+                <Bookmark size={32} className="text-gold" />
               </div>
-              <h3 className={`text-lg font-bold mb-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                You've seen all jobs!
+              <h3 className={`text-xl font-bold mb-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                All caught up!
               </h3>
-              <p className={`text-sm mb-4 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                Saved {savedJobs.length} jobs
+              <p className={`text-sm mb-6 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                You saved <span className="font-semibold text-gold">{savedJobs.length}</span> jobs to apply to later
               </p>
-              <button
-                onClick={resetCards}
-                className="px-6 py-3 bg-gold text-black font-semibold rounded-xl active:scale-95 transition-transform"
-              >
-                Start Over
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={resetCards}
+                  className={`flex-1 px-4 py-3 font-medium rounded-xl active:scale-95 transition-transform ${
+                    isLight ? 'bg-slate-100 text-slate-600' : 'bg-slate-800 text-slate-300'
+                  }`}
+                >
+                  Browse Again
+                </button>
+                <button
+                  className="flex-1 px-4 py-3 bg-gold text-black font-semibold rounded-xl active:scale-95 transition-transform shadow-lg shadow-gold/20"
+                >
+                  View Saved
+                </button>
+              </div>
             </div>
           )}
         </div>
       ) : (
-        /* List View */
+        /* List View - Brand-consistent with glassmorphism */
         <div className="flex-1 overflow-y-auto px-4 pb-4">
           <div className="space-y-3">
-            {mockJobs.map(job => (
+            {mockJobs.map((job, index) => (
               <motion.div
                 key={job.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`p-4 rounded-2xl ${isLight ? 'bg-white shadow-sm' : 'bg-slate-800/50'}`}
+                transition={{ delay: index * 0.05 }}
+                className={`p-4 rounded-2xl active:scale-[0.98] transition-all ${glassPanel}`}
               >
                 <div className="flex items-start gap-3">
                   <img
                     src={job.logo}
                     alt={job.company}
-                    className="w-12 h-12 rounded-xl object-contain bg-white p-1"
+                    className="w-12 h-12 rounded-xl object-contain bg-white p-1.5 shadow-sm"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${job.company}&background=FFC425&color=000`;
                     }}
                   />
                   <div className="flex-1 min-w-0">
-                    <h3 className={`font-semibold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                      {job.title}
-                    </h3>
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className={`font-semibold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                        {job.title}
+                      </h3>
+                      <span className={`text-xs font-bold shrink-0 ${getMatchColor(job.matchScore)}`}>
+                        {job.matchScore}%
+                      </span>
+                    </div>
                     <p className={`text-sm ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                      {job.company} • {job.salary}
+                      {job.company}
                     </p>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="text-xs font-medium text-gold">{job.matchScore}% match</span>
+                      <span className={`text-xs ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {job.salary}
+                      </span>
                       {job.remote && (
-                        <span className={`text-xs px-2 py-0.5 rounded ${isLight ? 'bg-blue-100 text-blue-600' : 'bg-blue-500/20 text-blue-400'}`}>
+                        <span className={`text-xs px-2 py-0.5 rounded-lg font-medium ${
+                          isLight ? 'bg-gold/10 text-amber-700' : 'bg-gold/20 text-gold'
+                        }`}>
                           Remote
                         </span>
                       )}
@@ -284,11 +356,15 @@ export const MobileJobs: React.FC = () => {
                         prev.includes(job.id) ? prev.filter(id => id !== job.id) : [...prev, job.id]
                       );
                     }}
-                    className="p-2"
+                    className={`p-2 rounded-lg active:scale-90 transition-all ${
+                      savedJobs.includes(job.id)
+                        ? 'bg-gold/20'
+                        : isLight ? 'bg-slate-100' : 'bg-slate-800'
+                    }`}
                   >
-                    <Heart
-                      size={20}
-                      className={savedJobs.includes(job.id) ? 'text-red-500 fill-red-500' : isLight ? 'text-slate-300' : 'text-slate-600'}
+                    <Bookmark
+                      size={18}
+                      className={savedJobs.includes(job.id) ? 'text-gold fill-gold' : isLight ? 'text-slate-400' : 'text-slate-500'}
                     />
                   </button>
                 </div>

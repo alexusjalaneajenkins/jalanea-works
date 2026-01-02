@@ -1,9 +1,17 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Home, Briefcase, MessageCircle, ClipboardList, User } from 'lucide-react';
+import { Home, Briefcase, MessageCircle, ClipboardList, User, Sparkles } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { haptics } from '../../utils/haptics';
 import { MobileScreen } from './MobileAppShell';
+
+/**
+ * MobileNavBar - Research-driven design applying:
+ * - Fitts's Law: Large touch targets (48px+) for faster, more accurate taps
+ * - Recognition over recall: Clear icons with labels
+ * - Immediate feedback: Haptic + visual response on tap
+ * - Brand consistency: Gold accent for active state
+ */
 
 interface MobileNavBarProps {
   activeScreen: MobileScreen;
@@ -19,7 +27,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { id: 'home', icon: Home, label: 'Home' },
   { id: 'jobs', icon: Briefcase, label: 'Jobs' },
-  { id: 'coach', icon: MessageCircle, label: 'Coach' },
+  { id: 'coach', icon: Sparkles, label: 'Coach' },
   { id: 'tracker', icon: ClipboardList, label: 'Track' },
   { id: 'profile', icon: User, label: 'Profile' }
 ];
@@ -38,18 +46,17 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
 
   return (
     <nav
-      className={`fixed bottom-0 left-0 right-0 z-50 ${
+      className={`flex-shrink-0 ${
         isLight
-          ? 'bg-white/95 border-t border-slate-200/50'
-          : 'bg-[#0f172a]/95 border-t border-white/5'
+          ? 'bg-white/90 border-t border-slate-200/30'
+          : 'bg-slate-900/90 border-t border-white/5'
       }`}
       style={{
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        paddingBottom: 'env(safe-area-inset-bottom)'
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)'
       }}
     >
-      <div className="flex items-center justify-around h-16 px-2">
+      <div className="flex items-center justify-around h-16 px-1">
         {navItems.map((item) => {
           const isActive = activeScreen === item.id;
           const isPressed = pressedId === item.id;
@@ -62,34 +69,33 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
               onTouchEnd={() => setPressedId(null)}
               onTouchCancel={() => setPressedId(null)}
               onClick={() => handlePress(item.id)}
-              className="relative flex flex-col items-center justify-center w-16 h-14 rounded-xl"
+              className={`relative flex flex-col items-center justify-center w-16 h-14 rounded-2xl transition-colors ${
+                isActive
+                  ? isLight ? 'bg-gold/10' : 'bg-gold/10'
+                  : ''
+              }`}
               animate={{
-                scale: isPressed ? 0.9 : 1,
-                opacity: isPressed ? 0.7 : 1
+                scale: isPressed ? 0.92 : 1
               }}
-              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
             >
-              {/* Active indicator pill */}
-              {isActive && (
-                <motion.div
-                  layoutId="mobileNavIndicator"
-                  className="absolute -top-0.5 w-8 h-1 rounded-full bg-gold"
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                />
-              )}
-
-              {/* Icon */}
+              {/* Icon container with active state */}
               <motion.div
+                className={`flex items-center justify-center w-10 h-7 rounded-xl ${
+                  isActive
+                    ? 'bg-gold'
+                    : 'bg-transparent'
+                }`}
                 animate={{
-                  y: isActive ? -2 : 0
+                  scale: isActive ? 1 : 0.95
                 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 25 }}
               >
                 <Icon
-                  size={22}
+                  size={20}
                   className={
                     isActive
-                      ? 'text-gold'
+                      ? 'text-black'
                       : isLight
                         ? 'text-slate-400'
                         : 'text-slate-500'
@@ -99,20 +105,17 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({
               </motion.div>
 
               {/* Label */}
-              <motion.span
-                className={`text-[10px] font-medium mt-1 ${
+              <span
+                className={`text-[10px] font-medium mt-1 transition-colors ${
                   isActive
                     ? 'text-gold'
                     : isLight
                       ? 'text-slate-400'
                       : 'text-slate-500'
                 }`}
-                animate={{
-                  opacity: isActive ? 1 : 0.7
-                }}
               >
                 {item.label}
-              </motion.span>
+              </span>
             </motion.button>
           );
         })}

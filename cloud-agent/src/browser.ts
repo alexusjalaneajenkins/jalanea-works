@@ -8,11 +8,16 @@
  * - Session persistence (cookies saved between runs)
  * - Login detection for job sites
  * - Non-headless mode for user authentication
+ * - Camoufox support for advanced anti-detection
  */
 
-import { chromium, Browser, Page, BrowserContext } from 'playwright';
+import { chromium, firefox, Browser, Page, BrowserContext } from 'playwright';
+import { Camoufox } from 'camoufox-js';
 import * as fs from 'fs';
 import * as path from 'path';
+import { CaptchaSolver, extractTurnstileSitekey } from './captcha/solver.js';
+
+export type BrowserType = 'chromium' | 'camoufox';
 
 export interface BrowserConfig {
   headless?: boolean;
@@ -21,6 +26,8 @@ export interface BrowserConfig {
   sessionDir?: string; // Directory to store session data
   useSystemChrome?: boolean; // Use user's Chrome profile with saved passwords
   chromeProfilePath?: string; // Path to Chrome profile (auto-detected if not set)
+  browserType?: BrowserType; // Which browser engine to use (chromium or camoufox)
+  capsolverApiKey?: string; // CapSolver API key for auto CAPTCHA solving
 }
 
 export interface ScreenshotResult {
@@ -45,6 +52,7 @@ export class BrowserController {
   private page: Page | null = null;
   private config: BrowserConfig;
   private sessionFile: string;
+  private captchaSolver: CaptchaSolver | null = null;
 
   /**
    * Generate a random delay to appear more human-like
@@ -54,51 +62,207 @@ export class BrowserController {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
+  // Track last known mouse position for realistic movement
+  private lastMouseX: number = 0;
+  private lastMouseY: number = 0;
+
   /**
    * Move mouse in a human-like curved path (Bezier curve)
+   * Enhanced with: micro-movements, variable speed, overshoot correction
    * Bots typically move in straight lines which is detectable
    */
   private async humanMouseMove(toX: number, toY: number): Promise<void> {
     if (!this.page) return;
 
-    // Get current mouse position (default to random starting point if unknown)
-    const fromX = Math.random() * (this.config.viewport?.width || 1280);
-    const fromY = Math.random() * (this.config.viewport?.height || 800);
+    // Use last known position or start from random point
+    const fromX = this.lastMouseX || Math.random() * (this.config.viewport?.width || 1280);
+    const fromY = this.lastMouseY || Math.random() * (this.config.viewport?.height || 800);
 
-    // Number of steps (more steps = smoother movement)
-    const steps = 20 + Math.floor(Math.random() * 15);
+    // Calculate distance for adaptive step count
+    const distance = Math.sqrt(Math.pow(toX - fromX, 2) + Math.pow(toY - fromY, 2));
 
-    // Generate control points for Bezier curve (adds natural curve)
-    const cpX = (fromX + toX) / 2 + (Math.random() - 0.5) * 100;
-    const cpY = (fromY + toY) / 2 + (Math.random() - 0.5) * 100;
+    // More steps for longer distances (humans slow down for precision)
+    const baseSteps = Math.max(15, Math.min(40, Math.floor(distance / 20)));
+    const steps = baseSteps + Math.floor(Math.random() * 10);
+
+    // Generate TWO control points for cubic Bezier (more natural curve)
+    const cp1X = fromX + (toX - fromX) * 0.3 + (Math.random() - 0.5) * 80;
+    const cp1Y = fromY + (toY - fromY) * 0.3 + (Math.random() - 0.5) * 80;
+    const cp2X = fromX + (toX - fromX) * 0.7 + (Math.random() - 0.5) * 80;
+    const cp2Y = fromY + (toY - fromY) * 0.7 + (Math.random() - 0.5) * 80;
+
+    // Easing function for natural acceleration/deceleration
+    const easeInOutQuad = (t: number) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
     for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      // Quadratic Bezier curve formula
-      const x = Math.round((1 - t) * (1 - t) * fromX + 2 * (1 - t) * t * cpX + t * t * toX);
-      const y = Math.round((1 - t) * (1 - t) * fromY + 2 * (1 - t) * t * cpY + t * t * toY);
+      const t = easeInOutQuad(i / steps);
 
-      await this.page.mouse.move(x, y);
+      // Cubic Bezier curve formula
+      const x = Math.round(
+        Math.pow(1 - t, 3) * fromX +
+        3 * Math.pow(1 - t, 2) * t * cp1X +
+        3 * (1 - t) * Math.pow(t, 2) * cp2X +
+        Math.pow(t, 3) * toX
+      );
+      const y = Math.round(
+        Math.pow(1 - t, 3) * fromY +
+        3 * Math.pow(1 - t, 2) * t * cp1Y +
+        3 * (1 - t) * Math.pow(t, 2) * cp2Y +
+        Math.pow(t, 3) * toY
+      );
 
-      // Variable delay between movements (humans don't move at constant speed)
-      const delay = 5 + Math.floor(Math.random() * 15);
+      // Add micro-jitter (humans have slight hand tremor)
+      const jitterX = x + (Math.random() - 0.5) * 2;
+      const jitterY = y + (Math.random() - 0.5) * 2;
+
+      await this.page.mouse.move(jitterX, jitterY);
+      this.lastMouseX = jitterX;
+      this.lastMouseY = jitterY;
+
+      // Variable delay - slower at start and end, faster in middle
+      const speedFactor = Math.sin(Math.PI * (i / steps)); // 0 at edges, 1 in middle
+      const baseDelay = 8 + Math.floor(Math.random() * 12);
+      const delay = Math.floor(baseDelay * (1.5 - speedFactor * 0.7));
       await this.page.waitForTimeout(delay);
+    }
+
+    // Occasionally overshoot and correct (very human behavior)
+    if (Math.random() < 0.15) {
+      const overshootX = toX + (Math.random() - 0.5) * 10;
+      const overshootY = toY + (Math.random() - 0.5) * 10;
+      await this.page.mouse.move(overshootX, overshootY);
+      await this.page.waitForTimeout(30 + Math.random() * 50);
+      await this.page.mouse.move(toX, toY);
+    }
+
+    this.lastMouseX = toX;
+    this.lastMouseY = toY;
+  }
+
+  /**
+   * Add random micro-movements while "thinking" (before clicking)
+   * Humans often hover and move slightly before committing to a click
+   */
+  private async humanHesitation(x: number, y: number): Promise<void> {
+    if (!this.page) return;
+
+    // 40% chance to hesitate before clicking
+    if (Math.random() < 0.4) {
+      const hesitationTime = 200 + Math.random() * 500;
+      const microMoves = 2 + Math.floor(Math.random() * 3);
+
+      for (let i = 0; i < microMoves; i++) {
+        const microX = x + (Math.random() - 0.5) * 6;
+        const microY = y + (Math.random() - 0.5) * 6;
+        await this.page.mouse.move(microX, microY);
+        await this.page.waitForTimeout(hesitationTime / microMoves);
+      }
+
+      // Move back to target
+      await this.page.mouse.move(x, y);
     }
   }
 
   /**
-   * Human-like typing with variable delays between keystrokes
+   * Human-like scroll with variable speed and occasional pauses
+   */
+  private async humanScroll(direction: 'up' | 'down', amount: number): Promise<void> {
+    if (!this.page) return;
+
+    const scrollDirection = direction === 'down' ? 1 : -1;
+    const totalScroll = amount * scrollDirection;
+
+    // Break into smaller chunks with variable speeds
+    const chunks = 3 + Math.floor(Math.random() * 4);
+    const chunkSize = Math.floor(totalScroll / chunks);
+
+    for (let i = 0; i < chunks; i++) {
+      // Variable chunk size (some scrolls bigger than others)
+      const thisChunk = chunkSize + (Math.random() - 0.5) * (chunkSize * 0.4);
+
+      await this.page.mouse.wheel(0, thisChunk);
+
+      // Variable pause between scroll chunks
+      const pause = 50 + Math.random() * 150;
+      await this.page.waitForTimeout(pause);
+
+      // Occasional longer pause (reading/looking)
+      if (Math.random() < 0.2) {
+        await this.page.waitForTimeout(200 + Math.random() * 400);
+      }
+    }
+  }
+
+  /**
+   * Human-like typing with variable delays, typos, and corrections
+   * Enhanced with: burst typing, word-based pauses, occasional typos
    */
   private async humanType(text: string): Promise<void> {
     if (!this.page) return;
 
-    for (const char of text) {
-      await this.page.keyboard.type(char);
-      // Variable delay: 50-150ms for most chars, longer pauses occasionally
-      const delay = Math.random() < 0.1
-        ? 200 + Math.floor(Math.random() * 300) // Occasional longer pause (thinking)
-        : 50 + Math.floor(Math.random() * 100);  // Normal typing speed
-      await this.page.waitForTimeout(delay);
+    const words = text.split(' ');
+    let isFirstWord = true;
+
+    for (const word of words) {
+      // Add space before words (except first)
+      if (!isFirstWord) {
+        await this.page.keyboard.type(' ');
+        // Slight pause after space (natural word boundary)
+        await this.page.waitForTimeout(30 + Math.random() * 70);
+      }
+      isFirstWord = false;
+
+      // Occasionally type in bursts (2-4 chars quickly, then pause)
+      let i = 0;
+      while (i < word.length) {
+        const burstLength = Math.random() < 0.3 ? 2 + Math.floor(Math.random() * 3) : 1;
+        const burst = word.slice(i, i + burstLength);
+
+        for (const char of burst) {
+          // 2% chance of typo (and correction) - very human
+          if (Math.random() < 0.02 && word.length > 3) {
+            // Type wrong char
+            const wrongChar = String.fromCharCode(char.charCodeAt(0) + (Math.random() > 0.5 ? 1 : -1));
+            await this.page.keyboard.type(wrongChar);
+            await this.page.waitForTimeout(100 + Math.random() * 200);
+            // Backspace and correct
+            await this.page.keyboard.press('Backspace');
+            await this.page.waitForTimeout(50 + Math.random() * 100);
+          }
+
+          await this.page.keyboard.type(char);
+
+          // Variable delay based on character type
+          let delay: number;
+          if (char === char.toUpperCase() && char !== char.toLowerCase()) {
+            // Capital letter (shift key) - slightly slower
+            delay = 80 + Math.floor(Math.random() * 80);
+          } else if (/[0-9]/.test(char)) {
+            // Numbers - slightly slower (top row)
+            delay = 70 + Math.floor(Math.random() * 70);
+          } else if (/[.,!?;:]/.test(char)) {
+            // Punctuation - pause after
+            delay = 100 + Math.floor(Math.random() * 150);
+          } else {
+            // Normal letter
+            delay = 40 + Math.floor(Math.random() * 80);
+          }
+
+          await this.page.waitForTimeout(delay);
+        }
+
+        i += burstLength;
+
+        // Pause after burst
+        if (burstLength > 1) {
+          await this.page.waitForTimeout(50 + Math.random() * 100);
+        }
+      }
+
+      // Occasional longer pause between words (thinking)
+      if (Math.random() < 0.15) {
+        await this.page.waitForTimeout(200 + Math.random() * 400);
+      }
     }
   }
 
@@ -111,6 +275,7 @@ export class BrowserController {
 
     this.config = {
       headless: true,
+      browserType: 'chromium', // Default to Chromium, can be 'camoufox' for better stealth
       viewport: {
         width: baseWidth + widthVariation,
         height: baseHeight + heightVariation
@@ -128,6 +293,16 @@ export class BrowserController {
       fs.mkdirSync(this.config.sessionDir!, { recursive: true });
     }
     this.sessionFile = path.join(this.config.sessionDir!, 'browser-state.json');
+
+    // Initialize CAPTCHA solver if API key provided
+    if (this.config.capsolverApiKey) {
+      this.captchaSolver = new CaptchaSolver({
+        apiKey: this.config.capsolverApiKey,
+        timeout: 60000,
+        pollInterval: 2000,
+      });
+      console.log('[Browser] CapSolver CAPTCHA solver initialized');
+    }
   }
 
   /**
@@ -156,22 +331,11 @@ export class BrowserController {
    * Launch the browser and create a new page
    * If useSystemChrome is true, uses the user's Chrome profile with saved passwords
    * Otherwise, uses an isolated session with optional saved cookies
+   * If browserType is 'camoufox', uses Camoufox for advanced anti-detection
    */
   async launch(loadSession: boolean = true): Promise<void> {
-    console.log('[Browser] Launching browser...');
-
-    // Use isolated browser with cookie-based sessions
-    // Note: launchPersistentContext crashes on macOS 26 beta, so we use storageState instead
-    this.browser = await chromium.launch({
-      headless: this.config.headless,
-      args: [
-        '--disable-blink-features=AutomationControlled',
-        '--disable-features=IsolateOrigins,site-per-process',
-        '--disable-infobars',
-        '--window-size=1280,800',
-      ],
-      ignoreDefaultArgs: ['--enable-automation'],
-    });
+    const browserType = this.config.browserType || 'chromium';
+    console.log(`[Browser] Launching browser (${browserType})...`);
 
     // Try to load saved session state (cookies, localStorage)
     let storageState: any = undefined;
@@ -183,6 +347,57 @@ export class BrowserController {
         console.log('[Browser] Could not load session, starting fresh');
       }
     }
+
+    if (browserType === 'camoufox') {
+      // Use Camoufox for advanced anti-detection (Firefox-based)
+      // Camoufox handles stealth automatically at C++ level - much better than JS patches
+      console.log('[Browser] Using Camoufox anti-detect browser (Firefox-based)');
+
+      this.browser = await Camoufox({
+        headless: this.config.headless || false, // Run visible by default for CAPTCHA solving
+        humanize: true, // Enable human-like mouse movements
+        geoip: false, // Don't auto-configure based on IP (we have our own location)
+        window: [this.config.viewport?.width || 1280, this.config.viewport?.height || 800],
+      });
+
+      // Camoufox returns a browser instance, get the default context
+      const contexts = this.browser!.contexts();
+      if (contexts.length > 0) {
+        this.context = contexts[0];
+      } else {
+        this.context = await this.browser!.newContext({
+          viewport: this.config.viewport,
+          storageState,
+        });
+      }
+
+      // Load cookies if we have a saved session
+      if (storageState && this.context) {
+        try {
+          await this.context.addCookies(storageState.cookies || []);
+        } catch (e) {
+          console.log('[Browser] Could not restore cookies to Camoufox context');
+        }
+      }
+
+      this.page = await this.context!.newPage();
+      this.page.setDefaultTimeout(30000);
+
+      console.log('[Browser] Camoufox browser launched successfully');
+      return; // Skip chromium-specific stealth scripts
+    }
+
+    // Default: Use Chromium with stealth patches
+    this.browser = await chromium.launch({
+      headless: this.config.headless,
+      args: [
+        '--disable-blink-features=AutomationControlled',
+        '--disable-features=IsolateOrigins,site-per-process',
+        '--disable-infobars',
+        '--window-size=1280,800',
+      ],
+      ignoreDefaultArgs: ['--enable-automation'],
+    });
 
     this.context = await this.browser.newContext({
       viewport: this.config.viewport,
@@ -371,7 +586,169 @@ export class BrowserController {
         }
       });
 
-      console.log('[Stealth] Anti-detection measures loaded');
+      // ============================================
+      // 10. AUDIO CONTEXT FINGERPRINTING (Cloudflare checks this)
+      // ============================================
+      const originalAudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (originalAudioContext) {
+        const audioContextProto = originalAudioContext.prototype;
+        const originalCreateOscillator = audioContextProto.createOscillator;
+        const originalCreateDynamicsCompressor = audioContextProto.createDynamicsCompressor;
+
+        audioContextProto.createOscillator = function() {
+          const oscillator = originalCreateOscillator.call(this);
+          const originalConnect = oscillator.connect.bind(oscillator);
+          oscillator.connect = function(destination: any, ...args: any[]) {
+            // Add tiny random variation to frequency
+            if (oscillator.frequency && oscillator.frequency.value) {
+              oscillator.frequency.value += (Math.random() - 0.5) * 0.00001;
+            }
+            return originalConnect(destination, ...args);
+          };
+          return oscillator;
+        };
+      }
+
+      // ============================================
+      // 11. WEBRTC LEAK PREVENTION (IP exposure)
+      // ============================================
+      const rtcPeerConnection = (window as any).RTCPeerConnection ||
+                                (window as any).webkitRTCPeerConnection ||
+                                (window as any).mozRTCPeerConnection;
+      if (rtcPeerConnection) {
+        const originalCreateOffer = rtcPeerConnection.prototype.createOffer;
+        rtcPeerConnection.prototype.createOffer = function(options?: any) {
+          // Disable ICE candidate gathering that reveals local IP
+          if (options) {
+            options.offerToReceiveAudio = false;
+            options.offerToReceiveVideo = false;
+          }
+          return originalCreateOffer.apply(this, arguments);
+        };
+      }
+
+      // ============================================
+      // 12. BATTERY API SPOOFING (fingerprinting vector)
+      // ============================================
+      if ('getBattery' in navigator) {
+        (navigator as any).getBattery = () => Promise.resolve({
+          charging: true,
+          chargingTime: 0,
+          dischargingTime: Infinity,
+          level: 1.0,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+        });
+      }
+
+      // ============================================
+      // 13. CONNECTION INFO SPOOFING
+      // ============================================
+      Object.defineProperty(navigator, 'connection', {
+        get: () => ({
+          effectiveType: '4g',
+          rtt: 50 + Math.floor(Math.random() * 50),
+          downlink: 10 + Math.random() * 5,
+          saveData: false,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+        }),
+      });
+
+      // ============================================
+      // 14. TIMEZONE CONSISTENCY
+      // ============================================
+      // Ensure timezone offset is consistent
+      const originalGetTimezoneOffset = Date.prototype.getTimezoneOffset;
+      Date.prototype.getTimezoneOffset = function() {
+        return 300; // EST (-5 hours = 300 minutes) - consistent value
+      };
+
+      // ============================================
+      // 15. ERROR STACK TRACE PROTECTION
+      // ============================================
+      // Some detectors analyze error stack traces for automation signals
+      const originalError = Error;
+      (window as any).Error = function(...args: any[]) {
+        const error = new originalError(...args);
+        // Remove any "puppeteer" or "playwright" from stack trace
+        if (error.stack) {
+          error.stack = error.stack
+            .replace(/puppeteer/gi, 'chrome')
+            .replace(/playwright/gi, 'chrome')
+            .replace(/webdriver/gi, 'native');
+        }
+        return error;
+      };
+      (window as any).Error.prototype = originalError.prototype;
+
+      // ============================================
+      // 16. CONSOLE DEBUG TRAP (Cloudflare uses this)
+      // ============================================
+      const originalConsoleDebug = console.debug;
+      console.debug = function(...args: any[]) {
+        // Don't expose debug calls that might reveal automation
+        if (args.some(arg => String(arg).includes('webdriver') || String(arg).includes('automation'))) {
+          return;
+        }
+        return originalConsoleDebug.apply(console, args);
+      };
+
+      // ============================================
+      // 17. MOUSE EVENT ENHANCEMENT
+      // ============================================
+      // Add realistic mouse event properties that bots often miss
+      const originalDispatchEvent = EventTarget.prototype.dispatchEvent;
+      EventTarget.prototype.dispatchEvent = function(event: Event) {
+        if (event instanceof MouseEvent) {
+          // Ensure mouse events have realistic properties
+          Object.defineProperty(event, 'isTrusted', { get: () => true });
+        }
+        return originalDispatchEvent.call(this, event);
+      };
+
+      // ============================================
+      // 18. SCREEN ORIENTATION API
+      // ============================================
+      if (!window.screen.orientation) {
+        Object.defineProperty(window.screen, 'orientation', {
+          get: () => ({
+            type: 'landscape-primary',
+            angle: 0,
+            addEventListener: () => {},
+            removeEventListener: () => {},
+            lock: () => Promise.resolve(),
+            unlock: () => {},
+          }),
+        });
+      }
+
+      // ============================================
+      // 19. PERFORMANCE TIMING (Cloudflare analyzes load times)
+      // ============================================
+      // Make performance timing look more natural
+      const originalPerformance = window.performance;
+      if (originalPerformance && originalPerformance.timing) {
+        const timingProps = ['navigationStart', 'loadEventEnd', 'domContentLoadedEventEnd'];
+        timingProps.forEach(prop => {
+          try {
+            const originalValue = (originalPerformance.timing as any)[prop];
+            if (originalValue) {
+              Object.defineProperty(originalPerformance.timing, prop, {
+                get: () => originalValue + Math.floor(Math.random() * 10),
+              });
+            }
+          } catch (e) {}
+        });
+      }
+
+      // ============================================
+      // 20. CLOUDFLARE-SPECIFIC: __cf_bm COOKIE HANDLING
+      // ============================================
+      // Don't block Cloudflare's bot management cookie from being set
+      // This is critical for maintaining session validity
+
+      console.log('[Stealth] Enhanced Cloudflare evasion loaded (20 protections active)');
     });
 
     console.log('[Browser] Browser launched successfully with stealth mode');
@@ -388,9 +765,97 @@ export class BrowserController {
       const state = await this.context.storageState();
       fs.writeFileSync(this.sessionFile, JSON.stringify(state, null, 2));
       console.log('[Browser] Session saved successfully');
+
+      // Also save Cloudflare cookies separately for easy access
+      await this.saveCloudflareCookies();
     } catch (e) {
       console.error('[Browser] Failed to save session:', e);
     }
+  }
+
+  /**
+   * Save Cloudflare-specific cookies (cf_clearance, __cf_bm)
+   * These are critical for maintaining Cloudflare bypass
+   */
+  async saveCloudflareCookies(): Promise<void> {
+    if (!this.context) return;
+
+    try {
+      const cookies = await this.context.cookies();
+      const cloudflareCookies = cookies.filter(c =>
+        c.name === 'cf_clearance' ||
+        c.name === '__cf_bm' ||
+        c.name.startsWith('cf_') ||
+        c.name.startsWith('__cf')
+      );
+
+      if (cloudflareCookies.length > 0) {
+        const cfCookieFile = path.join(this.config.sessionDir!, 'cloudflare-cookies.json');
+        fs.writeFileSync(cfCookieFile, JSON.stringify(cloudflareCookies, null, 2));
+        console.log(`[Browser] Saved ${cloudflareCookies.length} Cloudflare cookies`);
+
+        // Log the cookies (without full values for security)
+        cloudflareCookies.forEach(c => {
+          const expiry = c.expires ? new Date(c.expires * 1000).toLocaleString() : 'session';
+          console.log(`  - ${c.name}: domain=${c.domain}, expires=${expiry}`);
+        });
+      }
+    } catch (e) {
+      console.error('[Browser] Failed to save Cloudflare cookies:', e);
+    }
+  }
+
+  /**
+   * Check if we have valid Cloudflare clearance cookies
+   * Returns true if cf_clearance cookie exists and is not expired
+   */
+  async hasCloudflareClearance(): Promise<boolean> {
+    if (!this.context) return false;
+
+    try {
+      const cookies = await this.context.cookies();
+      const cfClearance = cookies.find(c => c.name === 'cf_clearance');
+
+      if (cfClearance) {
+        const now = Date.now() / 1000;
+        const isValid = !cfClearance.expires || cfClearance.expires > now;
+
+        if (isValid) {
+          console.log('[Browser] ✓ Valid cf_clearance cookie found');
+          return true;
+        } else {
+          console.log('[Browser] ⚠ cf_clearance cookie expired');
+        }
+      }
+
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
+   * Wait for Cloudflare challenge to be solved
+   * Monitors for cf_clearance cookie to appear
+   */
+  async waitForCloudflareClearance(timeoutMs: number = 60000): Promise<boolean> {
+    if (!this.context) return false;
+
+    console.log('[Browser] Waiting for Cloudflare challenge to be solved...');
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeoutMs) {
+      if (await this.hasCloudflareClearance()) {
+        // Save the cookies immediately after getting clearance
+        await this.saveCloudflareCookies();
+        await this.saveSession();
+        return true;
+      }
+      await this.page?.waitForTimeout(1000);
+    }
+
+    console.log('[Browser] Cloudflare clearance timeout');
+    return false;
   }
 
   /**
@@ -474,6 +939,15 @@ export class BrowserController {
         console.log('[Browser] ⚠️ Human verification text detected on page!');
         return { type: 'Human Verification', message: 'Please complete the human verification in the browser' };
       }
+
+      // Cloudflare "Additional Verification Required" (Indeed uses this)
+      if (lowerText.includes('additional verification required') ||
+          lowerText.includes('ray id') ||
+          lowerText.includes('checking your browser') ||
+          lowerText.includes('please wait while we verify')) {
+        console.log('[Browser] ⚠️ Cloudflare verification page detected!');
+        return { type: 'Cloudflare Block', message: 'Cloudflare requires additional verification' };
+      }
     } catch (e) {
       // Page might not be fully loaded
     }
@@ -502,6 +976,246 @@ export class BrowserController {
 
     console.log('[Browser] CAPTCHA solve timeout');
     return false;
+  }
+
+  /**
+   * Automatically solve Cloudflare Turnstile using CapSolver
+   * This is the key method for fully autonomous operation
+   *
+   * @returns true if solved, false if failed or no solver configured
+   */
+  async autoSolveTurnstile(): Promise<boolean> {
+    if (!this.page) return false;
+    if (!this.captchaSolver) {
+      console.log('[Browser] No CAPTCHA solver configured - manual solving required');
+      return false;
+    }
+
+    try {
+      // Get the current page URL
+      const pageUrl = this.page.url();
+      console.log(`[Browser] Attempting to auto-solve Turnstile on ${pageUrl}`);
+
+      // Get page HTML to extract sitekey
+      const html = await this.page.content();
+      const sitekey = extractTurnstileSitekey(html);
+
+      if (!sitekey) {
+        // Try to find sitekey from iframe
+        const iframeUrl = await this.page.evaluate(() => {
+          const iframe = document.querySelector('iframe[src*="challenges.cloudflare.com"]') as HTMLIFrameElement;
+          return iframe?.src || null;
+        });
+
+        if (iframeUrl) {
+          const sitekeyFromUrl = iframeUrl.match(/sitekey=([^&]+)/)?.[1];
+          if (sitekeyFromUrl) {
+            console.log(`[Browser] Found sitekey from iframe: ${sitekeyFromUrl.substring(0, 20)}...`);
+            return await this.solveTurnstileWithKey(pageUrl, sitekeyFromUrl);
+          }
+        }
+
+        console.log('[Browser] Could not find Turnstile sitekey on page');
+        return false;
+      }
+
+      console.log(`[Browser] Found sitekey: ${sitekey.substring(0, 20)}...`);
+      return await this.solveTurnstileWithKey(pageUrl, sitekey);
+
+    } catch (error) {
+      console.error('[Browser] Auto-solve Turnstile error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Solve Turnstile with a known sitekey and inject the token
+   */
+  private async solveTurnstileWithKey(pageUrl: string, sitekey: string): Promise<boolean> {
+    if (!this.page || !this.captchaSolver) return false;
+
+    try {
+      // Call CapSolver to solve the Turnstile
+      const solution = await this.captchaSolver.solveTurnstile({
+        websiteURL: pageUrl,
+        websiteKey: sitekey,
+      });
+
+      console.log(`[Browser] Got Turnstile token: ${solution.token.substring(0, 30)}...`);
+
+      // Inject the token into the page
+      // Turnstile typically uses a hidden input or callback
+      await this.page.evaluate((token) => {
+        // Method 1: Set hidden input value (most common)
+        const hiddenInputs = document.querySelectorAll('input[name*="turnstile"], input[name*="cf-turnstile"], input[name="cf-turnstile-response"]');
+        hiddenInputs.forEach(input => {
+          (input as HTMLInputElement).value = token;
+        });
+
+        // Method 2: Call turnstile callback if it exists
+        const cfTurnstile = document.querySelector('[data-callback]') as HTMLElement;
+        if (cfTurnstile) {
+          const callbackName = cfTurnstile.getAttribute('data-callback');
+          if (callbackName && typeof (window as any)[callbackName] === 'function') {
+            (window as any)[callbackName](token);
+          }
+        }
+
+        // Method 3: Dispatch a custom event that some implementations listen for
+        const event = new CustomEvent('turnstile-complete', { detail: { token } });
+        document.dispatchEvent(event);
+
+        // Method 4: Set on window object for JavaScript access
+        (window as any).turnstileToken = token;
+        (window as any).cfTurnstileResponse = token;
+      }, solution.token);
+
+      // Wait a moment for the token to be processed
+      await this.page.waitForTimeout(1000);
+
+      // Try to submit the form or click continue button
+      const submitted = await this.page.evaluate(() => {
+        // Try to find and click a submit/continue button
+        const buttons = document.querySelectorAll('button[type="submit"], input[type="submit"], button:has-text("Continue"), button:has-text("Verify")');
+        for (const button of buttons) {
+          if (button instanceof HTMLElement && button.offsetParent !== null) {
+            button.click();
+            return true;
+          }
+        }
+
+        // Try to submit any form with the Turnstile
+        const forms = document.querySelectorAll('form');
+        for (const form of forms) {
+          if (form.querySelector('[data-sitekey], .cf-turnstile')) {
+            form.submit();
+            return true;
+          }
+        }
+
+        return false;
+      });
+
+      if (submitted) {
+        console.log('[Browser] Submitted form with Turnstile token');
+        await this.page.waitForTimeout(2000);
+      }
+
+      // Check if we passed the challenge
+      const stillBlocked = await this.detectCaptcha();
+      if (!stillBlocked) {
+        console.log('[Browser] ✓ Turnstile solved successfully!');
+        await this.saveSession();
+        return true;
+      }
+
+      console.log('[Browser] Turnstile token injected but challenge still present');
+      return false;
+
+    } catch (error) {
+      console.error('[Browser] solveTurnstileWithKey error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Wait for Cloudflare JS challenge to auto-pass
+   * JS challenges don't require user interaction - browser just needs to wait
+   *
+   * @param timeoutMs - Max time to wait for auto-pass
+   * @returns true if challenge passed, false if timeout
+   */
+  async waitForJSChallenge(timeoutMs: number = 30000): Promise<boolean> {
+    if (!this.page) return false;
+
+    console.log('[Browser] Waiting for Cloudflare JS challenge to auto-pass...');
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeoutMs) {
+      // Wait a bit for JS to execute
+      await this.page.waitForTimeout(3000);
+
+      // Check if challenge cleared
+      const captcha = await this.detectCaptcha();
+      if (!captcha) {
+        console.log('[Browser] ✓ Cloudflare JS challenge passed!');
+        await this.saveSession();
+        return true;
+      }
+
+      // Check if it changed to a different challenge type (like Turnstile)
+      if (captcha.type.includes('Turnstile')) {
+        console.log('[Browser] JS challenge resolved to Turnstile - needs solving');
+        return false; // Let caller handle Turnstile
+      }
+
+      console.log(`[Browser] Still waiting... (${captcha.type})`);
+    }
+
+    console.log('[Browser] JS challenge did not auto-pass');
+    return false;
+  }
+
+  /**
+   * Solve CAPTCHA with auto-solve fallback to manual
+   * Uses CapSolver if available, otherwise waits for user
+   *
+   * @param timeoutMs - Timeout for manual solving (ignored if auto-solving succeeds)
+   * @returns true if solved, false if timeout
+   */
+  async solveCaptcha(timeoutMs: number = 120000): Promise<boolean> {
+    const captcha = await this.detectCaptcha();
+    if (!captcha) {
+      console.log('[Browser] No CAPTCHA detected');
+      return true;
+    }
+
+    console.log(`[Browser] CAPTCHA detected: ${captcha.type}`);
+
+    // For JS challenges (Block, Challenge, Verification), try waiting first
+    // Camoufox should be able to pass these automatically
+    if (captcha.type === 'Cloudflare Block' ||
+        captcha.type === 'Cloudflare Challenge' ||
+        captcha.type === 'Cloudflare Verification') {
+      console.log('[Browser] Detected Cloudflare JS challenge - waiting for auto-pass...');
+      const autoPass = await this.waitForJSChallenge(30000);
+      if (autoPass) {
+        return true;
+      }
+
+      // Re-check what challenge we have now
+      const newCaptcha = await this.detectCaptcha();
+      if (!newCaptcha) {
+        return true;
+      }
+
+      // If it's now Turnstile, try CapSolver
+      if (newCaptcha.type.includes('Turnstile') && this.captchaSolver) {
+        console.log('[Browser] Challenge became Turnstile - attempting CapSolver...');
+        const solved = await this.autoSolveTurnstile();
+        if (solved) return true;
+      }
+    }
+
+    // Try CapSolver for Turnstile
+    if (this.captchaSolver && captcha.type.includes('Turnstile')) {
+      console.log('[Browser] Attempting auto-solve with CapSolver...');
+      const autoSolved = await this.autoSolveTurnstile();
+      if (autoSolved) {
+        return true;
+      }
+      console.log('[Browser] Auto-solve failed, falling back to manual solving');
+    }
+
+    // Fall back to manual solving
+    return await this.waitForCaptchaSolved(timeoutMs);
+  }
+
+  /**
+   * Check if CapSolver is configured
+   */
+  hasAutoSolver(): boolean {
+    return this.captchaSolver !== null;
   }
 
   /**
@@ -608,6 +1322,9 @@ export class BrowserController {
     // Move mouse in curved path before clicking
     await this.humanMouseMove(x, y);
 
+    // Human hesitation - sometimes hover and micro-move before clicking
+    await this.humanHesitation(x, y);
+
     // Small random delay before click (humans don't click instantly after moving)
     await this.page.waitForTimeout(50 + Math.floor(Math.random() * 100));
 
@@ -657,15 +1374,13 @@ export class BrowserController {
   }
 
   /**
-   * Scroll the page
+   * Scroll the page with human-like behavior
    */
   async scroll(direction: 'up' | 'down', amount: number = 300): Promise<void> {
     if (!this.page) throw new Error('Browser not launched');
 
-    const delta = direction === 'down' ? amount : -amount;
-    console.log(`[Browser] Scrolling ${direction} by ${amount}px`);
-    await this.page.mouse.wheel(0, delta);
-    await this.page.waitForTimeout(500);
+    console.log(`[Browser] Scrolling ${direction} by ${amount}px with human-like pattern`);
+    await this.humanScroll(direction, amount);
   }
 
   /**

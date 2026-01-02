@@ -11,6 +11,7 @@
  */
 
 import { BrowserController, ScreenshotResult } from './browser.js';
+import type { BrowserType } from './browser.js';
 import { VisionAgent, Action, UserProfile, VisionResult } from './vision.js';
 import { MockVisionAgent } from './vision-mock.js';
 import { GeminiVisionAgent } from './vision-gemini.js';
@@ -19,6 +20,7 @@ import { EfficiencyManager } from './efficiency.js';
 import { EventEmitter } from 'events';
 
 export type VisionProvider = 'claude' | 'gemini' | 'deepseek' | 'mock';
+export type { BrowserType } from './browser.js';
 
 export interface AgentConfig {
   anthropicApiKey?: string;
@@ -29,6 +31,8 @@ export interface AgentConfig {
   maxActions?: number;
   screenshotInterval?: number;
   sessionDir?: string; // Directory to load session cookies from
+  browserType?: BrowserType; // 'chromium' or 'camoufox' (camoufox for better stealth)
+  capsolverApiKey?: string; // CapSolver API key for auto CAPTCHA solving
 }
 
 export interface AgentState {
@@ -74,8 +78,10 @@ export class JobApplicationAgent extends EventEmitter {
     // The persistent profile is only for the login browser where user needs passwords
     this.browser = new BrowserController({
       headless: this.config.headless,
-      useSystemChrome: false, // Don't use persistent profile - use saved cookies instead
+      useSystemChrome: !this.config.headless, // Use system Chrome when visible for Cloudflare bypass
       sessionDir: this.config.sessionDir, // Load cookies from site-specific session
+      browserType: this.config.browserType || 'chromium',
+      capsolverApiKey: this.config.capsolverApiKey, // For auto CAPTCHA solving
     });
     this.efficiency = new EfficiencyManager();
 
@@ -194,10 +200,13 @@ export class JobApplicationAgent extends EventEmitter {
       if (this.shouldStop) break;
 
       try {
-        // 0. CHECK FOR CAPTCHA - Pause and notify user if detected
+        // 0. CHECK FOR CAPTCHA - Try auto-solve with CapSolver, fallback to manual
         const captcha = await this.browser.detectCaptcha();
         if (captcha) {
           console.log(`[Agent] ⚠️ CAPTCHA detected: ${captcha.type}`);
+
+          // Check if we have auto-solver
+          const hasAutoSolver = this.browser.hasAutoSolver();
 
           // Emit CAPTCHA event to notify frontend
           this.emit('event', {
@@ -205,25 +214,37 @@ export class JobApplicationAgent extends EventEmitter {
             data: {
               captchaType: captcha.type,
               message: captcha.message,
-              action: 'Please solve the CAPTCHA in the browser window, then the agent will continue automatically.',
+              action: hasAutoSolver
+                ? 'Attempting auto-solve with CapSolver...'
+                : 'Please solve the CAPTCHA in the browser window, then the agent will continue automatically.',
+              autoSolving: hasAutoSolver,
             },
             timestamp: Date.now(),
           } as any);
 
-          // Auto-pause and wait for user to solve it
-          this.emit('event', {
-            type: 'message',
-            data: { message: `🔐 ${captcha.message}. Please solve it in the browser window.` },
-            timestamp: Date.now(),
-          } as any);
+          if (hasAutoSolver) {
+            // Try auto-solve first
+            this.emit('event', {
+              type: 'message',
+              data: { message: `🤖 Attempting to auto-solve ${captcha.type}...` },
+              timestamp: Date.now(),
+            } as any);
+          } else {
+            // Manual solve required
+            this.emit('event', {
+              type: 'message',
+              data: { message: `🔐 ${captcha.message}. Please solve it in the browser window.` },
+              timestamp: Date.now(),
+            } as any);
+          }
 
-          // Wait for CAPTCHA to be solved (check every 2 seconds for up to 2 minutes)
-          const solved = await this.browser.waitForCaptchaSolved(120000);
+          // Use solveCaptcha which tries auto-solve first, then falls back to manual
+          const solved = await this.browser.solveCaptcha(120000);
 
           if (solved) {
             this.emit('event', {
               type: 'message',
-              data: { message: '✅ CAPTCHA solved! Resuming agent...' },
+              data: { message: hasAutoSolver ? '✅ CAPTCHA auto-solved! Resuming agent...' : '✅ CAPTCHA solved! Resuming agent...' },
               timestamp: Date.now(),
             } as any);
             // Save session after CAPTCHA solve to preserve the verification
