@@ -44,7 +44,7 @@ const WebViewLogin: React.FC<WebViewLoginProps> = ({
   loginUrl,
   onSuccess,
   onCancel,
-  cloudAgentUrl = import.meta.env.VITE_CLOUD_AGENT_URL || 'http://localhost:3001'
+  cloudAgentUrl = import.meta.env.VITE_CLOUD_AGENT_URL || 'https://jalanea-api.onrender.com'
 }) => {
   const [step, setStep] = useState<'method' | 'popup' | 'agent' | 'manual' | 'verifying' | 'success' | 'error'>('method');
   const [error, setError] = useState<string | null>(null);

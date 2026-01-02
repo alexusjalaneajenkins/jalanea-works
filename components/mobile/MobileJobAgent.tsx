@@ -10,7 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { haptics } from '../../utils/haptics';
 
 // Cloud Agent API URL
-const AGENT_API_URL = import.meta.env.VITE_CLOUD_AGENT_URL || 'http://localhost:3001';
+const AGENT_API_URL = import.meta.env.VITE_CLOUD_AGENT_URL || 'https://jalanea-api.onrender.com';
 
 // Job site configurations
 const JOB_SITES = [

@@ -205,7 +205,7 @@ export const MobileProfile: React.FC = () => {
       }
 
       // Send to the cloud agent API with userId for database storage
-      const AGENT_API_URL = import.meta.env.VITE_CLOUD_AGENT_URL || 'http://localhost:3001';
+      const AGENT_API_URL = import.meta.env.VITE_CLOUD_AGENT_URL || 'https://jalanea-api.onrender.com';
       const res = await fetch(`${AGENT_API_URL}/sites/${connectingTo}/import-cookies`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

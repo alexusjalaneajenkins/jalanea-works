@@ -26,7 +26,7 @@ try {
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY || '';
 
 // Cloud function URLs for email/SMS (will be set up on Render)
-const CLOUD_AGENT_URL = import.meta.env.VITE_CLOUD_AGENT_URL || 'http://localhost:3001';
+const CLOUD_AGENT_URL = import.meta.env.VITE_CLOUD_AGENT_URL || 'https://jalanea-api.onrender.com';
 
 // ============================================
 // Types

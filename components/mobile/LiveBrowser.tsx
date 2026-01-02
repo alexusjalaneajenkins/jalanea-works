@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { haptics } from '../../utils/haptics';
 
-const AGENT_API_URL = import.meta.env.VITE_CLOUD_AGENT_URL || 'http://localhost:3001';
+const AGENT_API_URL = import.meta.env.VITE_CLOUD_AGENT_URL || 'https://jalanea-api.onrender.com';
 
 interface LiveBrowserProps {
   siteId: string;
