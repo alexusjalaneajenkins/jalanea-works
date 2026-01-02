@@ -411,8 +411,11 @@ export const Home: React.FC<HomeProps> = ({ setRoute }) => {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center pt-20 md:pt-32 pb-8 md:pb-12 overflow-hidden">
+      {/* Hero Section - extra top padding on mobile for safe-area header */}
+      <section
+        className="relative min-h-screen flex items-center pb-8 md:pb-12 overflow-hidden"
+        style={{ paddingTop: 'calc(80px + env(safe-area-inset-top, 0px))' }}
+      >
         {/* Background Mesh Gradients */}
         <div className="absolute inset-0 bg-jalanea-950"></div>
         <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-blue-900/20 rounded-full blur-[120px]"></div>

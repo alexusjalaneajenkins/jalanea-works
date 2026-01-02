@@ -22,6 +22,14 @@ import { JobApplicationAgent, AgentEvent } from './agent.js';
 import { UserProfile } from './vision.js';
 import { BrowserController } from './browser.js';
 import { JOB_SITES, getJobSite, getJobSiteList, buildSearchUrl } from './job-sites.js';
+import {
+  getJobApplications,
+  createJobApplication,
+  updateJobApplication,
+  getDashboardStats,
+  supabase,
+  JobApplication
+} from './db/client.js';
 
 // Separate browser for login flow (non-headless)
 let loginBrowser: BrowserController | null = null;
@@ -591,6 +599,137 @@ app.post('/sites/close', async (req: Request, res: Response) => {
     }
     res.json({ success: true, message: 'Browser closed' });
   } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+// ============================================
+// Job History API Endpoints
+// ============================================
+
+/**
+ * Get job application history for a user
+ * Query params: userId (required), status (optional), limit (optional)
+ */
+app.get('/applications', async (req: Request, res: Response) => {
+  try {
+    const { userId, status, limit } = req.query;
+
+    if (!userId || typeof userId !== 'string') {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
+    const applications = await getJobApplications(userId, {
+      status: status as JobApplication['status'] | undefined,
+      limit: limit ? parseInt(limit as string) : 50,
+    });
+
+    res.json({
+      success: true,
+      applications,
+      count: applications.length,
+    });
+  } catch (error) {
+    console.error('[Server] Error fetching applications:', error);
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Create a new job application record
+ */
+app.post('/applications', async (req: Request, res: Response) => {
+  try {
+    const { userId, siteId, jobTitle, companyName, jobUrl, jobLocation, salaryRange, status } = req.body;
+
+    if (!userId || !siteId || !jobTitle) {
+      return res.status(400).json({ error: 'userId, siteId, and jobTitle are required' });
+    }
+
+    const applicationId = await createJobApplication(userId, {
+      siteId,
+      jobTitle,
+      companyName,
+      jobUrl,
+      jobLocation,
+      salaryRange,
+      status: status || 'pending',
+    });
+
+    if (!applicationId) {
+      return res.status(500).json({ error: 'Failed to create application' });
+    }
+
+    res.json({
+      success: true,
+      applicationId,
+      message: `Application recorded for ${jobTitle}`,
+    });
+  } catch (error) {
+    console.error('[Server] Error creating application:', error);
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Update a job application status
+ */
+app.patch('/applications/:applicationId', async (req: Request, res: Response) => {
+  try {
+    const { applicationId } = req.params;
+    const { status, appliedAt, errorMessage } = req.body;
+
+    const success = await updateJobApplication(applicationId, {
+      status,
+      appliedAt: appliedAt ? new Date(appliedAt) : undefined,
+      errorMessage,
+    });
+
+    if (!success) {
+      return res.status(500).json({ error: 'Failed to update application' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Application updated',
+    });
+  } catch (error) {
+    console.error('[Server] Error updating application:', error);
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Get dashboard stats for a user
+ */
+app.get('/dashboard/:userId', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    const stats = await getDashboardStats(userId);
+
+    if (!stats) {
+      // Return default stats if user doesn't exist yet
+      return res.json({
+        success: true,
+        stats: {
+          subscriptionTier: 'free',
+          applicationsThisMonth: 0,
+          applicationsLimit: 10,
+          connectedSites: 0,
+          totalApplied: 0,
+          pendingApplications: 0,
+          queueSize: 0,
+        },
+      });
+    }
+
+    res.json({
+      success: true,
+      stats,
+    });
+  } catch (error) {
+    console.error('[Server] Error fetching dashboard stats:', error);
     res.status(500).json({ error: (error as Error).message });
   }
 });

@@ -9,8 +9,8 @@ import {
   HelpCircle, X, ChevronDown, ChevronUp, Info
 } from 'lucide-react';
 
-// Cloud Agent API URL
-const AGENT_API_URL = 'http://localhost:3001';
+// Cloud Agent API URL - configurable for local dev vs production
+const AGENT_API_URL = import.meta.env.VITE_CLOUD_AGENT_URL || 'http://localhost:3001';
 
 // Job site configurations matching cloud-agent
 const JOB_SITES = [
@@ -93,6 +93,22 @@ interface SiteStatus {
   isLoggedIn: boolean;
   isLaunching: boolean;
   message: string;
+}
+
+// Job application from cloud-agent API
+interface JobApplicationRecord {
+  id: string;
+  userId: string;
+  siteId: string;
+  jobTitle: string;
+  companyName?: string;
+  jobUrl?: string;
+  jobLocation?: string;
+  salaryRange?: string;
+  status: 'pending' | 'in_progress' | 'applied' | 'failed' | 'skipped';
+  appliedAt?: string;
+  errorMessage?: string;
+  createdAt: string;
 }
 
 // Build comprehensive profile context for job search from onboarding data
@@ -247,6 +263,11 @@ export const JobAgent: React.FC = () => {
   const [showChatbot, setShowChatbot] = useState(false);
   const [waitingForLogin, setWaitingForLogin] = useState(false);
 
+  // Job history state
+  const [jobHistory, setJobHistory] = useState<JobApplicationRecord[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+
   // Play pleasant notification chime
   const playNotificationSound = () => {
     try {
@@ -332,7 +353,9 @@ export const JobAgent: React.FC = () => {
   useEffect(() => {
     if (!agentConnected) return;
 
-    const ws = new WebSocket(`ws://localhost:3001/ws`);
+    // Construct WebSocket URL from API URL (replace http(s) with ws(s))
+    const wsUrl = AGENT_API_URL.replace(/^http/, 'ws') + '/ws';
+    const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
     ws.onopen = () => {
