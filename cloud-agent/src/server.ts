@@ -1263,6 +1263,172 @@ app.post('/notifications/test/:userId', async (req: Request, res: Response) => {
 });
 
 // ============================================
+// Job Preferences Endpoints
+// ============================================
+
+/**
+ * Get job preferences for a user
+ * GET /preferences/:userId
+ */
+app.get('/preferences/:userId', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('job_preferences')
+      .eq('id', userId)
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      success: true,
+      preferences: data.job_preferences || {
+        jobTitles: [],
+        locations: [],
+        remoteOnly: false,
+        salaryMin: null,
+        salaryMax: null,
+        autoApplyEnabled: false,
+        maxApplicationsPerDay: 10,
+        preferredSites: ['indeed'],
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Save job preferences for a user
+ * POST /preferences/:userId
+ */
+app.post('/preferences/:userId', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const preferences = req.body;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        job_preferences: preferences,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId);
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to save preferences' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Queue an auto-apply job using saved preferences
+ * POST /queue/auto-apply
+ * Body: { userId }
+ */
+app.post('/queue/auto-apply', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
+    // Get user's preferences
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('job_preferences, email')
+      .eq('id', userId)
+      .single();
+
+    if (profileError || !profile) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const prefs = profile.job_preferences || {};
+    if (!prefs.jobTitles || prefs.jobTitles.length === 0) {
+      return res.status(400).json({ error: 'No job titles configured. Set preferences first.' });
+    }
+
+    // Queue a job search for each job title/site combination
+    const { addJob } = await import('./queue/jobs.js');
+    const jobId = `auto-apply-${userId}-${Date.now()}`;
+
+    await addJob('job-search', {
+      userId,
+      siteId: prefs.preferredSites?.[0] || 'indeed',
+      searchParams: {
+        jobTitle: prefs.jobTitles[0],
+        location: prefs.locations?.[0] || '',
+        remoteOnly: prefs.remoteOnly || false,
+      },
+      maxApplications: Math.min(prefs.maxApplicationsPerDay || 10, 10), // Cap at tier limit
+      profile: {
+        salaryMin: prefs.salaryMin,
+        salaryMax: prefs.salaryMax,
+      }
+    }, {
+      priority: 5, // Normal priority
+    });
+
+    res.json({
+      success: true,
+      jobId,
+      message: `Queued auto-apply for "${prefs.jobTitles[0]}" jobs. You'll be notified when complete.`
+    });
+  } catch (error) {
+    console.error('[Server] Auto-apply error:', error);
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+/**
+ * Get queue status for a user
+ * GET /queue/status/:userId
+ */
+app.get('/queue/status/:userId', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    // Get counts from job_applications table
+    const { data, error } = await supabase
+      .from('job_applications')
+      .select('status')
+      .eq('user_id', userId);
+
+    if (error) {
+      return res.status(500).json({ error: 'Failed to get queue status' });
+    }
+
+    const stats = {
+      pending: 0,
+      active: 0,
+      completed: 0,
+      failed: 0,
+    };
+
+    (data || []).forEach((row: { status: string }) => {
+      if (row.status === 'pending') stats.pending++;
+      else if (row.status === 'in_progress') stats.active++;
+      else if (row.status === 'applied') stats.completed++;
+      else if (row.status === 'failed') stats.failed++;
+    });
+
+    res.json({ success: true, stats });
+  } catch (error) {
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+// ============================================
 // Billing Endpoints (Stripe)
 // ============================================
 

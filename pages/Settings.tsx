@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { UserProfile } from '../types';
-import { GraduationCap, Briefcase, Award, PenTool, Edit3, Bell, Mail, MessageSquare, Smartphone, CheckCircle, AlertCircle, Loader, Zap, Crown, ExternalLink, Link2, Clock, CheckCircle2, XCircle, Rocket } from 'lucide-react';
+import { GraduationCap, Briefcase, Award, PenTool, Edit3, Bell, Mail, MessageSquare, Smartphone, CheckCircle, AlertCircle, Loader, Zap, Crown, ExternalLink, Link2, Clock, CheckCircle2, XCircle, Rocket, Target, MapPin, DollarSign, Bot, Play, Plus, X, Settings2 } from 'lucide-react';
 import { isPushSupported, registerForPushNotifications, getPushPermissionStatus } from '../services/notificationService';
 import { updateNotificationPreferences, NotificationPreferences, getProfile } from '../services/supabaseService';
 import { useAuth } from '../contexts/AuthContext';
@@ -14,10 +14,14 @@ import {
   createCheckoutSession,
   createPortalSession,
   getJobSites,
+  getJobPreferences,
+  saveJobPreferences,
+  queueAutoApply,
   Tier,
   DashboardStats,
   JobApplication,
   JobSite,
+  JobPreferences,
 } from '../services/cloudAgentService';
 
 // Mock Profile Data matching the screenshot
@@ -507,6 +511,344 @@ const ConnectedSites: React.FC = () => {
   );
 };
 
+// Job Preferences Component - "Set it and forget it" automation
+const JobPreferencesCard: React.FC = () => {
+  const { currentUser } = useAuth();
+  const [preferences, setPreferences] = useState<JobPreferences>({
+    jobTitles: [],
+    locations: [],
+    remoteOnly: false,
+    salaryMin: null,
+    salaryMax: null,
+    autoApplyEnabled: false,
+    maxApplicationsPerDay: 10,
+    preferredSites: ['indeed'],
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [newJobTitle, setNewJobTitle] = useState('');
+  const [newLocation, setNewLocation] = useState('');
+
+  // Load preferences
+  useEffect(() => {
+    const loadPrefs = async () => {
+      if (!currentUser?.uid) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const prefs = await getJobPreferences(currentUser.uid);
+        if (prefs) setPreferences(prefs);
+      } catch (err) {
+        console.error('Error loading preferences:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadPrefs();
+  }, [currentUser]);
+
+  const handleSave = async () => {
+    if (!currentUser?.uid) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await saveJobPreferences(currentUser.uid, preferences);
+      setSuccess('Preferences saved!');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError('Failed to save preferences');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRunNow = async () => {
+    if (!currentUser?.uid) return;
+    if (preferences.jobTitles.length === 0) {
+      setError('Add at least one job title first');
+      return;
+    }
+    setRunning(true);
+    setError(null);
+    try {
+      const result = await queueAutoApply(currentUser.uid);
+      setSuccess(result.message || 'Job search queued! You\'ll receive a notification when complete.');
+      setTimeout(() => setSuccess(null), 5000);
+    } catch (err) {
+      setError('Failed to start job search. Make sure you have connected a job site.');
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const addJobTitle = () => {
+    if (newJobTitle.trim() && !preferences.jobTitles.includes(newJobTitle.trim())) {
+      setPreferences(p => ({ ...p, jobTitles: [...p.jobTitles, newJobTitle.trim()] }));
+      setNewJobTitle('');
+    }
+  };
+
+  const removeJobTitle = (title: string) => {
+    setPreferences(p => ({ ...p, jobTitles: p.jobTitles.filter(t => t !== title) }));
+  };
+
+  const addLocation = () => {
+    if (newLocation.trim() && !preferences.locations.includes(newLocation.trim())) {
+      setPreferences(p => ({ ...p, locations: [...p.locations, newLocation.trim()] }));
+      setNewLocation('');
+    }
+  };
+
+  const removeLocation = (loc: string) => {
+    setPreferences(p => ({ ...p, locations: p.locations.filter(l => l !== loc) }));
+  };
+
+  if (loading) {
+    return (
+      <Card variant="solid-white" className="overflow-hidden">
+        <div className="p-6 flex items-center justify-center">
+          <Loader className="w-6 h-6 animate-spin text-jalanea-400" />
+        </div>
+      </Card>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <Card variant="solid-white" className="overflow-hidden">
+        <div className="border-b border-jalanea-100 p-6 bg-gradient-to-r from-accent/5 to-gold/5">
+          <h3 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider flex items-center gap-2">
+            <Settings2 size={16} /> Auto-Apply Preferences
+          </h3>
+        </div>
+        <div className="p-6 text-center text-jalanea-600">
+          <p>Sign in to set up automatic job applications</p>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card variant="solid-white" className="overflow-hidden">
+      <div className="border-b border-jalanea-100 p-6 bg-gradient-to-r from-accent/5 to-gold/5">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-bold text-jalanea-500 uppercase tracking-wider flex items-center gap-2">
+            <Settings2 size={16} /> Auto-Apply Preferences
+          </h3>
+          <div className="flex items-center gap-2">
+            {preferences.autoApplyEnabled && (
+              <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full flex items-center gap-1">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                Active
+              </span>
+            )}
+          </div>
+        </div>
+        <p className="text-sm text-jalanea-600 mt-2">
+          Set your preferences once, and we'll apply to matching jobs automatically.
+        </p>
+      </div>
+
+      <div className="p-6 space-y-6">
+        {/* Status messages */}
+        {error && (
+          <div className="flex items-center gap-2 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+            <AlertCircle size={16} />
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="flex items-center gap-2 p-3 bg-green-50 text-green-700 rounded-lg text-sm">
+            <CheckCircle size={16} />
+            {success}
+          </div>
+        )}
+
+        {/* Job Titles */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-bold text-jalanea-900 mb-3">
+            <Target size={16} className="text-accent" />
+            Target Job Titles
+          </label>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {preferences.jobTitles.map(title => (
+              <span key={title} className="inline-flex items-center gap-1 px-3 py-1.5 bg-accent/10 text-accent rounded-full text-sm font-medium">
+                {title}
+                <button onClick={() => removeJobTitle(title)} className="hover:bg-accent/20 rounded-full p-0.5">
+                  <X size={14} />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newJobTitle}
+              onChange={(e) => setNewJobTitle(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addJobTitle()}
+              placeholder="e.g., Software Engineer, UX Designer"
+              className="flex-1 px-4 py-2 border border-jalanea-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/50"
+            />
+            <Button size="sm" onClick={addJobTitle} disabled={!newJobTitle.trim()}>
+              <Plus size={16} />
+            </Button>
+          </div>
+        </div>
+
+        {/* Locations */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-bold text-jalanea-900 mb-3">
+            <MapPin size={16} className="text-accent" />
+            Preferred Locations
+          </label>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {preferences.locations.map(loc => (
+              <span key={loc} className="inline-flex items-center gap-1 px-3 py-1.5 bg-jalanea-100 text-jalanea-700 rounded-full text-sm font-medium">
+                {loc}
+                <button onClick={() => removeLocation(loc)} className="hover:bg-jalanea-200 rounded-full p-0.5">
+                  <X size={14} />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newLocation}
+              onChange={(e) => setNewLocation(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addLocation()}
+              placeholder="e.g., Orlando, FL or Remote"
+              className="flex-1 px-4 py-2 border border-jalanea-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/50"
+            />
+            <Button size="sm" onClick={addLocation} disabled={!newLocation.trim()}>
+              <Plus size={16} />
+            </Button>
+          </div>
+          <div className="mt-2">
+            <label className="flex items-center gap-2 text-sm text-jalanea-600 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={preferences.remoteOnly}
+                onChange={(e) => setPreferences(p => ({ ...p, remoteOnly: e.target.checked }))}
+                className="w-4 h-4 rounded border-jalanea-300 text-accent focus:ring-accent"
+              />
+              Only show remote jobs
+            </label>
+          </div>
+        </div>
+
+        {/* Salary Range */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-bold text-jalanea-900 mb-3">
+            <DollarSign size={16} className="text-accent" />
+            Salary Range (optional)
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-jalanea-500 mb-1 block">Minimum</label>
+              <input
+                type="number"
+                value={preferences.salaryMin || ''}
+                onChange={(e) => setPreferences(p => ({ ...p, salaryMin: e.target.value ? parseInt(e.target.value) : null }))}
+                placeholder="40000"
+                className="w-full px-4 py-2 border border-jalanea-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/50"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-jalanea-500 mb-1 block">Maximum</label>
+              <input
+                type="number"
+                value={preferences.salaryMax || ''}
+                onChange={(e) => setPreferences(p => ({ ...p, salaryMax: e.target.value ? parseInt(e.target.value) : null }))}
+                placeholder="80000"
+                className="w-full px-4 py-2 border border-jalanea-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/50"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Max Applications */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-bold text-jalanea-900 mb-3">
+            <Bot size={16} className="text-accent" />
+            Daily Application Limit
+          </label>
+          <select
+            value={preferences.maxApplicationsPerDay}
+            onChange={(e) => setPreferences(p => ({ ...p, maxApplicationsPerDay: parseInt(e.target.value) }))}
+            className="w-full px-4 py-2 border border-jalanea-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent/50"
+          >
+            <option value={5}>5 applications per day</option>
+            <option value={10}>10 applications per day</option>
+            <option value={20}>20 applications per day</option>
+            <option value={50}>50 applications per day</option>
+            <option value={100}>100 applications per day (Pro+)</option>
+          </select>
+          <p className="text-xs text-jalanea-500 mt-1">
+            Higher limits require a paid subscription.
+          </p>
+        </div>
+
+        {/* Auto-Apply Toggle */}
+        <div className="p-4 bg-gradient-to-r from-accent/5 to-gold/5 rounded-xl border border-accent/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-accent/10 rounded-lg">
+                <Zap size={20} className="text-accent" />
+              </div>
+              <div>
+                <h4 className="font-bold text-jalanea-900">Auto-Apply</h4>
+                <p className="text-xs text-jalanea-600">Automatically apply to matching jobs daily</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setPreferences(p => ({ ...p, autoApplyEnabled: !p.autoApplyEnabled }))}
+              className={`relative w-14 h-7 rounded-full transition-colors ${
+                preferences.autoApplyEnabled ? 'bg-accent' : 'bg-jalanea-200'
+              }`}
+            >
+              <span
+                className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform shadow ${
+                  preferences.autoApplyEnabled ? 'left-8' : 'left-1'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-3 pt-4 border-t border-jalanea-100">
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex-1"
+          >
+            {saving ? <Loader size={16} className="animate-spin mr-2" /> : <CheckCircle size={16} className="mr-2" />}
+            Save Preferences
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleRunNow}
+            disabled={running || preferences.jobTitles.length === 0}
+            className="flex-1"
+          >
+            {running ? <Loader size={16} className="animate-spin mr-2" /> : <Play size={16} className="mr-2" />}
+            Run Now
+          </Button>
+        </div>
+
+        <p className="text-xs text-jalanea-400 text-center">
+          You'll receive notifications when applications are submitted. Connect a job site above to get started.
+        </p>
+      </div>
+    </Card>
+  );
+};
+
 // Notification Preferences Component
 const NotificationSettings: React.FC = () => {
   const { currentUser } = useAuth();
@@ -948,6 +1290,7 @@ export const SettingsPage: React.FC = () => {
           <h2 className="text-xl font-bold text-jalanea-900 mb-6">AI Job Agent</h2>
           <div className="space-y-6">
             <SubscriptionPlan />
+            <JobPreferencesCard />
             <ConnectedSites />
             <ApplicationHistory />
           </div>

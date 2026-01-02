@@ -235,3 +235,99 @@ export async function storeSession(
   if (!response.ok) throw new Error('Failed to store session');
   return response.json();
 }
+
+// Job Preferences Types
+export interface JobPreferences {
+  jobTitles: string[];
+  locations: string[];
+  remoteOnly: boolean;
+  salaryMin: number | null;
+  salaryMax: number | null;
+  autoApplyEnabled: boolean;
+  maxApplicationsPerDay: number;
+  preferredSites: string[];
+}
+
+/**
+ * Get job preferences for a user
+ */
+export async function getJobPreferences(userId: string): Promise<JobPreferences | null> {
+  try {
+    const response = await fetch(`${API_URL}/preferences/${userId}`);
+    if (!response.ok) {
+      if (response.status === 404) return null;
+      throw new Error('Failed to fetch preferences');
+    }
+    const data = await response.json();
+    return data.preferences;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Save job preferences for a user
+ */
+export async function saveJobPreferences(
+  userId: string,
+  preferences: Partial<JobPreferences>
+): Promise<{ success: boolean }> {
+  const response = await fetch(`${API_URL}/preferences/${userId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(preferences),
+  });
+  if (!response.ok) throw new Error('Failed to save preferences');
+  return response.json();
+}
+
+/**
+ * Queue a job search request (runs in background)
+ */
+export async function queueJobSearch(
+  userId: string,
+  options?: {
+    jobTitle?: string;
+    location?: string;
+    siteId?: string;
+    maxApplications?: number;
+  }
+): Promise<{ success: boolean; jobId: string; message: string }> {
+  const response = await fetch(`${API_URL}/queue/search`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, ...options }),
+  });
+  if (!response.ok) throw new Error('Failed to queue job search');
+  return response.json();
+}
+
+/**
+ * Queue an auto-apply session using saved preferences
+ */
+export async function queueAutoApply(
+  userId: string
+): Promise<{ success: boolean; jobId: string; message: string }> {
+  const response = await fetch(`${API_URL}/queue/auto-apply`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId }),
+  });
+  if (!response.ok) throw new Error('Failed to queue auto-apply');
+  return response.json();
+}
+
+/**
+ * Get queue status for a user
+ */
+export async function getQueueStatus(userId: string): Promise<{
+  pending: number;
+  active: number;
+  completed: number;
+  failed: number;
+}> {
+  const response = await fetch(`${API_URL}/queue/status/${userId}`);
+  if (!response.ok) throw new Error('Failed to get queue status');
+  const data = await response.json();
+  return data.stats;
+}
