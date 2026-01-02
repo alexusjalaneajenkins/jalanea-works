@@ -122,28 +122,38 @@ export const MobileAppShell: React.FC = () => {
     }
   };
 
+  // Calculate heights for absolute positioning
+  const headerHeight = 'calc(56px + max(env(safe-area-inset-top, 20px), 20px) + 8px)';
+  const navHeight = 'calc(64px + env(safe-area-inset-bottom, 0px))';
+
   return (
     <div
-      className={`flex flex-col ${isLight ? 'bg-slate-50' : 'bg-[#020617]'}`}
+      className={isLight ? 'bg-slate-50' : 'bg-[#020617]'}
       style={{
         position: 'fixed',
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        height: '100dvh',
-        maxHeight: '-webkit-fill-available',
         overflow: 'hidden'
       }}
     >
-      {/* Header - stays at top */}
-      <MobileHeader title={screenTitles[activeScreen]} />
+      {/* Header - fixed at top */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>
+        <MobileHeader title={screenTitles[activeScreen]} />
+      </div>
 
-      {/* Main Content - this is the ONLY thing that scrolls */}
+      {/* Main Content - scrollable area between header and nav */}
       <div
         ref={contentRef}
-        className="flex-1 overflow-y-auto"
         style={{
+          position: 'absolute',
+          top: headerHeight,
+          left: 0,
+          right: 0,
+          bottom: navHeight,
+          overflowY: 'scroll',
+          overflowX: 'hidden',
           WebkitOverflowScrolling: 'touch',
           overscrollBehavior: 'contain'
         }}
@@ -151,11 +161,13 @@ export const MobileAppShell: React.FC = () => {
         {renderScreen()}
       </div>
 
-      {/* Bottom Navigation - stays at bottom */}
-      <MobileNavBar
-        activeScreen={activeScreen}
-        onNavigate={setActiveScreen}
-      />
+      {/* Bottom Navigation - fixed at bottom */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10 }}>
+        <MobileNavBar
+          activeScreen={activeScreen}
+          onNavigate={setActiveScreen}
+        />
+      </div>
     </div>
   );
 };
