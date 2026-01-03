@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "buildCommand": "pnpm --filter @apply-copilot/web build",
+  "installCommand": "corepack enable && pnpm install",
+  "outputDirectory": "web/.next",
+  "framework": null
+}
