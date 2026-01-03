@@ -27,6 +27,8 @@ FROM node:20-slim AS runner
 
 # Install system dependencies for browsers
 RUN apt-get update && apt-get install -y \
+    # Shell for entrypoint script
+    bash \
     # Firefox/Camoufox dependencies
     libgtk-3-0 \
     libdbus-glib-1-2 \
@@ -84,6 +86,8 @@ RUN mkdir -p ./sessions && chmod 755 ./sessions
 # Environment variables
 ENV NODE_ENV=production
 ENV HEADLESS=true
+# Set display for xvfb (virtual framebuffer for headless browser)
+ENV DISPLAY=:99
 
 # Expose port for API server
 EXPOSE 3001
@@ -91,6 +95,12 @@ EXPOSE 3001
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1
+
+# Create entrypoint script that starts xvfb first
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+ENTRYPOINT ["/app/entrypoint.sh"]
 
 # Default command (can be overridden for worker mode)
 CMD ["node", "dist/index.js"]

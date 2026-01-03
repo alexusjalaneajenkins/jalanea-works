@@ -353,12 +353,53 @@ export class BrowserController {
       // Camoufox handles stealth automatically at C++ level - much better than JS patches
       console.log('[Browser] Using Camoufox anti-detect browser (Firefox-based)');
 
-      this.browser = await Camoufox({
-        headless: this.config.headless || false, // Run visible by default for CAPTCHA solving
+      // Add timeout wrapper - browser launch should complete in 60 seconds max
+      const launchTimeout = 60000;
+      const launchPromise = Camoufox({
+        headless: this.config.headless !== false, // Default to headless in production
         humanize: true, // Enable human-like mouse movements
         geoip: false, // Don't auto-configure based on IP (we have our own location)
         window: [this.config.viewport?.width || 1280, this.config.viewport?.height || 800],
       });
+
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error(`Camoufox launch timeout after ${launchTimeout}ms`)), launchTimeout);
+      });
+
+      try {
+        console.log('[Browser] Starting Camoufox with 60s timeout...');
+        this.browser = await Promise.race([launchPromise, timeoutPromise]);
+        console.log('[Browser] Camoufox browser object created');
+      } catch (camoufoxError) {
+        console.error('[Browser] Camoufox launch failed:', camoufoxError);
+        console.log('[Browser] Falling back to Chromium...');
+
+        // Fall back to Chromium if Camoufox fails
+        this.browser = await chromium.launch({
+          headless: this.config.headless !== false,
+          args: [
+            '--disable-blink-features=AutomationControlled',
+            '--disable-features=IsolateOrigins,site-per-process',
+            '--disable-infobars',
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+          ],
+          ignoreDefaultArgs: ['--enable-automation'],
+        });
+
+        this.context = await this.browser.newContext({
+          viewport: this.config.viewport,
+          userAgent: this.config.userAgent,
+          storageState,
+        });
+
+        this.page = await this.context.newPage();
+        this.page.setDefaultTimeout(30000);
+
+        console.log('[Browser] Chromium fallback launched successfully');
+        return;
+      }
 
       // Camoufox returns a browser instance, get the default context
       const contexts = this.browser!.contexts();
