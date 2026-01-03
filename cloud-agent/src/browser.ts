@@ -38,7 +38,54 @@ export interface BrowserConfig {
   browserType?: BrowserType; // Which browser engine to use (chromium or camoufox)
   capsolverApiKey?: string; // CapSolver API key for auto CAPTCHA solving
   blockResources?: boolean; // Block images, fonts, stylesheets to save memory (default: false)
-  proxy?: string; // Proxy for Cloudflare Managed Challenge (format: protocol:host:port:user:pass)
+  proxy?: string; // Proxy for ALL browser traffic (format: protocol:host:port:user:pass)
+}
+
+/**
+ * Parse proxy string into Playwright-compatible format
+ * Input: "http:proxy.example.com:8080:username:password" or "http://user:pass@host:port"
+ * Output: { server, username?, password? }
+ */
+function parseProxyString(proxyStr: string): { server: string; username?: string; password?: string } | null {
+  if (!proxyStr) return null;
+
+  // Format 1: protocol:host:port:user:pass (CapSolver format)
+  const capsolverMatch = proxyStr.match(/^(\w+):([^:]+):(\d+):([^:]+):(.+)$/);
+  if (capsolverMatch) {
+    const [, protocol, host, port, username, password] = capsolverMatch;
+    return {
+      server: `${protocol}://${host}:${port}`,
+      username,
+      password,
+    };
+  }
+
+  // Format 2: protocol:host:port (no auth)
+  const noAuthMatch = proxyStr.match(/^(\w+):([^:]+):(\d+)$/);
+  if (noAuthMatch) {
+    const [, protocol, host, port] = noAuthMatch;
+    return { server: `${protocol}://${host}:${port}` };
+  }
+
+  // Format 3: protocol://user:pass@host:port (URL format)
+  try {
+    const url = new URL(proxyStr);
+    return {
+      server: `${url.protocol}//${url.host}`,
+      username: url.username || undefined,
+      password: url.password || undefined,
+    };
+  } catch {
+    // Not a valid URL
+  }
+
+  // Format 4: Just pass through if it looks like a server URL
+  if (proxyStr.includes('://')) {
+    return { server: proxyStr };
+  }
+
+  console.warn(`[Browser] Could not parse proxy string: ${proxyStr}`);
+  return null;
 }
 
 export interface ScreenshotResult {
@@ -450,13 +497,31 @@ export class BrowserController {
 
       console.log(`[Browser] Camoufox headless mode: ${headlessMode} (platform: ${process.platform})`);
 
-      const launchPromise = Camoufox({
+      // Parse proxy configuration (critical for bypassing Cloudflare)
+      const proxyStr = this.config.proxy || process.env.PROXY_URL;
+      const proxyConfig = proxyStr ? parseProxyString(proxyStr) : null;
+      if (proxyConfig) {
+        console.log(`[Browser] 🌐 Using proxy: ${proxyConfig.server} (auth: ${proxyConfig.username ? 'yes' : 'no'})`);
+      } else if (process.env.NODE_ENV === 'production') {
+        console.warn('[Browser] ⚠️  No proxy configured! Cloudflare may block datacenter IPs.');
+        console.warn('[Browser] Set PROXY_URL env var for residential proxy (e.g., http:host:port:user:pass)');
+      }
+
+      // Build Camoufox options
+      const camoufoxOptions: any = {
         // Cast to any to support "virtual" mode on Linux (types don't include it but it works)
         headless: headlessMode as any,
         humanize: true, // Enable human-like mouse movements
         geoip: false, // Don't auto-configure based on IP (we have our own location)
         window: [this.config.viewport?.width || 1280, this.config.viewport?.height || 800],
-      });
+      };
+
+      // Add proxy if configured (Camoufox uses Playwright-style proxy config)
+      if (proxyConfig) {
+        camoufoxOptions.proxy = proxyConfig;
+      }
+
+      const launchPromise = Camoufox(camoufoxOptions);
 
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error(`Camoufox launch timeout after ${launchTimeout}ms`)), launchTimeout);
@@ -471,6 +536,10 @@ export class BrowserController {
         console.log('[Browser] Falling back to Chromium...');
 
         // Fall back to Chromium if Camoufox fails (with aggressive memory optimization)
+        // Also add proxy support to Chromium fallback
+        const chromiumProxyStr = this.config.proxy || process.env.PROXY_URL;
+        const chromiumProxyConfig = chromiumProxyStr ? parseProxyString(chromiumProxyStr) : null;
+
         this.browser = await chromium.launch({
           headless: this.config.headless !== false,
           args: [
@@ -499,17 +568,22 @@ export class BrowserController {
             '--js-flags=--max-old-space-size=256',
           ],
           ignoreDefaultArgs: ['--enable-automation'],
+          proxy: chromiumProxyConfig || undefined,
         });
 
         this.context = await this.browser.newContext({
           viewport: this.config.viewport,
           userAgent: this.config.userAgent,
           storageState,
+          proxy: chromiumProxyConfig || undefined,
         });
 
         this.page = await this.context.newPage();
         this.page.setDefaultTimeout(30000);
 
+        if (chromiumProxyConfig) {
+          console.log(`[Browser] Chromium fallback with proxy: ${chromiumProxyConfig.server}`);
+        }
         console.log('[Browser] Chromium fallback launched successfully');
         return;
       }
