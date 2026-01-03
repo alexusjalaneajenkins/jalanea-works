@@ -1,8 +1,13 @@
+'use client';
+
 /**
  * IndexedDB Storage with Dexie
  *
  * SECURITY: All sensitive data (vault, screener answers) stored locally.
  * Resume files stored as Blobs in IndexedDB.
+ *
+ * NOTE: This file must be client-only (uses browser APIs).
+ * Never import directly from server components.
  */
 
 import Dexie, { type EntityTable } from 'dexie';
