@@ -1,20 +1,19 @@
 # Jalanea Works Cloud Agent - Render Blueprint
 # Deploy with: https://render.com/deploy
 #
-# Single API server handles everything:
-# - REST API endpoints
-# - WebSocket connections
-# - Live Browser streaming
+# jalanea-worker ($7/mo Starter) - Main API with browser automation
+# jalanea-api (Free) - Lightweight backup/redirect
 #
-# Cost: $7/month (Starter plan for browser automation)
+# Cost: $7/month total
 
 services:
   # ============================================
-  # API Server (Starter - $7/mo)
+  # Main API Server (Starter - $7/mo)
   # Handles HTTP, WebSocket, and browser streaming
+  # This is the PAID service with browser automation
   # ============================================
   - type: web
-    name: jalanea-api
+    name: jalanea-worker
     runtime: docker
     rootDir: ./cloud-agent
     dockerfilePath: ./Dockerfile
@@ -73,25 +72,26 @@ services:
         sync: false
 
   # ============================================
-  # Job Queue Worker (Starter Plan - $7/mo)
-  # Processes job applications in the background
+  # Backup API Server (Free tier)
+  # Lightweight fallback - can be removed if not needed
   # ============================================
-  - type: worker
-    name: jalanea-worker
+  - type: web
+    name: jalanea-api
     runtime: docker
     rootDir: ./cloud-agent
     dockerfilePath: ./Dockerfile
-    dockerCommand: node dist/queue/worker.js
-    plan: starter  # Needs always-on for queue processing
+    dockerCommand: node dist/index.js
+    plan: free  # Free tier - limited resources
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: "3001"
       - key: HEADLESS
         value: "true"
       - key: BROWSER_TYPE
         value: camoufox
-      - key: MAX_ACTIONS
-        value: "50"
       # Vision & AI
       - key: VISION_PROVIDER
         sync: false
@@ -117,7 +117,14 @@ services:
         sync: false
       - key: UPSTASH_REDIS_REST_TOKEN
         sync: false
-      # Notifications (worker sends notifications when jobs complete)
+      # Stripe (Payments)
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      # Notifications
       - key: RESEND_API_KEY
         sync: false
       - key: TWILIO_ACCOUNT_SID
