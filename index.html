@@ -579,7 +579,7 @@
   </style>
 
 
-  <script type="module" crossorigin src="/assets/index-CgxNogz6.js"></script>
+  <script type="module" crossorigin src="/assets/index-CDi1CMO5.js"></script>
 </head>
 
 <body class="font-sans antialiased selection:bg-gold-light selection:text-jalanea-900 min-h-screen" style="background-color: #020617;">
@@ -665,11 +665,10 @@
 
   <!-- Eruda Mobile Console (for debugging) -->
   <script>
-    // Load Eruda on mobile or with ?debug flag
+    // Load Eruda only when ?debug=true is in URL (dev only)
     (function() {
-      var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       var hasDebugFlag = window.location.search.includes('debug=true');
-      if (isMobile || hasDebugFlag) {
+      if (hasDebugFlag) {
         var script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/eruda';
         document.body.appendChild(script);
