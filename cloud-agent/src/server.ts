@@ -2316,9 +2316,14 @@ app.post('/stream/start', async (req: Request, res: Response) => {
             data: { type: captcha.type, message: captcha.message }
           });
 
-          // Auto-solve if it's Turnstile and solver is configured
-          if (captcha.type.includes('Turnstile') && browser.hasAutoSolver()) {
-            console.log('[Stream] Attempting auto-solve with CapSolver...');
+          // Auto-solve if it's Turnstile/Cloudflare/Human Verification and solver is configured
+          const shouldAutoSolve = browser.hasAutoSolver() && (
+            captcha.type.includes('Turnstile') ||
+            captcha.type.includes('Cloudflare') ||
+            captcha.type === 'Human Verification'
+          );
+          if (shouldAutoSolve) {
+            console.log(`[Stream] Attempting auto-solve for ${captcha.type} with CapSolver...`);
             broadcastToSession(sessionId, {
               type: 'stream:status',
               sessionId,
@@ -2753,9 +2758,15 @@ wss.on('connection', (ws: WebSocket) => {
                     data: { type: captcha.type, message: captcha.message }
                   });
 
-                  // Auto-solve if it's Turnstile and solver is configured
-                  if (captcha.type.includes('Turnstile') && session.browser.hasAutoSolver()) {
-                    console.log('[Stream] Attempting auto-solve with CapSolver...');
+                  // Auto-solve if it's Turnstile/Cloudflare/Human Verification and solver is configured
+                  // The type might be "Cloudflare Turnstile", "Human Verification", "Cloudflare Block", etc.
+                  const shouldAutoSolve = session.browser.hasAutoSolver() && (
+                    captcha.type.includes('Turnstile') ||
+                    captcha.type.includes('Cloudflare') ||
+                    captcha.type === 'Human Verification'
+                  );
+                  if (shouldAutoSolve) {
+                    console.log(`[Stream] Attempting auto-solve for ${captcha.type} with CapSolver...`);
                     broadcastToSession(sessionId, {
                       type: 'stream:status',
                       sessionId,
