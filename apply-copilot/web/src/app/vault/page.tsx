@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp, Share2, Copy, Download, Check } from 'lucide-react';
 import { useVaultStore } from '@/stores';
 import { Button, Input, Card, CardHeader, CardContent } from '@/components/ui';
 import type { WorkHistoryItem, EducationItem, WorkAuthorization } from '@apply-copilot/shared';
@@ -12,6 +12,8 @@ type Section = 'profile' | 'work' | 'education';
 export default function VaultSetupPage() {
   const { vault, isLoading, loadVault, updateVault, addWorkHistory, updateWorkHistory, removeWorkHistory, addEducation, updateEducation, removeEducation } = useVaultStore();
   const [expandedSection, setExpandedSection] = useState<Section>('profile');
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportCopied, setExportCopied] = useState(false);
 
   useEffect(() => {
     loadVault();
@@ -29,17 +31,152 @@ export default function VaultSetupPage() {
     setExpandedSection(expandedSection === section ? 'profile' : section);
   };
 
+  /**
+   * Current vault export schema version
+   * Must match VAULT_SCHEMA_VERSION in extension
+   */
+  const VAULT_SCHEMA_VERSION = 1;
+
+  /**
+   * Generate vault export data for Chrome extension
+   * Only exports fields needed for form filling (no files/sensitive data)
+   */
+  const getExportData = () => {
+    if (!vault) return null;
+    return {
+      schemaVersion: VAULT_SCHEMA_VERSION,
+      exportedAt: new Date().toISOString(),
+      vault: {
+        firstName: vault.firstName,
+        lastName: vault.lastName,
+        email: vault.email,
+        phone: vault.phone,
+        location: vault.location,
+        linkedInUrl: vault.linkedInUrl,
+        portfolioUrl: vault.portfolioUrl,
+        githubUrl: vault.githubUrl,
+        workAuthorization: vault.workAuthorization,
+        requiresSponsorship: vault.requiresSponsorship,
+        // Note: workHistory and education are NOT exported to extension
+        // to minimize stored data. Extension only needs text fields for filling.
+      },
+    };
+  };
+
+  /**
+   * Copy vault data to clipboard
+   */
+  const handleCopyExport = async () => {
+    const exportData = getExportData();
+    if (!exportData) return;
+
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(exportData, null, 2));
+      setExportCopied(true);
+      setTimeout(() => setExportCopied(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy:', error);
+    }
+  };
+
+  /**
+   * Download vault data as JSON file
+   */
+  const handleDownloadExport = () => {
+    const exportData = getExportData();
+    if (!exportData) return;
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'apply-copilot-vault.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <main className="min-h-screen pb-20">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="p-2 -ml-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-            <ArrowLeft className="w-6 h-6" />
-          </Link>
-          <h1 className="text-xl font-semibold">Application Vault</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="p-2 -ml-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+              <ArrowLeft className="w-6 h-6" />
+            </Link>
+            <h1 className="text-xl font-semibold">Application Vault</h1>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowExportModal(true)}
+            className="flex items-center gap-2"
+          >
+            <Share2 className="w-4 h-4" />
+            <span className="hidden sm:inline">Export</span>
+          </Button>
         </div>
       </header>
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Export Vault for Extension</h2>
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+              >
+                <ArrowLeft className="w-5 h-5 rotate-180" />
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Export your vault data to use with the Apply Co-Pilot Chrome extension.
+              Copy to clipboard or download as a JSON file.
+            </p>
+
+            <div className="space-y-3">
+              <Button
+                variant="primary"
+                className="w-full flex items-center justify-center gap-2"
+                onClick={handleCopyExport}
+              >
+                {exportCopied ? (
+                  <>
+                    <Check className="w-5 h-5" />
+                    Copied to Clipboard!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-5 h-5" />
+                    Copy to Clipboard
+                  </>
+                )}
+              </Button>
+
+              <Button
+                variant="secondary"
+                className="w-full flex items-center justify-center gap-2"
+                onClick={handleDownloadExport}
+              >
+                <Download className="w-5 h-5" />
+                Download JSON File
+              </Button>
+            </div>
+
+            <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                After exporting, open the Chrome extension popup and click &ldquo;Import Vault&rdquo;
+                to paste or upload your vault data.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="p-4 space-y-4">
         {/* Profile Section */}

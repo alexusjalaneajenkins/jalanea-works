@@ -136,6 +136,102 @@
       background: #fecaca;
     }
 
+    .btn-success {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .btn-success:hover {
+      background: #bbf7d0;
+    }
+
+    .import-section {
+      background: white;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .import-section h3 {
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 8px;
+    }
+
+    .import-textarea {
+      width: 100%;
+      height: 80px;
+      padding: 8px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      font-size: 11px;
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      resize: none;
+      margin-bottom: 8px;
+    }
+
+    .import-textarea:focus {
+      outline: none;
+      border-color: #0ea5e9;
+      box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+    }
+
+    .import-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .import-btn {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .import-btn-file {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .import-btn-file:hover {
+      background: #e5e7eb;
+    }
+
+    .import-btn-import {
+      background: #0ea5e9;
+      color: white;
+    }
+
+    .import-btn-import:hover {
+      background: #0284c7;
+    }
+
+    .import-btn-import:disabled {
+      background: #cbd5e1;
+      cursor: not-allowed;
+    }
+
+    .import-status {
+      font-size: 11px;
+      color: #22c55e;
+      margin-top: 8px;
+      display: none;
+    }
+
+    .import-status.error {
+      color: #ef4444;
+    }
+
+    .file-input {
+      display: none;
+    }
+
     .help-text {
       font-size: 11px;
       color: #9ca3af;
@@ -226,8 +322,27 @@
       </div>
     </div>
 
+    <div class="import-section" id="importSection">
+      <h3>Import Vault from PWA</h3>
+      <textarea
+        class="import-textarea"
+        id="importTextarea"
+        placeholder="Paste vault JSON here, or use the button to upload a file..."
+      ></textarea>
+      <div class="import-buttons">
+        <input type="file" id="importFileInput" class="file-input" accept=".json">
+        <button class="import-btn import-btn-file" id="importFileBtn">
+          Upload File
+        </button>
+        <button class="import-btn import-btn-import" id="importBtn" disabled>
+          Import Vault
+        </button>
+      </div>
+      <p class="import-status" id="importStatus"></p>
+    </div>
+
     <p class="help-text">
-      Visit indeed.com to use Turbo Mode overlay
+      Supports Indeed, LinkedIn, ZipRecruiter, and Glassdoor
     </p>
   </div>
 

@@ -384,6 +384,25 @@ export class OverlayUI {
   }
 
   /**
+   * Hide the overlay (panel + toggle button)
+   */
+  hide(): void {
+    this.close();
+    if (this.toggleBtn) {
+      this.toggleBtn.style.display = 'none';
+    }
+  }
+
+  /**
+   * Show the overlay (toggle button)
+   */
+  show(): void {
+    if (this.toggleBtn) {
+      this.toggleBtn.style.display = 'flex';
+    }
+  }
+
+  /**
    * Clean up
    */
   destroy(): void {

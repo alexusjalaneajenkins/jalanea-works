@@ -12,10 +12,12 @@ Chrome Extension (Manifest V3) for Apply Co-Pilot "Turbo Mode" - enables field d
 
 ## Supported Sites
 
-Currently supports:
-- Indeed.com (`www.indeed.com`, `indeed.com`)
+The extension activates only on job-related pages (not entire domains):
 
-More sites coming soon (LinkedIn, ZipRecruiter, Glassdoor).
+- **Indeed.com** - `/viewjob`, `/jobs`, `/apply`, `/m/*`
+- **LinkedIn** - `/jobs/*`
+- **ZipRecruiter** - `/jobs/*`, `/c/*`, `/k/*`, `/candidate/*`
+- **Glassdoor** - `/job-listing/*`, `/Job/*`, `/jobs/*`
 
 ## Installation (Development)
 
@@ -61,7 +63,7 @@ extension-chrome/
 ├── tsconfig.json          # TypeScript config
 ├── src/
 │   ├── content/
-│   │   └── indeed.ts      # Content script for Indeed
+│   │   └── job-site.ts    # Content script for all job sites
 │   ├── background/
 │   │   └── service-worker.ts  # Background service worker
 │   └── lib/
@@ -69,7 +71,7 @@ extension-chrome/
 │       ├── field-detector.ts  # Field detection logic
 │       └── overlay-ui.ts  # Overlay UI component
 ├── popup/
-│   ├── popup.html         # Popup UI
+│   ├── popup.html         # Popup UI with import vault
 │   └── popup.ts           # Popup script
 ├── styles/
 │   └── overlay.css        # Injected styles for overlay
@@ -93,23 +95,34 @@ Then reload the extension in `chrome://extensions/` after each change.
 2. Create a new content script in `src/content/` (or extend the existing one)
 3. Update field detection patterns in `src/lib/field-detector.ts` if needed
 
-## Security Notes
+## Security & Privacy
 
 - **No Password Storage**: The extension never stores or transmits passwords
 - **No Auto-Submit**: Forms are never submitted automatically
-- **Local Storage Only**: Vault data is stored in Chrome's local storage
+- **Minimal Data Storage**: Only text fields needed for form filling (name, email, phone, location, links). No resumes, files, or sensitive documents are stored.
+- **Local Storage Only**: Vault data is stored in Chrome's extension storage (`chrome.storage.local`). Data is NOT encrypted - do not use on shared or public computers unless you clear extension data afterward.
 - **Human-in-the-Loop**: All field filling requires explicit user clicks
+- **Schema Validation**: Imported vault data is validated against a versioned schema before storage
+- **Restricted Injection**: Content scripts only run on job-related URL paths, not entire domains
 
-## Pairing with PWA (Future)
+## Syncing with PWA
 
 The extension can sync vault data with the Apply Co-Pilot PWA:
 
-1. Open the PWA at `http://localhost:3000`
-2. Go to Settings > Extension Pairing
-3. Generate a pairing code
-4. Enter the code in the extension popup
+### Export from PWA
+1. Open the PWA at `http://localhost:3000/vault`
+2. Click the **Export** button in the header
+3. Choose **Copy to Clipboard** or **Download JSON File**
 
-(This feature is planned for a future release)
+### Import to Extension
+1. Click the Apply Co-Pilot extension icon in Chrome
+2. In the **Import Vault from PWA** section:
+   - Paste the copied JSON, or
+   - Click **Upload File** and select the downloaded JSON file
+3. Click **Import Vault**
+4. The extension will save your vault data and notify all open job site tabs
+
+Your vault data is stored locally in Chrome's extension storage and will persist across browser restarts.
 
 ## Troubleshooting
 
@@ -119,7 +132,8 @@ The extension can sync vault data with the Apply Co-Pilot PWA:
 - Look at the console in DevTools (right-click extension icon > Inspect popup)
 
 ### Overlay not appearing
-- Make sure you're on an Indeed.com page
+- Make sure you're on a supported job page (Indeed, LinkedIn, ZipRecruiter, or Glassdoor)
+- The overlay only appears on job listing/application pages, not homepages
 - Check the browser console for errors (F12 > Console)
 - Try clicking the floating rocket button if it exists
 

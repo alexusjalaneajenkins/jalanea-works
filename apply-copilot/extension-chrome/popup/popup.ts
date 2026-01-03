@@ -4,14 +4,7 @@
  * Handles the extension popup UI.
  */
 
-interface VaultData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  location: string;
-  linkedInUrl?: string;
-}
+import { validateVaultExport, type VaultData } from '../src/lib/types';
 
 document.addEventListener('DOMContentLoaded', () => {
   const statusDot = document.getElementById('statusDot') as HTMLElement;
@@ -23,6 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const rescanBtn = document.getElementById('rescanBtn') as HTMLButtonElement;
   const quickFill = document.getElementById('quickFill') as HTMLElement;
   const quickFillGrid = document.getElementById('quickFillGrid') as HTMLElement;
+  const importTextarea = document.getElementById('importTextarea') as HTMLTextAreaElement;
+  const importFileInput = document.getElementById('importFileInput') as HTMLInputElement;
+  const importFileBtn = document.getElementById('importFileBtn') as HTMLButtonElement;
+  const importBtn = document.getElementById('importBtn') as HTMLButtonElement;
+  const importStatus = document.getElementById('importStatus') as HTMLElement;
 
   // Load vault data
   chrome.runtime.sendMessage({ type: 'GET_VAULT' }, (response) => {
@@ -67,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
         await chrome.tabs.sendMessage(tab.id, { type: 'RESCAN_PAGE' });
         rescanBtn.textContent = 'Rescan Complete';
       } catch {
-        rescanBtn.textContent = 'Not on Indeed';
+        rescanBtn.textContent = 'Not on supported site';
       }
     }
 
@@ -122,5 +120,117 @@ document.addEventListener('DOMContentLoaded', () => {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  // ===== Import Vault Functionality =====
+
+  /**
+   * Enable/disable import button based on textarea content
+   */
+  importTextarea.addEventListener('input', () => {
+    const hasContent = importTextarea.value.trim().length > 0;
+    importBtn.disabled = !hasContent;
+    hideImportStatus();
+  });
+
+  /**
+   * Handle file upload button click
+   */
+  importFileBtn.addEventListener('click', () => {
+    importFileInput.click();
+  });
+
+  /**
+   * Handle file selection
+   */
+  importFileInput.addEventListener('change', () => {
+    const file = importFileInput.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      importTextarea.value = content;
+      importBtn.disabled = false;
+      hideImportStatus();
+    };
+    reader.onerror = () => {
+      showImportStatus('Failed to read file', true);
+    };
+    reader.readAsText(file);
+  });
+
+  /**
+   * Handle import button click
+   */
+  importBtn.addEventListener('click', async () => {
+    const jsonText = importTextarea.value.trim();
+    if (!jsonText) return;
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(jsonText);
+    } catch {
+      showImportStatus('Invalid JSON format', true);
+      return;
+    }
+
+    // Validate with schema versioning
+    const result = validateVaultExport(parsed);
+    if (!result.valid) {
+      showImportStatus(result.error, true);
+      return;
+    }
+
+    const vault = result.vault;
+
+    // Save to chrome storage (only validated/sanitized data)
+    await chrome.storage.local.set({ vaultData: vault });
+
+    // Notify all content scripts about the update
+    const tabs = await chrome.tabs.query({});
+    for (const tab of tabs) {
+      if (tab.id) {
+        try {
+          await chrome.tabs.sendMessage(tab.id, {
+            type: 'VAULT_DATA_UPDATED',
+            data: vault,
+          });
+        } catch {
+          // Tab might not have content script loaded
+        }
+      }
+    }
+
+    // Update UI
+    showImportStatus('Vault imported successfully!', false);
+    importTextarea.value = '';
+    importBtn.disabled = true;
+
+    // Refresh vault display
+    statusDot.classList.add('connected');
+    statusDot.classList.remove('disconnected');
+    statusText.textContent = 'Vault connected';
+    vaultPreview.style.display = 'block';
+    vaultName.textContent = `${vault.firstName} ${vault.lastName}`;
+    vaultEmail.textContent = vault.email;
+    quickFill.style.display = 'block';
+    renderQuickFill(vault);
+  });
+
+  /**
+   * Show import status message
+   */
+  function showImportStatus(message: string, isError: boolean): void {
+    importStatus.textContent = message;
+    importStatus.style.display = 'block';
+    importStatus.classList.toggle('error', isError);
+  }
+
+  /**
+   * Hide import status message
+   */
+  function hideImportStatus(): void {
+    importStatus.style.display = 'none';
   }
 });

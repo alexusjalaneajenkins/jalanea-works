@@ -18,6 +18,9 @@ const FIELD_PATTERNS: Record<FieldType, RegExp[]> = {
     /given[_\-\s]?name/i,
     /fname/i,
     /^first$/i,
+    // LinkedIn patterns
+    /applicant-first-name/i,
+    /firstName/i,
   ],
   last_name: [
     /last[_\-\s]?name/i,
@@ -25,17 +28,25 @@ const FIELD_PATTERNS: Record<FieldType, RegExp[]> = {
     /surname/i,
     /lname/i,
     /^last$/i,
+    // LinkedIn patterns
+    /applicant-last-name/i,
+    /lastName/i,
   ],
   full_name: [
     /full[_\-\s]?name/i,
     /^name$/i,
     /your[_\-\s]?name/i,
     /applicant[_\-\s]?name/i,
+    // ZipRecruiter patterns
+    /candidate[_\-\s]?name/i,
   ],
   email: [
     /email/i,
     /e-mail/i,
     /mail/i,
+    // LinkedIn patterns
+    /applicant-email/i,
+    /emailAddress/i,
   ],
   phone: [
     /phone/i,
@@ -43,6 +54,10 @@ const FIELD_PATTERNS: Record<FieldType, RegExp[]> = {
     /mobile/i,
     /cell/i,
     /tel\b/i,
+    // LinkedIn patterns
+    /applicant-phone/i,
+    /phoneNumber/i,
+    /mobilePhone/i,
   ],
   location: [
     /location/i,
@@ -50,19 +65,31 @@ const FIELD_PATTERNS: Record<FieldType, RegExp[]> = {
     /address/i,
     /zip/i,
     /postal/i,
+    // LinkedIn patterns
+    /applicant-location/i,
+    /geo-location/i,
+    // ZipRecruiter/Glassdoor patterns
+    /current[_\-\s]?location/i,
+    /home[_\-\s]?location/i,
   ],
   linkedin: [
     /linkedin/i,
     /linked-in/i,
+    /linkedin[_\-\s]?url/i,
+    /linkedin[_\-\s]?profile/i,
   ],
   portfolio: [
     /portfolio/i,
     /website/i,
     /personal[_\-\s]?site/i,
+    /personal[_\-\s]?website/i,
+    /your[_\-\s]?website/i,
   ],
   github: [
     /github/i,
     /git-hub/i,
+    /github[_\-\s]?url/i,
+    /github[_\-\s]?profile/i,
   ],
   work_authorization: [
     /work[_\-\s]?auth/i,
@@ -70,36 +97,64 @@ const FIELD_PATTERNS: Record<FieldType, RegExp[]> = {
     /legally[_\-\s]?authorized/i,
     /eligible[_\-\s]?to[_\-\s]?work/i,
     /work[_\-\s]?status/i,
+    // LinkedIn patterns
+    /work[_\-\s]?eligibility/i,
+    /right[_\-\s]?to[_\-\s]?work/i,
+    // Common variations
+    /authorization[_\-\s]?status/i,
   ],
   sponsorship: [
     /sponsor/i,
     /visa[_\-\s]?sponsor/i,
     /require[_\-\s]?sponsor/i,
     /need[_\-\s]?sponsor/i,
+    // LinkedIn/Glassdoor patterns
+    /future[_\-\s]?sponsor/i,
+    /immigration[_\-\s]?sponsor/i,
+    /employer[_\-\s]?sponsor/i,
   ],
   resume: [
     /resume/i,
     /cv\b/i,
     /curriculum[_\-\s]?vitae/i,
+    // LinkedIn patterns
+    /upload[_\-\s]?resume/i,
+    /attach[_\-\s]?resume/i,
   ],
   cover_letter: [
     /cover[_\-\s]?letter/i,
+    /covering[_\-\s]?letter/i,
+    /motivation[_\-\s]?letter/i,
   ],
   salary: [
     /salary/i,
     /compensation/i,
     /pay/i,
     /wage/i,
+    // Common patterns
+    /expected[_\-\s]?salary/i,
+    /desired[_\-\s]?salary/i,
+    /salary[_\-\s]?expectation/i,
+    /salary[_\-\s]?requirement/i,
+    /annual[_\-\s]?salary/i,
   ],
   start_date: [
     /start[_\-\s]?date/i,
     /available[_\-\s]?date/i,
     /when[_\-\s]?can[_\-\s]?you[_\-\s]?start/i,
+    // LinkedIn/Glassdoor patterns
+    /availability/i,
+    /earliest[_\-\s]?start/i,
+    /notice[_\-\s]?period/i,
   ],
   experience_years: [
     /years[_\-\s]?of[_\-\s]?experience/i,
     /experience[_\-\s]?years/i,
     /how[_\-\s]?many[_\-\s]?years/i,
+    // LinkedIn/Glassdoor patterns
+    /total[_\-\s]?experience/i,
+    /work[_\-\s]?experience/i,
+    /relevant[_\-\s]?experience/i,
   ],
   unknown: [],
 };
