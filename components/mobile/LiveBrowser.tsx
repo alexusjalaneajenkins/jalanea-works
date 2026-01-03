@@ -50,6 +50,15 @@ export const LiveBrowser: React.FC<LiveBrowserProps> = ({
   const [connectionState, setConnectionState] = useState<ConnectionState>('connecting');
   const [error, setError] = useState<string | null>(null);
 
+  // Progress tracking during browser startup
+  const [progress, setProgress] = useState<{
+    step: number;
+    total: number;
+    message: string;
+    detail?: string;
+    percent: number;
+  } | null>(null);
+
   // Browser view state
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [viewport, setViewport] = useState({ width: 390, height: 844 });
@@ -72,6 +81,7 @@ export const LiveBrowser: React.FC<LiveBrowserProps> = ({
     try {
       setConnectionState('connecting');
       setError(null);
+      setProgress(null); // Reset progress for fresh start
 
       const res = await fetch(`${AGENT_API_URL}/stream/start`, {
         method: 'POST',
@@ -131,9 +141,16 @@ export const LiveBrowser: React.FC<LiveBrowserProps> = ({
             console.log('[LiveBrowser] Subscribed to session');
             break;
 
+          case 'stream:progress':
+            // Progress update during browser startup
+            console.log('[LiveBrowser] Progress:', data.data);
+            setProgress(data.data);
+            break;
+
           case 'stream:ready':
             // Browser finished launching in background
             console.log('[LiveBrowser] Browser ready, starting stream');
+            setProgress(null); // Clear progress display
             setConnectionState('connected');
             if (data.data?.screenshot) {
               setScreenshot(data.data.screenshot);
@@ -153,6 +170,7 @@ export const LiveBrowser: React.FC<LiveBrowserProps> = ({
               setViewport({ width: data.data.width, height: data.data.height });
               // First screenshot also means connected
               if (connectionState === 'connecting') {
+                setProgress(null); // Clear progress display
                 setConnectionState('connected');
               }
             }
@@ -173,6 +191,7 @@ export const LiveBrowser: React.FC<LiveBrowserProps> = ({
 
           case 'stream:error':
             console.error('[LiveBrowser] Stream error:', data.data?.error);
+            setProgress(null); // Clear progress display
             setError(data.data?.error || 'Browser failed to start');
             setConnectionState('error');
             break;
@@ -464,12 +483,58 @@ export const LiveBrowser: React.FC<LiveBrowserProps> = ({
           </div>
         )}
 
-        {/* Connecting state */}
+        {/* Connecting state with progress */}
         {connectionState === 'connecting' && !screenshot && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <Loader size={32} className="text-gold animate-spin mb-4" />
-            <p className="text-slate-400 text-sm">Starting browser...</p>
-            <p className="text-slate-500 text-xs mt-2">This may take 30-60 seconds</p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center px-8">
+            {/* Animated browser icon */}
+            <motion.div
+              className="w-20 h-20 rounded-2xl bg-slate-800 flex items-center justify-center mb-6"
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <Loader size={36} className="text-gold animate-spin" />
+            </motion.div>
+
+            {/* Progress message */}
+            <motion.p
+              key={progress?.message || 'default'}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-white font-medium text-center mb-2"
+            >
+              {progress?.message || 'Initializing...'}
+            </motion.p>
+
+            {/* Detail text */}
+            <motion.p
+              key={progress?.detail || 'detail-default'}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-slate-400 text-sm text-center mb-6"
+            >
+              {progress?.detail || 'Setting up secure browser environment'}
+            </motion.p>
+
+            {/* Progress bar */}
+            <div className="w-full max-w-xs">
+              <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-gold rounded-full"
+                  initial={{ width: '0%' }}
+                  animate={{ width: `${progress?.percent || 5}%` }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                />
+              </div>
+              <div className="flex justify-between mt-2 text-xs text-slate-500">
+                <span>Step {progress?.step || 1} of {progress?.total || 6}</span>
+                <span>{progress?.percent || 0}%</span>
+              </div>
+            </div>
+
+            {/* Helpful tip */}
+            <p className="text-slate-500 text-xs mt-8 text-center max-w-xs">
+              First-time startup takes 30-60 seconds. Future logins will be faster.
+            </p>
           </div>
         )}
 

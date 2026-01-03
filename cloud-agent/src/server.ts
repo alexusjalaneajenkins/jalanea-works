@@ -34,6 +34,10 @@ import {
   supabaseAdmin,
   JobApplication
 } from './db/client.js';
+import { getBrowserPool, initBrowserPool, BrowserPool } from './browser-pool.js';
+
+// Global browser pool for warm browsers
+let browserPool: BrowserPool | null = null;
 
 // Separate browser for login flow (non-headless)
 let loginBrowser: BrowserController | null = null;
@@ -53,6 +57,7 @@ interface StreamingSession {
   clients: Set<WebSocket>;
   lastActivity: number;
   lastErrorLog?: number; // Timestamp of last error log to prevent spam
+  fromPool?: boolean; // Track if browser came from warm pool (for release back)
   // Change detection fields (efficiency optimization)
   lastScreenshotHash?: string; // Simple hash to detect changes
   lastScreenshotUrl?: string;  // URL when last screenshot was sent
@@ -197,6 +202,7 @@ function stopScreenshotStreaming(sessionId: string): void {
 
 /**
  * Clean up a streaming session
+ * If browser came from pool, release it back; otherwise close it
  */
 async function cleanupStreamingSession(sessionId: string): Promise<void> {
   const session = streamingSessions.get(sessionId);
@@ -207,9 +213,15 @@ async function cleanupStreamingSession(sessionId: string): Promise<void> {
   stopScreenshotStreaming(sessionId);
 
   try {
-    await session.browser.close();
+    // If browser came from pool, release it back
+    if (session.fromPool && browserPool) {
+      console.log(`[Stream] Releasing browser back to pool`);
+      await browserPool.release(session.browser);
+    } else {
+      await session.browser.close();
+    }
   } catch (e) {
-    console.error(`[Stream] Error closing browser:`, e);
+    console.error(`[Stream] Error cleaning up browser:`, e);
   }
 
   streamingSessions.delete(sessionId);
@@ -321,7 +333,32 @@ function getOrCreateAgent(sessionDir?: string): JobApplicationAgent {
  * Health check
  */
 app.get('/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', version: '1.1.0-stream-fix', timestamp: Date.now() });
+  const poolStats = browserPool?.getStats();
+  res.json({
+    status: 'ok',
+    version: '1.2.0-warm-pool',
+    timestamp: Date.now(),
+    pool: poolStats || { available: 0, acquired: 0, total: 0, isWarming: false }
+  });
+});
+
+/**
+ * Get browser pool stats
+ * GET /pool/stats
+ */
+app.get('/pool/stats', (req: Request, res: Response) => {
+  if (!browserPool) {
+    return res.json({
+      success: false,
+      message: 'Browser pool not initialized',
+      stats: null
+    });
+  }
+
+  res.json({
+    success: true,
+    stats: browserPool.getStats()
+  });
 });
 
 /**
@@ -2160,29 +2197,71 @@ app.post('/stream/start', async (req: Request, res: Response) => {
       message: 'Session created. Browser is starting... Connect via WebSocket for updates.'
     });
 
+    // Helper to send progress updates to connected clients
+    const sendProgress = (step: number, total: number, message: string, detail?: string) => {
+      broadcastToSession(sessionId, {
+        type: 'stream:progress',
+        sessionId,
+        data: { step, total, message, detail, percent: Math.round((step / total) * 100) }
+      });
+    };
+
     // Start browser in background (don't await)
     (async () => {
+      let browser: BrowserController | null = null;
+      let fromPool = false;
+
       try {
-        // Use browser type from env var (default: camoufox for stealth)
-        const browserType = (process.env.BROWSER_TYPE || 'camoufox') as 'chromium' | 'camoufox';
-        const sessionDir = path.join(process.cwd(), 'sessions', siteId);
-        console.log(`[Stream] Using ${browserType} browser for live streaming`);
+        // Check if pool is available and has warm browsers
+        const poolStats = browserPool?.getStats();
+        const usePool = browserPool && (poolStats?.available ?? 0) > 0;
 
-        const browser = new BrowserController({
-          headless: true,
-          browserType,
-          sessionDir,
-          viewport: { width: 390, height: 844 },
-          capsolverApiKey: process.env.CAPSOLVER_API_KEY,
-        });
+        if (usePool) {
+          // FAST PATH: Get warm browser from pool (~2-3 seconds)
+          sendProgress(1, 4, 'Getting ready...', 'Grabbing warm browser from pool');
+          console.log(`[Stream] Acquiring warm browser from pool for session ${sessionId}`);
 
-        console.log(`[Stream] Launching browser for session ${sessionId}...`);
-        await browser.launch();
+          browser = await browserPool!.acquire();
+          fromPool = true;
+
+          if (!browser) {
+            throw new Error('Failed to acquire browser from pool');
+          }
+
+          sendProgress(2, 4, 'Browser ready!', 'Navigating to site');
+        } else {
+          // COLD PATH: Launch new browser (~30-60 seconds)
+          sendProgress(1, 6, 'Initializing browser...', 'Setting up secure environment');
+
+          const browserType = (process.env.BROWSER_TYPE || 'camoufox') as 'chromium' | 'camoufox';
+          const sessionDir = path.join(process.cwd(), 'sessions', siteId);
+          console.log(`[Stream] Cold start: Using ${browserType} browser for session ${sessionId}`);
+
+          browser = new BrowserController({
+            headless: true,
+            browserType,
+            sessionDir,
+            viewport: { width: 390, height: 844 },
+            capsolverApiKey: process.env.CAPSOLVER_API_KEY,
+          });
+
+          sendProgress(2, 6, 'Launching browser...', `Starting ${browserType === 'camoufox' ? 'stealth' : 'standard'} browser`);
+          console.log(`[Stream] Launching browser for session ${sessionId}...`);
+          await browser.launch();
+
+          sendProgress(3, 6, 'Browser ready!', 'Preparing to navigate');
+        }
 
         // Navigate to login URL
         const targetUrl = url || site.loginUrl;
+        const navStep = usePool ? 3 : 4;
+        const totalSteps = usePool ? 4 : 6;
+
+        sendProgress(navStep, totalSteps, `Navigating to ${siteId}...`, targetUrl);
         console.log(`[Stream] Navigating to ${targetUrl}...`);
         await browser.navigate(targetUrl);
+
+        sendProgress(navStep + 1, totalSteps, 'Page loading...', 'Waiting for content');
 
         // Wait for page to load
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -2191,7 +2270,11 @@ app.post('/stream/start', async (req: Request, res: Response) => {
         const session = streamingSessions.get(sessionId);
         if (session) {
           session.browser = browser;
+          session.fromPool = fromPool;
           session.lastActivity = Date.now();
+
+          // Final step: Taking screenshot
+          sendProgress(totalSteps, totalSteps, 'Almost ready!', 'Capturing page');
 
           // Take initial screenshot
           let screenshot: string | undefined;
@@ -2210,7 +2293,7 @@ app.post('/stream/start', async (req: Request, res: Response) => {
               url: browser.getUrl(),
               screenshot,
               viewport: { width: 390, height: 844 },
-              message: 'Browser ready!'
+              message: fromPool ? 'Ready instantly! (warm browser)' : 'Ready! You can now interact with the page.'
             }
           });
 
@@ -2220,10 +2303,17 @@ app.post('/stream/start', async (req: Request, res: Response) => {
             startScreenshotStreaming(sessionId);
           }
 
-          console.log(`[Stream] Session ${sessionId} browser ready!`);
+          console.log(`[Stream] Session ${sessionId} browser ready! (fromPool: ${fromPool})`);
         }
       } catch (error) {
         console.error(`[Stream] Failed to start browser for ${sessionId}:`, error);
+
+        // Clean up browser if it was acquired
+        if (browser && fromPool && browserPool) {
+          browserPool.release(browser).catch(() => {});
+        } else if (browser) {
+          browser.close().catch(() => {});
+        }
 
         // Notify clients of error
         broadcastToSession(sessionId, {
@@ -2693,32 +2783,84 @@ wss.on('connection', (ws: WebSocket) => {
 
 const PORT = process.env.PORT || 3001;
 
-server.listen(PORT, () => {
-  console.log(`
+// Initialize browser pool configuration from environment
+const POOL_SIZE = parseInt(process.env.BROWSER_POOL_SIZE || '2');
+const POOL_ENABLED = process.env.BROWSER_POOL_ENABLED !== 'false';
+
+async function startServer() {
+  // Initialize browser pool if enabled (for warm browsers)
+  if (POOL_ENABLED) {
+    console.log(`[Server] Initializing browser pool (size: ${POOL_SIZE})...`);
+    try {
+      browserPool = await initBrowserPool({
+        poolSize: POOL_SIZE,
+        maxUsesPerBrowser: 5,
+        idleTimeoutMs: 10 * 60 * 1000, // 10 minutes
+        browserType: (process.env.BROWSER_TYPE || 'camoufox') as 'chromium' | 'camoufox',
+        viewport: { width: 390, height: 844 },
+        capsolverApiKey: process.env.CAPSOLVER_API_KEY,
+      });
+      console.log(`[Server] Browser pool ready with ${browserPool.getStats().available} warm browsers`);
+    } catch (error) {
+      console.error('[Server] Failed to initialize browser pool:', error);
+      console.log('[Server] Continuing without pool (cold starts only)');
+    }
+  } else {
+    console.log('[Server] Browser pool disabled (BROWSER_POOL_ENABLED=false)');
+  }
+
+  server.listen(PORT, () => {
+    console.log(`
 ╔═══════════════════════════════════════════════════════════════════╗
 ║                                                                   ║
-║   🤖 JALANEA WORKS CLOUD AGENT                                    ║
+║   🤖 JALANEA WORKS CLOUD AGENT v1.2.0 (warm-pool)                 ║
 ║                                                                   ║
 ║   REST API:    http://localhost:${PORT}                             ║
 ║   WebSocket:   ws://localhost:${PORT}/ws                            ║
+║   Pool Status: ${browserPool ? `${browserPool.getStats().available} warm browsers` : 'disabled'}                              ║
+║                                                                   ║
+║   Live Browser (Operator-style):                                  ║
+║   - POST /stream/start          Start live browser session        ║
+║   - GET  /pool/stats            Browser pool statistics           ║
 ║                                                                   ║
 ║   Job Sites:                                                      ║
 ║   - GET  /sites                 List job sites                    ║
 ║   - POST /sites/:id/launch      Open site for login               ║
-║   - GET  /sites/:id/login-status  Check if logged in              ║
-║   - POST /sites/:id/search      Start job search                  ║
-║                                                                   ║
-║   Agent Control:                                                  ║
-║   - GET  /status     Get agent status                             ║
-║   - POST /profile    Set user profile                             ║
-║   - POST /start      Start agent with task                        ║
-║   - POST /pause      Pause agent                                  ║
-║   - POST /resume     Resume agent                                 ║
-║   - POST /stop       Stop agent                                   ║
 ║                                                                   ║
 ╚═══════════════════════════════════════════════════════════════════╝
-  `);
+    `);
+  });
+}
+
+// Graceful shutdown
+async function shutdown() {
+  console.log('\n[Server] Shutting down gracefully...');
+
+  // Stop accepting new connections
+  server.close();
+
+  // Clean up all streaming sessions
+  for (const [sessionId] of streamingSessions) {
+    await cleanupStreamingSession(sessionId);
+  }
+
+  // Shutdown browser pool
+  if (browserPool) {
+    await browserPool.shutdown();
+  }
+
+  console.log('[Server] Shutdown complete');
+  process.exit(0);
+}
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
+
+// Start the server
+startServer().catch(error => {
+  console.error('[Server] Failed to start:', error);
+  process.exit(1);
 });
 
 export { app, server };
-// Trigger redeploy 1767391294
+// Trigger redeploy warm-pool
