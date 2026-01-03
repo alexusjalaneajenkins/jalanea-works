@@ -64,10 +64,18 @@ export class BrowserController {
 
   /**
    * Check if browser is ready for operations
-   * Returns true if browser, context, and page are initialized
+   * Returns true if browser, context, and page are initialized AND page is not closed
    */
   public isReady(): boolean {
-    return this.browser !== null && this.context !== null && this.page !== null;
+    if (!this.browser || !this.context || !this.page) {
+      return false;
+    }
+    // Also check if the page has been closed (e.g., by pool recycling)
+    try {
+      return !this.page.isClosed();
+    } catch {
+      return false;
+    }
   }
 
   /**

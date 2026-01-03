@@ -179,7 +179,27 @@ function startScreenshotStreaming(sessionId: string): void {
         }
       });
     } catch (error) {
-      // Only log once per minute to avoid spam
+      const errorMessage = (error as Error).message || '';
+      const isBrowserClosed = errorMessage.includes('Target page, context or browser has been closed') ||
+                              errorMessage.includes('has been closed') ||
+                              errorMessage.includes('Connection closed');
+
+      if (isBrowserClosed) {
+        // Browser was closed - stop streaming and notify client
+        console.log(`[Stream] Browser closed for ${sessionId}, stopping stream`);
+        stopScreenshotStreaming(sessionId);
+        broadcastToSession(sessionId, {
+          type: 'stream:error',
+          sessionId,
+          data: {
+            error: 'Browser session ended. Please start a new session.',
+            code: 'BROWSER_CLOSED'
+          }
+        });
+        return;
+      }
+
+      // Only log other errors once per minute to avoid spam
       const now = Date.now();
       if (!session.lastErrorLog || now - session.lastErrorLog > 60000) {
         console.error(`[Stream] Screenshot error for ${sessionId}:`, error);
@@ -2712,14 +2732,25 @@ wss.on('connection', (ws: WebSocket) => {
             }
             subscribedSessionId = sessionId;
             session.clients.add(ws);
-            session.isStreaming = true;
-            startScreenshotStreaming(sessionId);
 
-            ws.send(JSON.stringify({
-              type: 'stream:subscribed',
-              sessionId,
-              data: { message: 'Subscribed to session' }
-            }));
+            // Check if browser is ready before starting stream
+            if (session.browser && session.browser.isReady()) {
+              session.isStreaming = true;
+              startScreenshotStreaming(sessionId);
+              ws.send(JSON.stringify({
+                type: 'stream:subscribed',
+                sessionId,
+                data: { message: 'Subscribed to session', browserReady: true }
+              }));
+            } else {
+              // Browser not ready yet - client will receive stream:ready when it's ready
+              console.log(`[Stream] Client subscribed to ${sessionId} but browser not ready yet`);
+              ws.send(JSON.stringify({
+                type: 'stream:subscribed',
+                sessionId,
+                data: { message: 'Subscribed - browser is starting...', browserReady: false }
+              }));
+            }
             break;
 
           case 'stream:unsubscribe':
