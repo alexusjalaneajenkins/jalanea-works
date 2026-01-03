@@ -16,7 +16,7 @@ services:
     runtime: docker
     rootDir: ./cloud-agent
     dockerfilePath: ./Dockerfile
-    dockerCommand: node dist/index.js
+    dockerCommand: /app/entrypoint.sh node dist/index.js
     plan: starter  # $7/mo - needed for browser automation
     healthCheckPath: /health
     envVars:
@@ -80,7 +80,7 @@ services:
     runtime: docker
     rootDir: ./cloud-agent
     dockerfilePath: ./Dockerfile
-    dockerCommand: node dist/queue/worker.js
+    dockerCommand: /app/entrypoint.sh node dist/queue/worker.js
     plan: starter  # Needs always-on for queue processing
     envVars:
       - key: NODE_ENV
