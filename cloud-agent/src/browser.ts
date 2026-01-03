@@ -363,8 +363,19 @@ export class BrowserController {
 
       // Add timeout wrapper - browser launch should complete in 60 seconds max
       const launchTimeout = 60000;
+
+      // On Linux, use "virtual" headless mode which properly uses Xvfb
+      // This fixes hangs in Docker/cloud environments (see github.com/daijro/camoufox/issues/372)
+      const isLinux = process.platform === 'linux';
+      const headlessMode = this.config.headless !== false
+        ? (isLinux ? 'virtual' : true)  // Use Xvfb on Linux, regular headless elsewhere
+        : false;
+
+      console.log(`[Browser] Camoufox headless mode: ${headlessMode} (platform: ${process.platform})`);
+
       const launchPromise = Camoufox({
-        headless: this.config.headless !== false, // Default to headless in production
+        // Cast to any to support "virtual" mode on Linux (types don't include it but it works)
+        headless: headlessMode as any,
         humanize: true, // Enable human-like mouse movements
         geoip: false, // Don't auto-configure based on IP (we have our own location)
         window: [this.config.viewport?.width || 1280, this.config.viewport?.height || 800],

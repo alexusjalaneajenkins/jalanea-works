@@ -2106,8 +2106,10 @@ app.post('/stream/start', async (req: Request, res: Response) => {
     // Start browser in background (don't await)
     (async () => {
       try {
-        const browserType = (process.env.BROWSER_TYPE || 'chromium') as 'chromium' | 'camoufox';
+        // Use browser type from env var (default: camoufox for stealth)
+        const browserType = (process.env.BROWSER_TYPE || 'camoufox') as 'chromium' | 'camoufox';
         const sessionDir = path.join(process.cwd(), 'sessions', siteId);
+        console.log(`[Stream] Using ${browserType} browser for live streaming`);
 
         const browser = new BrowserController({
           headless: true,

@@ -81,14 +81,23 @@ RUN npx camoufox-js fetch
 RUN npx playwright install chromium
 RUN npx playwright install-deps chromium
 
-# Create session storage directory
-RUN mkdir -p ./sessions && chmod 755 ./sessions
+# Create non-root user for running browser (fixes Camoufox crash on Linux)
+# See: https://github.com/daijro/camoufox/issues/372
+RUN groupadd -r pwuser && useradd -r -g pwuser -G audio,video pwuser \
+    && mkdir -p /home/pwuser/Downloads \
+    && chown -R pwuser:pwuser /home/pwuser
+
+# Create session storage directory with proper permissions
+RUN mkdir -p ./sessions && chown -R pwuser:pwuser ./sessions
+
+# Set ownership of app directory to non-root user
+RUN chown -R pwuser:pwuser /app
 
 # Environment variables
 ENV NODE_ENV=production
 ENV HEADLESS=true
-# Set display for xvfb (virtual framebuffer for headless browser)
-ENV DISPLAY=:99
+# Display will be set by entrypoint if Xvfb starts successfully
+ENV HOME=/home/pwuser
 
 # Expose port for API server
 EXPOSE 3001
@@ -100,6 +109,9 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 # Create entrypoint script that starts xvfb first
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
+
+# Switch to non-root user for running the application
+USER pwuser
 
 ENTRYPOINT ["/app/entrypoint.sh"]
 
