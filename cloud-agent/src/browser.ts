@@ -410,26 +410,45 @@ export class BrowserController {
       }
 
       // Camoufox returns a browser instance, get the default context
+      console.log('[Browser] Getting Camoufox contexts...');
       const contexts = this.browser!.contexts();
+      console.log(`[Browser] Found ${contexts.length} existing contexts`);
+
       if (contexts.length > 0) {
         this.context = contexts[0];
+        console.log('[Browser] Using existing context');
       } else {
-        this.context = await this.browser!.newContext({
-          viewport: this.config.viewport,
-          storageState,
-        });
+        console.log('[Browser] Creating new context...');
+        this.context = await Promise.race([
+          this.browser!.newContext({
+            viewport: this.config.viewport,
+            storageState,
+          }),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Context creation timed out after 30s')), 30000)
+          )
+        ]);
+        console.log('[Browser] Context created');
       }
 
       // Load cookies if we have a saved session
       if (storageState && this.context) {
         try {
+          console.log('[Browser] Restoring cookies...');
           await this.context.addCookies(storageState.cookies || []);
+          console.log('[Browser] Cookies restored');
         } catch (e) {
           console.log('[Browser] Could not restore cookies to Camoufox context');
         }
       }
 
-      this.page = await this.context!.newPage();
+      console.log('[Browser] Creating new page...');
+      this.page = await Promise.race([
+        this.context!.newPage(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Page creation timed out after 30s')), 30000)
+        )
+      ]);
       this.page.setDefaultTimeout(30000);
 
       console.log('[Browser] Camoufox browser launched successfully');
