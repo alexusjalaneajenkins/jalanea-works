@@ -2789,6 +2789,7 @@ const POOL_ENABLED = process.env.BROWSER_POOL_ENABLED !== 'false';
 
 async function startServer() {
   // Initialize browser pool if enabled (for warm browsers)
+  // Pool warms up in background - doesn't block server startup
   if (POOL_ENABLED) {
     console.log(`[Server] Initializing browser pool (size: ${POOL_SIZE})...`);
     try {
@@ -2800,10 +2801,12 @@ async function startServer() {
         viewport: { width: 390, height: 844 },
         capsolverApiKey: process.env.CAPSOLVER_API_KEY,
       });
-      console.log(`[Server] Browser pool ready with ${browserPool.getStats().available} warm browsers`);
+      // Pool.start() is now non-blocking - browsers warm up in background
+      console.log(`[Server] Browser pool initialized (warming up in background)`);
     } catch (error) {
       console.error('[Server] Failed to initialize browser pool:', error);
       console.log('[Server] Continuing without pool (cold starts only)');
+      browserPool = null; // Ensure pool is null if init failed
     }
   } else {
     console.log('[Server] Browser pool disabled (BROWSER_POOL_ENABLED=false)');

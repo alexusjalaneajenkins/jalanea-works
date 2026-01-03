@@ -72,18 +72,30 @@ export class BrowserPool extends EventEmitter {
   }
 
   /**
-   * Start the pool - pre-warm browsers
+   * Start the pool - pre-warm browsers in background (non-blocking)
+   * Server can start immediately, pool warms up asynchronously
    */
   async start(): Promise<void> {
-    console.log(`[BrowserPool] Starting pool warm-up (target: ${this.config.poolSize} browsers)...`);
+    console.log(`[BrowserPool] Starting pool (target: ${this.config.poolSize} browsers)...`);
 
     // Start idle check interval
     this.idleCheckInterval = setInterval(() => this.checkIdleBrowsers(), 60000); // Check every minute
 
-    // Warm up the pool
-    await this.warmUp();
+    // Warm up in background - don't block server startup
+    // This is critical: if browser launch fails, server should still start
+    this.warmUpBackground();
 
-    console.log(`[BrowserPool] Pool ready with ${this.pool.length} warm browsers`);
+    console.log(`[BrowserPool] Pool initialized (warming up in background)`);
+  }
+
+  /**
+   * Warm up browsers in background without blocking
+   */
+  private warmUpBackground(): void {
+    this.warmUp().catch(error => {
+      console.error('[BrowserPool] Background warm-up failed:', error);
+      // Don't throw - server should continue without warm pool
+    });
   }
 
   /**
