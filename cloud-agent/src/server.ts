@@ -53,6 +53,26 @@ interface StreamingSession {
   clients: Set<WebSocket>;
   lastActivity: number;
   lastErrorLog?: number; // Timestamp of last error log to prevent spam
+  // Change detection fields (efficiency optimization)
+  lastScreenshotHash?: string; // Simple hash to detect changes
+  lastScreenshotUrl?: string;  // URL when last screenshot was sent
+  lastForceSendTime?: number;  // For heartbeat sends even if no change
+  skippedFrames?: number;      // Counter for debugging
+}
+
+/**
+ * Simple fast hash for change detection (not cryptographic)
+ * Samples the string at intervals for speed
+ */
+function quickHash(str: string): string {
+  let hash = 0;
+  const step = Math.max(1, Math.floor(str.length / 1000)); // Sample ~1000 chars
+  for (let i = 0; i < str.length; i += step) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return hash.toString(36);
 }
 
 // Active streaming sessions by sessionId
@@ -82,12 +102,20 @@ function broadcastToSession(sessionId: string, data: any): void {
 
 /**
  * Start screenshot streaming for a session
+ * Uses change detection to reduce bandwidth - only sends when content changes
  */
 function startScreenshotStreaming(sessionId: string): void {
   const session = streamingSessions.get(sessionId);
   if (!session || session.streamInterval) return;
 
-  console.log(`[Stream] Starting screenshot stream for ${sessionId}`);
+  console.log(`[Stream] Starting screenshot stream for ${sessionId} (with change detection)`);
+
+  // Initialize change detection state
+  session.lastForceSendTime = Date.now();
+  session.skippedFrames = 0;
+
+  const HEARTBEAT_INTERVAL = 3000; // Force send every 3 seconds even if no change
+  const CHECK_INTERVAL = 250; // Check for changes 4x per second (but only send on change)
 
   session.streamInterval = setInterval(async () => {
     try {
@@ -103,7 +131,36 @@ function startScreenshotStreaming(sessionId: string): void {
 
       const screenshot = await session.browser.screenshot();
       const url = session.browser.getUrl();
+      const now = Date.now();
 
+      // Calculate hash for change detection
+      const currentHash = quickHash(screenshot.base64);
+
+      // Determine if we should send this frame
+      const urlChanged = url !== session.lastScreenshotUrl;
+      const contentChanged = currentHash !== session.lastScreenshotHash;
+      const heartbeatDue = (now - (session.lastForceSendTime || 0)) >= HEARTBEAT_INTERVAL;
+
+      const shouldSend = urlChanged || contentChanged || heartbeatDue;
+
+      if (!shouldSend) {
+        // Skip this frame - no changes
+        session.skippedFrames = (session.skippedFrames || 0) + 1;
+        return;
+      }
+
+      // Log efficiency stats periodically
+      if (session.skippedFrames && session.skippedFrames > 0) {
+        console.log(`[Stream] Skipped ${session.skippedFrames} unchanged frames, sending update (${urlChanged ? 'nav' : contentChanged ? 'change' : 'heartbeat'})`);
+        session.skippedFrames = 0;
+      }
+
+      // Update tracking state
+      session.lastScreenshotHash = currentHash;
+      session.lastScreenshotUrl = url;
+      session.lastForceSendTime = now;
+
+      // Send the screenshot
       broadcastToSession(sessionId, {
         type: 'stream:screenshot',
         sessionId,
@@ -123,7 +180,7 @@ function startScreenshotStreaming(sessionId: string): void {
         session.lastErrorLog = now;
       }
     }
-  }, 500); // 2 FPS for smooth viewing without overloading
+  }, CHECK_INTERVAL); // Check 4x/sec but only send on change
 }
 
 /**
