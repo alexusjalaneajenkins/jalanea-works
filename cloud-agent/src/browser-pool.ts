@@ -45,38 +45,25 @@ interface BrowserPoolConfig {
 }
 
 /**
- * Calculate optimal pool size based on available system memory
- * Research shows each browser uses ~200-400MB RAM
- * We reserve 512MB for the system and allocate the rest to browsers
+ * Get pool size from environment or use conservative default
+ *
+ * With 2GB RAM and Camoufox (~300-400MB per browser):
+ * - Pool size 1: Safest, leaves plenty of RAM for the app
+ * - Pool size 2+: Only if you need concurrent sessions
+ *
+ * Set POOL_SIZE env var to override (default: 1)
  */
-function calculateOptimalPoolSize(): number {
-  // Get available memory from environment or use default
-  // Render Standard tier: 2GB (2048MB)
-  const totalMemoryMB = parseInt(process.env.MEMORY_MB || '2048', 10);
-
-  // Reserve memory for system, Node.js, and overhead
-  const reservedMB = 512;
-
-  // Each browser instance uses ~300MB on average with our optimizations
-  const memoryPerBrowserMB = 300;
-
-  // Calculate pool size
-  const availableForBrowsers = totalMemoryMB - reservedMB;
-  const optimalSize = Math.floor(availableForBrowsers / memoryPerBrowserMB);
-
-  // Clamp between 1 and 4 browsers
-  const poolSize = Math.max(1, Math.min(4, optimalSize));
-
-  console.log(`[BrowserPool] Memory: ${totalMemoryMB}MB, optimal pool size: ${poolSize}`);
-
+function getPoolSize(): number {
+  const poolSize = parseInt(process.env.POOL_SIZE || '1', 10);
+  console.log(`[BrowserPool] Pool size: ${poolSize} (set POOL_SIZE env to change)`);
   return poolSize;
 }
 
 const DEFAULT_CONFIG: BrowserPoolConfig = {
-  poolSize: calculateOptimalPoolSize(),
+  poolSize: getPoolSize(),
   maxUsesPerBrowser: 5,
   idleTimeoutMs: 10 * 60 * 1000, // 10 minutes
-  browserType: 'camoufox',
+  browserType: 'camoufox',  // Keep Camoufox for stealth/CAPTCHA bypass
   viewport: { width: 390, height: 844 },
 };
 
