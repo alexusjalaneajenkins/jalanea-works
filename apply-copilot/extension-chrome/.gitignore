@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Compiled output (can be rebuilt)
+**/*.js
+**/*.js.map
+
+# Keep TypeScript source
+!tsconfig.json
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store

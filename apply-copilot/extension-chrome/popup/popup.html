@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apply Co-Pilot</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 320px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f9fafb;
+      color: #111827;
+    }
+
+    .header {
+      background: #0ea5e9;
+      color: white;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .header p {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .content {
+      padding: 16px;
+    }
+
+    .status-card {
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .status-card h2 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #374151;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .status-dot.connected {
+      background: #22c55e;
+    }
+
+    .status-dot.disconnected {
+      background: #ef4444;
+    }
+
+    .status-text {
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .vault-preview {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .vault-preview p {
+      font-size: 13px;
+      color: #374151;
+      margin-bottom: 4px;
+    }
+
+    .vault-preview .label {
+      font-weight: 500;
+      color: #6b7280;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-bottom: 8px;
+    }
+
+    .btn-primary {
+      background: #0ea5e9;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #0284c7;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .btn-secondary:hover {
+      background: #d1d5db;
+    }
+
+    .btn-danger {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .btn-danger:hover {
+      background: #fecaca;
+    }
+
+    .help-text {
+      font-size: 11px;
+      color: #9ca3af;
+      text-align: center;
+      margin-top: 12px;
+    }
+
+    .quick-fill {
+      background: white;
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .quick-fill h3 {
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 8px;
+    }
+
+    .quick-fill-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .quick-fill-btn {
+      padding: 8px;
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .quick-fill-btn:hover {
+      background: #e5e7eb;
+    }
+
+    .quick-fill-btn .value {
+      display: block;
+      font-weight: 500;
+      color: #111827;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .quick-fill-btn .label {
+      font-size: 10px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Apply Co-Pilot</h1>
+    <p>Turbo Mode</p>
+  </div>
+
+  <div class="content">
+    <div class="status-card">
+      <h2>Vault Status</h2>
+      <div class="status-indicator">
+        <div class="status-dot" id="statusDot"></div>
+        <span class="status-text" id="statusText">Checking...</span>
+      </div>
+      <div class="vault-preview" id="vaultPreview" style="display: none;">
+        <p><span class="label">Name:</span> <span id="vaultName"></span></p>
+        <p><span class="label">Email:</span> <span id="vaultEmail"></span></p>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="openPwaBtn">
+      Open PWA to Edit Vault
+    </button>
+
+    <button class="btn btn-secondary" id="rescanBtn">
+      Rescan Page Fields
+    </button>
+
+    <div class="quick-fill" id="quickFill" style="display: none;">
+      <h3>Quick Copy</h3>
+      <div class="quick-fill-grid" id="quickFillGrid">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+
+    <p class="help-text">
+      Visit indeed.com to use Turbo Mode overlay
+    </p>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
