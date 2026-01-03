@@ -264,7 +264,7 @@ export default function ApplySprintPage() {
           Skip This Job
         </Button>
         <p className="text-center text-xs text-gray-400">
-          {queuedJobs.length - 1} more job{queuedJobs.length - 1 !== 1 ? 's' : ''} in queue
+          {Math.max(0, queuedJobs.length - 1)} more job{Math.max(0, queuedJobs.length - 1) !== 1 ? 's' : ''} in queue
         </p>
       </div>
 
