@@ -51,6 +51,7 @@ RUN apt-get update && apt-get install -y \
     libxshmfence1 \
     # For virtual display (headless)
     xvfb \
+    xauth \
     # Fonts
     fonts-liberation \
     fonts-noto-color-emoji \
