@@ -1092,6 +1092,9 @@ export class BrowserController {
   async detectCaptcha(): Promise<{ type: string; message: string } | null> {
     if (!this.page) return null;
 
+    const pageUrl = this.page.url();
+    console.log(`[Browser] Running CAPTCHA detection on: ${pageUrl}`);
+
     const captchaIndicators = [
       // General CAPTCHA
       { selector: 'iframe[src*="recaptcha"]', type: 'reCAPTCHA', message: 'Google reCAPTCHA detected' },
@@ -1136,6 +1139,10 @@ export class BrowserController {
     try {
       const pageText = await this.page.textContent('body') || '';
       const lowerText = pageText.toLowerCase();
+
+      // Debug: Log page text snippet for CAPTCHA detection
+      const textSnippet = lowerText.substring(0, 500).replace(/\s+/g, ' ');
+      console.log(`[Browser] CAPTCHA detection - page text preview: "${textSnippet}..."`);
 
       if (lowerText.includes('verify you are human') ||
           lowerText.includes('human verification') ||
