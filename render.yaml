@@ -1,15 +1,17 @@
 # Jalanea Works Cloud Agent - Render Blueprint
 # Deploy with: https://render.com/deploy
 #
-# Services:
-# - api: Express server for REST API + WebSocket
-# - worker: BullMQ worker for job processing
+# Single API server handles everything:
+# - REST API endpoints
+# - WebSocket connections
+# - Live Browser streaming
 #
-# Cost: $7/month (worker only - API uses free tier)
+# Cost: $7/month (Starter plan for browser automation)
 
 services:
   # ============================================
-  # API Server (Free Tier - sleeps when idle)
+  # API Server (Starter - $7/mo)
+  # Handles HTTP, WebSocket, and browser streaming
   # ============================================
   - type: web
     name: jalanea-api
@@ -17,7 +19,7 @@ services:
     rootDir: ./cloud-agent
     dockerfilePath: ./Dockerfile
     dockerCommand: node dist/index.js
-    plan: free  # Upgrade to starter ($7/mo) when needed
+    plan: starter  # $7/mo - needed for browser automation
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV

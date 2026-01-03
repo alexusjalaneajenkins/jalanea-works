@@ -1449,18 +1449,18 @@ const NotificationSettings: React.FC = () => {
 
 export const SettingsPage: React.FC = () => {
   return (
-    <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500 pb-12">
+    <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500 px-4 sm:px-6 lg:px-8 pt-8 pb-12">
 
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-jalanea-200 pb-6">
         <div>
-          <h1 className="text-3xl font-display font-bold text-jalanea-900">Profile Manager</h1>
-          <p className="text-jalanea-600 font-medium mt-1">Manage your Experience, Education, and Skills</p>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-jalanea-900">Profile Manager</h1>
+          <p className="text-sm sm:text-base text-jalanea-600 font-medium mt-1">Manage your Experience, Education, and Skills</p>
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-jalanea-900">My Career Data</h2>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+        <h2 className="text-lg sm:text-xl font-bold text-jalanea-900">My Career Data</h2>
         <Button size="sm" icon={<Edit3 size={16} />}>Edit Profile</Button>
       </div>
 
@@ -1579,19 +1579,23 @@ export const SettingsPage: React.FC = () => {
           </Card>
         </div>
 
-        {/* AI Job Agent Section */}
+        {/* Quick Link to Job Agent */}
         <div className="pt-8 border-t border-jalanea-200">
-          <h2 className="text-xl font-bold text-jalanea-900 mb-6">AI Job Agent</h2>
-          <div className="space-y-6">
-            <SubscriptionPlan />
-            <JobPreferencesCard />
-            <ConnectedSites />
-            <ApplicationHistory />
-          </div>
+          <Card variant="solid-white" className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = '/job-agent'}>
+            <div className="p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gold to-amber-500 flex items-center justify-center shadow-lg">
+                  <Bot size={24} className="text-black" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-jalanea-900">AI Job Agent</h3>
+                  <p className="text-sm text-jalanea-500">Manage auto-apply, connected sites, and preferences</p>
+                </div>
+              </div>
+              <ExternalLink size={20} className="text-jalanea-400" />
+            </div>
+          </Card>
         </div>
-
-        {/* Notification Preferences */}
-        <NotificationSettings />
 
       </div>
     </div>
