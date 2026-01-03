@@ -1209,22 +1209,51 @@ export class BrowserController {
       const pageUrl = this.page.url();
       console.log(`[Browser] Attempting to auto-solve Turnstile on ${pageUrl}`);
 
+      // Wait a moment for any dynamic content to load
+      await this.page.waitForTimeout(1500);
+
       // Get page HTML to extract sitekey
       const html = await this.page.content();
       const sitekey = extractTurnstileSitekey(html);
+      console.log(`[Browser] Sitekey from HTML: ${sitekey ? sitekey.substring(0, 20) + '...' : 'NOT FOUND'}`);
 
       if (!sitekey) {
-        // Try to find sitekey from iframe
-        const iframeUrl = await this.page.evaluate(() => {
-          const iframe = document.querySelector('iframe[src*="challenges.cloudflare.com"]') as HTMLIFrameElement;
-          return iframe?.src || null;
+        // Try to find sitekey from iframe - check multiple selectors
+        const iframeInfo = await this.page.evaluate(() => {
+          const selectors = [
+            'iframe[src*="challenges.cloudflare.com"]',
+            'iframe[src*="turnstile"]',
+            'iframe[title*="challenge"]',
+            'iframe[title*="verification"]',
+            '.cf-turnstile iframe',
+            '#cf-turnstile-container iframe'
+          ];
+
+          for (const sel of selectors) {
+            const iframe = document.querySelector(sel) as HTMLIFrameElement;
+            if (iframe) {
+              return { selector: sel, src: iframe.src, found: true };
+            }
+          }
+
+          // List all iframes for debugging
+          const allIframes = Array.from(document.querySelectorAll('iframe')).map(f => ({
+            src: (f as HTMLIFrameElement).src,
+            title: f.title
+          }));
+
+          return { selector: 'none', src: null, found: false, allIframes };
         });
 
-        if (iframeUrl) {
-          const sitekeyFromUrl = iframeUrl.match(/sitekey=([^&]+)/)?.[1];
+        console.log(`[Browser] Iframe search result:`, JSON.stringify(iframeInfo));
+
+        if (iframeInfo.found && iframeInfo.src) {
+          const sitekeyFromUrl = iframeInfo.src.match(/sitekey=([^&]+)/)?.[1];
           if (sitekeyFromUrl) {
             console.log(`[Browser] Found sitekey from iframe: ${sitekeyFromUrl.substring(0, 20)}...`);
             return await this.solveTurnstileWithKey(pageUrl, sitekeyFromUrl);
+          } else {
+            console.log(`[Browser] Iframe found but no sitekey in URL: ${iframeInfo.src.substring(0, 100)}`);
           }
         }
 
