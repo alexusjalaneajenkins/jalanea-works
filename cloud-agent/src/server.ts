@@ -95,6 +95,11 @@ function startScreenshotStreaming(sessionId: string): void {
         return;
       }
 
+      // Skip if browser not ready yet
+      if (!session.browser || !session.browser.isReady()) {
+        return;
+      }
+
       const screenshot = await session.browser.screenshot();
       const url = session.browser.getUrl();
 
@@ -110,7 +115,12 @@ function startScreenshotStreaming(sessionId: string): void {
         }
       });
     } catch (error) {
-      console.error(`[Stream] Screenshot error for ${sessionId}:`, error);
+      // Only log once per minute to avoid spam
+      const now = Date.now();
+      if (!session.lastErrorLog || now - session.lastErrorLog > 60000) {
+        console.error(`[Stream] Screenshot error for ${sessionId}:`, error);
+        session.lastErrorLog = now;
+      }
     }
   }, 500); // 2 FPS for smooth viewing without overloading
 }
