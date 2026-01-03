@@ -5,6 +5,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { haptics } from '../../utils/haptics';
 import { getCareerAdvice, AIUserContext } from '../../services/geminiService';
+import { MakeItWork } from '../MakeItWork';
 
 /**
  * MobileCoach - Research-driven design applying:
@@ -43,6 +44,7 @@ export const MobileCoach: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [showMakeItWork, setShowMakeItWork] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -170,6 +172,39 @@ export const MobileCoach: React.FC = () => {
             </motion.div>
           ))}
         </AnimatePresence>
+
+        {/* Make It Work - Featured prominently for users facing barriers */}
+        {messages.length <= 1 && !isTyping && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="px-2 py-4"
+          >
+            <button
+              onClick={() => {
+                haptics.medium();
+                setShowMakeItWork(true);
+              }}
+              className={`
+                w-full p-4 rounded-2xl
+                bg-gradient-to-r from-gold via-amber-500 to-gold
+                shadow-lg shadow-gold/25
+                active:scale-[0.98] transition-all
+              `}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-black/20 flex items-center justify-center">
+                  <Zap className="w-6 h-6 text-black" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-black font-bold text-lg">Make It Work</p>
+                  <p className="text-black/70 text-sm">Facing barriers? Let's find another way.</p>
+                </div>
+              </div>
+            </button>
+          </motion.div>
+        )}
 
         {/* Suggested Topics - Fill empty space when chat is new */}
         {messages.length <= 1 && !isTyping && (
@@ -324,6 +359,22 @@ export const MobileCoach: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Make It Work Modal */}
+      <MakeItWork
+        isOpen={showMakeItWork}
+        onClose={() => setShowMakeItWork(false)}
+        onPathSelected={(path) => {
+          // Add a message about the selected path
+          const message: Message = {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: `Great choice! You've selected: **${path.title}**\n\n${path.description}\n\nI've saved your action plan. Ready to help you make it work! 💪`,
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, message]);
+        }}
+      />
     </div>
   );
 };
