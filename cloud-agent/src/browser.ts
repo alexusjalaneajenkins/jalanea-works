@@ -15,7 +15,14 @@ import { chromium, firefox, Browser, Page, BrowserContext } from 'playwright';
 import { Camoufox } from 'camoufox-js';
 import * as fs from 'fs';
 import * as path from 'path';
-import { CaptchaSolver, extractTurnstileSitekey } from './captcha/solver.js';
+import {
+  CaptchaSolver,
+  CaptchaSolverError,
+  extractTurnstileSitekey,
+  extractTurnstileFromPage,
+  injectTurnstileToken,
+  hasTurnstileChallenge,
+} from './captcha/solver.js';
 
 export type BrowserType = 'chromium' | 'camoufox';
 
