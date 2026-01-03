@@ -145,12 +145,30 @@ export const MakeItWork: React.FC<MakeItWorkProps> = ({
         barrierLabels.push(customBarrier.trim());
       }
 
-      // Get user context for personalization
+      // Get user context for personalization (enhanced with full profile data)
       const userContext = {
         name: userProfile?.displayName || null,
         skills: userProfile?.skills || null,
         location: userProfile?.location || null,
         school: userProfile?.school || null,
+        // Enhanced profile data
+        education: userProfile?.education?.map(e => ({
+          degree: e.degree || '',
+          school: e.school || '',
+          year: e.year || undefined
+        })),
+        experience: userProfile?.experience?.map(e => ({
+          role: e.role || '',
+          company: e.company || '',
+          duration: e.duration || undefined
+        })),
+        certifications: userProfile?.certifications?.map(c => ({
+          name: c.name || '',
+          issuer: c.issuer || ''
+        })),
+        targetRoles: userProfile?.preferences?.targetRoles,
+        workStyles: userProfile?.preferences?.workStyles,
+        salary: userProfile?.preferences?.salary,
       };
 
       const result = await generateMakeItWorkPaths(goal, barrierLabels, userContext);

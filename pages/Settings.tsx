@@ -1454,14 +1454,45 @@ export const SettingsPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-jalanea-200 pb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-display font-bold text-jalanea-900">Profile Manager</h1>
-          <p className="text-sm sm:text-base text-jalanea-600 font-medium mt-1">Manage your Experience, Education, and Skills</p>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-jalanea-900">Settings</h1>
+          <p className="text-sm sm:text-base text-jalanea-600 font-medium mt-1">Manage your AI Job Agent and profile</p>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-        <h2 className="text-lg sm:text-xl font-bold text-jalanea-900">My Career Data</h2>
-        <Button size="sm" icon={<Edit3 size={16} />}>Edit Profile</Button>
+      {/* AI Job Agent Section - "Apply in Your Sleep" */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gold to-amber-500 flex items-center justify-center shadow-lg">
+            <Bot size={20} className="text-black" />
+          </div>
+          <div>
+            <h2 className="text-lg sm:text-xl font-bold text-jalanea-900">AI Job Agent</h2>
+            <p className="text-sm text-jalanea-500">Apply for jobs in your sleep</p>
+          </div>
+        </div>
+
+        {/* Subscription & Usage */}
+        <SubscriptionPlan />
+
+        {/* Connected Job Sites */}
+        <ConnectedSites />
+
+        {/* Job Preferences & Auto-Apply */}
+        <JobPreferencesCard />
+
+        {/* Application History */}
+        <ApplicationHistory />
+
+        {/* Notification Settings */}
+        <NotificationSettings />
+      </div>
+
+      {/* Divider */}
+      <div className="border-t border-jalanea-200 pt-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+          <h2 className="text-lg sm:text-xl font-bold text-jalanea-900">My Career Data</h2>
+          <Button size="sm" icon={<Edit3 size={16} />}>Edit Profile</Button>
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -1575,24 +1606,6 @@ export const SettingsPage: React.FC = () => {
                   </div>
                 </div>
               ))}
-            </div>
-          </Card>
-        </div>
-
-        {/* Quick Link to Job Agent */}
-        <div className="pt-8 border-t border-jalanea-200">
-          <Card variant="solid-white" className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = '/job-agent'}>
-            <div className="p-6 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gold to-amber-500 flex items-center justify-center shadow-lg">
-                  <Bot size={24} className="text-black" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-jalanea-900">AI Job Agent</h3>
-                  <p className="text-sm text-jalanea-500">Manage auto-apply, connected sites, and preferences</p>
-                </div>
-              </div>
-              <ExternalLink size={20} className="text-jalanea-400" />
             </div>
           </Card>
         </div>
