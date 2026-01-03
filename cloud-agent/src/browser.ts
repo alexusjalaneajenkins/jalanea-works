@@ -55,6 +55,14 @@ export class BrowserController {
   private captchaSolver: CaptchaSolver | null = null;
 
   /**
+   * Check if browser is ready for operations
+   * Returns true if browser, context, and page are initialized
+   */
+  public isReady(): boolean {
+    return this.browser !== null && this.context !== null && this.page !== null;
+  }
+
+  /**
    * Generate a random delay to appear more human-like
    * Helps bypass bot detection
    */

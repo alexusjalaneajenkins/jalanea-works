@@ -52,6 +52,7 @@ interface StreamingSession {
   streamInterval: NodeJS.Timeout | null;
   clients: Set<WebSocket>;
   lastActivity: number;
+  lastErrorLog?: number; // Timestamp of last error log to prevent spam
 }
 
 // Active streaming sessions by sessionId
