@@ -22,6 +22,8 @@ import {
   extractTurnstileFromPage,
   injectTurnstileToken,
   hasTurnstileChallenge,
+  detectCloudflareProtection,
+  type CloudflareDetectionResult,
 } from './captcha/solver.js';
 
 export type BrowserType = 'chromium' | 'camoufox';
@@ -36,6 +38,7 @@ export interface BrowserConfig {
   browserType?: BrowserType; // Which browser engine to use (chromium or camoufox)
   capsolverApiKey?: string; // CapSolver API key for auto CAPTCHA solving
   blockResources?: boolean; // Block images, fonts, stylesheets to save memory (default: false)
+  proxy?: string; // Proxy for Cloudflare Managed Challenge (format: protocol:host:port:user:pass)
 }
 
 export interface ScreenshotResult {
@@ -1200,8 +1203,12 @@ export class BrowserController {
   }
 
   /**
-   * Automatically solve Cloudflare Turnstile using CapSolver
+   * Automatically solve Cloudflare protection using CapSolver
    * This is the key method for fully autonomous operation
+   *
+   * Handles both:
+   * - Turnstile: Widget with sitekey, proxyless (most sites)
+   * - Managed Challenge: Full-page block, requires proxy (Indeed, etc.)
    *
    * @returns true if solved, false if failed or no solver configured
    */
@@ -1213,67 +1220,165 @@ export class BrowserController {
     }
 
     try {
-      // Get the current page URL
       const pageUrl = this.page.url();
-      console.log(`[Browser] Attempting to auto-solve Turnstile on ${pageUrl}`);
+      console.log(`[Browser] Detecting Cloudflare protection type on ${pageUrl}`);
 
-      // Wait a moment for any dynamic content to load
+      // Wait for any dynamic content to load
       await this.page.waitForTimeout(1500);
 
-      // Get page HTML to extract sitekey
+      // Detect what type of Cloudflare protection we're facing
+      const detection = await detectCloudflareProtection(this.page);
+      console.log(`[Browser] Detection result: ${JSON.stringify(detection)}`);
+
+      switch (detection.type) {
+        case 'managed':
+          console.log('[Browser] Detected MANAGED CHALLENGE (full-page block)');
+          return await this.solveManagedChallenge(pageUrl);
+
+        case 'turnstile':
+          console.log(`[Browser] Detected TURNSTILE widget (sitekey: ${detection.sitekey?.substring(0, 20)}...)`);
+          if (detection.sitekey) {
+            return await this.solveTurnstileWithKey(pageUrl, detection.sitekey);
+          }
+          // Fall through to try extracting from HTML
+          break;
+
+        case 'none':
+          // Double-check by trying to extract sitekey from HTML
+          console.log('[Browser] No Cloudflare protection detected, checking HTML for sitekey...');
+          break;
+      }
+
+      // Fallback: Try to extract sitekey from HTML (for cases detection missed)
       const html = await this.page.content();
       const sitekey = extractTurnstileSitekey(html);
       console.log(`[Browser] Sitekey from HTML: ${sitekey ? sitekey.substring(0, 20) + '...' : 'NOT FOUND'}`);
 
-      if (!sitekey) {
-        // Try to find sitekey from iframe - check multiple selectors
-        const iframeInfo = await this.page.evaluate(() => {
-          const selectors = [
-            'iframe[src*="challenges.cloudflare.com"]',
-            'iframe[src*="turnstile"]',
-            'iframe[title*="challenge"]',
-            'iframe[title*="verification"]',
-            '.cf-turnstile iframe',
-            '#cf-turnstile-container iframe'
-          ];
+      if (sitekey) {
+        console.log(`[Browser] Found sitekey in HTML: ${sitekey.substring(0, 20)}...`);
+        return await this.solveTurnstileWithKey(pageUrl, sitekey);
+      }
 
-          for (const sel of selectors) {
-            const iframe = document.querySelector(sel) as HTMLIFrameElement;
-            if (iframe) {
-              return { selector: sel, src: iframe.src, found: true };
-            }
-          }
+      // Try iframe search as last resort
+      const iframeInfo = await this.page.evaluate(() => {
+        const selectors = [
+          'iframe[src*="challenges.cloudflare.com"]',
+          'iframe[src*="turnstile"]',
+          'iframe[title*="challenge"]',
+          'iframe[title*="verification"]',
+          '.cf-turnstile iframe',
+          '#cf-turnstile-container iframe'
+        ];
 
-          // List all iframes for debugging
-          const allIframes = Array.from(document.querySelectorAll('iframe')).map(f => ({
-            src: (f as HTMLIFrameElement).src,
-            title: f.title
-          }));
-
-          return { selector: 'none', src: null, found: false, allIframes };
-        });
-
-        console.log(`[Browser] Iframe search result:`, JSON.stringify(iframeInfo));
-
-        if (iframeInfo.found && iframeInfo.src) {
-          const sitekeyFromUrl = iframeInfo.src.match(/sitekey=([^&]+)/)?.[1];
-          if (sitekeyFromUrl) {
-            console.log(`[Browser] Found sitekey from iframe: ${sitekeyFromUrl.substring(0, 20)}...`);
-            return await this.solveTurnstileWithKey(pageUrl, sitekeyFromUrl);
-          } else {
-            console.log(`[Browser] Iframe found but no sitekey in URL: ${iframeInfo.src.substring(0, 100)}`);
+        for (const sel of selectors) {
+          const iframe = document.querySelector(sel) as HTMLIFrameElement;
+          if (iframe) {
+            return { selector: sel, src: iframe.src, found: true };
           }
         }
 
-        console.log('[Browser] Could not find Turnstile sitekey on page');
-        return false;
+        const allIframes = Array.from(document.querySelectorAll('iframe')).map(f => ({
+          src: (f as HTMLIFrameElement).src,
+          title: f.title
+        }));
+
+        return { selector: 'none', src: null, found: false, allIframes };
+      });
+
+      console.log(`[Browser] Iframe search result:`, JSON.stringify(iframeInfo));
+
+      if (iframeInfo.found && iframeInfo.src) {
+        const sitekeyFromUrl = iframeInfo.src.match(/sitekey=([^&]+)/)?.[1];
+        if (sitekeyFromUrl) {
+          console.log(`[Browser] Found sitekey from iframe: ${sitekeyFromUrl.substring(0, 20)}...`);
+          return await this.solveTurnstileWithKey(pageUrl, sitekeyFromUrl);
+        }
       }
 
-      console.log(`[Browser] Found sitekey: ${sitekey.substring(0, 20)}...`);
-      return await this.solveTurnstileWithKey(pageUrl, sitekey);
+      // If no sitekey found but we detected a challenge earlier, try Managed Challenge
+      if (detection.type === 'none') {
+        // Check if page still looks like a challenge
+        const pageText = await this.page.evaluate(() => document.body?.innerText?.toLowerCase() || '');
+        if (pageText.includes('enable javascript') || pageText.includes('just a moment')) {
+          console.log('[Browser] Page text suggests Managed Challenge, attempting solve...');
+          return await this.solveManagedChallenge(pageUrl);
+        }
+      }
+
+      console.log('[Browser] Could not identify Cloudflare protection type');
+      return false;
 
     } catch (error) {
-      console.error('[Browser] Auto-solve Turnstile error:', error);
+      console.error('[Browser] Auto-solve error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Solve Cloudflare Managed Challenge (full-page interstitial)
+   * Requires proxy - will fail if not configured
+   */
+  private async solveManagedChallenge(pageUrl: string): Promise<boolean> {
+    if (!this.page || !this.captchaSolver) return false;
+
+    const proxy = this.config.proxy || process.env.PROXY_URL;
+    if (!proxy) {
+      console.log('[Browser] ⚠️  MANAGED CHALLENGE requires proxy but none configured!');
+      console.log('[Browser] Set PROXY_URL env var (format: protocol:host:port:user:pass)');
+      console.log('[Browser] Example: http:proxy.example.com:8080:username:password');
+      console.log('[Browser] Falling back to manual solving...');
+      return false;
+    }
+
+    try {
+      console.log(`[Browser] Solving Managed Challenge with proxy...`);
+      const html = await this.page.content();
+
+      const solution = await this.captchaSolver.solveCloudflareChallenge({
+        websiteURL: pageUrl,
+        proxy: proxy,
+        html: html,
+      });
+
+      console.log(`[Browser] Got Managed Challenge solution (type: ${solution.type})`);
+
+      // Inject cookies returned by the solver
+      if (solution.cookies && solution.cookies.length > 0) {
+        console.log(`[Browser] Setting ${solution.cookies.length} cookies...`);
+        const domain = new URL(pageUrl).hostname;
+
+        for (const cookie of solution.cookies) {
+          await this.context?.addCookies([{
+            name: cookie.name,
+            value: cookie.value,
+            domain: domain,
+            path: '/',
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None',
+          }]);
+          console.log(`[Browser] Set cookie: ${cookie.name}`);
+        }
+
+        // Reload the page with the new cookies
+        console.log('[Browser] Reloading page with challenge cookies...');
+        await this.page.reload({ waitUntil: 'domcontentloaded' });
+        await this.page.waitForTimeout(2000);
+      }
+
+      // Check if we passed the challenge
+      const stillBlocked = await this.detectCaptcha();
+      if (!stillBlocked) {
+        console.log('[Browser] ✓ Managed Challenge solved successfully!');
+        await this.saveSession();
+        return true;
+      }
+
+      console.log('[Browser] Cookies set but challenge still present');
+      return false;
+
+    } catch (error) {
+      console.error('[Browser] solveManagedChallenge error:', error);
       return false;
     }
   }

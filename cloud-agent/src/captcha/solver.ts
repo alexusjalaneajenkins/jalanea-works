@@ -237,6 +237,158 @@ export class CaptchaSolver {
   }
 
   /**
+   * Solve a Cloudflare Managed Challenge (full-page block)
+   *
+   * Unlike Turnstile, Managed Challenge:
+   * - Has no sitekey (full-page interstitial)
+   * - REQUIRES a proxy (no proxyless option)
+   * - Returns cf_clearance cookie instead of token
+   *
+   * @param task - The challenge task parameters
+   * @returns Solution with cookies to set
+   */
+  async solveCloudflareChallenge(task: CloudflareChallengeTask): Promise<CloudflareChallengeSolution> {
+    console.log(`[CaptchaSolver] Solving Cloudflare Managed Challenge for ${task.websiteURL}`);
+    const startTime = Date.now();
+
+    if (!task.proxy) {
+      throw new CaptchaSolverError(
+        'Proxy is required for Cloudflare Managed Challenge (AntiCloudflareTask)',
+        'ERROR_PROXY_REQUIRED',
+        false
+      );
+    }
+
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      try {
+        // Step 1: Create the task
+        const taskId = await this.createChallengeTask(task);
+        console.log(`[CaptchaSolver] Challenge task created: ${taskId} (attempt ${attempt})`);
+
+        // Step 2: Poll for result
+        const solution = await this.waitForChallengeResult(taskId, startTime);
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        console.log(`[CaptchaSolver] Managed Challenge solved in ${elapsed}s`);
+
+        return solution;
+      } catch (error) {
+        const isRetryable = error instanceof CaptchaSolverError && error.retryable;
+        const errorCode = error instanceof CaptchaSolverError ? error.code : 'UNKNOWN';
+
+        if (!isRetryable || attempt === this.maxRetries) {
+          throw error;
+        }
+
+        console.log(`[CaptchaSolver] Challenge attempt ${attempt} failed (${errorCode}), retrying...`);
+        await this.sleep(this.pollInterval * attempt);
+      }
+    }
+
+    throw new CaptchaSolverError('Max retries exceeded', 'ERROR_MAX_RETRIES', false);
+  }
+
+  /**
+   * Create a Cloudflare Challenge solving task
+   */
+  private async createChallengeTask(task: CloudflareChallengeTask): Promise<string> {
+    const payload = {
+      clientKey: this.apiKey,
+      task: {
+        type: 'AntiCloudflareTask',
+        websiteURL: task.websiteURL,
+        proxy: task.proxy, // Required: protocol:host:port:user:pass
+        ...(task.html && { html: task.html }),
+      },
+    };
+
+    const response = await fetch(`${CAPSOLVER_API_URL}/createTask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const data: CreateTaskResponse = await response.json();
+
+    if (data.errorId !== 0) {
+      const code = data.errorCode || 'UNKNOWN_ERROR';
+      const retryable = RETRYABLE_ERRORS.includes(code);
+      throw new CaptchaSolverError(
+        `${data.errorCode} - ${data.errorDescription}`,
+        code,
+        retryable
+      );
+    }
+
+    if (!data.taskId) {
+      throw new CaptchaSolverError('No taskId returned', 'ERROR_NO_TASK_ID', true);
+    }
+
+    return data.taskId;
+  }
+
+  /**
+   * Poll for challenge result until completed or timeout
+   */
+  private async waitForChallengeResult(
+    taskId: string,
+    startTime: number
+  ): Promise<CloudflareChallengeSolution> {
+    while (Date.now() - startTime < this.timeout) {
+      const result = await this.getChallengeTaskResult(taskId);
+
+      if (result.status === 'ready' && result.solution) {
+        return result.solution;
+      }
+
+      if (result.status === 'failed') {
+        const code = result.errorCode || 'ERROR_TASK_FAILED';
+        const retryable = RETRYABLE_ERRORS.includes(code);
+        throw new CaptchaSolverError(
+          `Challenge task failed: ${result.errorCode} - ${result.errorDescription}`,
+          code,
+          retryable
+        );
+      }
+
+      await this.sleep(this.pollInterval);
+    }
+
+    throw new Error(`CapSolver timeout: Challenge task ${taskId} did not complete in ${this.timeout}ms`);
+  }
+
+  /**
+   * Get the result of a challenge task
+   */
+  private async getChallengeTaskResult(taskId: string): Promise<{
+    errorId: number;
+    errorCode?: string;
+    errorDescription?: string;
+    status: 'processing' | 'ready' | 'failed';
+    solution?: CloudflareChallengeSolution;
+  }> {
+    const payload = {
+      clientKey: this.apiKey,
+      taskId,
+    };
+
+    const response = await fetch(`${CAPSOLVER_API_URL}/getTaskResult`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    if (data.errorId !== 0 && data.status !== 'processing') {
+      throw new Error(
+        `CapSolver getChallengeTaskResult error: ${data.errorCode} - ${data.errorDescription}`
+      );
+    }
+
+    return data;
+  }
+
+  /**
    * Get account balance (for monitoring costs)
    */
   async getBalance(): Promise<number> {
@@ -376,27 +528,97 @@ export async function injectTurnstileToken(page: Page, token: string): Promise<b
 }
 
 /**
- * Check if page has a Turnstile challenge
+ * Cloudflare protection type detection result
  */
-export async function hasTurnstileChallenge(page: Page): Promise<boolean> {
+export type CloudflareProtectionType = 'managed' | 'turnstile' | 'none';
+
+export interface CloudflareDetectionResult {
+  type: CloudflareProtectionType;
+  sitekey?: string;      // Only present for Turnstile
+  ctype?: string;        // Challenge type from _cf_chl_opt
+  pageTitle?: string;
+}
+
+/**
+ * Detect what type of Cloudflare protection is on the page
+ *
+ * - 'managed': Full-page Cloudflare Challenge (no sitekey, requires proxy)
+ * - 'turnstile': Turnstile widget (has sitekey, proxyless option)
+ * - 'none': No Cloudflare protection detected
+ */
+export async function detectCloudflareProtection(page: Page): Promise<CloudflareDetectionResult> {
   try {
     return await page.evaluate(() => {
-      // Check for Turnstile widget
-      const widget = document.querySelector('.cf-turnstile, [data-sitekey*="0x"]');
-      if (widget) return true;
+      const result: CloudflareDetectionResult = { type: 'none' };
+      result.pageTitle = document.title;
 
-      // Check for Cloudflare challenge page
-      const cfChallenge = document.querySelector('#challenge-running, #challenge-form');
-      if (cfChallenge) return true;
+      // Check for Managed Challenge indicators
+      // 1. _cf_chl_opt with ctype: 'managed'
+      const cfChlOpt = (window as any)._cf_chl_opt;
+      if (cfChlOpt && cfChlOpt.ctype === 'managed') {
+        result.type = 'managed';
+        result.ctype = 'managed';
+        return result;
+      }
 
-      // Check page title
-      if (document.title.includes('Just a moment')) return true;
+      // 2. "Just a moment" title (classic Cloudflare interstitial)
+      if (document.title.includes('Just a moment')) {
+        result.type = 'managed';
+        return result;
+      }
 
-      return false;
+      // 3. Challenge running element (Managed Challenge)
+      const challengeRunning = document.querySelector('#challenge-running');
+      if (challengeRunning) {
+        result.type = 'managed';
+        return result;
+      }
+
+      // 4. "Enable JavaScript and cookies to continue" text
+      const bodyText = document.body?.innerText?.toLowerCase() || '';
+      if (bodyText.includes('enable javascript and cookies to continue')) {
+        result.type = 'managed';
+        return result;
+      }
+
+      // Check for Turnstile widget (has sitekey)
+      const turnstileWidget = document.querySelector('.cf-turnstile, [data-sitekey]');
+      if (turnstileWidget) {
+        const sitekey = turnstileWidget.getAttribute('data-sitekey');
+        if (sitekey) {
+          result.type = 'turnstile';
+          result.sitekey = sitekey;
+          return result;
+        }
+      }
+
+      // Check for Turnstile iframe
+      const turnstileIframe = document.querySelector('iframe[src*="challenges.cloudflare.com"]');
+      if (turnstileIframe) {
+        const src = (turnstileIframe as HTMLIFrameElement).src;
+        const sitekeyMatch = src.match(/sitekey=([^&]+)/);
+        if (sitekeyMatch) {
+          result.type = 'turnstile';
+          result.sitekey = sitekeyMatch[1];
+          return result;
+        }
+      }
+
+      return result;
     });
   } catch (error) {
-    return false;
+    console.error('[CaptchaSolver] Error detecting Cloudflare protection:', error);
+    return { type: 'none' };
   }
+}
+
+/**
+ * Check if page has a Turnstile challenge
+ * @deprecated Use detectCloudflareProtection() instead
+ */
+export async function hasTurnstileChallenge(page: Page): Promise<boolean> {
+  const detection = await detectCloudflareProtection(page);
+  return detection.type !== 'none';
 }
 
 // ============================================
