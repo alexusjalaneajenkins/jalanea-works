@@ -1,0 +1,27 @@
+{
+  "name": "apply-copilot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Human-in-the-loop mobile job application assistant",
+  "workspaces": [
+    "shared",
+    "server",
+    "mobile"
+  ],
+  "scripts": {
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "clean": "rm -rf node_modules */node_modules */dist"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "eslint": "^8.55.0",
+    "prettier": "^3.1.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
