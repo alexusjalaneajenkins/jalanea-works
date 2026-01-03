@@ -5,7 +5,6 @@ import {
   FileText,
   Briefcase,
   GraduationCap,
-  Settings,
   Moon,
   Sun,
   Bell,
@@ -27,11 +26,6 @@ import {
   RefreshCw,
   Clock,
   Trash2,
-  ExternalLink,
-  Chrome,
-  Cookie,
-  Copy,
-  ClipboardPaste,
   Monitor,
 } from 'lucide-react';
 import { LiveBrowser } from './LiveBrowser';
@@ -65,10 +59,8 @@ export const MobileProfile: React.FC = () => {
   const [credentials, setCredentials] = useState<SiteCredential[]>([]);
   const [sitesLoading, setSitesLoading] = useState(true);
   const [connectingTo, setConnectingTo] = useState<string | null>(null);
-  const [loginMethod, setLoginMethod] = useState<'choose' | 'credentials' | 'browser' | 'cookies' | 'browser-login-pending' | 'live-browser'>('choose');
+  const [loginMethod, setLoginMethod] = useState<'choose' | 'credentials'>('choose');
   const [showLiveBrowser, setShowLiveBrowser] = useState(false);
-  const [cookiesJson, setCookiesJson] = useState('');
-  const [importingCookies, setImportingCookies] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -128,121 +120,7 @@ export const MobileProfile: React.FC = () => {
     setEmail('');
     setPassword('');
     setShowPassword(false);
-    setCookiesJson('');
     setSiteError(null);
-  };
-
-  // Launch browser login - on mobile, open in new tab since cloud browser is headless
-  const handleBrowserLogin = () => {
-    if (!connectingTo) return;
-    haptics.medium();
-
-    // Get the site's login URL from site config
-    const site = sites.find(s => s.id === connectingTo);
-    const loginUrls: Record<string, string> = {
-      indeed: 'https://secure.indeed.com/account/login',
-      linkedin: 'https://www.linkedin.com/login',
-      ziprecruiter: 'https://www.ziprecruiter.com/authn/login',
-      glassdoor: 'https://www.glassdoor.com/profile/login_input.htm',
-    };
-    const loginUrl = site?.loginUrl || loginUrls[connectingTo] || `https://www.${connectingTo}.com/login`;
-
-    // On mobile/PWA: Open login page in new tab and guide user to cookie import
-    // The cloud browser is headless so users can't interact with it
-    window.open(loginUrl, '_blank');
-
-    // Switch to the browser login pending state with instructions
-    setLoginMethod('browser-login-pending');
-  };
-
-  // Import cookies from user's browser
-  const handleImportCookies = async () => {
-    if (!currentUser?.uid || !connectingTo) return;
-    if (!cookiesJson.trim()) {
-      setSiteError('Please paste your exported cookies');
-      return;
-    }
-
-    haptics.medium();
-    setImportingCookies(true);
-    setSiteError(null);
-
-    try {
-      // Parse the cookies JSON
-      let cookies;
-      try {
-        cookies = JSON.parse(cookiesJson.trim());
-      } catch {
-        setSiteError('Invalid JSON format. Make sure you copied the complete export.');
-        setImportingCookies(false);
-        return;
-      }
-
-      // Validate it's an array
-      if (!Array.isArray(cookies)) {
-        setSiteError('Cookies should be a JSON array. Check that you exported correctly.');
-        setImportingCookies(false);
-        return;
-      }
-
-      // Filter to only include cookies for this site's domain
-      const siteDomains: Record<string, string[]> = {
-        indeed: ['indeed.com', '.indeed.com', 'secure.indeed.com'],
-        linkedin: ['linkedin.com', '.linkedin.com', 'www.linkedin.com'],
-        ziprecruiter: ['ziprecruiter.com', '.ziprecruiter.com'],
-        glassdoor: ['glassdoor.com', '.glassdoor.com'],
-      };
-      const allowedDomains = siteDomains[connectingTo] || [connectingTo];
-      const filteredCookies = cookies.filter((c: any) => {
-        const domain = c.domain || '';
-        return allowedDomains.some(d => domain.includes(d.replace('.', '')));
-      });
-
-      if (filteredCookies.length === 0) {
-        setSiteError(`No ${connectingTo} cookies found. Make sure you're logged into ${connectingTo} before exporting.`);
-        setImportingCookies(false);
-        return;
-      }
-
-      // Send to the cloud agent API with userId for database storage
-      const AGENT_API_URL = import.meta.env.VITE_CLOUD_AGENT_URL || 'https://jalanea-api.onrender.com';
-      const res = await fetch(`${AGENT_API_URL}/sites/${connectingTo}/import-cookies`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cookies: filteredCookies, userId: currentUser.uid }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to import cookies');
-      }
-
-      const data = await res.json();
-
-      // Update local state
-      const newCred: SiteCredential = {
-        siteId: connectingTo,
-        isVerified: true,
-        lastVerifiedAt: new Date().toISOString(),
-        lastLoginAt: new Date().toISOString(),
-        loginStatus: 'success',
-        statusMessage: `Imported ${data.cookiesImported} cookies`,
-      };
-      const existingIndex = credentials.findIndex(c => c.siteId === connectingTo);
-      if (existingIndex >= 0) {
-        setCredentials(prev => prev.map((c, i) => i === existingIndex ? newCred : c));
-      } else {
-        setCredentials(prev => [...prev, newCred]);
-      }
-
-      setSiteSuccess(`${connectingTo.charAt(0).toUpperCase() + connectingTo.slice(1)} connected via cookies!`);
-      setTimeout(() => setSiteSuccess(null), 3000);
-      handleCloseConnect();
-    } catch (err) {
-      setSiteError(err instanceof Error ? err.message : 'Failed to import cookies');
-    } finally {
-      setImportingCookies(false);
-    }
   };
 
   const handleSaveCredentials = async () => {
@@ -593,14 +471,14 @@ export const MobileProfile: React.FC = () => {
                 </div>
               )}
 
-              {/* Method Selection */}
+              {/* Method Selection - Mobile only shows options that work on mobile */}
               {loginMethod === 'choose' && (
                 <div className="space-y-3">
                   <p className={`text-sm mb-4 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                     How would you like to connect your {connectingTo.charAt(0).toUpperCase() + connectingTo.slice(1)} account?
                   </p>
 
-                  {/* Live Browser Option - Best for mobile */}
+                  {/* Live Browser Option - Primary option for mobile */}
                   <button
                     onClick={() => {
                       haptics.medium();
@@ -620,40 +498,15 @@ export const MobileProfile: React.FC = () => {
                         Live Browser Login
                       </div>
                       <div className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                        Login directly in-app (recommended)
+                        Sign in through our secure browser
                       </div>
                     </div>
-                    <div className="px-2 py-0.5 rounded-full bg-gold/20 text-gold text-[10px] font-bold">
-                      NEW
+                    <div className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-500 text-[10px] font-bold">
+                      RECOMMENDED
                     </div>
                   </button>
 
-                  {/* Browser Login Option - Opens site in new tab */}
-                  <button
-                    onClick={() => handleBrowserLogin()}
-                    className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all active:scale-[0.98] ${
-                      isLight
-                        ? 'border-slate-200 bg-slate-50 hover:bg-slate-100'
-                        : 'border-white/10 bg-white/5 hover:bg-white/10'
-                    }`}
-                  >
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                      isLight ? 'bg-slate-200' : 'bg-white/10'
-                    }`}>
-                      <Chrome size={24} className={isLight ? 'text-slate-600' : 'text-slate-400'} />
-                    </div>
-                    <div className="flex-1 text-left">
-                      <div className={`font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                        Open in Browser
-                      </div>
-                      <div className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                        Login in separate tab, then import
-                      </div>
-                    </div>
-                    <ExternalLink size={18} className={isLight ? 'text-slate-400' : 'text-slate-500'} />
-                  </button>
-
-                  {/* Credentials Option */}
+                  {/* Credentials Option - Fallback for mobile */}
                   <button
                     onClick={() => setLoginMethod('credentials')}
                     className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all active:scale-[0.98] ${
@@ -672,36 +525,19 @@ export const MobileProfile: React.FC = () => {
                         Email & Password
                       </div>
                       <div className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                        Use your {connectingTo} login credentials
+                        Save credentials for auto-login
                       </div>
                     </div>
                     <ChevronRight size={18} className={isLight ? 'text-slate-400' : 'text-slate-500'} />
                   </button>
 
-                  {/* Cookie Import Option */}
-                  <button
-                    onClick={() => setLoginMethod('cookies')}
-                    className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all active:scale-[0.98] ${
-                      isLight
-                        ? 'border-slate-200 bg-slate-50 hover:bg-slate-100'
-                        : 'border-white/10 bg-white/5 hover:bg-white/10'
-                    }`}
-                  >
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                      isLight ? 'bg-slate-200' : 'bg-white/10'
-                    }`}>
-                      <Cookie size={24} className={isLight ? 'text-slate-600' : 'text-slate-400'} />
-                    </div>
-                    <div className="flex-1 text-left">
-                      <div className={`font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                        Import Cookies
-                      </div>
-                      <div className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                        Export from your browser (advanced)
-                      </div>
-                    </div>
-                    <ChevronRight size={18} className={isLight ? 'text-slate-400' : 'text-slate-500'} />
-                  </button>
+                  {/* Info about Live Browser */}
+                  <div className={`p-3 rounded-xl ${isLight ? 'bg-blue-50' : 'bg-blue-900/20'}`}>
+                    <p className={`text-xs ${isLight ? 'text-blue-700' : 'text-blue-300'}`}>
+                      <strong>Live Browser</strong> opens a secure cloud browser where you can sign in directly.
+                      Your session is captured automatically - no cookie export needed!
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -783,165 +619,7 @@ export const MobileProfile: React.FC = () => {
                 </>
               )}
 
-              {/* Browser Login Pending - User opened site in new tab */}
-              {loginMethod === 'browser-login-pending' && (
-                <>
-                  <button
-                    onClick={() => setLoginMethod('choose')}
-                    className={`flex items-center gap-1 text-sm mb-4 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}
-                  >
-                    <ChevronRight size={16} className="rotate-180" />
-                    Back to options
-                  </button>
-
-                  <div className="space-y-4">
-                    {/* Success indicator */}
-                    <div className={`p-4 rounded-xl text-center ${isLight ? 'bg-emerald-50' : 'bg-emerald-900/20'}`}>
-                      <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/20 flex items-center justify-center mb-3">
-                        <ExternalLink size={24} className="text-emerald-500" />
-                      </div>
-                      <p className={`font-semibold ${isLight ? 'text-emerald-800' : 'text-emerald-400'}`}>
-                        {connectingTo?.charAt(0).toUpperCase()}{connectingTo?.slice(1)} opened in your browser
-                      </p>
-                      <p className={`text-sm mt-1 ${isLight ? 'text-emerald-700' : 'text-emerald-300/80'}`}>
-                        Complete the login there
-                      </p>
-                    </div>
-
-                    {/* Mobile limitation notice */}
-                    <div className={`p-4 rounded-xl ${isLight ? 'bg-amber-50 border border-amber-200' : 'bg-amber-900/20 border border-amber-500/30'}`}>
-                      <p className={`font-semibold mb-2 flex items-center gap-2 ${isLight ? 'text-amber-800' : 'text-amber-400'}`}>
-                        📱 On a Phone?
-                      </p>
-                      <p className={`text-sm ${isLight ? 'text-amber-700' : 'text-amber-300/80'}`}>
-                        Mobile browsers can't export cookies. For the best experience, <strong>connect your accounts from a computer</strong> first.
-                        Your connection will sync to all devices automatically.
-                      </p>
-                    </div>
-
-                    {/* Desktop instructions */}
-                    <div className={`p-4 rounded-xl ${isLight ? 'bg-blue-50' : 'bg-blue-900/20'}`}>
-                      <p className={`font-semibold mb-3 ${isLight ? 'text-blue-800' : 'text-blue-300'}`}>
-                        💻 On Desktop? Here's what to do:
-                      </p>
-                      <ol className={`space-y-2 text-sm ${isLight ? 'text-blue-700' : 'text-blue-200/80'}`}>
-                        <li className="flex items-start gap-2">
-                          <span className="w-5 h-5 shrink-0 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-bold">1</span>
-                          <span>Sign in to {connectingTo} in the browser</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="w-5 h-5 shrink-0 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-bold">2</span>
-                          <span>Install "Cookie-Editor" extension (Chrome/Firefox)</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="w-5 h-5 shrink-0 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-bold">3</span>
-                          <span>Click the extension → Export as JSON</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="w-5 h-5 shrink-0 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-bold">4</span>
-                          <span>Come back here and paste</span>
-                        </li>
-                      </ol>
-                    </div>
-
-                    {/* Action buttons */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          const loginUrls: Record<string, string> = {
-                            indeed: 'https://secure.indeed.com/account/login',
-                            linkedin: 'https://www.linkedin.com/login',
-                            ziprecruiter: 'https://www.ziprecruiter.com/authn/login',
-                            glassdoor: 'https://www.glassdoor.com/profile/login_input.htm',
-                          };
-                          window.open(loginUrls[connectingTo || 'indeed'] || `https://www.${connectingTo}.com/login`, '_blank');
-                        }}
-                        className={`flex-1 py-3 rounded-xl font-medium flex items-center justify-center gap-2 ${
-                          isLight
-                            ? 'bg-slate-100 text-slate-700'
-                            : 'bg-white/10 text-white'
-                        }`}
-                      >
-                        <ExternalLink size={16} />
-                        Open Again
-                      </button>
-                      <button
-                        onClick={() => setLoginMethod('cookies')}
-                        className="flex-1 py-3 bg-gold text-black font-semibold rounded-xl flex items-center justify-center gap-2"
-                      >
-                        <ClipboardPaste size={16} />
-                        Paste Cookies
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Cookie Import Form */}
-              {loginMethod === 'cookies' && (
-                <>
-                  <button
-                    onClick={() => setLoginMethod('choose')}
-                    className={`flex items-center gap-1 text-sm mb-4 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}
-                  >
-                    <ChevronRight size={16} className="rotate-180" />
-                    Back to options
-                  </button>
-
-                  <div className="space-y-4">
-                    {/* Instructions */}
-                    <div className={`p-3 rounded-xl text-sm ${isLight ? 'bg-blue-50 text-blue-800' : 'bg-blue-900/30 text-blue-200'}`}>
-                      <p className="font-medium mb-2">How to export cookies:</p>
-                      <ol className="list-decimal list-inside space-y-1 text-xs">
-                        <li>Install "Cookie-Editor" or "EditThisCookie" browser extension</li>
-                        <li>Go to <a href={`https://www.${connectingTo}.com`} target="_blank" rel="noopener" className="underline">www.{connectingTo}.com</a> and log in</li>
-                        <li>Click the extension icon → "Export" (JSON format)</li>
-                        <li>Paste the JSON below</li>
-                      </ol>
-                    </div>
-
-                    {/* Textarea for cookies */}
-                    <div>
-                      <label className={`block text-sm font-medium mb-1.5 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-                        Paste Cookies JSON
-                      </label>
-                      <textarea
-                        value={cookiesJson}
-                        onChange={e => setCookiesJson(e.target.value)}
-                        placeholder='[{"name":"session","value":"...","domain":".indeed.com",...}]'
-                        rows={6}
-                        className={`w-full px-4 py-3 rounded-xl text-sm font-mono ${
-                          isLight
-                            ? 'bg-slate-100 text-slate-900 placeholder:text-slate-400'
-                            : 'bg-white/10 text-white placeholder:text-slate-500'
-                        }`}
-                      />
-                    </div>
-                  </div>
-
-                  <div className={`mt-3 p-2.5 rounded-xl text-xs ${isLight ? 'bg-gold/10 text-amber-700' : 'bg-gold/10 text-gold/80'}`}>
-                    🔒 Cookies are stored securely on our servers
-                  </div>
-
-                  <button
-                    onClick={handleImportCookies}
-                    disabled={importingCookies || !cookiesJson.trim()}
-                    className="w-full mt-4 py-3.5 bg-gold text-black font-semibold rounded-xl active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {importingCookies ? (
-                      <>
-                        <Loader size={18} className="animate-spin" />
-                        Importing...
-                      </>
-                    ) : (
-                      <>
-                        <ClipboardPaste size={18} />
-                        Import Cookies
-                      </>
-                    )}
-                  </button>
-                </>
-              )}
+              {/* Desktop-only options (browser-login-pending, cookies) removed from mobile */}
             </motion.div>
           </motion.div>
         )}
