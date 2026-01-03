@@ -30,6 +30,15 @@ fi
 
 echo "[Entrypoint] Platform: $(uname -a)"
 echo "[Entrypoint] User: $(whoami) (UID: $(id -u))"
+
+# Download Camoufox browser if not already cached
+echo "[Entrypoint] Checking for Camoufox browser..."
+if npx camoufox-js fetch 2>&1 | grep -q "already installed\|Successfully"; then
+    echo "[Entrypoint] Camoufox ready"
+else
+    echo "[Entrypoint] WARNING: Camoufox fetch failed, will use Chromium fallback"
+fi
+
 echo "[Entrypoint] Starting application: $@"
 
 exec "$@"
