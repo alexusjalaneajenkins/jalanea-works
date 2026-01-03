@@ -2266,6 +2266,38 @@ app.post('/stream/start', async (req: Request, res: Response) => {
         // Wait for page to load
         await new Promise(resolve => setTimeout(resolve, 2000));
 
+        // Check for CAPTCHA after navigation
+        const captcha = await browser.detectCaptcha();
+        if (captcha) {
+          console.log(`[Stream] CAPTCHA detected after navigation: ${captcha.type}`);
+          broadcastToSession(sessionId, {
+            type: 'stream:captcha',
+            sessionId,
+            data: { type: captcha.type, message: captcha.message }
+          });
+
+          // Auto-solve if it's Turnstile and solver is configured
+          if (captcha.type.includes('Turnstile') && browser.hasAutoSolver()) {
+            console.log('[Stream] Attempting auto-solve with CapSolver...');
+            broadcastToSession(sessionId, {
+              type: 'stream:status',
+              sessionId,
+              data: { status: 'solving', message: 'Auto-solving CAPTCHA...' }
+            });
+            const solved = await browser.autoSolveTurnstile();
+            if (solved) {
+              console.log('[Stream] CAPTCHA auto-solved!');
+              broadcastToSession(sessionId, {
+                type: 'stream:captcha_solved',
+                sessionId,
+                data: { success: true }
+              });
+              // Wait a moment for page to update after solve
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
+        }
+
         // Update session with real browser
         const session = streamingSessions.get(sessionId);
         if (session) {
@@ -2667,6 +2699,43 @@ wss.on('connection', (ws: WebSocket) => {
             }
             session.lastActivity = Date.now();
             await session.browser.click(data.x, data.y);
+
+            // Check for CAPTCHA after click (with small delay for iframe to load)
+            setTimeout(async () => {
+              try {
+                if (!session || !session.browser) return;
+                const captcha = await session.browser.detectCaptcha();
+                if (captcha) {
+                  console.log(`[Stream] CAPTCHA detected after click: ${captcha.type}`);
+                  broadcastToSession(sessionId, {
+                    type: 'stream:captcha',
+                    sessionId,
+                    data: { type: captcha.type, message: captcha.message }
+                  });
+
+                  // Auto-solve if it's Turnstile and solver is configured
+                  if (captcha.type.includes('Turnstile') && session.browser.hasAutoSolver()) {
+                    console.log('[Stream] Attempting auto-solve with CapSolver...');
+                    broadcastToSession(sessionId, {
+                      type: 'stream:status',
+                      sessionId,
+                      data: { status: 'solving', message: 'Auto-solving CAPTCHA...' }
+                    });
+                    const solved = await session.browser.autoSolveTurnstile();
+                    if (solved) {
+                      console.log('[Stream] CAPTCHA auto-solved!');
+                      broadcastToSession(sessionId, {
+                        type: 'stream:captcha_solved',
+                        sessionId,
+                        data: { success: true }
+                      });
+                    }
+                  }
+                }
+              } catch (e) {
+                console.error('[Stream] CAPTCHA detection error:', e);
+              }
+            }, 2000); // Wait 2s for CAPTCHA iframe to load
             break;
 
           case 'stream:type':

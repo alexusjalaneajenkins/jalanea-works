@@ -352,10 +352,14 @@ export const AccountPage: React.FC = () => {
                   src={userProfile?.photoURL || currentUser?.photoURL || ''}
                   alt="Profile"
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Hide broken image and show fallback
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).parentElement?.querySelector('.fallback-icon')?.classList.remove('hidden');
+                  }}
                 />
-              ) : (
-                <User size={40} className="text-gold" />
-              )}
+              ) : null}
+              <User size={40} className={`text-gold fallback-icon ${(userProfile?.photoURL || currentUser?.photoURL) ? 'hidden' : ''}`} />
             </div>
             {isEditing && (
               <>
