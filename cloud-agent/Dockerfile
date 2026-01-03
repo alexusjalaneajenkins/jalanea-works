@@ -71,20 +71,11 @@ RUN npm ci --omit=dev
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
 
-# Cache bust for browser installation (change this to force rebuild)
-ARG BROWSER_CACHE_BUST=20260102
-
-# Download Camoufox browser
-RUN npx camoufox-js fetch
-
-# Install Playwright browsers (chromium for fallback)
-RUN npx playwright install chromium
-RUN npx playwright install-deps chromium
-
-# Create non-root user for running browser (fixes Camoufox crash on Linux)
+# Create non-root user FIRST (fixes Camoufox crash on Linux)
 # See: https://github.com/daijro/camoufox/issues/372
 RUN groupadd -r pwuser && useradd -r -g pwuser -G audio,video pwuser \
     && mkdir -p /home/pwuser/Downloads \
+    && mkdir -p /home/pwuser/.cache \
     && chown -R pwuser:pwuser /home/pwuser
 
 # Create session storage directory with proper permissions
@@ -92,6 +83,24 @@ RUN mkdir -p ./sessions && chown -R pwuser:pwuser ./sessions
 
 # Set ownership of app directory to non-root user
 RUN chown -R pwuser:pwuser /app
+
+# Cache bust for browser installation (change this to force rebuild)
+ARG BROWSER_CACHE_BUST=20260103
+
+# Switch to pwuser BEFORE installing browsers so they go in the right cache dir
+USER pwuser
+
+# Download Camoufox browser (as pwuser so cache is in /home/pwuser/.cache)
+RUN npx camoufox-js fetch
+
+# Install Playwright browsers (chromium for fallback)
+RUN npx playwright install chromium
+
+# Switch back to root for system deps
+USER root
+
+# Install Playwright system dependencies (requires root)
+RUN npx playwright install-deps chromium
 
 # Environment variables
 ENV NODE_ENV=production
@@ -106,8 +115,8 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1
 
-# Create entrypoint script that starts xvfb first
-COPY entrypoint.sh /app/entrypoint.sh
+# Create entrypoint script that starts xvfb first (as root, with proper ownership)
+COPY --chown=pwuser:pwuser entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 # Switch to non-root user for running the application
