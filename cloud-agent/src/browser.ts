@@ -1297,8 +1297,20 @@ export class BrowserController {
       const pageUrl = this.page.url();
       console.log(`[Browser] Detecting Cloudflare protection type on ${pageUrl}`);
 
-      // Wait for any dynamic content to load
-      await this.page.waitForTimeout(1500);
+      // Wait for dynamic content to load (Turnstile is often injected via JS)
+      // This is critical because Cloudflare may:
+      // 1. Inject the widget dynamically after page load
+      // 2. Use Shadow DOM to hide the widget
+      // 3. Not render the widget at all if we're blocked at network layer
+      console.log('[Browser] Waiting for dynamic content (Turnstile may be JS-injected)...');
+      await this.page.waitForTimeout(3000); // Increased from 1500ms
+
+      // Try to wait for network idle (JS finished loading)
+      try {
+        await this.page.waitForLoadState('networkidle', { timeout: 5000 });
+      } catch {
+        // Network didn't go idle, continue anyway
+      }
 
       // Detect what type of Cloudflare protection we're facing
       const detection = await detectCloudflareProtection(this.page);

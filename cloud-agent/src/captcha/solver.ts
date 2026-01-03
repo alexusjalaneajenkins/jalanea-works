@@ -545,6 +545,11 @@ export interface CloudflareDetectionResult {
  * - 'managed': Full-page Cloudflare Challenge (no sitekey, requires proxy)
  * - 'turnstile': Turnstile widget (has sitekey, proxyless option)
  * - 'none': No Cloudflare protection detected
+ *
+ * Note: Turnstile is often:
+ * 1. Dynamically injected via JavaScript (not in static HTML)
+ * 2. Inside Shadow DOM (hidden from normal queries)
+ * 3. Not rendered at all if we're blocked at network layer
  */
 export async function detectCloudflareProtection(page: Page): Promise<CloudflareDetectionResult> {
   try {
@@ -552,8 +557,12 @@ export async function detectCloudflareProtection(page: Page): Promise<Cloudflare
       const result: CloudflareDetectionResult = { type: 'none' };
       result.pageTitle = document.title;
 
-      // Check for Managed Challenge indicators
-      // 1. _cf_chl_opt with ctype: 'managed'
+      // =============================================
+      // Phase 1: Check for Managed Challenge (Block)
+      // These indicate Cloudflare blocked us BEFORE showing any widget
+      // =============================================
+
+      // 1. _cf_chl_opt with ctype: 'managed' (definitive indicator)
       const cfChlOpt = (window as any)._cf_chl_opt;
       if (cfChlOpt && cfChlOpt.ctype === 'managed') {
         result.type = 'managed';
@@ -567,7 +576,7 @@ export async function detectCloudflareProtection(page: Page): Promise<Cloudflare
         return result;
       }
 
-      // 3. Challenge running element (Managed Challenge)
+      // 3. Challenge running element (Managed Challenge in progress)
       const challengeRunning = document.querySelector('#challenge-running');
       if (challengeRunning) {
         result.type = 'managed';
@@ -581,7 +590,39 @@ export async function detectCloudflareProtection(page: Page): Promise<Cloudflare
         return result;
       }
 
-      // Check for Turnstile widget (has sitekey)
+      // 5. Cloudflare ray ID without actual page content (blocked response)
+      const cfRayMeta = document.querySelector('meta[name="cf-ray"]');
+      const hasMinimalContent = (document.body?.children.length || 0) < 5;
+      if (cfRayMeta && hasMinimalContent) {
+        result.type = 'managed';
+        return result;
+      }
+
+      // =============================================
+      // Phase 2: Check for Turnstile Widget
+      // These are dynamically injected, may be in Shadow DOM
+      // =============================================
+
+      // Helper to search inside Shadow DOM
+      const searchShadowDOM = (root: Element | ShadowRoot): string | null => {
+        // Check direct children
+        const widget = root.querySelector('.cf-turnstile, [data-sitekey]');
+        if (widget) {
+          return widget.getAttribute('data-sitekey');
+        }
+
+        // Recursively check shadow roots
+        const elements = root.querySelectorAll('*');
+        for (const el of elements) {
+          if (el.shadowRoot) {
+            const found = searchShadowDOM(el.shadowRoot);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+
+      // 1. Check main DOM for Turnstile widget
       const turnstileWidget = document.querySelector('.cf-turnstile, [data-sitekey]');
       if (turnstileWidget) {
         const sitekey = turnstileWidget.getAttribute('data-sitekey');
@@ -592,11 +633,33 @@ export async function detectCloudflareProtection(page: Page): Promise<Cloudflare
         }
       }
 
-      // Check for Turnstile iframe
+      // 2. Check Shadow DOM for Turnstile (it often hides there)
+      const shadowSitekey = searchShadowDOM(document.body);
+      if (shadowSitekey) {
+        result.type = 'turnstile';
+        result.sitekey = shadowSitekey;
+        return result;
+      }
+
+      // 3. Check for Turnstile iframe (older implementations)
       const turnstileIframe = document.querySelector('iframe[src*="challenges.cloudflare.com"]');
       if (turnstileIframe) {
         const src = (turnstileIframe as HTMLIFrameElement).src;
         const sitekeyMatch = src.match(/sitekey=([^&]+)/);
+        if (sitekeyMatch) {
+          result.type = 'turnstile';
+          result.sitekey = sitekeyMatch[1];
+          return result;
+        }
+      }
+
+      // 4. Check for turnstile script tags (widget may still be loading)
+      const turnstileScript = document.querySelector('script[src*="challenges.cloudflare.com/turnstile"]');
+      if (turnstileScript) {
+        // Script is loading, widget might appear soon
+        // Look for any data-sitekey anywhere in the page HTML
+        const html = document.documentElement.innerHTML;
+        const sitekeyMatch = html.match(/data-sitekey=["']([^"']+)["']/);
         if (sitekeyMatch) {
           result.type = 'turnstile';
           result.sitekey = sitekeyMatch[1];
