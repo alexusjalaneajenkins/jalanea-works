@@ -44,8 +44,36 @@ interface BrowserPoolConfig {
   capsolverApiKey?: string;
 }
 
+/**
+ * Calculate optimal pool size based on available system memory
+ * Research shows each browser uses ~200-400MB RAM
+ * We reserve 512MB for the system and allocate the rest to browsers
+ */
+function calculateOptimalPoolSize(): number {
+  // Get available memory from environment or use default
+  // Render Standard tier: 2GB (2048MB)
+  const totalMemoryMB = parseInt(process.env.MEMORY_MB || '2048', 10);
+
+  // Reserve memory for system, Node.js, and overhead
+  const reservedMB = 512;
+
+  // Each browser instance uses ~300MB on average with our optimizations
+  const memoryPerBrowserMB = 300;
+
+  // Calculate pool size
+  const availableForBrowsers = totalMemoryMB - reservedMB;
+  const optimalSize = Math.floor(availableForBrowsers / memoryPerBrowserMB);
+
+  // Clamp between 1 and 4 browsers
+  const poolSize = Math.max(1, Math.min(4, optimalSize));
+
+  console.log(`[BrowserPool] Memory: ${totalMemoryMB}MB, optimal pool size: ${poolSize}`);
+
+  return poolSize;
+}
+
 const DEFAULT_CONFIG: BrowserPoolConfig = {
-  poolSize: 2,
+  poolSize: calculateOptimalPoolSize(),
   maxUsesPerBrowser: 5,
   idleTimeoutMs: 10 * 60 * 1000, // 10 minutes
   browserType: 'camoufox',

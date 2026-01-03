@@ -1,14 +1,14 @@
 # Jalanea Works Cloud Agent - Render Blueprint
 # Deploy with: https://render.com/deploy
 #
-# jalanea-api ($7/mo Starter) - Main API with browser automation
+# jalanea-api ($25/mo Standard) - Main API with browser automation
 # jalanea-worker (Suspended) - Background job queue for future use
 #
-# Cost: $7/month
+# Cost: $25/month (Standard needed for 2GB RAM for browser automation)
 
 services:
   # ============================================
-  # Main API Server (Starter - $7/mo)
+  # Main API Server (Standard - $25/mo, 2GB RAM)
   # Handles HTTP, WebSocket, and browser streaming
   # ============================================
   - type: web
@@ -17,7 +17,7 @@ services:
     rootDir: ./cloud-agent
     dockerfilePath: ./Dockerfile
     dockerCommand: /app/entrypoint.sh node dist/index.js
-    plan: starter  # $7/mo - needed for browser automation
+    plan: standard  # $25/mo - 2GB RAM needed for browser automation
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
@@ -28,6 +28,9 @@ services:
         value: "true"
       - key: BROWSER_TYPE
         value: camoufox
+      # Memory configuration for browser pool optimization
+      - key: MEMORY_MB
+        value: "2048"
       # Vision & AI
       - key: VISION_PROVIDER
         sync: false
