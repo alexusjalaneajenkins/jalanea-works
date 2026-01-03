@@ -90,8 +90,17 @@ ARG BROWSER_CACHE_BUST=20260103
 # Switch to pwuser BEFORE installing browsers so they go in the right cache dir
 USER pwuser
 
-# Download Camoufox browser (as pwuser so cache is in /home/pwuser/.cache)
-RUN npx camoufox-js fetch
+# Download Camoufox browser with retry logic (GitHub API rate limits)
+# Retries up to 5 times with 60 second delays between attempts
+RUN for i in 1 2 3 4 5; do \
+    echo "Attempt $i: Fetching Camoufox..." && \
+    npx camoufox-js fetch && break || \
+    if [ $i -lt 5 ]; then \
+      echo "Attempt $i failed, waiting 60 seconds before retry..." && sleep 60; \
+    else \
+      echo "All attempts failed" && exit 1; \
+    fi; \
+    done
 
 # Install Playwright browsers (chromium for fallback)
 RUN npx playwright install chromium
