@@ -1,16 +1,14 @@
 /**
- * Make It Work Service
+ * AI Service for Cloud Agent
  *
- * AI-powered service that generates alternative career paths
- * for users facing barriers to traditional employment.
- *
- * "If the system doesn't open the door, build a door."
- *
- * Now calls the backend API to keep API keys secure.
+ * Handles AI-powered features like Make It Work path generation.
+ * Uses Google Gemini for text generation with the API key stored server-side.
  */
 
-// API URL - uses the cloud agent backend
-const API_URL = import.meta.env.VITE_CLOUD_AGENT_URL || 'https://jalanea-api.onrender.com';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+// Initialize Gemini
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 // Types
 export interface ActionPlan {
@@ -23,8 +21,8 @@ export interface AlternativePath {
   title: string;
   description: string;
   whyItWorks: string;
-  resumeSpin: string; // Short tag like "Portfolio Project" or "Freelance Experience"
-  resumeLanguage: string; // Full resume bullet point
+  resumeSpin: string;
+  resumeLanguage: string;
   actionPlan: ActionPlan;
 }
 
@@ -38,56 +36,133 @@ export interface UserContext {
   skills: string | null;
   location: string | null;
   school: string | null;
-  // Enhanced profile data for more personalized suggestions
   education?: Array<{ degree: string; school: string; year?: string }>;
   experience?: Array<{ role: string; company: string; duration?: string }>;
   certifications?: Array<{ name: string; issuer: string }>;
   targetRoles?: string[];
-  workStyles?: string[]; // remote, hybrid, in-person
+  workStyles?: string[];
   salary?: number;
 }
 
 /**
  * Generate alternative career paths for a user facing barriers
- * Calls the backend API which handles AI generation securely
  */
 export async function generateMakeItWorkPaths(
   goal: string,
   barriers: string[],
   userContext: UserContext
 ): Promise<MakeItWorkResult> {
-  try {
-    console.log('[MakeItWork] Calling backend API...');
+  const systemPrompt = `You are an empowerment coach for JelaneaWorks, a platform for hard-working people who face barriers to traditional employment.
 
-    const response = await fetch(`${API_URL}/ai/make-it-work`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+Your role is to help users find CREATIVE, ETHICAL, REAL-WORLD alternatives when traditional paths fail.
+
+IMPORTANT GUIDELINES:
+- Be grounded, respectful, empowering, and non-judgmental
+- Generate REALISTIC and ACCESSIBLE paths (not pie-in-the-sky ideas)
+- Focus on momentum over perfection - small wins that build
+- Never suggest illegal, deceptive, or exploitative actions
+- Never suggest fabricating credentials
+- Emphasize honest experience, initiative, and documented work
+- Consider the user's context (skills, location, situation)
+- For caregivers: suggest flexible, remote, or async work options
+- For homeless users: focus on immediate resources, phone-based work, library access, and shelter services
+
+The user is trying to become: "${goal}"
+Barriers they face: ${barriers.join(', ')}
+
+USER PROFILE (use this to personalize your suggestions):
+${userContext.name ? `Name: ${userContext.name}` : ''}
+${userContext.location ? `Location: ${userContext.location}` : ''}
+${userContext.school ? `Current/Recent School: ${userContext.school}` : ''}
+${userContext.skills ? `Skills: ${userContext.skills}` : ''}
+${userContext.education?.length ? `Education: ${userContext.education.map(e => `${e.degree} from ${e.school}${e.year ? ` (${e.year})` : ''}`).join('; ')}` : ''}
+${userContext.experience?.length ? `Work Experience: ${userContext.experience.map(e => `${e.role} at ${e.company}${e.duration ? ` (${e.duration})` : ''}`).join('; ')}` : ''}
+${userContext.certifications?.length ? `Certifications: ${userContext.certifications.map(c => `${c.name} from ${c.issuer}`).join('; ')}` : ''}
+${userContext.targetRoles?.length ? `Target Roles: ${userContext.targetRoles.join(', ')}` : ''}
+${userContext.workStyles?.length ? `Preferred Work Style: ${userContext.workStyles.join(', ')}` : ''}
+${userContext.salary ? `Target Salary: $${userContext.salary.toLocaleString()}` : ''}
+
+IMPORTANT:
+- Use the user's actual skills, education, and experience to suggest SPECIFIC, PERSONALIZED paths.
+- If they're a caregiver, suggest flexible work that fits around caregiving (remote customer service, virtual assistant, transcription, etc.)
+- If they're homeless, focus on paths that don't require a permanent address: gig work, day labor apps, library-based learning, shelter job programs
+- Reference their actual situation in your suggestions to make them feel seen and understood.
+
+Generate 4-5 realistic alternative paths. For each path, provide:
+1. A clear, actionable title
+2. A brief description of what they'd do
+3. Why this approach works (how it addresses their barriers)
+4. A short resume tag (2-3 words like "Portfolio Project" or "Community Leadership")
+5. A full resume bullet point they could use
+6. Action steps broken into First 24 Hours, First Week, and First 30 Days
+
+Return your response as valid JSON in this exact format:
+{
+  "paths": [
+    {
+      "title": "Start a Weekend Project",
+      "description": "Build something small but real that demonstrates your skills",
+      "whyItWorks": "Projects prove ability better than credentials. Hiring managers value proof of work.",
+      "resumeSpin": "Personal Project",
+      "resumeLanguage": "Developed and launched [project name], a [description] that [impact/result]",
+      "actionPlan": {
+        "first24Hours": [
+          "Choose one specific problem to solve",
+          "Sketch out the basic idea",
+          "Set up your development environment"
+        ],
+        "firstWeek": [
+          "Build a working prototype",
+          "Get feedback from 2-3 people",
+          "Document your process"
+        ],
+        "first30Days": [
+          "Deploy or launch publicly",
+          "Share on LinkedIn with a story",
+          "Add to portfolio/resume"
+        ]
+      }
+    }
+  ],
+  "encouragement": "A short, genuine message of encouragement for their journey"
+}`;
+
+  const prompt = `Generate alternative paths for someone who wants to become a ${goal} but faces these barriers: ${barriers.join(', ')}.
+
+Remember: These should be REAL, PRACTICAL paths that someone could start TODAY. Not theoretical advice, but actual step-by-step alternatives that work around their specific barriers.`;
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      systemInstruction: systemPrompt,
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 2500,
       },
-      body: JSON.stringify({
-        goal,
-        barriers,
-        userContext,
-      }),
     });
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-      throw new Error(error.error || `API error: ${response.status}`);
+    const response = result.response.text();
+
+    // Parse the JSON response
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('Invalid response format');
     }
 
-    const result = await response.json();
+    const parsed = JSON.parse(jsonMatch[0]) as MakeItWorkResult;
 
-    if (!result.success || !result.data) {
-      throw new Error('Invalid response from API');
+    // Validate the response has the expected structure
+    if (!parsed.paths || !Array.isArray(parsed.paths) || parsed.paths.length === 0) {
+      throw new Error('No paths generated');
     }
 
-    console.log(`[MakeItWork] Generated ${result.data.paths?.length || 0} paths`);
-    return result.data as MakeItWorkResult;
+    console.log(`[AI Service] Generated ${parsed.paths.length} paths for goal: ${goal}`);
+    return parsed;
   } catch (error) {
-    console.error('[MakeItWork] Error generating paths:', error);
-
-    // Return fallback paths if API fails
+    console.error('[AI Service] Error generating paths:', error);
+    // Return fallback paths
     return getFallbackPaths(goal, barriers);
   }
 }
@@ -262,20 +337,4 @@ function getFallbackPaths(goal: string, barriers: string[]): MakeItWorkResult {
         ? 'Caregiving is valuable work. The skills you use every day - patience, multitasking, problem-solving - are exactly what employers need. Your path might be different, but it\'s no less valid.'
         : 'The traditional path isn\'t the only path. Every successful person found their own way. You\'re doing the same thing - finding your way. Keep going.'
   };
-}
-
-/**
- * Get motivational quote for loading states
- */
-export function getMakeItWorkQuote(): string {
-  const quotes = [
-    "If the system doesn't open the door, build a door.",
-    "Your path doesn't have to look like anyone else's.",
-    "Hard work finds a way.",
-    "Every expert was once a beginner who refused to quit.",
-    "The only impossible journey is the one you never begin.",
-    "Your circumstances don't define your potential.",
-    "Make it work. Make it happen. Make it count.",
-  ];
-  return quotes[Math.floor(Math.random() * quotes.length)];
 }

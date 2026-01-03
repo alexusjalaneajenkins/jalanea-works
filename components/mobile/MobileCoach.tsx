@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Mic, Sparkles, FileText, DollarSign, Users, Briefcase, Zap } from 'lucide-react';
+import { Send, Mic, Sparkles, FileText, DollarSign, Users, Briefcase, Zap, CalendarClock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { haptics } from '../../utils/haptics';
@@ -41,6 +42,7 @@ const initialMessages: Message[] = [
 export const MobileCoach: React.FC = () => {
   const { isLight } = useTheme();
   const { userProfile } = useAuth();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -200,6 +202,31 @@ export const MobileCoach: React.FC = () => {
                 <div className="flex-1 text-left">
                   <p className="text-black font-bold text-lg">Make It Work</p>
                   <p className="text-black/70 text-sm">Facing barriers? Let's find another way.</p>
+                </div>
+              </div>
+            </button>
+
+            {/* Smart Schedule Button */}
+            <button
+              onClick={() => {
+                haptics.medium();
+                navigate('/schedule');
+              }}
+              className={`
+                w-full p-4 rounded-2xl mt-3
+                ${isLight
+                  ? 'bg-blue-50 border-2 border-blue-200'
+                  : 'bg-blue-900/30 border-2 border-blue-800'}
+                active:scale-[0.98] transition-all
+              `}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isLight ? 'bg-blue-100' : 'bg-blue-800/50'}`}>
+                  <CalendarClock className="w-6 h-6 text-blue-500" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className={`font-bold text-lg ${isLight ? 'text-blue-900' : 'text-blue-100'}`}>Smart Schedule</p>
+                  <p className={`text-sm ${isLight ? 'text-blue-600' : 'text-blue-300'}`}>Plan your job search around your life</p>
                 </div>
               </div>
             </button>

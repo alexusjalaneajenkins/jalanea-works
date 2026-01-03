@@ -35,6 +35,7 @@ import {
   JobApplication
 } from './db/client.js';
 import { getBrowserPool, initBrowserPool, BrowserPool } from './browser-pool.js';
+import { generateMakeItWorkPaths, UserContext } from './ai-service.js';
 
 // Global browser pool for warm browsers
 let browserPool: BrowserPool | null = null;
@@ -340,6 +341,45 @@ app.get('/health', (req: Request, res: Response) => {
     timestamp: Date.now(),
     pool: poolStats || { available: 0, acquired: 0, total: 0, isWarming: false }
   });
+});
+
+/**
+ * AI: Generate Make It Work paths
+ * POST /ai/make-it-work
+ *
+ * Generates personalized alternative career paths for users facing barriers.
+ * Uses Gemini Pro for complex reasoning.
+ */
+app.post('/ai/make-it-work', async (req: Request, res: Response) => {
+  try {
+    const { goal, barriers, userContext } = req.body as {
+      goal: string;
+      barriers: string[];
+      userContext: UserContext;
+    };
+
+    if (!goal || !barriers || barriers.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: goal, barriers'
+      });
+    }
+
+    console.log(`[AI] Make It Work request: goal="${goal}", barriers=[${barriers.join(', ')}]`);
+
+    const result = await generateMakeItWorkPaths(goal, barriers, userContext || {});
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('[AI] Make It Work error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate paths'
+    });
+  }
 });
 
 /**
