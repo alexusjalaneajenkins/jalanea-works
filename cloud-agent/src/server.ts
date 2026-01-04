@@ -36,6 +36,7 @@ import {
 } from './db/client.js';
 import { getBrowserPool, initBrowserPool, BrowserPool } from './browser-pool.js';
 import { generateMakeItWorkPaths, UserContext } from './ai-service.js';
+import { verifyUserAccess, verifyFirebaseToken } from './auth.js';
 
 // Global browser pool for warm browsers
 let browserPool: BrowserPool | null = null;
@@ -1319,7 +1320,7 @@ app.patch('/applications/:applicationId', async (req: Request, res: Response) =>
 /**
  * Get dashboard stats for a user
  */
-app.get('/dashboard/:userId', async (req: Request, res: Response) => {
+app.get('/dashboard/:userId', verifyUserAccess, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
@@ -1384,7 +1385,7 @@ app.get('/queue/stats', async (req: Request, res: Response) => {
 /**
  * Get jobs for a specific user
  */
-app.get('/queue/user/:userId', async (req: Request, res: Response) => {
+app.get('/queue/user/:userId', verifyUserAccess, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const { status } = req.query;
@@ -1407,7 +1408,7 @@ app.get('/queue/user/:userId', async (req: Request, res: Response) => {
 /**
  * Add a job search task to the queue
  */
-app.post('/queue/search', async (req: Request, res: Response) => {
+app.post('/queue/search', verifyUserAccess, async (req: Request, res: Response) => {
   try {
     const { userId, siteId, searchQuery, location, priority } = req.body;
 
@@ -1433,7 +1434,7 @@ app.post('/queue/search', async (req: Request, res: Response) => {
 /**
  * Add a job application task to the queue
  */
-app.post('/queue/apply', async (req: Request, res: Response) => {
+app.post('/queue/apply', verifyUserAccess, async (req: Request, res: Response) => {
   try {
     const { userId, siteId, jobUrl, jobTitle, companyName, applicationId, priority } = req.body;
 
@@ -1551,7 +1552,7 @@ app.post('/notifications/send', async (req: Request, res: Response) => {
 /**
  * Get notification preferences for a user
  */
-app.get('/notifications/preferences/:userId', async (req: Request, res: Response) => {
+app.get('/notifications/preferences/:userId', verifyUserAccess, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
@@ -1573,7 +1574,7 @@ app.get('/notifications/preferences/:userId', async (req: Request, res: Response
 /**
  * Update notification preferences for a user
  */
-app.put('/notifications/preferences/:userId', async (req: Request, res: Response) => {
+app.put('/notifications/preferences/:userId', verifyUserAccess, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const preferences = req.body;
@@ -1596,7 +1597,7 @@ app.put('/notifications/preferences/:userId', async (req: Request, res: Response
 /**
  * Test notification (send a test message to verify setup)
  */
-app.post('/notifications/test/:userId', async (req: Request, res: Response) => {
+app.post('/notifications/test/:userId', verifyUserAccess, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
@@ -1626,7 +1627,7 @@ app.post('/notifications/test/:userId', async (req: Request, res: Response) => {
  * Get job preferences for a user
  * GET /preferences/:userId
  */
-app.get('/preferences/:userId', async (req: Request, res: Response) => {
+app.get('/preferences/:userId', verifyUserAccess, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
@@ -1662,7 +1663,7 @@ app.get('/preferences/:userId', async (req: Request, res: Response) => {
  * Save job preferences for a user
  * POST /preferences/:userId
  */
-app.post('/preferences/:userId', async (req: Request, res: Response) => {
+app.post('/preferences/:userId', verifyUserAccess, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const preferences = req.body;
@@ -1690,7 +1691,7 @@ app.post('/preferences/:userId', async (req: Request, res: Response) => {
  * POST /queue/auto-apply
  * Body: { userId }
  */
-app.post('/queue/auto-apply', async (req: Request, res: Response) => {
+app.post('/queue/auto-apply', verifyUserAccess, async (req: Request, res: Response) => {
   try {
     const { userId } = req.body;
 
@@ -1740,7 +1741,7 @@ app.post('/queue/auto-apply', async (req: Request, res: Response) => {
  * Get queue status for a user
  * GET /queue/status/:userId
  */
-app.get('/queue/status/:userId', async (req: Request, res: Response) => {
+app.get('/queue/status/:userId', verifyUserAccess, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
@@ -1784,7 +1785,7 @@ import { encryptCredentials, decryptCredentials } from './crypto.js';
  * Get all connected sites for a user
  * GET /credentials/:userId
  */
-app.get('/credentials/:userId', async (req: Request, res: Response) => {
+app.get('/credentials/:userId', verifyUserAccess, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
@@ -1822,7 +1823,7 @@ app.get('/credentials/:userId', async (req: Request, res: Response) => {
  * POST /credentials/:userId/:siteId
  * Body: { email, password }
  */
-app.post('/credentials/:userId/:siteId', async (req: Request, res: Response) => {
+app.post('/credentials/:userId/:siteId', verifyUserAccess, async (req: Request, res: Response) => {
   try {
     const { userId, siteId } = req.params;
     const { email, password } = req.body;
@@ -1877,7 +1878,7 @@ app.post('/credentials/:userId/:siteId', async (req: Request, res: Response) => 
  * Delete credentials for a job site
  * DELETE /credentials/:userId/:siteId
  */
-app.delete('/credentials/:userId/:siteId', async (req: Request, res: Response) => {
+app.delete('/credentials/:userId/:siteId', verifyUserAccess, async (req: Request, res: Response) => {
   try {
     const { userId, siteId } = req.params;
 
@@ -1905,7 +1906,7 @@ app.delete('/credentials/:userId/:siteId', async (req: Request, res: Response) =
  * Verify credentials by attempting login (called by worker)
  * POST /credentials/:userId/:siteId/verify
  */
-app.post('/credentials/:userId/:siteId/verify', async (req: Request, res: Response) => {
+app.post('/credentials/:userId/:siteId/verify', verifyUserAccess, async (req: Request, res: Response) => {
   try {
     const { userId, siteId } = req.params;
     const { status, message } = req.body;
@@ -1975,7 +1976,7 @@ export async function getDecryptedCredentials(userId: string, siteId: string): P
  * POST /billing/checkout
  * Body: { userId, email, tier, successUrl, cancelUrl }
  */
-app.post('/billing/checkout', async (req: Request, res: Response) => {
+app.post('/billing/checkout', verifyUserAccess, async (req: Request, res: Response) => {
   try {
     const { userId, email, tier, successUrl, cancelUrl } = req.body;
 
@@ -2012,7 +2013,7 @@ app.post('/billing/checkout', async (req: Request, res: Response) => {
  * POST /billing/portal
  * Body: { userId, email, returnUrl }
  */
-app.post('/billing/portal', async (req: Request, res: Response) => {
+app.post('/billing/portal', verifyUserAccess, async (req: Request, res: Response) => {
   try {
     const { userId, email, returnUrl } = req.body;
 
@@ -2041,7 +2042,7 @@ app.post('/billing/portal', async (req: Request, res: Response) => {
  * Get subscription status for a user
  * GET /billing/status/:userId
  */
-app.get('/billing/status/:userId', async (req: Request, res: Response) => {
+app.get('/billing/status/:userId', verifyUserAccess, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
@@ -2066,7 +2067,7 @@ app.get('/billing/status/:userId', async (req: Request, res: Response) => {
  * POST /billing/cancel
  * Body: { userId }
  */
-app.post('/billing/cancel', async (req: Request, res: Response) => {
+app.post('/billing/cancel', verifyUserAccess, async (req: Request, res: Response) => {
   try {
     const { userId } = req.body;
 
@@ -2091,7 +2092,7 @@ app.post('/billing/cancel', async (req: Request, res: Response) => {
  * POST /billing/reactivate
  * Body: { userId }
  */
-app.post('/billing/reactivate', async (req: Request, res: Response) => {
+app.post('/billing/reactivate', verifyUserAccess, async (req: Request, res: Response) => {
   try {
     const { userId } = req.body;
 
@@ -2191,7 +2192,7 @@ app.get('/billing/tiers', (req: Request, res: Response) => {
  * Opens a cloud browser for the user to interact with (like ChatGPT Operator)
  * Screenshots are streamed via WebSocket
  */
-app.post('/stream/start', async (req: Request, res: Response) => {
+app.post('/stream/start', verifyUserAccess, async (req: Request, res: Response) => {
   try {
     const { siteId, userId, url } = req.body;
 

@@ -5,7 +5,30 @@
  * Handles billing, job sites, applications, and dashboard stats
  */
 
+import { auth } from './firebase';
+
 const API_URL = import.meta.env.VITE_CLOUD_AGENT_URL || 'https://jalanea-api.onrender.com';
+
+/**
+ * Helper to make authenticated requests to the Cloud Agent API
+ * Attaches Firebase ID token to Authorization header
+ */
+async function authenticatedFetch(url: string, options?: RequestInit): Promise<Response> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('Not authenticated');
+  }
+
+  const token = await user.getIdToken();
+
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...options?.headers,
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+}
 
 // Types
 export interface Tier {
@@ -70,7 +93,7 @@ export async function getPricingTiers(): Promise<Tier[]> {
  * Get subscription status for a user
  */
 export async function getSubscriptionStatus(userId: string): Promise<SubscriptionStatus> {
-  const response = await fetch(`${API_URL}/billing/status/${userId}`);
+  const response = await authenticatedFetch(`${API_URL}/billing/status/${userId}`);
   if (!response.ok) throw new Error('Failed to fetch subscription status');
   const data = await response.json();
   return data.subscription;
@@ -84,7 +107,7 @@ export async function createCheckoutSession(
   email: string,
   tier: 'starter' | 'pro' | 'unlimited'
 ): Promise<{ url: string }> {
-  const response = await fetch(`${API_URL}/billing/checkout`, {
+  const response = await authenticatedFetch(`${API_URL}/billing/checkout`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -107,7 +130,7 @@ export async function createPortalSession(
   userId: string,
   email: string
 ): Promise<{ url: string }> {
-  const response = await fetch(`${API_URL}/billing/portal`, {
+  const response = await authenticatedFetch(`${API_URL}/billing/portal`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -125,7 +148,7 @@ export async function createPortalSession(
  * Get dashboard stats for a user
  */
 export async function getDashboardStats(userId: string): Promise<DashboardStats> {
-  const response = await fetch(`${API_URL}/dashboard/${userId}`);
+  const response = await authenticatedFetch(`${API_URL}/dashboard/${userId}`);
   if (!response.ok) throw new Error('Failed to fetch dashboard stats');
   const data = await response.json();
   return data.stats;
@@ -227,7 +250,7 @@ export async function storeSession(
   userId: string,
   sessionData: string
 ): Promise<{ success: boolean }> {
-  const response = await fetch(`${API_URL}/sites/${siteId}/store-session`, {
+  const response = await authenticatedFetch(`${API_URL}/sites/${siteId}/store-session`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId, sessionData }),
@@ -253,7 +276,7 @@ export interface JobPreferences {
  */
 export async function getJobPreferences(userId: string): Promise<JobPreferences | null> {
   try {
-    const response = await fetch(`${API_URL}/preferences/${userId}`);
+    const response = await authenticatedFetch(`${API_URL}/preferences/${userId}`);
     if (!response.ok) {
       if (response.status === 404) return null;
       throw new Error('Failed to fetch preferences');
@@ -272,7 +295,7 @@ export async function saveJobPreferences(
   userId: string,
   preferences: Partial<JobPreferences>
 ): Promise<{ success: boolean }> {
-  const response = await fetch(`${API_URL}/preferences/${userId}`, {
+  const response = await authenticatedFetch(`${API_URL}/preferences/${userId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(preferences),
@@ -293,7 +316,7 @@ export async function queueJobSearch(
     maxApplications?: number;
   }
 ): Promise<{ success: boolean; jobId: string; message: string }> {
-  const response = await fetch(`${API_URL}/queue/search`, {
+  const response = await authenticatedFetch(`${API_URL}/queue/search`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId, ...options }),
@@ -308,7 +331,7 @@ export async function queueJobSearch(
 export async function queueAutoApply(
   userId: string
 ): Promise<{ success: boolean; jobId: string; message: string }> {
-  const response = await fetch(`${API_URL}/queue/auto-apply`, {
+  const response = await authenticatedFetch(`${API_URL}/queue/auto-apply`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId }),
@@ -326,7 +349,7 @@ export async function getQueueStatus(userId: string): Promise<{
   completed: number;
   failed: number;
 }> {
-  const response = await fetch(`${API_URL}/queue/status/${userId}`);
+  const response = await authenticatedFetch(`${API_URL}/queue/status/${userId}`);
   if (!response.ok) throw new Error('Failed to get queue status');
   const data = await response.json();
   return data.stats;
@@ -346,7 +369,7 @@ export interface SiteCredential {
  * Get all site credentials for a user (returns status, not actual credentials)
  */
 export async function getSiteCredentials(userId: string): Promise<SiteCredential[]> {
-  const response = await fetch(`${API_URL}/credentials/${userId}`);
+  const response = await authenticatedFetch(`${API_URL}/credentials/${userId}`);
   if (!response.ok) {
     if (response.status === 404) return [];
     throw new Error('Failed to fetch site credentials');
@@ -372,7 +395,7 @@ export async function saveSiteCredentials(
   email: string,
   password: string
 ): Promise<{ success: boolean; message: string }> {
-  const response = await fetch(`${API_URL}/credentials/${userId}/${siteId}`, {
+  const response = await authenticatedFetch(`${API_URL}/credentials/${userId}/${siteId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
@@ -391,7 +414,7 @@ export async function deleteSiteCredentials(
   userId: string,
   siteId: string
 ): Promise<{ success: boolean }> {
-  const response = await fetch(`${API_URL}/credentials/${userId}/${siteId}`, {
+  const response = await authenticatedFetch(`${API_URL}/credentials/${userId}/${siteId}`, {
     method: 'DELETE',
   });
   if (!response.ok) throw new Error('Failed to delete credentials');
@@ -405,7 +428,7 @@ export async function verifySiteCredentials(
   userId: string,
   siteId: string
 ): Promise<{ success: boolean; status: string; message: string }> {
-  const response = await fetch(`${API_URL}/credentials/${userId}/${siteId}/verify`, {
+  const response = await authenticatedFetch(`${API_URL}/credentials/${userId}/${siteId}/verify`, {
     method: 'POST',
   });
   if (!response.ok) throw new Error('Failed to verify credentials');
