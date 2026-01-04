@@ -5,8 +5,8 @@
  * Includes: Vault, Queue, Apply Sprint, and Tracker screens.
  */
 
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import {
@@ -484,13 +484,16 @@ const SafetyFitPanel: React.FC<{
           </div>
 
           {/* Expanded details */}
-          {isExpanded && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="space-y-3"
-            >
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.div
+                key="expanded-details"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-3 overflow-hidden"
+              >
               {/* Safety Summary */}
               {job.safetyCheck && (
                 <div className={`p-3 rounded-lg ${isDark ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
@@ -525,12 +528,15 @@ const SafetyFitPanel: React.FC<{
               {job.fitCheck && (
                 <div className={`p-3 rounded-lg ${isDark ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setIsExpanded(!isExpanded)}
+                      className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                    >
                       <Target size={14} className="text-gold" />
                       <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         Fit Analysis
                       </span>
-                    </div>
+                    </button>
                     {/* Confidence indicator */}
                     <span className={`text-[10px] px-2 py-0.5 rounded-full ${
                       job.fitCheck.confidence === 'high'
@@ -609,8 +615,9 @@ const SafetyFitPanel: React.FC<{
               >
                 {isEvaluating ? 'Analyzing...' : '↻ Re-run analysis'}
               </button>
-            </motion.div>
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
     </div>
@@ -809,8 +816,20 @@ const QueueTab: React.FC = () => {
   const [error, setError] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [successToast, setSuccessToast] = useState(false);
+  const [newlyAddedId, setNewlyAddedId] = useState<string | null>(null);
+  const newJobRef = useRef<HTMLDivElement>(null);
 
   const queuedJobs = jobs.filter((job) => job.status === 'queued');
+
+  // Scroll to newly added job
+  useEffect(() => {
+    if (newlyAddedId && newJobRef.current) {
+      newJobRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Clear after scroll
+      const timer = setTimeout(() => setNewlyAddedId(null), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [newlyAddedId]);
 
   useEffect(() => {
     console.log('[QueueTab] Initializing - calling loadJobs()');
@@ -849,6 +868,7 @@ const QueueTab: React.FC = () => {
       if (job && job.id) {
         console.log('[QueueTab] ✓ Job added successfully:', job.id, job.source, job.sourceHostname);
         setNewUrl(''); // Only clear on definitive success
+        setNewlyAddedId(job.id); // Track for scroll-into-view
         setSuccessToast(true);
         setTimeout(() => setSuccessToast(false), 2000);
       } else {
@@ -949,14 +969,18 @@ const QueueTab: React.FC = () => {
       ) : (
         <motion.div variants={stagger} className="space-y-3">
           {queuedJobs.map((job) => (
-            <JobCard
+            <div
               key={job.id}
-              job={job}
-              vault={vault}
-              onUpdate={updateJob}
-              onRemove={removeJob}
-              isDark={isDark}
-            />
+              ref={job.id === newlyAddedId ? newJobRef : undefined}
+            >
+              <JobCard
+                job={job}
+                vault={vault}
+                onUpdate={updateJob}
+                onRemove={removeJob}
+                isDark={isDark}
+              />
+            </div>
           ))}
         </motion.div>
       )}

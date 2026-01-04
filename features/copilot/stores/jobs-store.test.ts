@@ -135,6 +135,24 @@ describe('Jobs Store', () => {
       const error = useJobsStore.getState().error;
       expect(error).toBeNull();
     });
+
+    it('adds new jobs at the beginning (newest-first)', async () => {
+      // Add first job
+      await useJobsStore.getState().addJob('https://indeed.com/job/first');
+
+      // Add second job
+      await useJobsStore.getState().addJob('https://linkedin.com/jobs/view/second');
+
+      // Add third job
+      await useJobsStore.getState().addJob('https://glassdoor.com/job/third');
+
+      const jobs = useJobsStore.getState().jobs;
+
+      // Third job should be first (index 0) - newest first
+      expect(jobs[0].url).toBe('https://glassdoor.com/job/third');
+      expect(jobs[1].url).toBe('https://linkedin.com/jobs/view/second');
+      expect(jobs[2].url).toBe('https://indeed.com/job/first');
+    });
   });
 
   describe('updateJob - Optimistic Updates', () => {
@@ -157,6 +175,41 @@ describe('Jobs Store', () => {
 
       await updatePromise;
       expect(db.jobLeads.update).toHaveBeenCalledWith(jobId, { notes: 'Test note' });
+    });
+
+    it('saves description and persists to Dexie', async () => {
+      const jobs = useJobsStore.getState().jobs;
+      const jobId = jobs[0].id;
+
+      // Update with description
+      await useJobsStore.getState().updateJob(jobId, {
+        description: 'Training fee required. WhatsApp only. Must have 3+ years experience.',
+      });
+
+      // Check Zustand state
+      const updatedJob = useJobsStore.getState().jobs.find((j) => j.id === jobId);
+      expect(updatedJob?.description).toBe('Training fee required. WhatsApp only. Must have 3+ years experience.');
+
+      // Check Dexie was called with description
+      expect(db.jobLeads.update).toHaveBeenCalledWith(jobId, {
+        description: 'Training fee required. WhatsApp only. Must have 3+ years experience.',
+      });
+    });
+
+    it('saves multiple fields including description', async () => {
+      const jobs = useJobsStore.getState().jobs;
+      const jobId = jobs[0].id;
+
+      await useJobsStore.getState().updateJob(jobId, {
+        title: 'Senior Engineer',
+        company: 'Test Corp',
+        description: 'Looking for 5+ years experience. Spanish required.',
+      });
+
+      const updatedJob = useJobsStore.getState().jobs.find((j) => j.id === jobId);
+      expect(updatedJob?.title).toBe('Senior Engineer');
+      expect(updatedJob?.company).toBe('Test Corp');
+      expect(updatedJob?.description).toBe('Looking for 5+ years experience. Spanish required.');
     });
 
     it('rolls back on Dexie failure', async () => {

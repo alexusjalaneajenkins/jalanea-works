@@ -120,9 +120,10 @@ export const useJobsStore = create<JobsState>((set, get) => ({
     log('Created JobLead:', job.id, job.source, job.sourceHostname);
 
     // OPTIMISTIC UPDATE: Add to Zustand state immediately for instant UI
+    // Prepend new job so it appears at TOP of the list (newest-first)
     set((state) => {
-      const newJobs = [...state.jobs, job];
-      log('Optimistic add - jobs count:', newJobs.length);
+      const newJobs = [job, ...state.jobs];
+      log('Optimistic add - jobs count:', newJobs.length, '(newest-first)');
       return { jobs: newJobs, error: null };
     });
 

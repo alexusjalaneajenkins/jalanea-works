@@ -528,6 +528,104 @@ describe('Confidence Scoring', () => {
   });
 });
 
+describe('User Scenario Tests', () => {
+  describe('Scammy Description Detection', () => {
+    it('detects multiple red flags in scammy description', () => {
+      const job = createTestJob({
+        // Use patterns that match the evaluator's regex
+        description: 'Training fee required. Contact via WhatsApp only. Send your bank account info before starting.',
+      });
+      const result = evaluateSafety(job);
+
+      // Should detect: fee_required (high), suspicious_contact (medium), personal_info_request (high)
+      expect(result.redFlags.length).toBeGreaterThanOrEqual(2);
+      expect(result.redFlags.some((f) => f.type === 'fee_required')).toBe(true);
+      expect(result.redFlags.some((f) => f.type === 'suspicious_contact')).toBe(true);
+      expect(result.redFlags.some((f) => f.type === 'personal_info_request')).toBe(true);
+      // 2+ high flags = high risk
+      expect(result.riskLevel).toBe('high');
+    });
+  });
+
+  describe('Experience Warning for Entry-Level', () => {
+    it('warns when 3+ years required', () => {
+      const job = createTestJob({
+        description: 'Looking for a candidate with 3+ years experience required for this role.',
+      });
+      const vault = createTestVault(0); // Brand new to workforce - gap > 2 triggers dealBreaker
+      const result = evaluateFit(job, vault);
+
+      expect(result.experienceMatch.yearsRequired).toBe(3);
+      expect(result.dealBreakers.some((d) => d.includes('3+'))).toBe(true);
+    });
+
+    it('warns when "3 years experience required"', () => {
+      const job = createTestJob({
+        description: '3 years experience required for this senior role.',
+      });
+      const vault = createTestVault(1);
+      const result = evaluateFit(job, vault);
+
+      expect(result.experienceMatch.yearsRequired).toBe(3);
+    });
+  });
+
+  describe('Language Requirement Badge', () => {
+    it('flags bilingual English/Spanish requirement', () => {
+      const job = createTestJob({
+        description: 'Bilingual English/Spanish required for customer support role.',
+      });
+      const result = evaluateFit(job, null);
+
+      expect(result.languageRequirements.some((l) => l.language === 'Spanish')).toBe(true);
+      expect(result.languageRequirements.some((l) => l.isRequired === true)).toBe(true);
+      expect(result.dealBreakers.some((d) => d.includes('fluency'))).toBe(true);
+    });
+
+    it('detects "Must speak Spanish" requirement', () => {
+      const job = createTestJob({
+        description: 'Must be fluent in Spanish for this position.',
+      });
+      const result = evaluateFit(job, null);
+
+      expect(result.languageRequirements).toContainEqual(
+        expect.objectContaining({
+          language: 'Spanish',
+          level: 'fluent',
+          isRequired: true,
+        })
+      );
+    });
+  });
+
+  describe('Low Confidence Without Description', () => {
+    it('caps fit at 60% and shows low confidence', () => {
+      const job = createTestJob({
+        description: '', // Empty description
+        company: 'Test Co',
+        title: 'Software Engineer',
+      });
+      const vault = createTestVault(5);
+      const result = evaluateFit(job, vault);
+
+      expect(result.confidence).toBe('low');
+      expect(result.confidenceReason).toContain('Paste job description');
+      expect(result.fitScore).toBeLessThanOrEqual(60);
+    });
+
+    it('shows low confidence even with good profile match', () => {
+      const job = createTestJob({
+        description: 'Short.', // Too short (<50 chars)
+      });
+      const vault = createTestVault(10);
+      const result = evaluateFit(job, vault);
+
+      expect(result.confidence).toBe('low');
+      expect(result.fitScore).toBeLessThanOrEqual(60);
+    });
+  });
+});
+
 describe('Output Stability', () => {
   it('returns deterministic results for same input', () => {
     const job = createTestJob({
