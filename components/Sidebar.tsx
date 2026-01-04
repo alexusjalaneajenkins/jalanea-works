@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NavRoute } from '../types';
-import { LayoutDashboard, User, LogOut, Compass, FileText, Zap, CalendarClock, MessageSquare, Sparkles, CreditCard, Bot } from 'lucide-react';
+import { LayoutDashboard, User, LogOut, Compass, FileText, Zap, CalendarClock, MessageSquare, Sparkles, CreditCard, Bot, Rocket } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { redirectToBillingPortal } from '../services/stripeService';
 import { ThemeToggle } from './ThemeToggle';
@@ -25,6 +25,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRoute, setRoute, isMobi
     { id: NavRoute.RESUME, label: 'AI Resume Studio', icon: <FileText size={20} />, path: '/resume' },
     { id: NavRoute.AI_ASSISTANT, label: 'AI Career Coach', icon: <Sparkles size={20} />, path: '/ai-assistant' },
     { id: NavRoute.JOB_AGENT, label: 'AI Job Agent', icon: <Bot size={20} />, path: '/job-agent' },
+    { id: NavRoute.APPLY_COPILOT, label: 'Apply Co-Pilot', icon: <Rocket size={20} />, path: '/apply-copilot', isPro: true },
     { id: NavRoute.ACCOUNT, label: 'Account', icon: <User size={20} />, path: '/account' },
   ];
 
@@ -91,7 +92,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentRoute, setRoute, isMobi
               <span className={`${currentRoute === item.id ? 'text-gold' : 'text-current'}`}>
                 {item.icon}
               </span>
-              {item.label}
+              <span className="flex-1 text-left">{item.label}</span>
+              {'isPro' in item && item.isPro && (
+                <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-gold/20 text-gold">
+                  PRO
+                </span>
+              )}
             </button>
           ))}
 

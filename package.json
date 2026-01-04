@@ -17,6 +17,7 @@
     "@stripe/stripe-js": "^8.6.0",
     "@supabase/supabase-js": "^2.89.0",
     "ai": "^5.0.116",
+    "dexie": "^4.2.1",
     "firebase": "^12.7.0",
     "firebase-admin": "^13.6.0",
     "framer-motion": "^12.23.26",
@@ -25,7 +26,8 @@
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-router-dom": "^7.10.1",
-    "stripe": "^20.1.0"
+    "stripe": "^20.1.0",
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

@@ -8,6 +8,7 @@ export enum NavRoute {
   SCHEDULE = 'schedule',
   AI_ASSISTANT = 'ai-assistant',
   JOB_AGENT = 'job-agent',
+  APPLY_COPILOT = 'apply-copilot', // PRO feature
   ACCOUNT = 'account',
   ONBOARDING = 'onboarding',
 }

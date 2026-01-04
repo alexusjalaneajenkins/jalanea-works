@@ -73,6 +73,7 @@ import { Support } from './pages/Support';
 import { Schedule } from './pages/Schedule';
 import { AIAssistant } from './pages/AIAssistant';
 import { JobAgent } from './pages/JobAgent';
+import ApplyCopilot from './pages/ApplyCopilot';
 import { Sidebar } from './components/Sidebar';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { AIChat } from './components/AIChat';
@@ -137,6 +138,61 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return children;
 };
 
+// PRO feature gate - redirects non-Pro users to pricing page
+const ProGatedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { userCredits, currentUser, profileLoading } = useAuth();
+  const navigate = useNavigate();
+
+  // Still loading
+  if (profileLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#020617]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader className="animate-spin text-gold w-8 h-8" />
+          <p className="text-slate-400 text-sm">Checking access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if user has Pro access
+  const tier = userCredits?.tier || 'free';
+  const hasProAccess = ['pro', 'unlimited', 'owner', 'starter'].includes(tier) ||
+    (tier === 'trialing' && userCredits?.subscriptionStatus === 'trialing');
+
+  // Also allow owner emails to bypass
+  const ownerEmails = ['jalaneajenkins@gmail.com', 'business@jalanea.works', 'alexxusjenkins91@gmail.com'];
+  const isOwner = currentUser?.email && ownerEmails.includes(currentUser.email.toLowerCase());
+
+  if (!hasProAccess && !isOwner) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#020617] px-6 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-gold/20 flex items-center justify-center mb-6">
+          <Zap size={32} className="text-gold" />
+        </div>
+        <h2 className="text-white text-2xl font-bold mb-2">PRO Feature</h2>
+        <p className="text-slate-400 mb-6 max-w-sm">
+          Apply Co-Pilot is a PRO feature that helps you apply to jobs faster with your saved vault data.
+        </p>
+        <button
+          onClick={() => navigate('/pricing?feature=apply-copilot')}
+          className="px-8 py-4 bg-gold text-jalanea-900 font-bold rounded-2xl active:scale-95 transition-transform"
+        >
+          Upgrade to PRO
+        </button>
+        <button
+          onClick={() => navigate('/dashboard')}
+          className="mt-4 px-6 py-3 text-slate-400 hover:text-white transition-colors"
+        >
+          Go Back
+        </button>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+};
+
 // Gate that ensures users complete onboarding before accessing protected routes
 // Returns true if user should go to onboarding, false if they can access the app
 const useNeedsOnboarding = (): boolean | null => {
@@ -165,6 +221,7 @@ const AppLayout: React.FC = () => {
     if (path.includes('resume')) return NavRoute.RESUME;
     if (path.includes('schedule')) return NavRoute.SCHEDULE;
     if (path.includes('ai-assistant')) return NavRoute.AI_ASSISTANT;
+    if (path.includes('apply-copilot')) return NavRoute.APPLY_COPILOT;
     return NavRoute.HOME; // Fallback
   };
 
@@ -189,6 +246,8 @@ const AppLayout: React.FC = () => {
       navigate('/job-agent');
     } else if (route === NavRoute.ACCOUNT) {
       navigate('/account');
+    } else if (route === NavRoute.APPLY_COPILOT) {
+      navigate('/apply-copilot');
     } else if (route === NavRoute.ONBOARDING) {
       navigate('/onboarding');
     } else {
@@ -270,6 +329,7 @@ const AppLayout: React.FC = () => {
                 <Route path="/schedule" element={<Schedule />} />
                 <Route path="/ai-assistant" element={<AIAssistant />} />
                 <Route path="/job-agent" element={<JobAgent />} />
+                <Route path="/apply-copilot" element={<ProGatedRoute><ApplyCopilot /></ProGatedRoute>} />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
             </motion.div>
@@ -347,6 +407,7 @@ const AppLayoutWithOnboardingCheck: React.FC = () => {
   const needsOnboarding = useNeedsOnboarding();
   const isMobile = useMobile();
   const { isLight } = useTheme();
+  const location = useLocation();
 
   // Still loading - show branded loading screen
   if (needsOnboarding === null) {
@@ -366,8 +427,12 @@ const AppLayoutWithOnboardingCheck: React.FC = () => {
     return <Navigate to="/onboarding" replace />;
   }
 
-  // Use dedicated mobile app shell for mobile users
-  if (isMobile) {
+  // Routes that should use regular AppLayout even on mobile (full-page features)
+  const fullPageRoutes = ['/apply-copilot', '/settings'];
+  const isFullPageRoute = fullPageRoutes.some(route => location.pathname.startsWith(route));
+
+  // Use dedicated mobile app shell for mobile users (except full-page routes)
+  if (isMobile && !isFullPageRoute) {
     return <MobileAppShell />;
   }
 

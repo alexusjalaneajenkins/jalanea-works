@@ -825,6 +825,7 @@ const JobPreferencesCard: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [newJobTitle, setNewJobTitle] = useState('');
   const [newLocation, setNewLocation] = useState('');
+  const [apiOffline, setApiOffline] = useState(false);
 
   // Load preferences
   useEffect(() => {
@@ -835,9 +836,16 @@ const JobPreferencesCard: React.FC = () => {
       }
       try {
         const prefs = await getJobPreferences(currentUser.uid);
-        if (prefs) setPreferences(prefs);
+        if (prefs) {
+          setPreferences(prefs);
+          setApiOffline(false);
+        } else {
+          // API returned null - might be offline or user not in cloud DB
+          setApiOffline(true);
+        }
       } catch (err) {
-        console.error('Error loading preferences:', err);
+        console.warn('[Settings] Could not load preferences from cloud:', err);
+        setApiOffline(true);
       } finally {
         setLoading(false);
       }
@@ -959,6 +967,12 @@ const JobPreferencesCard: React.FC = () => {
           <div className="flex items-center gap-2 p-3 bg-green-50 text-green-700 rounded-lg text-sm">
             <CheckCircle size={16} />
             {success}
+          </div>
+        )}
+        {apiOffline && (
+          <div className="flex items-center gap-2 p-3 bg-amber-50 text-amber-700 rounded-lg text-sm">
+            <AlertCircle size={16} />
+            Cloud sync unavailable. Your preferences will be stored locally.
           </div>
         )}
 

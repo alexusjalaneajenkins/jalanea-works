@@ -4,7 +4,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   Zap, Menu, X, Bot, Settings, Bell, HelpCircle,
-  LogOut, ChevronRight, Briefcase, Target
+  LogOut, ChevronRight, Briefcase, Target, Rocket
 } from 'lucide-react';
 
 interface MobileHeaderProps {
@@ -32,6 +32,14 @@ const menuItems: MenuItem[] = [
     description: 'Auto-apply to jobs while you sleep',
     badge: 'NEW',
     highlight: true
+  },
+  {
+    id: 'apply-copilot',
+    icon: Rocket,
+    label: 'Apply Co-Pilot',
+    description: 'Quick-copy vault for manual applications',
+    badge: 'PRO',
+    highlight: false
   },
   {
     id: 'preferences',

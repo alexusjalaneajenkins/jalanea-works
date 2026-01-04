@@ -16,7 +16,7 @@ import { MobileJobAgent } from './MobileJobAgent';
 export type MobileScreen = 'home' | 'jobs' | 'coach' | 'tracker' | 'profile';
 
 // Menu overlay screens (accessed via hamburger menu)
-export type MenuScreen = 'job-agent' | 'preferences' | 'notifications' | 'settings' | 'help' | null;
+export type MenuScreen = 'job-agent' | 'apply-copilot' | 'preferences' | 'notifications' | 'settings' | 'help' | null;
 
 const screenTitles: Record<MobileScreen, string> = {
   home: 'Home',
@@ -61,6 +61,18 @@ export const MobileAppShell: React.FC = () => {
 
   // Handle menu item navigation
   const handleMenuNavigate = (screen: string) => {
+    // Apply Co-Pilot navigates to a page instead of showing an overlay
+    if (screen === 'apply-copilot') {
+      setMenuScreen(null); // prevent sticky overlay state
+      navigate('/apply-copilot');
+      return;
+    }
+    // Job Preferences navigates to settings page
+    if (screen === 'preferences') {
+      setMenuScreen(null);
+      navigate('/settings');
+      return;
+    }
     setMenuScreen(screen as MenuScreen);
   };
 
