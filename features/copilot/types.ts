@@ -120,6 +120,10 @@ export interface JobLead {
   // Match (optional)
   matchScore?: number;
   matchReasons?: string[];
+
+  // Safety & Fit Evaluation (optional)
+  safetyCheck?: JobSafetyCheck;
+  fitCheck?: JobFitCheck;
 }
 
 export type JobLeadStatus =
@@ -128,6 +132,57 @@ export type JobLeadStatus =
   | 'applied'
   | 'skipped'
   | 'failed';
+
+// ==================== SAFETY + FIT CHECK TYPES ====================
+
+export type SafetyRisk = 'low' | 'medium' | 'high';
+
+export interface JobSafetyCheck {
+  evaluatedAt: string;
+  riskLevel: SafetyRisk;
+  redFlags: RedFlag[];
+  summary: string; // Human-readable explanation
+}
+
+export interface RedFlag {
+  type: RedFlagType;
+  severity: SafetyRisk;
+  detail: string;
+  matchedText?: string; // The text that triggered this flag
+}
+
+export type RedFlagType =
+  | 'urgency_pressure' // "Apply NOW!", "Limited spots!"
+  | 'unrealistic_salary' // Way above market rate
+  | 'vague_description' // No real job duties listed
+  | 'personal_info_request' // SSN, bank account upfront
+  | 'fee_required' // Pay to apply or work
+  | 'grammar_issues' // Poor grammar in "professional" posting
+  | 'suspicious_contact' // Personal email, WhatsApp only
+  | 'no_company_info'; // Can't verify company exists
+
+export interface JobFitCheck {
+  evaluatedAt: string;
+  fitScore: number; // 0-100
+  experienceMatch: ExperienceMatch;
+  languageRequirements: LanguageRequirement[];
+  dealBreakers: string[]; // Why this might not be a good fit
+  positives: string[]; // Why this could be a good match
+}
+
+export interface ExperienceMatch {
+  yearsRequired?: number;
+  yearsPreferred?: number;
+  userYears?: number; // From vault work history
+  isMatch: boolean;
+  gap?: number; // Negative = under, positive = over
+}
+
+export interface LanguageRequirement {
+  language: string;
+  level: 'basic' | 'conversational' | 'fluent' | 'native';
+  isRequired: boolean;
+}
 
 export interface ApplyTask {
   id: string;

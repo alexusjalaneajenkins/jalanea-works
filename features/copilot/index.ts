@@ -25,3 +25,13 @@ export type { ScreenerAnswer, ScreenerCategory, ResumeFile } from './db';
 
 // Stores
 export { useVaultStore, useJobsStore } from './stores';
+
+// Safety & Fit Evaluation
+export {
+  evaluateSafety,
+  evaluateFit,
+  evaluateJob,
+  calculateUserExperience,
+  getFitScoreLabel,
+  getSafetyRiskLabel,
+} from './safety';

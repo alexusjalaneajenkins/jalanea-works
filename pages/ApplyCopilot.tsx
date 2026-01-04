@@ -15,11 +15,16 @@ import {
   type ApplicationVault,
   type JobLead,
   type VaultExport,
+  type JobSafetyCheck,
+  type JobFitCheck,
   validateVaultImport,
   getBoardDisplayName,
   getJobDisplayTitle,
   getJobDisplaySubtitle,
   VAULT_SCHEMA_VERSION,
+  evaluateJob,
+  getFitScoreLabel,
+  getSafetyRiskLabel,
 } from '../features/copilot';
 import {
   Database,
@@ -43,6 +48,14 @@ import {
   Edit3,
   X,
   Save,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
+  Target,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  Info,
 } from 'lucide-react';
 
 // ==================== TAB NAVIGATION ====================
@@ -368,13 +381,231 @@ const VaultTab: React.FC = () => {
 
 // ==================== QUEUE TAB ====================
 
+// Safety & Fit Check Panel Component
+const SafetyFitPanel: React.FC<{
+  job: JobLead;
+  vault: ApplicationVault | null;
+  onEvaluate: (safetyCheck: JobSafetyCheck, fitCheck: JobFitCheck) => void;
+  isDark: boolean;
+}> = ({ job, vault, onEvaluate, isDark }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+
+  const hasEvaluation = job.safetyCheck && job.fitCheck;
+
+  const handleEvaluate = async () => {
+    setIsEvaluating(true);
+    // Small delay to show loading state
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const { safetyCheck, fitCheck } = evaluateJob(job, vault);
+    onEvaluate(safetyCheck, fitCheck);
+    setIsEvaluating(false);
+    setIsExpanded(true);
+  };
+
+  const safetyLabel = job.safetyCheck ? getSafetyRiskLabel(job.safetyCheck.riskLevel) : null;
+  const fitLabel = job.fitCheck ? getFitScoreLabel(job.fitCheck.fitScore) : null;
+
+  const getSafetyIcon = () => {
+    if (!safetyLabel) return <Shield size={14} />;
+    switch (safetyLabel.color) {
+      case 'green':
+        return <ShieldCheck size={14} className="text-green-500" />;
+      case 'yellow':
+        return <Shield size={14} className="text-yellow-500" />;
+      case 'red':
+        return <ShieldAlert size={14} className="text-red-500" />;
+    }
+  };
+
+  const getColorClass = (color: string) => {
+    switch (color) {
+      case 'green':
+        return 'text-green-500 bg-green-500/10 border-green-500/30';
+      case 'yellow':
+        return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/30';
+      case 'orange':
+        return 'text-orange-500 bg-orange-500/10 border-orange-500/30';
+      case 'red':
+        return 'text-red-500 bg-red-500/10 border-red-500/30';
+      default:
+        return isDark ? 'text-slate-400 bg-slate-700 border-slate-600' : 'text-slate-500 bg-slate-100 border-slate-200';
+    }
+  };
+
+  return (
+    <div className={`mt-3 pt-3 border-t ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+      {!hasEvaluation ? (
+        <button
+          onClick={handleEvaluate}
+          disabled={isEvaluating}
+          className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+            isEvaluating
+              ? 'bg-slate-600 text-slate-400 cursor-wait'
+              : isDark
+              ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          {isEvaluating ? (
+            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Shield size={16} />
+          )}
+          {isEvaluating ? 'Analyzing...' : 'Run Safety & Fit Check'}
+        </button>
+      ) : (
+        <div className="space-y-2">
+          {/* Summary badges */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="flex-1 flex items-center gap-2"
+            >
+              {safetyLabel && (
+                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border ${getColorClass(safetyLabel.color)}`}>
+                  {getSafetyIcon()}
+                  {safetyLabel.label}
+                </span>
+              )}
+              {fitLabel && (
+                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border ${getColorClass(fitLabel.color)}`}>
+                  <Target size={12} />
+                  {fitLabel.label} ({job.fitCheck?.fitScore}%)
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className={`p-1 rounded ${isDark ? 'hover:bg-slate-700' : 'hover:bg-slate-100'}`}
+            >
+              {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+          </div>
+
+          {/* Expanded details */}
+          {isExpanded && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="space-y-3"
+            >
+              {/* Safety Summary */}
+              {job.safetyCheck && (
+                <div className={`p-3 rounded-lg ${isDark ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    {getSafetyIcon()}
+                    <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      Safety Check
+                    </span>
+                  </div>
+                  <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {job.safetyCheck.summary}
+                  </p>
+                  {job.safetyCheck.redFlags.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {job.safetyCheck.redFlags.map((flag, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <AlertTriangle size={12} className={`mt-0.5 ${
+                            flag.severity === 'high' ? 'text-red-500' :
+                            flag.severity === 'medium' ? 'text-yellow-500' : 'text-slate-400'
+                          }`} />
+                          <span className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                            {flag.detail}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Fit Check */}
+              {job.fitCheck && (
+                <div className={`p-3 rounded-lg ${isDark ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target size={14} className="text-gold" />
+                    <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      Fit Analysis
+                    </span>
+                  </div>
+
+                  {/* Experience match */}
+                  {job.fitCheck.experienceMatch.yearsRequired && (
+                    <div className={`text-xs mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <span className="font-medium">Experience:</span>{' '}
+                      {job.fitCheck.experienceMatch.yearsRequired}+ years required
+                      {job.fitCheck.experienceMatch.userYears !== undefined && (
+                        <span className={job.fitCheck.experienceMatch.isMatch ? 'text-green-500' : 'text-yellow-500'}>
+                          {' '}(you have ~{job.fitCheck.experienceMatch.userYears.toFixed(1)} years)
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Language requirements */}
+                  {job.fitCheck.languageRequirements.length > 0 && (
+                    <div className={`text-xs mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <span className="font-medium">Languages:</span>{' '}
+                      {job.fitCheck.languageRequirements.map((l) => l.language).join(', ')}
+                    </div>
+                  )}
+
+                  {/* Positives */}
+                  {job.fitCheck.positives.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {job.fitCheck.positives.map((positive, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <Check size={12} className="text-green-500 mt-0.5" />
+                          <span className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                            {positive}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Deal breakers */}
+                  {job.fitCheck.dealBreakers.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {job.fitCheck.dealBreakers.map((issue, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <Info size={12} className="text-yellow-500 mt-0.5" />
+                          <span className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                            {issue}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Re-run button */}
+              <button
+                onClick={handleEvaluate}
+                disabled={isEvaluating}
+                className={`text-xs ${isDark ? 'text-slate-500 hover:text-slate-400' : 'text-slate-400 hover:text-slate-500'}`}
+              >
+                {isEvaluating ? 'Analyzing...' : '↻ Re-run analysis'}
+              </button>
+            </motion.div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Job Card Component with edit functionality
 const JobCard: React.FC<{
   job: JobLead;
+  vault: ApplicationVault | null;
   onUpdate: (id: string, updates: Partial<JobLead>) => void;
   onRemove: (id: string) => void;
   isDark: boolean;
-}> = ({ job, onUpdate, onRemove, isDark }) => {
+}> = ({ job, vault, onUpdate, onRemove, isDark }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(job.title || '');
   const [editCompany, setEditCompany] = useState(job.company || '');
@@ -471,6 +702,10 @@ const JobCard: React.FC<{
     );
   }
 
+  const handleSafetyEvaluate = (safetyCheck: JobSafetyCheck, fitCheck: JobFitCheck) => {
+    onUpdate(job.id, { safetyCheck, fitCheck });
+  };
+
   return (
     <motion.div variants={fadeUp} className={cardClass}>
       <div className="flex items-start justify-between gap-3">
@@ -516,12 +751,21 @@ const JobCard: React.FC<{
           </button>
         </div>
       </div>
+
+      {/* Safety & Fit Check */}
+      <SafetyFitPanel
+        job={job}
+        vault={vault}
+        onEvaluate={handleSafetyEvaluate}
+        isDark={isDark}
+      />
     </motion.div>
   );
 };
 
 const QueueTab: React.FC = () => {
   const { jobs, isLoading, loadJobs, addJob, updateJob, removeJob, error: storeError } = useJobsStore();
+  const { vault } = useVaultStore();
   const { isDark } = useTheme();
   const [newUrl, setNewUrl] = useState('');
   const [error, setError] = useState('');
@@ -670,6 +914,7 @@ const QueueTab: React.FC = () => {
             <JobCard
               key={job.id}
               job={job}
+              vault={vault}
               onUpdate={updateJob}
               onRemove={removeJob}
               isDark={isDark}
