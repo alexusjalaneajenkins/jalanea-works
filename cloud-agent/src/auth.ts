@@ -5,24 +5,26 @@
  * Uses Option B pattern (individual env vars): FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY
  */
 
-import * as admin from 'firebase-admin';
+import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
+import { getAuth, DecodedIdToken } from 'firebase-admin/auth';
 import { Request, Response, NextFunction } from 'express';
 
 // Extend Express Request to include authenticated user
 declare global {
   namespace Express {
     interface Request {
-      firebaseUser?: admin.auth.DecodedIdToken;
+      firebaseUser?: DecodedIdToken;
     }
   }
 }
 
 // Initialize Firebase Admin (Option B - individual env vars)
 // Pattern from api/stripe-webhook.ts:12-18
-if (!admin.apps.length) {
+let app: App;
+if (getApps().length === 0) {
   try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
+    app = initializeApp({
+      credential: cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
@@ -31,7 +33,10 @@ if (!admin.apps.length) {
     console.log('[Auth] Firebase Admin initialized successfully');
   } catch (error) {
     console.error('[Auth] Firebase Admin initialization error:', error);
+    throw error;
   }
+} else {
+  app = getApps()[0];
 }
 
 /**
@@ -54,7 +59,7 @@ export async function verifyFirebaseToken(
   const token = authHeader.split('Bearer ')[1];
 
   try {
-    const decodedToken = await admin.auth().verifyIdToken(token);
+    const decodedToken = await getAuth(app).verifyIdToken(token);
     req.firebaseUser = decodedToken;
     next();
   } catch (error) {
@@ -84,7 +89,7 @@ export async function verifyUserAccess(
   const token = authHeader.split('Bearer ')[1];
 
   try {
-    const decodedToken = await admin.auth().verifyIdToken(token);
+    const decodedToken = await getAuth(app).verifyIdToken(token);
     req.firebaseUser = decodedToken;
 
     // Check userId in params
