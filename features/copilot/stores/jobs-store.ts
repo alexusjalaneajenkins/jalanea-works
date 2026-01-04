@@ -119,61 +119,103 @@ export const useJobsStore = create<JobsState>((set, get) => ({
     const job = createJobLead(url, metadata);
     log('Created JobLead:', job.id, job.source, job.sourceHostname);
 
+    // OPTIMISTIC UPDATE: Add to Zustand state immediately for instant UI
+    set((state) => {
+      const newJobs = [...state.jobs, job];
+      log('Optimistic add - jobs count:', newJobs.length);
+      return { jobs: newJobs, error: null };
+    });
+
     try {
       // Verify DB is ready
-      const isOpen = db.isOpen();
-      log('DB isOpen:', isOpen);
-
-      if (!isOpen) {
-        log('Opening database...');
+      if (!db.isOpen()) {
+        log('DB not open, opening...');
         await db.open();
       }
 
-      // Add to IndexedDB
+      // Persist to IndexedDB
       await db.jobLeads.add(job);
-      log('✓ IndexedDB add successful');
-
-      // Update Zustand state
-      set((state) => {
-        const newJobs = [...state.jobs, job];
-        log('New jobs count:', newJobs.length);
-        return { jobs: newJobs, error: null };
-      });
+      log('✓ IndexedDB add successful:', job.id);
 
       return job;
     } catch (error) {
-      logError('✗ addJob FAILED:', error);
-      const message = error instanceof Error ? error.message : 'Failed to add job';
-      set({ error: message });
+      // ROLLBACK: Remove from Zustand state on failure
+      logError('✗ addJob FAILED, rolling back:', error);
+      set((state) => ({
+        jobs: state.jobs.filter((j) => j.id !== job.id),
+        error: error instanceof Error ? error.message : 'Failed to add job',
+      }));
       throw error;
     }
   },
 
   updateJob: async (id, updates) => {
+    log('updateJob called:', id, Object.keys(updates).join(', '));
+
+    // Get original job for potential rollback
+    const { jobs } = get();
+    const originalJob = jobs.find((j) => j.id === id);
+
+    // OPTIMISTIC UPDATE: Update Zustand state immediately
+    set((state) => ({
+      jobs: state.jobs.map((job) =>
+        job.id === id ? { ...job, ...updates } : job
+      ),
+      error: null,
+    }));
+    log('Optimistic update applied');
+
     try {
+      if (!db.isOpen()) {
+        await db.open();
+      }
       await db.jobLeads.update(id, updates);
-      set((state) => ({
-        jobs: state.jobs.map((job) =>
-          job.id === id ? { ...job, ...updates } : job
-        ),
-      }));
+      log('✓ IndexedDB update successful:', id);
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Failed to update job',
-      });
+      // ROLLBACK: Restore original job on failure
+      logError('✗ updateJob FAILED, rolling back:', error);
+      if (originalJob) {
+        set((state) => ({
+          jobs: state.jobs.map((job) =>
+            job.id === id ? originalJob : job
+          ),
+          error: error instanceof Error ? error.message : 'Failed to update job',
+        }));
+      }
+      throw error;
     }
   },
 
   removeJob: async (id) => {
+    log('removeJob called:', id);
+
+    // Get the job before removing (for potential rollback)
+    const { jobs } = get();
+    const jobToRemove = jobs.find((j) => j.id === id);
+
+    // OPTIMISTIC UPDATE: Remove from Zustand state immediately
+    set((state) => ({
+      jobs: state.jobs.filter((job) => job.id !== id),
+      error: null,
+    }));
+    log('Optimistic remove - job removed from state');
+
     try {
+      if (!db.isOpen()) {
+        await db.open();
+      }
       await db.jobLeads.delete(id);
-      set((state) => ({
-        jobs: state.jobs.filter((job) => job.id !== id),
-      }));
+      log('✓ IndexedDB delete successful:', id);
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Failed to remove job',
-      });
+      // ROLLBACK: Re-add to Zustand state on failure
+      logError('✗ removeJob FAILED, rolling back:', error);
+      if (jobToRemove) {
+        set((state) => ({
+          jobs: [...state.jobs, jobToRemove],
+          error: error instanceof Error ? error.message : 'Failed to remove job',
+        }));
+      }
+      throw error;
     }
   },
 
