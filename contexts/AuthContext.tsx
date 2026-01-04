@@ -194,6 +194,7 @@ interface AuthContextType {
     userCredits: UserCredits | null;
     loading: boolean;
     profileLoading: boolean;
+    authWarning: string | null;
     signup: (email: string, password: string, name: string) => Promise<void>;
     login: (email: string, password: string) => Promise<void>;
     loginWithGoogle: () => Promise<UserCredential>;
@@ -209,6 +210,9 @@ interface AuthContextType {
     canUseCredits: (action: CreditAction) => boolean;
     isTrialActive: () => boolean;
     refreshCredits: () => Promise<void>;
+    // Auth helpers
+    dismissAuthWarning: () => void;
+    resetSignIn: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -227,7 +231,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [userCredits, setUserCredits] = useState<UserCredits | null>(null);
     const [loading, setLoading] = useState(true);
     const [profileLoading, setProfileLoading] = useState(false);
-    const [authError, setAuthError] = useState<string | null>(null);
+    const [authWarning, setAuthWarning] = useState<string | null>(null);
 
     // Fetch user credits from Firestore
     const fetchUserCredits = async (user: User) => {
@@ -322,13 +326,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         let mounted = true;
         let timeoutId: NodeJS.Timeout;
 
-        // Safety timeout: If Firebase doesn't respond in 10 seconds, stop loading
+        // Safety timeout: If Firebase doesn't respond in 10 seconds, treat as logged out
         // This prevents infinite loading screen on mobile if Firebase fails
         timeoutId = setTimeout(() => {
             if (mounted && loading) {
-                console.warn('[Auth] Firebase auth timeout - assuming not logged in');
+                console.warn('[Auth] Firebase auth timeout - treating as logged out');
+                setCurrentUser(null);
+                setUserProfile(null);
+                setUserCredits(null);
                 setLoading(false);
-                setAuthError('Authentication service unavailable. Please refresh the page.');
+                setAuthWarning('Sign-in took too long. Please try again.');
             }
         }, 10000);
 
@@ -344,7 +351,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setUserProfile(null);
                 setUserCredits(null);
                 setCurrentUser(user);
-                setAuthError(null);
+                setAuthWarning(null);
 
                 if (user) {
                     console.log('[Auth] User changed, loading profile for:', user.uid.slice(-8));
@@ -362,8 +369,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (error) {
             console.error('[Auth] Firebase initialization error:', error);
             if (mounted) {
+                setCurrentUser(null);
                 setLoading(false);
-                setAuthError('Failed to initialize authentication. Please refresh the page.');
+                setAuthWarning('Failed to connect to sign-in service. Please try again.');
             }
             return () => {
                 mounted = false;
@@ -416,6 +424,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const logout = async () => {
         setUserProfile(null);
         await signOut(auth);
+    };
+
+    // Dismiss the auth warning banner
+    const dismissAuthWarning = () => {
+        setAuthWarning(null);
+    };
+
+    // Reset sign-in by clearing ONLY Firebase auth persistence (not all IndexedDB)
+    const resetSignIn = async () => {
+        try {
+            // Sign out first to clear auth state
+            await signOut(auth);
+
+            // Clear only Firebase auth IndexedDB databases
+            const firebaseAuthDbs = [
+                'firebaseLocalStorageDb',
+                'firebase-heartbeat-database'
+            ];
+
+            await Promise.all(
+                firebaseAuthDbs.map(dbName =>
+                    new Promise<void>((resolve) => {
+                        const req = indexedDB.deleteDatabase(dbName);
+                        req.onsuccess = () => {
+                            console.log(`[Auth] Cleared ${dbName}`);
+                            resolve();
+                        };
+                        req.onerror = () => {
+                            console.warn(`[Auth] Failed to clear ${dbName}`);
+                            resolve(); // Continue even if one fails
+                        };
+                    })
+                )
+            );
+
+            setAuthWarning(null);
+            // Reload to reinitialize Firebase
+            window.location.reload();
+        } catch (error) {
+            console.error('[Auth] Reset sign-in error:', error);
+        }
     };
 
     const saveUserProfile = async (data: Partial<UserProfileData>) => {
@@ -549,6 +598,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         userCredits,
         loading,
         profileLoading,
+        authWarning,
         signup,
         login,
         loginWithGoogle,
@@ -561,7 +611,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         useCredit,
         canUseCredits,
         isTrialActive,
-        refreshCredits
+        refreshCredits,
+        dismissAuthWarning,
+        resetSignIn
     };
 
     // Show loading indicator while checking auth state
@@ -579,29 +631,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         );
     }
 
-    // Show error if auth failed
-    if (authError) {
-        return (
-            <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center p-6 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-red-500/20 flex items-center justify-center mb-4">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="8" x2="12" y2="12"></line>
-                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                    </svg>
-                </div>
-                <h2 className="text-white text-lg font-semibold mb-2">Connection Issue</h2>
-                <p className="text-slate-400 text-sm mb-4 max-w-xs">{authError}</p>
-                <button
-                    onClick={() => window.location.reload()}
-                    className="px-6 py-3 bg-[#FFC425] text-black font-semibold rounded-xl active:scale-95 transition-transform"
-                >
-                    Retry
-                </button>
-            </div>
-        );
-    }
-
+    // No longer blocking on auth errors - render children and let them show warning banner
     return (
         <AuthContext.Provider value={value}>
             {children}

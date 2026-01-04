@@ -84,7 +84,38 @@ import { PWAProvider } from './components/PWAProvider';
 import { MobileAppShell } from './components/mobile/MobileAppShell';
 import { haptics } from './utils/haptics';
 import { NavRoute } from './types';
-import { Menu, Loader, Zap } from 'lucide-react';
+import { Menu, Loader, Zap, X, RefreshCw } from 'lucide-react';
+
+// Auth Warning Banner - shows dismissible warning when auth times out
+const AuthWarningBanner: React.FC = () => {
+  const { authWarning, dismissAuthWarning, resetSignIn } = useAuth();
+
+  if (!authWarning) return null;
+
+  return (
+    <div className="fixed top-0 left-0 right-0 z-[9999] bg-amber-500/95 text-black px-4 py-3 flex items-center justify-between gap-3 shadow-lg" style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{authWarning}</p>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <button
+          onClick={resetSignIn}
+          className="p-2 rounded-lg bg-black/10 hover:bg-black/20 transition-colors"
+          title="Reset sign-in"
+        >
+          <RefreshCw size={16} />
+        </button>
+        <button
+          onClick={dismissAuthWarning}
+          className="p-2 rounded-lg bg-black/10 hover:bg-black/20 transition-colors"
+          title="Dismiss"
+        >
+          <X size={16} />
+        </button>
+      </div>
+    </div>
+  );
+};
 
 // Hook to detect mobile devices
 const useMobile = (): boolean => {
@@ -368,6 +399,7 @@ const App: React.FC = () => {
           <ToastProvider>
             <PWAProvider>
               <BrowserRouter>
+                <AuthWarningBanner />
                 <Routes>
                   {/* Public Routes */}
                   <Route path="/" element={<Home setRoute={() => { }} />} />
