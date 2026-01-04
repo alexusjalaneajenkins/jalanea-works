@@ -70,7 +70,7 @@ const stagger = {
 // ==================== VAULT TAB ====================
 
 const VaultTab: React.FC = () => {
-  const { vault, isLoading, updateVault, loadVault } = useVaultStore();
+  const { vault, isLoading, updateVault, loadVault, error: vaultError } = useVaultStore();
   const { isDark } = useTheme();
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState<Partial<ApplicationVault>>({});
@@ -78,6 +78,7 @@ const VaultTab: React.FC = () => {
   const [importJson, setImportJson] = useState('');
   const [importError, setImportError] = useState('');
   const [importSuccess, setImportSuccess] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   useEffect(() => {
     loadVault();
@@ -90,8 +91,19 @@ const VaultTab: React.FC = () => {
   }, [vault]);
 
   const handleSave = async () => {
-    await updateVault(formData);
-    setEditMode(false);
+    setSaveStatus('saving');
+    try {
+      await updateVault(formData);
+      setSaveStatus('saved');
+      setEditMode(false);
+      // Reset status after 3 seconds
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } catch (error) {
+      console.error('[Vault] Save failed:', error);
+      setSaveStatus('error');
+      // Keep error visible longer
+      setTimeout(() => setSaveStatus('idle'), 5000);
+    }
   };
 
   const handleExport = () => {
@@ -182,7 +194,16 @@ const VaultTab: React.FC = () => {
             Your profile data for quick form filling
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          {/* Save status indicator */}
+          {saveStatus === 'saved' && (
+            <span className="text-green-500 text-sm flex items-center gap-1">
+              <Check size={14} /> Saved
+            </span>
+          )}
+          {saveStatus === 'error' && (
+            <span className="text-red-500 text-sm">Save failed</span>
+          )}
           <button
             onClick={() => setShowExport(!showExport)}
             className={`p-2 rounded-lg ${isDark ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'}`}
@@ -191,12 +212,28 @@ const VaultTab: React.FC = () => {
           </button>
           <button
             onClick={() => (editMode ? handleSave() : setEditMode(true))}
-            className="px-4 py-2 rounded-lg bg-gold text-jalanea-900 font-medium hover:bg-gold/90"
+            disabled={saveStatus === 'saving'}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              saveStatus === 'saving'
+                ? 'bg-slate-400 text-slate-600 cursor-wait'
+                : 'bg-gold text-jalanea-900 hover:bg-gold/90'
+            }`}
           >
-            {editMode ? 'Save' : 'Edit'}
+            {saveStatus === 'saving' ? 'Saving...' : editMode ? 'Save' : 'Edit'}
           </button>
         </div>
       </motion.div>
+
+      {/* Error banner */}
+      {(vaultError || saveStatus === 'error') && (
+        <motion.div
+          variants={fadeUp}
+          className="p-4 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400"
+        >
+          <p className="font-medium">Failed to save vault</p>
+          <p className="text-sm opacity-80">{vaultError || 'Please try again. Your data is stored locally.'}</p>
+        </motion.div>
+      )}
 
       {/* Import/Export Panel */}
       {showExport && (

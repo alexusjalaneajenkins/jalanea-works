@@ -1,5 +1,8 @@
 /**
  * Vault Store - Zustand store for managing user's application vault
+ *
+ * Storage: IndexedDB via Dexie (ApplyCoPilotDB.vault table)
+ * Persistence: Offline-first, survives refresh/restart
  */
 
 import { create } from 'zustand';
@@ -10,6 +13,22 @@ import type {
 } from '../types';
 import { createEmptyVault, generateId } from '../types';
 import { db, DEFAULT_VAULT_ID } from '../db';
+
+// Dev-only logging (stripped in production builds)
+const isDev = import.meta.env.DEV;
+const log = (...args: unknown[]) => isDev && console.log('[vault-store]', ...args);
+const logError = (...args: unknown[]) => console.error('[vault-store]', ...args);
+
+/**
+ * Ensure database is open before operations
+ */
+async function ensureDbOpen(): Promise<void> {
+  if (!db.isOpen()) {
+    log('DB not open, opening...');
+    await db.open();
+    log('DB opened successfully');
+  }
+}
 
 interface VaultState {
   vault: ApplicationVault | null;
@@ -38,16 +57,28 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   error: null,
 
   loadVault: async () => {
+    log('loadVault called');
     set({ isLoading: true, error: null });
     try {
+      // Ensure DB is open before querying
+      await ensureDbOpen();
+
+      log('Loading vault from IndexedDB...');
       let vault = await db.vault.get(DEFAULT_VAULT_ID);
+
       if (!vault) {
-        // Create default vault
+        log('No vault found, creating default...');
         vault = { ...createEmptyVault(), id: DEFAULT_VAULT_ID };
         await db.vault.add(vault);
+        log('Default vault created');
+      } else {
+        log('Vault loaded:', vault.firstName || '(empty)', vault.lastName || '(empty)');
       }
+
       set({ vault, isLoading: false });
+      log('Vault state updated');
     } catch (error) {
+      logError('loadVault FAILED:', error);
       set({
         error: error instanceof Error ? error.message : 'Failed to load vault',
         isLoading: false,
@@ -56,8 +87,13 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   },
 
   updateVault: async (updates) => {
+    log('updateVault called with keys:', Object.keys(updates).join(', '));
     const { vault } = get();
-    if (!vault) return;
+
+    if (!vault) {
+      logError('updateVault: No vault in state! Cannot save.');
+      return;
+    }
 
     const updatedVault: ApplicationVault = {
       ...vault,
@@ -66,21 +102,34 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     };
 
     try {
+      // Ensure DB is open before writing
+      await ensureDbOpen();
+
+      log('Saving vault to IndexedDB...');
       await db.vault.put(updatedVault);
-      set({ vault: updatedVault });
+      log('Vault saved successfully:', updatedVault.firstName, updatedVault.lastName);
+
+      set({ vault: updatedVault, error: null });
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Failed to update vault',
-      });
+      logError('updateVault FAILED:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Failed to update vault';
+      set({ error: errorMsg });
+      // Re-throw so caller can handle (e.g., show toast)
+      throw error;
     }
   },
 
   resetVault: async () => {
+    log('resetVault called');
     try {
+      await ensureDbOpen();
+
       const newVault = { ...createEmptyVault(), id: DEFAULT_VAULT_ID };
       await db.vault.put(newVault);
-      set({ vault: newVault });
+      set({ vault: newVault, error: null });
+      log('Vault reset complete');
     } catch (error) {
+      logError('resetVault FAILED:', error);
       set({
         error: error instanceof Error ? error.message : 'Failed to reset vault',
       });
