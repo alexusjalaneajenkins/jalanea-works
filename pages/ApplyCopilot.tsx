@@ -524,12 +524,31 @@ const SafetyFitPanel: React.FC<{
               {/* Fit Check */}
               {job.fitCheck && (
                 <div className={`p-3 rounded-lg ${isDark ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Target size={14} className="text-gold" />
-                    <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                      Fit Analysis
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Target size={14} className="text-gold" />
+                      <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        Fit Analysis
+                      </span>
+                    </div>
+                    {/* Confidence indicator */}
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                      job.fitCheck.confidence === 'high'
+                        ? 'bg-green-500/20 text-green-500'
+                        : job.fitCheck.confidence === 'medium'
+                        ? 'bg-yellow-500/20 text-yellow-500'
+                        : 'bg-slate-500/20 text-slate-400'
+                    }`}>
+                      {job.fitCheck.confidence} confidence
                     </span>
                   </div>
+
+                  {/* Confidence reason hint */}
+                  {job.fitCheck.confidence === 'low' && (
+                    <div className={`text-[10px] mb-2 px-2 py-1 rounded ${isDark ? 'bg-slate-600/50 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
+                      💡 {job.fitCheck.confidenceReason}
+                    </div>
+                  )}
 
                   {/* Experience match */}
                   {job.fitCheck.experienceMatch.yearsRequired && (
@@ -610,6 +629,7 @@ const JobCard: React.FC<{
   const [editTitle, setEditTitle] = useState(job.title || '');
   const [editCompany, setEditCompany] = useState(job.company || '');
   const [editLocation, setEditLocation] = useState(job.location || '');
+  const [editDescription, setEditDescription] = useState(job.description || '');
 
   const cardClass = `rounded-2xl p-4 ${
     isDark ? 'bg-slate-800/50 border border-slate-700' : 'bg-white border border-slate-200 shadow-sm'
@@ -626,6 +646,7 @@ const JobCard: React.FC<{
       title: editTitle.trim() || '',
       company: editCompany.trim() || '',
       location: editLocation.trim() || '',
+      description: editDescription.trim() || '',
     });
     setIsEditing(false);
   };
@@ -634,6 +655,7 @@ const JobCard: React.FC<{
     setEditTitle(job.title || '');
     setEditCompany(job.company || '');
     setEditLocation(job.location || '');
+    setEditDescription(job.description || '');
     setIsEditing(false);
   };
 
@@ -680,6 +702,22 @@ const JobCard: React.FC<{
               placeholder="e.g., Remote, New York, NY"
               className={inputClass}
             />
+          </div>
+          <div>
+            <label className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              Job Description (for better fit analysis)
+            </label>
+            <textarea
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="Paste the job description here for better fit analysis..."
+              rows={4}
+              className={`${inputClass} resize-none`}
+            />
+            {/* Sensitive info warning */}
+            <p className={`mt-1 text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+              ⚠️ Don't paste SSNs, bank info, passwords, or private addresses.
+            </p>
           </div>
           <div className="flex gap-2 pt-2">
             <button
