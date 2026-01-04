@@ -114,6 +114,7 @@ export interface JobLead {
   // Tracking
   status: JobLeadStatus;
   addedAt: string;
+  updatedAt?: string; // Set on any modification (edit, analysis re-run)
   appliedAt?: string;
   notes?: string;
 
@@ -278,6 +279,7 @@ export function createJobLead(
   // Parse URL to extract hostname, jobKey, and board
   const parsed = parseJobUrl(url);
 
+  const now = new Date().toISOString();
   return {
     id: generateId(),
     source: parsed.board,
@@ -288,7 +290,8 @@ export function createJobLead(
     company: metadata?.company || '',
     location: metadata?.location || '',
     status: 'queued',
-    addedAt: new Date().toISOString(),
+    addedAt: now,
+    updatedAt: now, // Set on creation for consistent sorting
     ...metadata,
   };
 }

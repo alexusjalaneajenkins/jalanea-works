@@ -174,7 +174,26 @@ describe('Jobs Store', () => {
       expect(updatedJob?.notes).toBe('Test note');
 
       await updatePromise;
-      expect(db.jobLeads.update).toHaveBeenCalledWith(jobId, { notes: 'Test note' });
+      // updateJob now includes updatedAt timestamp
+      expect(db.jobLeads.update).toHaveBeenCalledWith(
+        jobId,
+        expect.objectContaining({ notes: 'Test note', updatedAt: expect.any(String) })
+      );
+    });
+
+    it('sets updatedAt timestamp on update', async () => {
+      const jobs = useJobsStore.getState().jobs;
+      const jobId = jobs[0].id;
+      const originalUpdatedAt = jobs[0].updatedAt;
+
+      // Wait a bit to ensure different timestamp
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      await useJobsStore.getState().updateJob(jobId, { title: 'New Title' });
+
+      const updatedJob = useJobsStore.getState().jobs.find((j) => j.id === jobId);
+      expect(updatedJob?.updatedAt).toBeDefined();
+      expect(updatedJob?.updatedAt).not.toBe(originalUpdatedAt);
     });
 
     it('saves description and persists to Dexie', async () => {
@@ -190,10 +209,14 @@ describe('Jobs Store', () => {
       const updatedJob = useJobsStore.getState().jobs.find((j) => j.id === jobId);
       expect(updatedJob?.description).toBe('Training fee required. WhatsApp only. Must have 3+ years experience.');
 
-      // Check Dexie was called with description
-      expect(db.jobLeads.update).toHaveBeenCalledWith(jobId, {
-        description: 'Training fee required. WhatsApp only. Must have 3+ years experience.',
-      });
+      // Check Dexie was called with description and updatedAt
+      expect(db.jobLeads.update).toHaveBeenCalledWith(
+        jobId,
+        expect.objectContaining({
+          description: 'Training fee required. WhatsApp only. Must have 3+ years experience.',
+          updatedAt: expect.any(String),
+        })
+      );
     });
 
     it('saves multiple fields including description', async () => {
@@ -280,6 +303,7 @@ describe('Jobs Store', () => {
 
   describe('loadJobs', () => {
     it('loads jobs from IndexedDB on init', async () => {
+      const now = new Date().toISOString();
       const mockJobs = [
         {
           id: 'job-1',
@@ -289,7 +313,8 @@ describe('Jobs Store', () => {
           source: 'indeed',
           sourceHostname: 'indeed.com',
           status: 'queued',
-          addedAt: new Date().toISOString(),
+          addedAt: now,
+          updatedAt: now,
         },
       ];
 
@@ -300,6 +325,98 @@ describe('Jobs Store', () => {
       const jobs = useJobsStore.getState().jobs;
       expect(jobs).toHaveLength(1);
       expect(jobs[0].id).toBe('job-1');
+    });
+
+    it('sorts jobs by updatedAt (most recent first) on load', async () => {
+      const oldTime = '2024-01-01T00:00:00.000Z';
+      const midTime = '2024-06-15T00:00:00.000Z';
+      const newTime = '2024-12-31T00:00:00.000Z';
+
+      const mockJobs = [
+        {
+          id: 'old-job',
+          url: 'https://indeed.com/job/old',
+          title: 'Old Job',
+          company: 'Test Co',
+          source: 'indeed',
+          sourceHostname: 'indeed.com',
+          status: 'queued',
+          addedAt: oldTime,
+          updatedAt: oldTime,
+        },
+        {
+          id: 'new-job',
+          url: 'https://indeed.com/job/new',
+          title: 'New Job',
+          company: 'Test Co',
+          source: 'indeed',
+          sourceHostname: 'indeed.com',
+          status: 'queued',
+          addedAt: newTime,
+          updatedAt: newTime,
+        },
+        {
+          id: 'mid-job',
+          url: 'https://indeed.com/job/mid',
+          title: 'Mid Job',
+          company: 'Test Co',
+          source: 'indeed',
+          sourceHostname: 'indeed.com',
+          status: 'queued',
+          addedAt: midTime,
+          updatedAt: midTime,
+        },
+      ];
+
+      vi.mocked(db.jobLeads.toArray).mockResolvedValueOnce(mockJobs);
+
+      await useJobsStore.getState().loadJobs();
+
+      const jobs = useJobsStore.getState().jobs;
+      expect(jobs).toHaveLength(3);
+      // Should be sorted newest first
+      expect(jobs[0].id).toBe('new-job');
+      expect(jobs[1].id).toBe('mid-job');
+      expect(jobs[2].id).toBe('old-job');
+    });
+
+    it('uses addedAt for sorting when updatedAt is missing (migration)', async () => {
+      const oldTime = '2024-01-01T00:00:00.000Z';
+      const newTime = '2024-12-31T00:00:00.000Z';
+
+      const mockJobs = [
+        {
+          id: 'old-job',
+          url: 'https://indeed.com/job/old',
+          title: 'Old Job',
+          company: 'Test Co',
+          source: 'indeed',
+          sourceHostname: 'indeed.com',
+          status: 'queued',
+          addedAt: oldTime,
+          // No updatedAt - simulates pre-migration job
+        },
+        {
+          id: 'new-job',
+          url: 'https://indeed.com/job/new',
+          title: 'New Job',
+          company: 'Test Co',
+          source: 'indeed',
+          sourceHostname: 'indeed.com',
+          status: 'queued',
+          addedAt: newTime,
+          // No updatedAt
+        },
+      ];
+
+      vi.mocked(db.jobLeads.toArray).mockResolvedValueOnce(mockJobs);
+
+      await useJobsStore.getState().loadJobs();
+
+      const jobs = useJobsStore.getState().jobs;
+      // Should still sort correctly using addedAt fallback
+      expect(jobs[0].id).toBe('new-job');
+      expect(jobs[1].id).toBe('old-job');
     });
 
     it('sets loading state during load', async () => {
@@ -325,6 +442,87 @@ describe('Jobs Store', () => {
 
       expect(useJobsStore.getState().error).toBe('DB connection failed');
       expect(useJobsStore.getState().isLoading).toBe(false);
+    });
+  });
+
+  describe('Job Ordering Consistency', () => {
+    it('maintains order after add then reload', async () => {
+      // Add three jobs
+      await useJobsStore.getState().addJob('https://indeed.com/job/first');
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      await useJobsStore.getState().addJob('https://indeed.com/job/second');
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      await useJobsStore.getState().addJob('https://indeed.com/job/third');
+
+      const jobsBeforeReload = useJobsStore.getState().jobs;
+      expect(jobsBeforeReload[0].url).toBe('https://indeed.com/job/third');
+
+      // Simulate reload by mocking toArray to return the current jobs
+      vi.mocked(db.jobLeads.toArray).mockResolvedValueOnce([...jobsBeforeReload]);
+
+      // Reset state and reload
+      useJobsStore.setState({ jobs: [] });
+      await useJobsStore.getState().loadJobs();
+
+      const jobsAfterReload = useJobsStore.getState().jobs;
+      // Order should be identical
+      expect(jobsAfterReload[0].url).toBe('https://indeed.com/job/third');
+      expect(jobsAfterReload[1].url).toBe('https://indeed.com/job/second');
+      expect(jobsAfterReload[2].url).toBe('https://indeed.com/job/first');
+    });
+
+    it('moves updated job to top', async () => {
+      // Add three jobs with delays
+      await useJobsStore.getState().addJob('https://indeed.com/job/first');
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      await useJobsStore.getState().addJob('https://indeed.com/job/second');
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      await useJobsStore.getState().addJob('https://indeed.com/job/third');
+
+      // third should be first
+      expect(useJobsStore.getState().jobs[0].url).toBe('https://indeed.com/job/third');
+
+      // Now update the "first" job (which is at the end)
+      const firstJob = useJobsStore.getState().jobs.find((j) => j.url.includes('first'));
+      expect(firstJob).toBeDefined();
+
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      await useJobsStore.getState().updateJob(firstJob!.id, { title: 'Updated Title' });
+
+      // After update, "first" should now be at the top
+      const jobsAfterUpdate = useJobsStore.getState().jobs;
+      expect(jobsAfterUpdate[0].url).toBe('https://indeed.com/job/first');
+      expect(jobsAfterUpdate[0].title).toBe('Updated Title');
+    });
+
+    it('updated job remains at top after reload', async () => {
+      // Add two jobs
+      await useJobsStore.getState().addJob('https://indeed.com/job/old');
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      await useJobsStore.getState().addJob('https://indeed.com/job/new');
+
+      // new should be first
+      expect(useJobsStore.getState().jobs[0].url).toBe('https://indeed.com/job/new');
+
+      // Update the old job
+      const oldJob = useJobsStore.getState().jobs.find((j) => j.url.includes('old'));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      await useJobsStore.getState().updateJob(oldJob!.id, { notes: 'Updated!' });
+
+      // old should now be first
+      expect(useJobsStore.getState().jobs[0].url).toBe('https://indeed.com/job/old');
+
+      // Simulate reload
+      const jobsBeforeReload = useJobsStore.getState().jobs;
+      vi.mocked(db.jobLeads.toArray).mockResolvedValueOnce([...jobsBeforeReload]);
+
+      useJobsStore.setState({ jobs: [] });
+      await useJobsStore.getState().loadJobs();
+
+      // old should still be first after reload
+      const jobsAfterReload = useJobsStore.getState().jobs;
+      expect(jobsAfterReload[0].url).toBe('https://indeed.com/job/old');
+      expect(jobsAfterReload[0].notes).toBe('Updated!');
     });
   });
 

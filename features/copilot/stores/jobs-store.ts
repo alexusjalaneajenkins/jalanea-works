@@ -17,6 +17,18 @@ const isDev = import.meta.env.DEV;
 const log = (...args: unknown[]) => isDev && console.log('[jobs-store]', ...args);
 const logError = (...args: unknown[]) => console.error('[jobs-store]', ...args);
 
+/**
+ * Sort jobs by most recently touched (updatedAt ?? addedAt), descending.
+ * This ensures consistent ordering before/after page reload.
+ */
+const sortByMostRecent = (jobs: JobLead[]): JobLead[] => {
+  return [...jobs].sort((a, b) => {
+    const aTime = a.updatedAt ?? a.addedAt;
+    const bTime = b.updatedAt ?? b.addedAt;
+    return bTime.localeCompare(aTime); // Descending (newest first)
+  });
+};
+
 interface JobsState {
   jobs: JobLead[];
   currentTask: ApplyTask | null;
@@ -93,7 +105,10 @@ export const useJobsStore = create<JobsState>((set, get) => ({
         log('✓ Migration complete');
       }
 
-      set({ jobs, isLoading: false });
+      // Sort by most recently touched (updatedAt ?? addedAt) for consistent ordering
+      const sortedJobs = sortByMostRecent(jobs);
+      log('✓ Sorted', sortedJobs.length, 'jobs by most recent');
+      set({ jobs: sortedJobs, isLoading: false });
     } catch (error) {
       logError('✗ loadJobs FAILED:', error);
       set({
@@ -117,13 +132,12 @@ export const useJobsStore = create<JobsState>((set, get) => ({
   addJob: async (url, metadata) => {
     log('addJob called:', { url });
     const job = createJobLead(url, metadata);
-    log('Created JobLead:', job.id, job.source, job.sourceHostname);
+    log('Created JobLead:', job.id, job.source, job.sourceHostname, 'updatedAt:', job.updatedAt);
 
-    // OPTIMISTIC UPDATE: Add to Zustand state immediately for instant UI
-    // Prepend new job so it appears at TOP of the list (newest-first)
+    // OPTIMISTIC UPDATE: Add to Zustand state and sort for consistent ordering
     set((state) => {
-      const newJobs = [job, ...state.jobs];
-      log('Optimistic add - jobs count:', newJobs.length, '(newest-first)');
+      const newJobs = sortByMostRecent([job, ...state.jobs]);
+      log('Optimistic add - jobs count:', newJobs.length, '(sorted by most recent)');
       return { jobs: newJobs, error: null };
     });
 
@@ -157,28 +171,33 @@ export const useJobsStore = create<JobsState>((set, get) => ({
     const { jobs } = get();
     const originalJob = jobs.find((j) => j.id === id);
 
-    // OPTIMISTIC UPDATE: Update Zustand state immediately
-    set((state) => ({
-      jobs: state.jobs.map((job) =>
-        job.id === id ? { ...job, ...updates } : job
-      ),
-      error: null,
-    }));
-    log('Optimistic update applied');
+    // Always set updatedAt on any modification for consistent sorting
+    const now = new Date().toISOString();
+    const updatesWithTimestamp = { ...updates, updatedAt: now };
+
+    // OPTIMISTIC UPDATE: Update Zustand state immediately and re-sort
+    set((state) => {
+      const updatedJobs = state.jobs.map((job) =>
+        job.id === id ? { ...job, ...updatesWithTimestamp } : job
+      );
+      // Re-sort so updated job moves to top
+      return { jobs: sortByMostRecent(updatedJobs), error: null };
+    });
+    log('Optimistic update applied, re-sorted');
 
     try {
       if (!db.isOpen()) {
         await db.open();
       }
-      await db.jobLeads.update(id, updates);
+      await db.jobLeads.update(id, updatesWithTimestamp);
       log('✓ IndexedDB update successful:', id);
     } catch (error) {
       // ROLLBACK: Restore original job on failure
       logError('✗ updateJob FAILED, rolling back:', error);
       if (originalJob) {
         set((state) => ({
-          jobs: state.jobs.map((job) =>
-            job.id === id ? originalJob : job
+          jobs: sortByMostRecent(
+            state.jobs.map((job) => (job.id === id ? originalJob : job))
           ),
           error: error instanceof Error ? error.message : 'Failed to update job',
         }));

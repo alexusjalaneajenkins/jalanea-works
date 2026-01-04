@@ -86,6 +86,29 @@ class ApplyCoPilotDB extends Dexie {
       // Tracker entries
       trackerEntries: 'id, jobLeadId, applicationStatus, lastUpdated, followUpDate',
     });
+
+    // Version 2: Add updatedAt to jobLeads for consistent ordering
+    this.version(2)
+      .stores({
+        vault: 'id, updatedAt',
+        screenerAnswers: 'id, category, updatedAt',
+        resumeFiles: 'id, name, createdAt',
+        jobLeads: 'id, source, status, addedAt, updatedAt, appliedAt',
+        applyTasks: 'id, jobLeadId, status, startedAt',
+        submissionProofs: 'id, jobLeadId, capturedAt',
+        trackerEntries: 'id, jobLeadId, applicationStatus, lastUpdated, followUpDate',
+      })
+      .upgrade((tx) => {
+        // Backfill updatedAt for existing jobs that don't have it
+        return tx
+          .table('jobLeads')
+          .toCollection()
+          .modify((job) => {
+            if (!job.updatedAt) {
+              job.updatedAt = job.addedAt; // Use addedAt as initial updatedAt
+            }
+          });
+      });
   }
 }
 
