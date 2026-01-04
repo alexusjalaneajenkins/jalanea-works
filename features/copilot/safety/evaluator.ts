@@ -18,6 +18,7 @@ import type {
   ExperienceMatch,
   LanguageRequirement,
   ApplicationVault,
+  FitConfidence,
 } from '../types';
 
 // ==================== SAFETY EVALUATION ====================
@@ -100,16 +101,8 @@ const SCAM_PATTERNS: Array<{
     severity: 'medium',
     detail: 'Job description is vague about actual responsibilities',
   },
-  {
-    type: 'grammar_issues',
-    patterns: [
-      /\b(ur|u r|pls|plz)\b/i, // Text speak in job posting
-      /\s{3,}/g, // Multiple spaces
-      /[!]{3,}/g, // Multiple exclamation marks
-    ],
-    severity: 'low',
-    detail: 'Writing style seems unprofessional for a job posting',
-  },
+  // NOTE: Removed 'grammar_issues' pattern - it was biased against ESL job postings
+  // and flagged legitimate international employers unfairly.
 ];
 
 /**
@@ -142,12 +135,12 @@ export function evaluateSafety(job: JobLead): JobSafetyCheck {
     }
   }
 
-  // Check for no company info
+  // Check for no company info (gentle flag - not a scam indicator, just needs labeling)
   if (!job.company || job.company === 'Unknown Company' || job.company.trim().length < 2) {
     redFlags.push({
       type: 'no_company_info',
-      severity: 'medium',
-      detail: 'Company name is missing - consider researching before applying',
+      severity: 'low', // Lowered from 'medium' - missing company isn't necessarily a scam
+      detail: 'Company name needs to be added for better tracking',
     });
   }
 
@@ -286,6 +279,50 @@ function parseYearMonth(dateStr?: string): Date | null {
 }
 
 /**
+ * Calculate confidence level based on available data
+ */
+function calculateConfidence(
+  job: JobLead,
+  vault: ApplicationVault | null
+): { confidence: FitConfidence; reason: string } {
+  const hasDescription = Boolean(job.description && job.description.trim().length > 50);
+  const hasVault = Boolean(vault && vault.workHistory && vault.workHistory.length > 0);
+  const hasCompany = Boolean(job.company && job.company !== 'Unknown Company');
+  const hasTitle = Boolean(job.title && job.title.trim().length > 0);
+
+  // Count how much data we have
+  const dataPoints = [hasDescription, hasVault, hasCompany, hasTitle].filter(Boolean).length;
+
+  if (!hasDescription) {
+    return {
+      confidence: 'low',
+      reason: 'Paste job description for better accuracy',
+    };
+  }
+
+  if (dataPoints >= 3 && hasVault) {
+    return {
+      confidence: 'high',
+      reason: 'Good match analysis based on your profile and job details',
+    };
+  }
+
+  if (dataPoints >= 2) {
+    return {
+      confidence: 'medium',
+      reason: hasVault
+        ? 'Based on job details and your profile'
+        : 'Complete your profile for personalized insights',
+    };
+  }
+
+  return {
+    confidence: 'low',
+    reason: 'Limited data available for assessment',
+  };
+}
+
+/**
  * Evaluate job fit based on requirements and user profile
  */
 export function evaluateFit(
@@ -300,6 +337,9 @@ export function evaluateFit(
     .filter(Boolean)
     .join(' ');
 
+  // Calculate confidence first - this affects scoring
+  const { confidence, reason: confidenceReason } = calculateConfidence(job, vault);
+
   // Parse experience requirements
   const experienceMatch = parseExperienceRequirements(textToScan, vault);
 
@@ -313,12 +353,19 @@ export function evaluateFit(
     job
   );
 
-  // Calculate fit score
-  const fitScore = calculateFitScore(experienceMatch, languageRequirements, dealBreakers);
+  // Calculate fit score (will be capped if low confidence)
+  let fitScore = calculateFitScore(experienceMatch, languageRequirements, dealBreakers);
+
+  // CAP fit score at 60% when confidence is low (e.g., no job description)
+  if (confidence === 'low') {
+    fitScore = Math.min(fitScore, 60);
+  }
 
   return {
     evaluatedAt: new Date().toISOString(),
     fitScore,
+    confidence,
+    confidenceReason,
     experienceMatch,
     languageRequirements,
     dealBreakers,

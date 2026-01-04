@@ -161,9 +161,13 @@ export type RedFlagType =
   | 'suspicious_contact' // Personal email, WhatsApp only
   | 'no_company_info'; // Can't verify company exists
 
+export type FitConfidence = 'low' | 'medium' | 'high';
+
 export interface JobFitCheck {
   evaluatedAt: string;
   fitScore: number; // 0-100
+  confidence: FitConfidence; // How much data we had to make this assessment
+  confidenceReason: string; // Why confidence is at this level
   experienceMatch: ExperienceMatch;
   languageRequirements: LanguageRequirement[];
   dealBreakers: string[]; // Why this might not be a good fit
