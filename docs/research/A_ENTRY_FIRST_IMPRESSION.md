@@ -41,7 +41,9 @@ Research document for Jalanea Works job search app targeting barrier-facing job 
 | **Shared/public devices** | Can't save passwords, privacy concerns | Guest mode, easy logout, no persistent login by default |
 | **Library computer** | Time limits, public setting | Session state saves to URL params or QR code for phone transfer |
 | **Cognitive overload** | Can't process walls of text | Progressive disclosure, chunked information [EXTERNAL][4] |
-| **72-second sessions** | Users interrupted frequently | Save state automatically, easy resume [EXTERNAL][2] |
+| **Frequent interruptions / short sessions** | Users interrupted frequently | Save state automatically, easy resume [EXTERNAL][2] |
+
+> **Security note:** QR/URL session transfer must use short-lived tokens and avoid embedding personal data in URLs.
 
 ---
 
