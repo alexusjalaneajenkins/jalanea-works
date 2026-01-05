@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "defaultMode": "plan",
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./.env.local)",
+      "Read(./secrets/**)",
+      "Read(./**/secrets/**)",
+      "Read(./service_account.json)",
+      "Read(./**/service_account.json)",
+      "Read(./**/*credentials*.json)"
+    ],
+    "ask": [
+      "Bash(rm:*)",
+      "Bash(git push:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(npm publish:*)"
+    ]
+  },
+  "disableBypassPermissionsMode": "disable"
+}
