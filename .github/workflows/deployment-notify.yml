@@ -1,0 +1,99 @@
+# Deployment Notification Workflow
+#
+# Sends notifications whenever code is deployed to any environment
+# Tracks: Render, Vercel, and any manual deployments
+#
+# Setup:
+# - Add ALERT_WEBHOOK secret (Slack/Discord webhook URL)
+
+name: Deployment Notifications
+
+on:
+  # Trigger on any deployment-related workflow
+  workflow_run:
+    workflows: ["Deploy to Render"]
+    types: [requested, in_progress, completed]
+
+  # Trigger on any push to master (Vercel auto-deploys)
+  push:
+    branches: [master]
+
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment name'
+        required: true
+        default: 'production'
+
+jobs:
+  notify-deployment:
+    name: Send Deployment Notification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get commit info
+        id: commit
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "message=$(git log -1 --pretty=%s)" >> $GITHUB_OUTPUT
+          echo "author=$(git log -1 --pretty=%an)" >> $GITHUB_OUTPUT
+          echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+
+      - name: Detect deployment type
+        id: deploy_type
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "platform=Vercel (auto)" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+            echo "platform=Render" >> $GITHUB_OUTPUT
+          else
+            echo "platform=Manual" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send notification
+        if: success()
+        env:
+          ALERT_WEBHOOK: ${{ secrets.ALERT_WEBHOOK }}
+        run: |
+          if [ -z "$ALERT_WEBHOOK" ]; then
+            echo "⚠️ ALERT_WEBHOOK not set - skipping notification"
+            exit 0
+          fi
+
+          MESSAGE=$(cat <<EOF
+          🚀 **Deployment Detected**
+
+          Platform: ${{ steps.deploy_type.outputs.platform }}
+          Commit: \`${{ steps.commit.outputs.sha_short }}\`
+          Author: ${{ steps.commit.outputs.author }}
+          Message: ${{ steps.commit.outputs.message }}
+          Time: ${{ steps.commit.outputs.timestamp }}
+
+          🔗 [View commit](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+
+          ⚠️ **Monitor quota usage**: This deployment may consume API quotas.
+          EOF
+          )
+
+          curl -X POST "$ALERT_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d "{\"text\":\"$MESSAGE\",\"username\":\"Jalanea Deployment Bot\",\"icon_emoji\":\":rocket:\"}"
+
+      - name: Create deployment summary
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Platform**: ${{ steps.deploy_type.outputs.platform }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: \`${{ steps.commit.outputs.sha_short }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Author**: ${{ steps.commit.outputs.author }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Time**: ${{ steps.commit.outputs.timestamp }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ⚠️ Post-Deployment Checklist" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Check Render dashboard for service status" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Monitor Upstash quota (Redis commands)" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Monitor Supabase quota (DB size, API calls)" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Verify region is correct (should be US-East for Florida)" >> $GITHUB_STEP_SUMMARY
