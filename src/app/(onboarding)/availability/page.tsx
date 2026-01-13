@@ -1,62 +1,54 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOnboarding } from '@/contexts/onboarding-context'
+import { Calendar, Sun, Moon, Sunrise, ChevronRight, ChevronLeft } from 'lucide-react'
 
-const availabilityOptions = [
-  { id: 'open', label: 'Open to anything', description: 'Any day, any time' },
-  { id: 'weekdays', label: 'Weekdays only', description: 'Monday through Friday' },
-  { id: 'weekends', label: 'Weekends only', description: 'Saturday and Sunday' },
-  { id: 'specific', label: 'Specific days', description: 'Choose your days' },
+const AVAILABILITY_OPTIONS = [
+  { value: 'open', label: 'Open to anything', desc: 'Any day, any shift' },
+  { value: 'weekdays', label: 'Weekdays only', desc: 'Monday - Friday' },
+  { value: 'weekends', label: 'Weekends only', desc: 'Saturday - Sunday' },
+  { value: 'specific', label: 'Specific days', desc: 'Choose your days' },
 ]
 
-const daysOfWeek = [
-  { id: 'mon', label: 'Mon' },
-  { id: 'tue', label: 'Tue' },
-  { id: 'wed', label: 'Wed' },
-  { id: 'thu', label: 'Thu' },
-  { id: 'fri', label: 'Fri' },
-  { id: 'sat', label: 'Sat' },
-  { id: 'sun', label: 'Sun' },
-]
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-const shiftOptions = [
-  { id: 'morning', label: 'Morning', time: '6am - 12pm', icon: '🌅' },
-  { id: 'afternoon', label: 'Afternoon', time: '12pm - 6pm', icon: '☀️' },
-  { id: 'evening', label: 'Evening', time: '6pm - 12am', icon: '🌆' },
-  { id: 'overnight', label: 'Overnight', time: '12am - 6am', icon: '🌙' },
+const SHIFT_OPTIONS = [
+  { value: 'morning', label: 'Morning', icon: Sunrise, time: '6am - 12pm' },
+  { value: 'afternoon', label: 'Afternoon', icon: Sun, time: '12pm - 6pm' },
+  { value: 'evening', label: 'Evening', icon: Moon, time: '6pm - 12am' },
+  { value: 'overnight', label: 'Overnight', icon: Moon, time: '12am - 6am' },
 ]
 
 export default function AvailabilityPage() {
   const router = useRouter()
-  const { data, updateData } = useOnboarding()
+  const { data, updateData, setCurrentStep } = useOnboarding()
 
-  const toggleDay = (dayId: string) => {
+  useEffect(() => {
+    setCurrentStep(3)
+  }, [setCurrentStep])
+
+  const toggleDay = (day: string) => {
     const current = data.specificDays
-    if (current.includes(dayId)) {
-      updateData({ specificDays: current.filter(d => d !== dayId) })
+    if (current.includes(day)) {
+      updateData({ specificDays: current.filter(d => d !== day) })
     } else {
-      updateData({ specificDays: [...current, dayId] })
+      updateData({ specificDays: [...current, day] })
     }
   }
 
-  const toggleShift = (shiftId: string) => {
+  const toggleShift = (shift: string) => {
     const current = data.preferredShifts
-    if (current.includes(shiftId)) {
-      updateData({ preferredShifts: current.filter(s => s !== shiftId) })
+    if (current.includes(shift)) {
+      updateData({ preferredShifts: current.filter(s => s !== shift) })
     } else {
-      updateData({ preferredShifts: [...current, shiftId] })
+      updateData({ preferredShifts: [...current, shift] })
     }
   }
 
-  const canContinue =
-    data.availability !== '' &&
-    (data.availability !== 'specific' || data.specificDays.length > 0) &&
-    data.preferredShifts.length > 0
-
-  const handleBack = () => {
-    router.push('/transportation')
-  }
+  const canContinue = data.availability !== '' && data.preferredShifts.length > 0 &&
+    (data.availability !== 'specific' || data.specificDays.length > 0)
 
   const handleContinue = () => {
     if (canContinue) {
@@ -64,45 +56,40 @@ export default function AvailabilityPage() {
     }
   }
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">When can you work?</h2>
-        <p className="text-sm text-gray-500 mb-4">This helps us find jobs that fit your schedule</p>
+  const handleBack = () => {
+    router.push('/transportation')
+  }
 
-        <div className="space-y-3">
-          {availabilityOptions.map((option) => (
+  return (
+    <div className="space-y-8">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">When Can You Work?</h1>
+        <p className="text-slate-600">Help us find jobs that match your schedule.</p>
+      </div>
+
+      {/* Availability Selection */}
+      <div className="space-y-3">
+        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <Calendar className="w-4 h-4 text-amber-500" />
+          Your availability
+        </label>
+        <div className="grid gap-3">
+          {AVAILABILITY_OPTIONS.map((option) => (
             <button
-              key={option.id}
-              onClick={() => {
-                updateData({
-                  availability: option.id as typeof data.availability,
-                  specificDays: option.id === 'specific' ? data.specificDays : []
-                })
-              }}
-              className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
-                data.availability === option.id
-                  ? 'border-blue-600 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
+              key={option.value}
+              type="button"
+              onClick={() => updateData({
+                availability: option.value as typeof data.availability,
+                specificDays: option.value === 'specific' ? data.specificDays : []
+              })}
+              className={`w-full px-4 py-3 text-left rounded-xl border-2 transition-all ${
+                data.availability === option.value
+                  ? 'border-amber-500 bg-amber-50 text-amber-900'
+                  : 'border-slate-200 hover:border-slate-300 text-slate-700'
               }`}
             >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                    data.availability === option.id
-                      ? 'border-blue-600 bg-blue-600'
-                      : 'border-gray-300'
-                  }`}
-                >
-                  {data.availability === option.id && (
-                    <div className="w-2 h-2 bg-white rounded-full" />
-                  )}
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">{option.label}</p>
-                  <p className="text-sm text-gray-500">{option.description}</p>
-                </div>
-              </div>
+              <div className="font-semibold">{option.label}</div>
+              <div className="text-xs text-slate-500">{option.desc}</div>
             </button>
           ))}
         </div>
@@ -110,69 +97,86 @@ export default function AvailabilityPage() {
 
       {/* Specific Days Selector */}
       {data.availability === 'specific' && (
-        <div className="animate-fadeIn">
-          <h3 className="text-lg font-medium text-gray-900 mb-3">Select your available days</h3>
-          <div className="flex gap-2 flex-wrap">
-            {daysOfWeek.map((day) => (
-              <button
-                key={day.id}
-                onClick={() => toggleDay(day.id)}
-                className={`px-4 py-2 rounded-lg border-2 font-medium transition-all ${
-                  data.specificDays.includes(day.id)
-                    ? 'border-blue-600 bg-blue-600 text-white'
-                    : 'border-gray-200 text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {day.label}
-              </button>
-            ))}
+        <div className="space-y-3 animate-in slide-in-from-top-2">
+          <label className="text-sm font-semibold text-slate-700">
+            Select your available days
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {DAYS.map((day) => {
+              const isSelected = data.specificDays.includes(day)
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => toggleDay(day)}
+                  className={`px-4 py-2 rounded-lg border-2 font-medium transition-all ${
+                    isSelected
+                      ? 'border-amber-500 bg-amber-500 text-white'
+                      : 'border-slate-200 hover:border-slate-300 text-slate-600'
+                  }`}
+                >
+                  {day}
+                </button>
+              )
+            })}
           </div>
         </div>
       )}
 
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Preferred shifts</h2>
-        <p className="text-sm text-gray-500 mb-4">Select all shifts you can work</p>
-
+      {/* Preferred Shifts */}
+      <div className="space-y-3">
+        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <Sun className="w-4 h-4 text-amber-500" />
+          Preferred shifts (select all that apply)
+        </label>
         <div className="grid grid-cols-2 gap-3">
-          {shiftOptions.map((shift) => (
-            <button
-              key={shift.id}
-              onClick={() => toggleShift(shift.id)}
-              className={`p-4 rounded-lg border-2 transition-all text-left ${
-                data.preferredShifts.includes(shift.id)
-                  ? 'border-blue-600 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              <span className="text-xl">{shift.icon}</span>
-              <p className="font-medium text-gray-900 mt-1">{shift.label}</p>
-              <p className="text-xs text-gray-500">{shift.time}</p>
-            </button>
-          ))}
+          {SHIFT_OPTIONS.map((option) => {
+            const Icon = option.icon
+            const isSelected = data.preferredShifts.includes(option.value)
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => toggleShift(option.value)}
+                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                  isSelected
+                    ? 'border-amber-500 bg-amber-50'
+                    : 'border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${
+                  isSelected ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'
+                }`}>
+                  <Icon className="w-5 h-5" />
+                </div>
+                <div className={`font-semibold ${isSelected ? 'text-amber-900' : 'text-slate-700'}`}>
+                  {option.label}
+                </div>
+                <div className="text-xs text-slate-500">{option.time}</div>
+              </button>
+            )
+          })}
         </div>
       </div>
 
-      {/* Navigation */}
-      <div className="pt-6 border-t border-gray-200 flex gap-3">
+      {/* Navigation Buttons */}
+      <div className="flex justify-between pt-6 border-t border-slate-200">
         <button
+          type="button"
           onClick={handleBack}
-          className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+          className="px-5 py-3 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-all flex items-center gap-1 border border-slate-300"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeft className="w-4 h-4" />
           Back
         </button>
         <button
+          type="button"
           onClick={handleContinue}
           disabled={!canContinue}
-          className="flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
         >
           Continue
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
+          <ChevronRight className="w-4 h-4" />
         </button>
       </div>
     </div>

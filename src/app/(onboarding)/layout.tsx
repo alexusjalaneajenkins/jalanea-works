@@ -1,104 +1,93 @@
 'use client'
 
 import { OnboardingProvider, useOnboarding } from '@/contexts/onboarding-context'
-import { usePathname, useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { usePathname } from 'next/navigation'
+import { Check, Sparkles } from 'lucide-react'
 
-const steps = [
-  { path: '/foundation', label: 'Foundation', number: 1 },
-  { path: '/transportation', label: 'Transportation', number: 2 },
-  { path: '/availability', label: 'Availability', number: 3 },
-  { path: '/salary', label: 'Salary', number: 4 },
-  { path: '/challenges', label: 'Challenges', number: 5 },
+const STEPS = [
+  { path: '/foundation', label: 'Foundation', step: 1 },
+  { path: '/transportation', label: 'Transportation', step: 2 },
+  { path: '/availability', label: 'Availability', step: 3 },
+  { path: '/salary', label: 'Salary', step: 4 },
+  { path: '/challenges', label: 'Challenges', step: 5 },
 ]
 
 function ProgressIndicator() {
-  const { currentStep, totalSteps } = useOnboarding()
   const pathname = usePathname()
+  const { currentStep } = useOnboarding()
+
+  // Don't show progress on complete page
+  if (pathname === '/complete') {
+    return null
+  }
 
   // Determine current step from pathname
-  const activeStep = steps.find(s => pathname.includes(s.path))?.number || currentStep
+  const currentStepFromPath = STEPS.findIndex(s => pathname === s.path) + 1 || currentStep
 
   return (
     <div className="mb-8">
-      {/* Step counter */}
-      <p className="text-sm text-gray-500 text-center mb-4">
-        Step {activeStep} of {totalSteps}
-      </p>
+      {/* Step indicators */}
+      <div className="flex items-center justify-center gap-2 mb-4">
+        {STEPS.map((step, idx) => {
+          const isCurrentStep = idx + 1 === currentStepFromPath
+          const isCompletedStep = idx + 1 < currentStepFromPath
 
-      {/* Progress bar */}
-      <div className="flex items-center justify-center gap-2">
-        {steps.map((step, index) => (
-          <div key={step.path} className="flex items-center">
-            {/* Step circle */}
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
-                step.number < activeStep
-                  ? 'bg-green-500 text-white'
-                  : step.number === activeStep
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-500'
-              }`}
-            >
-              {step.number < activeStep ? (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              ) : (
-                step.number
+          return (
+            <div key={step.path} className="flex items-center gap-2">
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ${
+                  isCurrentStep
+                    ? 'bg-amber-500 text-white scale-110 ring-4 ring-amber-500/30'
+                    : isCompletedStep
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-slate-700 text-slate-400'
+                }`}
+              >
+                {isCompletedStep ? (
+                  <Check className="w-5 h-5" />
+                ) : (
+                  idx + 1
+                )}
+              </div>
+              {idx < STEPS.length - 1 && (
+                <div className={`w-6 h-1 rounded-full transition-all ${
+                  isCompletedStep ? 'bg-amber-500' : 'bg-slate-700'
+                }`} />
               )}
             </div>
-
-            {/* Connector line */}
-            {index < steps.length - 1 && (
-              <div
-                className={`w-8 h-1 mx-1 transition-colors ${
-                  step.number < activeStep ? 'bg-green-500' : 'bg-gray-200'
-                }`}
-              />
-            )}
-          </div>
-        ))}
+          )
+        })}
       </div>
 
-      {/* Step label */}
-      <p className="text-center mt-3 font-medium text-gray-900">
-        {steps.find(s => s.number === activeStep)?.label}
-      </p>
+      {/* Current step label */}
+      <div className="text-center">
+        <div className="text-amber-500 font-bold text-lg">
+          Step {currentStepFromPath} of 5
+        </div>
+        <div className="text-slate-400 text-sm">
+          {STEPS[currentStepFromPath - 1]?.label || 'Complete'}
+        </div>
+      </div>
     </div>
   )
 }
 
-function OnboardingLayoutContent({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
-  const router = useRouter()
-  const { setCurrentStep } = useOnboarding()
-
-  // Update current step based on pathname
-  useEffect(() => {
-    const step = steps.find(s => pathname.includes(s.path))
-    if (step) {
-      setCurrentStep(step.number)
-    }
-  }, [pathname, setCurrentStep])
-
-  // Skip progress indicator on complete page
-  const isCompletePage = pathname.includes('/complete')
-
+function OnboardingContent({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-8">
-      <div className="max-w-lg mx-auto">
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 py-12">
+      <div className="max-w-2xl mx-auto px-4">
         {/* Header */}
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Jalanea Works</h1>
-          <p className="text-gray-600 text-sm">Let&apos;s set up your profile</p>
+        <div className="text-center mb-4">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-full mb-4">
+            <Sparkles className="w-4 h-4 text-amber-500" />
+            <span className="text-sm font-bold text-amber-500">Jalanea Works Onboarding</span>
+          </div>
         </div>
 
-        {/* Progress indicator */}
-        {!isCompletePage && <ProgressIndicator />}
+        <ProgressIndicator />
 
-        {/* Content */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
+        {/* Page content */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
           {children}
         </div>
       </div>
@@ -113,7 +102,7 @@ export default function OnboardingLayout({
 }) {
   return (
     <OnboardingProvider>
-      <OnboardingLayoutContent>{children}</OnboardingLayoutContent>
+      <OnboardingContent>{children}</OnboardingContent>
     </OnboardingProvider>
   )
 }

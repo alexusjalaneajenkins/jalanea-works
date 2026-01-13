@@ -1,33 +1,35 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOnboarding } from '@/contexts/onboarding-context'
+import { Car, Bus, Bike, Users, ChevronRight, ChevronLeft, Clock } from 'lucide-react'
 
-const transportOptions = [
-  { id: 'car', label: 'Car', icon: '🚗', description: 'Personal vehicle' },
-  { id: 'lynx', label: 'LYNX Bus', icon: '🚌', description: 'Orlando public transit' },
-  { id: 'rideshare', label: 'Rideshare', icon: '🚕', description: 'Uber, Lyft, etc.' },
-  { id: 'walk', label: 'Walk/Bike', icon: '🚶', description: 'Walking or cycling' },
+const TRANSPORT_OPTIONS = [
+  { value: 'car', label: 'Reliable Car', icon: Car, desc: 'Own vehicle' },
+  { value: 'bus', label: 'LYNX Bus', icon: Bus, desc: 'Public transit' },
+  { value: 'rideshare', label: 'Rideshare', icon: Users, desc: 'Uber/Lyft/Friend' },
+  { value: 'walk', label: 'Walk / Bike', icon: Bike, desc: 'Active commute' },
 ]
 
 export default function TransportationPage() {
   const router = useRouter()
-  const { data, updateData } = useOnboarding()
+  const { data, updateData, setCurrentStep } = useOnboarding()
 
-  const toggleTransport = (id: string) => {
+  useEffect(() => {
+    setCurrentStep(2)
+  }, [setCurrentStep])
+
+  const toggleTransport = (value: string) => {
     const current = data.transportMethods
-    if (current.includes(id)) {
-      updateData({ transportMethods: current.filter(t => t !== id) })
+    if (current.includes(value)) {
+      updateData({ transportMethods: current.filter(t => t !== value) })
     } else {
-      updateData({ transportMethods: [...current, id] })
+      updateData({ transportMethods: [...current, value] })
     }
   }
 
   const canContinue = data.transportMethods.length > 0
-
-  const handleBack = () => {
-    router.push('/foundation')
-  }
 
   const handleContinue = () => {
     if (canContinue) {
@@ -35,38 +37,60 @@ export default function TransportationPage() {
     }
   }
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">How do you get around?</h2>
-        <p className="text-sm text-gray-500 mb-4">Select all that apply - we&apos;ll find jobs you can reach</p>
+  const handleBack = () => {
+    router.push('/foundation')
+  }
 
+  return (
+    <div className="space-y-8">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">How Do You Get Around?</h1>
+        <p className="text-slate-600">Select all transportation methods available to you.</p>
+      </div>
+
+      {/* Transport Methods */}
+      <div className="space-y-3">
+        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <Car className="w-4 h-4 text-amber-500" />
+          Transportation methods (select all that apply)
+        </label>
         <div className="grid grid-cols-2 gap-3">
-          {transportOptions.map((option) => (
-            <button
-              key={option.id}
-              onClick={() => toggleTransport(option.id)}
-              className={`p-4 rounded-lg border-2 transition-all text-left ${
-                data.transportMethods.includes(option.id)
-                  ? 'border-blue-600 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              <span className="text-2xl">{option.icon}</span>
-              <p className="font-medium text-gray-900 mt-2">{option.label}</p>
-              <p className="text-xs text-gray-500">{option.description}</p>
-            </button>
-          ))}
+          {TRANSPORT_OPTIONS.map((option) => {
+            const Icon = option.icon
+            const isSelected = data.transportMethods.includes(option.value)
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => toggleTransport(option.value)}
+                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                  isSelected
+                    ? 'border-amber-500 bg-amber-50'
+                    : 'border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${
+                  isSelected ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'
+                }`}>
+                  <Icon className="w-5 h-5" />
+                </div>
+                <div className={`font-semibold ${isSelected ? 'text-amber-900' : 'text-slate-700'}`}>
+                  {option.label}
+                </div>
+                <div className="text-xs text-slate-500">{option.desc}</div>
+              </button>
+            )
+          })}
         </div>
       </div>
 
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+      {/* Max Commute Slider */}
+      <div className="space-y-3">
+        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <Clock className="w-4 h-4 text-amber-500" />
           What&apos;s the farthest you can commute?
-        </h2>
-        <p className="text-sm text-gray-500 mb-4">One-way travel time to work</p>
-
-        <div className="space-y-4">
+        </label>
+        <div className="px-2">
           <input
             type="range"
             min="15"
@@ -74,47 +98,37 @@ export default function TransportationPage() {
             step="5"
             value={data.maxCommute}
             onChange={(e) => updateData({ maxCommute: parseInt(e.target.value) })}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-500"
           />
-
-          <div className="flex justify-between text-sm text-gray-500">
+          <div className="flex justify-between mt-2 text-sm text-slate-500">
             <span>15 min</span>
-            <span className="font-medium text-blue-600 text-lg">{data.maxCommute} minutes</span>
+            <span className="font-bold text-amber-600">{data.maxCommute} minutes</span>
             <span>60 min</span>
           </div>
-
-          {/* Visual indicator */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-sm text-gray-600">
-              {data.maxCommute <= 20 && '🏃 Very local - jobs within walking/quick bus distance'}
-              {data.maxCommute > 20 && data.maxCommute <= 35 && '🚌 Moderate - most LYNX routes work'}
-              {data.maxCommute > 35 && data.maxCommute <= 45 && '🚗 Flexible - opens up more opportunities'}
-              {data.maxCommute > 45 && '🌍 Wide range - maximum job options!'}
-            </p>
-          </div>
         </div>
+        <p className="text-xs text-slate-500">
+          We&apos;ll only show jobs within your commute range using LYNX bus routes.
+        </p>
       </div>
 
-      {/* Navigation */}
-      <div className="pt-6 border-t border-gray-200 flex gap-3">
+      {/* Navigation Buttons */}
+      <div className="flex justify-between pt-6 border-t border-slate-200">
         <button
+          type="button"
           onClick={handleBack}
-          className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+          className="px-5 py-3 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-all flex items-center gap-1 border border-slate-300"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeft className="w-4 h-4" />
           Back
         </button>
         <button
+          type="button"
           onClick={handleContinue}
           disabled={!canContinue}
-          className="flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
         >
           Continue
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
+          <ChevronRight className="w-4 h-4" />
         </button>
       </div>
     </div>

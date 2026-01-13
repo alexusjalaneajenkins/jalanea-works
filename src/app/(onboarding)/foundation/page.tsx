@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOnboarding } from '@/contexts/onboarding-context'
+import { MapPin, GraduationCap, ChevronRight, Building2 } from 'lucide-react'
 
 interface ValenciaProgram {
   program_id: string
@@ -14,32 +15,42 @@ interface ValenciaProgram {
 
 export default function FoundationPage() {
   const router = useRouter()
-  const { data, updateData } = useOnboarding()
-  const [programs, setPrograms] = useState<ValenciaProgram[]>([])
-  const [isLoadingPrograms, setIsLoadingPrograms] = useState(false)
+  const { data, updateData, setCurrentStep } = useOnboarding()
+  const [valenciaPrograms, setValenciaPrograms] = useState<ValenciaProgram[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Fetch Valencia programs when education is Valencia
+  // Set current step on mount
   useEffect(() => {
-    if (data.education === 'valencia') {
-      setIsLoadingPrograms(true)
-      fetch('/api/valencia-programs')
-        .then(res => res.json())
-        .then(data => {
-          setPrograms(data)
-          setIsLoadingPrograms(false)
-        })
-        .catch(err => {
-          console.error('Failed to fetch programs:', err)
-          setIsLoadingPrograms(false)
-        })
-    }
-  }, [data.education])
+    setCurrentStep(1)
+  }, [setCurrentStep])
 
-  const canContinue =
-    data.address.trim() !== '' &&
-    data.education !== '' &&
-    (data.education !== 'valencia' || data.valenciaProgram !== '') &&
-    (data.education !== 'other_college' || data.otherInstitution.trim() !== '')
+  // Fetch Valencia programs
+  useEffect(() => {
+    async function fetchPrograms() {
+      try {
+        const response = await fetch('/api/valencia-programs')
+        if (response.ok) {
+          const programs = await response.json()
+          setValenciaPrograms(programs)
+        }
+      } catch (error) {
+        console.error('Failed to fetch Valencia programs:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchPrograms()
+  }, [])
+
+  const educationOptions = [
+    { value: 'valencia', label: 'Valencia College' },
+    { value: 'other_college', label: 'Other College' },
+    { value: 'high_school', label: 'High School Diploma' },
+    { value: 'ged', label: 'GED' },
+    { value: 'none', label: 'No formal education' },
+  ]
+
+  const canContinue = data.address.trim() !== '' && data.education !== ''
 
   const handleContinue = () => {
     if (canContinue) {
@@ -48,96 +59,114 @@ export default function FoundationPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Where do you live?</h2>
-        <p className="text-sm text-gray-500 mb-4">We&apos;ll use this to find jobs near you</p>
+    <div className="space-y-8">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">Let&apos;s Start with the Basics</h1>
+        <p className="text-slate-600">Tell us where you live and your educational background.</p>
+      </div>
+
+      {/* Location Input */}
+      <div className="space-y-3">
+        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <MapPin className="w-4 h-4 text-amber-500" />
+          Where do you live?
+        </label>
         <input
           type="text"
           value={data.address}
           onChange={(e) => updateData({ address: e.target.value })}
-          placeholder="Enter your address or zip code"
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+          placeholder="Enter your address or neighborhood (e.g., Pine Hills, Orlando)"
+          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all text-slate-900 placeholder:text-slate-400"
         />
-        <p className="text-xs text-gray-400 mt-1">
-          Tip: Enter your full address for better job matches
+        <p className="text-xs text-slate-500">
+          We use this to find jobs within your commute range. Your exact address is never shared.
         </p>
       </div>
 
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">What&apos;s your education?</h2>
-        <p className="text-sm text-gray-500 mb-4">This helps us match you with relevant opportunities</p>
-        <select
-          value={data.education}
-          onChange={(e) => {
-            updateData({
-              education: e.target.value as typeof data.education,
-              valenciaProgram: '',
-              otherInstitution: ''
-            })
-          }}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white"
-        >
-          <option value="">Select your education level</option>
-          <option value="valencia">Valencia College</option>
-          <option value="other_college">Other College/University</option>
-          <option value="high_school">High School Diploma</option>
-          <option value="ged">GED</option>
-          <option value="none">No formal education</option>
-        </select>
+      {/* Education Selection */}
+      <div className="space-y-3">
+        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+          <GraduationCap className="w-4 h-4 text-amber-500" />
+          What&apos;s your education?
+        </label>
+        <div className="grid gap-3">
+          {educationOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => updateData({
+                education: option.value as typeof data.education,
+                valenciaProgram: '',
+                otherInstitution: ''
+              })}
+              className={`w-full px-4 py-3 text-left rounded-xl border-2 transition-all ${
+                data.education === option.value
+                  ? 'border-amber-500 bg-amber-50 text-amber-900'
+                  : 'border-slate-200 hover:border-slate-300 text-slate-700'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Valencia Program Selector */}
       {data.education === 'valencia' && (
-        <div className="animate-fadeIn">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Which Valencia program?</h3>
-          {isLoadingPrograms ? (
-            <div className="flex items-center justify-center py-4">
-              <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-              <span className="ml-2 text-gray-500">Loading programs...</span>
-            </div>
+        <div className="space-y-3 animate-in slide-in-from-top-2">
+          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <Building2 className="w-4 h-4 text-amber-500" />
+            Which Valencia program?
+          </label>
+          {isLoading ? (
+            <div className="px-4 py-3 text-slate-500">Loading programs...</div>
           ) : (
             <select
               value={data.valenciaProgram}
               onChange={(e) => updateData({ valenciaProgram: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white"
+              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all text-slate-900"
             >
               <option value="">Select your program</option>
-              {programs.map((program) => (
+              {valenciaPrograms.map((program) => (
                 <option key={program.program_id} value={program.program_id}>
                   {program.program_name} ({program.program_type})
                 </option>
               ))}
             </select>
           )}
+          <p className="text-xs text-slate-500">
+            We&apos;ll match you with jobs that value your Valencia credentials.
+          </p>
         </div>
       )}
 
       {/* Other Institution Input */}
       {data.education === 'other_college' && (
-        <div className="animate-fadeIn">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Which institution?</h3>
+        <div className="space-y-3 animate-in slide-in-from-top-2">
+          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <Building2 className="w-4 h-4 text-amber-500" />
+            Institution name
+          </label>
           <input
             type="text"
             value={data.otherInstitution}
             onChange={(e) => updateData({ otherInstitution: e.target.value })}
             placeholder="Enter your college or university name"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all text-slate-900 placeholder:text-slate-400"
           />
         </div>
       )}
 
-      {/* Navigation */}
-      <div className="pt-6 border-t border-gray-200">
+      {/* Continue Button */}
+      <div className="flex justify-end pt-6 border-t border-slate-200">
         <button
+          type="button"
           onClick={handleContinue}
           disabled={!canContinue}
-          className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
         >
           Continue
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
+          <ChevronRight className="w-4 h-4" />
         </button>
       </div>
     </div>

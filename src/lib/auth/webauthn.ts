@@ -15,22 +15,22 @@ import type { Passkey } from '@/types/auth'
 const rpName = 'Jalanea Works'
 
 // Get RP ID based on environment
+// IMPORTANT: RP ID must be a stable domain, not Vercel preview URLs
 function getRpId(): string {
-  // In production, use the actual domain
-  if (process.env.VERCEL_URL) {
-    return new URL(`https://${process.env.VERCEL_URL}`).hostname
+  // Use explicit production domain if set (required for passkeys to work)
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return new URL(process.env.NEXT_PUBLIC_APP_URL).hostname
   }
-  // In development, use localhost
+  // Fallback for development
   return 'localhost'
 }
 
 // Get expected origin based on environment
 function getExpectedOrigin(): string {
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL
   }
-  // Support both http and https in development
-  return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  return 'http://localhost:3000'
 }
 
 export async function generatePasskeyRegistrationOptions(
