@@ -5,10 +5,14 @@ import type { RegistrationResponseJSON } from '@simplewebauthn/server'
 
 export async function POST(request: Request) {
   try {
+    console.log('[register] Starting passkey registration...')
     const { credential, email } = (await request.json()) as {
       credential: RegistrationResponseJSON
       email: string
     }
+
+    console.log('[register] Email:', email)
+    console.log('[register] Credential ID:', credential?.id)
 
     if (!credential || !email) {
       return NextResponse.json(
@@ -18,6 +22,7 @@ export async function POST(request: Request) {
     }
 
     const supabase = createAdminClient()
+    console.log('[register] Supabase client created')
 
     // Get the stored challenge
     const { data: challenge, error: challengeError } = await supabase
@@ -31,11 +36,13 @@ export async function POST(request: Request) {
       .single()
 
     if (challengeError || !challenge) {
+      console.log('[register] Challenge lookup failed:', challengeError)
       return NextResponse.json(
-        { error: 'Invalid or expired challenge' },
+        { error: 'Invalid or expired challenge', details: challengeError?.message },
         { status: 400 }
       )
     }
+    console.log('[register] Challenge found, verifying registration...')
 
     // Verify the registration response
     const verification = await verifyPasskeyRegistration(
@@ -43,6 +50,7 @@ export async function POST(request: Request) {
       challenge.challenge
     )
 
+    console.log('[register] Verification result:', verification.verified)
     if (!verification.verified || !verification.registrationInfo) {
       return NextResponse.json(
         { error: 'Verification failed' },
@@ -51,6 +59,7 @@ export async function POST(request: Request) {
     }
 
     const { registrationInfo } = verification
+    console.log('[register] Registration verified, credential ID:', registrationInfo.credential.id)
 
     // Create user if doesn't exist
     let userId: string

@@ -2,9 +2,31 @@
 
 import { createContext, useContext, useState, ReactNode } from 'react'
 
+// Credential type for multiple education entries
+export interface Credential {
+  id: string
+  school: 'valencia' | 'ucf' | 'seminole' | 'orange' | 'fullsail' | 'other'
+  program: string
+  degreeType: 'certificate' | 'associate' | 'bachelor' | 'other'
+  graduationYear: string
+  status: 'current' | 'alumni'
+}
+
 export interface OnboardingData {
-  // Step 1: Foundation
+  // Language preference (asked first in Foundation)
+  preferredLanguage: 'en' | 'es'
+
+  // Step 1: Foundation (Identity + Education)
+  fullName: string
   address: string
+  addressCoords: { lat: number; lng: number } | null
+  linkedInUrl: string
+  portfolioUrl: string
+
+  // Education (multiple credentials)
+  credentials: Credential[]
+
+  // Legacy fields (kept for backwards compatibility during migration)
   education: 'valencia' | 'other_college' | 'high_school' | 'ged' | 'none' | ''
   valenciaProgram: string
   otherInstitution: string
@@ -24,6 +46,7 @@ export interface OnboardingData {
 
   // Step 5: Challenges (optional)
   challenges: string[]
+  realityContext: string
 }
 
 interface OnboardingContextType {
@@ -35,18 +58,40 @@ interface OnboardingContextType {
 }
 
 const initialData: OnboardingData = {
+  // Language preference
+  preferredLanguage: 'en',
+
+  // Step 1: Foundation
+  fullName: '',
   address: '',
+  addressCoords: null,
+  linkedInUrl: '',
+  portfolioUrl: '',
+
+  // Education (multiple credentials)
+  credentials: [],
+
+  // Legacy fields (for backwards compatibility)
   education: '',
   valenciaProgram: '',
   otherInstitution: '',
+
+  // Step 2: Transportation
   transportMethods: [],
   maxCommute: 30,
+
+  // Step 3: Availability
   availability: '',
   specificDays: [],
   preferredShifts: [],
+
+  // Step 4: Salary
   salaryMin: 30000,
   salaryMax: 45000,
+
+  // Step 5: Challenges
   challenges: [],
+  realityContext: '',
 }
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined)

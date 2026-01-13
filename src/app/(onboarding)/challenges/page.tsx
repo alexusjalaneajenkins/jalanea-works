@@ -3,20 +3,14 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOnboarding } from '@/contexts/onboarding-context'
-import { Shield, ChevronRight, ChevronLeft, Heart, AlertTriangle, SkipForward } from 'lucide-react'
-
-const CHALLENGE_OPTIONS = [
-  { value: 'single_parent', label: 'Single parent', desc: 'Need flexible schedule' },
-  { value: 'no_car', label: 'No reliable car', desc: 'Depend on transit or rides' },
-  { value: 'health_challenges', label: 'Health challenges', desc: 'Physical or mental health needs' },
-  { value: 'english_second_language', label: 'English is 2nd language', desc: 'Multilingual job seeker' },
-  { value: 'need_immediate_income', label: 'Need immediate income', desc: 'Urgent financial situation' },
-  { value: 'criminal_record', label: 'Criminal record', desc: 'Background check concerns' },
-]
+import { useTranslation } from '@/i18n/config'
+import { Shield, ChevronRight, ChevronLeft, Heart, AlertTriangle, SkipForward, MessageSquare } from 'lucide-react'
+import { CHALLENGE_OPTIONS } from '@/data/centralFloridaSchools'
 
 export default function ChallengesPage() {
   const router = useRouter()
   const { data, updateData, setCurrentStep } = useOnboarding()
+  const { t, locale } = useTranslation(data.preferredLanguage)
 
   useEffect(() => {
     setCurrentStep(5)
@@ -36,7 +30,7 @@ export default function ChallengesPage() {
   }
 
   const handleSkip = () => {
-    updateData({ challenges: [] })
+    updateData({ challenges: [], realityContext: '' })
     router.push('/complete')
   }
 
@@ -45,10 +39,15 @@ export default function ChallengesPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Header */}
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">Any Challenges We Can Help With?</h1>
-        <p className="text-slate-600">This step is optional, but helps us find better support resources.</p>
+        <h1 className="text-xl font-bold text-slate-900 mb-1">
+          {t('onboarding.challenges.title')}
+        </h1>
+        <p className="text-slate-600 text-sm">
+          {t('onboarding.challenges.subtitle')}
+        </p>
       </div>
 
       {/* Privacy Notice */}
@@ -57,20 +56,22 @@ export default function ChallengesPage() {
           <Shield className="w-5 h-5" />
         </div>
         <div>
-          <div className="font-semibold text-blue-900">Your privacy is protected</div>
+          <div className="font-semibold text-blue-900">
+            {locale === 'es' ? 'Tu privacidad está protegida' : 'Your privacy is protected'}
+          </div>
           <p className="text-sm text-blue-700">
-            This information helps us find support resources for you. We NEVER use this to filter jobs or share with employers.
+            {t('onboarding.challenges.privacyNotice')}
           </p>
         </div>
       </div>
 
       {/* Challenge Selection */}
       <div className="space-y-3">
-        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-          <Heart className="w-4 h-4 text-amber-500" />
-          Select any that apply (optional)
+        <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-slate-500">
+          <Heart className="w-4 h-4" />
+          {t('onboarding.challenges.selectLabel')}
         </label>
-        <div className="grid gap-3">
+        <div className="grid gap-2">
           {CHALLENGE_OPTIONS.map((option) => {
             const isSelected = data.challenges.includes(option.value)
             return (
@@ -78,13 +79,13 @@ export default function ChallengesPage() {
                 key={option.value}
                 type="button"
                 onClick={() => toggleChallenge(option.value)}
-                className={`w-full px-4 py-3 text-left rounded-xl border-2 transition-all flex items-center gap-3 ${
+                className={`w-full px-4 py-3 min-h-[44px] text-left rounded-xl border-2 transition-all flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 ${
                   isSelected
                     ? 'border-amber-500 bg-amber-50'
                     : 'border-slate-200 hover:border-slate-300'
                 }`}
               >
-                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
                   isSelected
                     ? 'border-amber-500 bg-amber-500 text-white'
                     : 'border-slate-300'
@@ -95,11 +96,8 @@ export default function ChallengesPage() {
                     </svg>
                   )}
                 </div>
-                <div>
-                  <div className={`font-semibold ${isSelected ? 'text-amber-900' : 'text-slate-700'}`}>
-                    {option.label}
-                  </div>
-                  <div className="text-xs text-slate-500">{option.desc}</div>
+                <div className={`font-semibold text-sm ${isSelected ? 'text-amber-900' : 'text-slate-700'}`}>
+                  {locale === 'es' ? option.labelEs : option.label}
                 </div>
               </button>
             )
@@ -107,42 +105,61 @@ export default function ChallengesPage() {
         </div>
       </div>
 
+      {/* Free-text Context Field */}
+      <div className="space-y-2">
+        <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-slate-500">
+          <MessageSquare className="w-4 h-4" />
+          {locale === 'es' ? 'Algo más que debamos saber? (opcional)' : 'Anything else we should know? (optional)'}
+        </label>
+        <textarea
+          value={data.realityContext}
+          onChange={(e) => updateData({ realityContext: e.target.value })}
+          placeholder={locale === 'es'
+            ? 'Comparte cualquier contexto adicional que pueda ayudarnos...'
+            : 'Share any additional context that might help us...'
+          }
+          rows={3}
+          className="w-full px-4 py-3 min-h-[44px] border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 focus:outline-none transition-all text-slate-900 placeholder:text-slate-400 resize-none"
+        />
+      </div>
+
       {/* Why we ask notice */}
       <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-start gap-2">
         <AlertTriangle className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
         <p className="text-xs text-slate-500">
-          Many job seekers face challenges that employers don&apos;t see. By understanding yours, we can connect you with community resources, support programs, and fair-chance employers who value your potential.
+          {locale === 'es'
+            ? 'Muchos buscadores de empleo enfrentan desafíos que los empleadores no ven. Al entender los tuyos, podemos conectarte con recursos comunitarios, programas de apoyo y empleadores justos que valoran tu potencial.'
+            : "Many job seekers face challenges that employers don't see. By understanding yours, we can connect you with community resources, support programs, and fair-chance employers who value your potential."
+          }
         </p>
       </div>
 
       {/* Navigation Buttons */}
-      <div className="flex justify-between pt-6 border-t border-slate-200">
+      <div className="flex gap-3 pt-4">
         <button
           type="button"
           onClick={handleBack}
-          className="px-5 py-3 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-all flex items-center gap-1 border border-slate-300"
+          className="px-5 py-3.5 min-h-[44px] text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-all flex items-center gap-1 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
         >
           <ChevronLeft className="w-4 h-4" />
-          Back
+          {t('onboarding.common.back')}
         </button>
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={handleSkip}
-            className="px-5 py-3 text-slate-500 font-medium hover:bg-slate-100 rounded-xl transition-all flex items-center gap-1"
-          >
-            <SkipForward className="w-4 h-4" />
-            Skip
-          </button>
-          <button
-            type="button"
-            onClick={handleContinue}
-            className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 transition-all flex items-center gap-2"
-          >
-            Continue
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleSkip}
+          className="px-4 py-3.5 min-h-[44px] text-slate-500 font-medium hover:bg-slate-100 rounded-xl transition-all flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+        >
+          <SkipForward className="w-4 h-4" />
+          {t('onboarding.common.skip')}
+        </button>
+        <button
+          type="button"
+          onClick={handleContinue}
+          className="flex-1 min-h-[44px] py-3.5 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+        >
+          {t('onboarding.common.continue')}
+          <ChevronRight className="w-4 h-4" />
+        </button>
       </div>
     </div>
   )

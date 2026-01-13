@@ -1,0 +1,95 @@
+{
+  "common": {
+    "continue": "Continuar",
+    "back": "Atrás",
+    "skip": "Omitir",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "done": "Listo",
+    "stepOf": "Paso {current} de {total}"
+  },
+  "language": {
+    "title": "Elige tu idioma",
+    "english": "English",
+    "spanish": "Español"
+  },
+  "onboarding": {
+    "branding": "Registro en Jalanea Works",
+    "foundation": {
+      "title": "Comencemos con lo Básico",
+      "subtitle": "Cuéntanos sobre ti y tu formación educativa.",
+      "fullName": "¿Cuál es tu nombre?",
+      "fullNamePlaceholder": "Ingresa tu nombre completo",
+      "location": "¿Dónde vives?",
+      "locationPlaceholder": "Ingresa tu dirección o vecindario (ej: Pine Hills, Orlando)",
+      "locationHelp": "Usamos esto para encontrar trabajos dentro de tu rango de transporte. Tu dirección exacta nunca se comparte.",
+      "useMyLocation": "Usar mi ubicación",
+      "education": "¿Cuál es tu educación?",
+      "addCredential": "Agregar Credencial",
+      "selectSchool": "Selecciona Escuela",
+      "selectProgram": "Selecciona Programa",
+      "programPlaceholder": "Escribe para buscar programas...",
+      "degreeType": "Tipo de Título",
+      "graduationYear": "Año de Graduación",
+      "status": "Estado",
+      "currentStudent": "Estudiante Actual",
+      "alumni": "Graduado",
+      "digitalPresence": "Agregar presencia digital (opcional)",
+      "linkedIn": "URL de LinkedIn",
+      "portfolio": "URL de Portafolio"
+    },
+    "transportation": {
+      "title": "¿Cómo te transportas?",
+      "subtitle": "Esto nos ayuda a encontrar trabajos que puedas alcanzar.",
+      "methods": "¿Cómo te mueves?",
+      "methodsHelp": "Selecciona todos los que apliquen",
+      "commute": "¿Cuál es la distancia máxima que puedes viajar?",
+      "commuteHelp": "Solo ida, para llegar al trabajo"
+    },
+    "availability": {
+      "title": "¿Cuándo Puedes Trabajar?",
+      "subtitle": "Déjanos saber tus preferencias de horario.",
+      "when": "¿Cuándo puedes trabajar?",
+      "open": "Abierto a todo",
+      "weekdays": "Solo días de semana",
+      "weekends": "Solo fines de semana",
+      "specific": "Días específicos",
+      "selectDays": "Selecciona tus días disponibles",
+      "shifts": "Turnos preferidos",
+      "shiftsHelp": "Selecciona todos los que apliquen",
+      "morning": "Mañana (6am-12pm)",
+      "afternoon": "Tarde (12pm-6pm)",
+      "evening": "Noche (6pm-12am)",
+      "overnight": "Madrugada (12am-6am)"
+    },
+    "salary": {
+      "title": "¿Qué Salario Necesitas?",
+      "subtitle": "Te conectaremos con trabajos en tu rango.",
+      "range": "Tu rango de salario deseado",
+      "minimum": "Mínimo",
+      "maximum": "Máximo",
+      "calculator": "Calculadora de Vivienda de Orlando",
+      "calculatorResult": "Basado en la renta de Orlando, con ${salary}/año puedes pagar:",
+      "seeBreakdown": "Ver desglose de renta",
+      "studio": "Estudio",
+      "oneBedroom": "1 Habitación",
+      "twoBedroom": "2 Habitaciones",
+      "threeBedroom": "3 Habitaciones",
+      "rentRange": "${min} - ${max}/mes"
+    },
+    "challenges": {
+      "title": "¿Algún Desafío en el que Podamos Ayudar?",
+      "subtitle": "Esto es opcional, pero nos ayuda a encontrar recursos de apoyo.",
+      "prompt": "¿Enfrentas algún desafío en el que podamos ayudar?",
+      "trustBanner": "Tus desafíos nos ayudan a encontrar recursos de apoyo. NUNCA usamos esto para filtrar trabajos.",
+      "context": "¿Algo más que quieras que sepamos?",
+      "contextPlaceholder": "Comparte cualquier contexto sobre tu situación (opcional)..."
+    },
+    "complete": {
+      "title": "¡Todo Listo!",
+      "subtitle": "Vamos a encontrarte un trabajo.",
+      "summary": "Esto es lo que sabemos de ti:",
+      "goToDashboard": "Ir al Panel"
+    }
+  }
+}

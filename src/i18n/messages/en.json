@@ -1,0 +1,95 @@
+{
+  "common": {
+    "continue": "Continue",
+    "back": "Back",
+    "skip": "Skip",
+    "save": "Save",
+    "cancel": "Cancel",
+    "done": "Done",
+    "stepOf": "Step {current} of {total}"
+  },
+  "language": {
+    "title": "Choose your language",
+    "english": "English",
+    "spanish": "Español"
+  },
+  "onboarding": {
+    "branding": "Jalanea Works Onboarding",
+    "foundation": {
+      "title": "Let's Start with the Basics",
+      "subtitle": "Tell us about yourself and your educational background.",
+      "fullName": "What's your name?",
+      "fullNamePlaceholder": "Enter your full name",
+      "location": "Where do you live?",
+      "locationPlaceholder": "Enter your address or neighborhood (e.g., Pine Hills, Orlando)",
+      "locationHelp": "We use this to find jobs within your commute range. Your exact address is never shared.",
+      "useMyLocation": "Use My Location",
+      "education": "What's your education?",
+      "addCredential": "Add Credential",
+      "selectSchool": "Select School",
+      "selectProgram": "Select Program",
+      "programPlaceholder": "Start typing to search programs...",
+      "degreeType": "Degree Type",
+      "graduationYear": "Graduation Year",
+      "status": "Status",
+      "currentStudent": "Current Student",
+      "alumni": "Alumni",
+      "digitalPresence": "Add digital presence (optional)",
+      "linkedIn": "LinkedIn URL",
+      "portfolio": "Portfolio URL"
+    },
+    "transportation": {
+      "title": "How Do You Get Around?",
+      "subtitle": "This helps us find jobs you can actually reach.",
+      "methods": "How do you get around?",
+      "methodsHelp": "Select all that apply",
+      "commute": "What's the farthest you can commute?",
+      "commuteHelp": "One way, to get to work"
+    },
+    "availability": {
+      "title": "When Can You Work?",
+      "subtitle": "Let us know your schedule preferences.",
+      "when": "When can you work?",
+      "open": "Open to anything",
+      "weekdays": "Weekdays only",
+      "weekends": "Weekends only",
+      "specific": "Specific days",
+      "selectDays": "Select your available days",
+      "shifts": "Preferred shifts",
+      "shiftsHelp": "Select all that apply",
+      "morning": "Morning (6am-12pm)",
+      "afternoon": "Afternoon (12pm-6pm)",
+      "evening": "Evening (6pm-12am)",
+      "overnight": "Overnight (12am-6am)"
+    },
+    "salary": {
+      "title": "What Salary Do You Need?",
+      "subtitle": "We'll match you with jobs in your range.",
+      "range": "Your target salary range",
+      "minimum": "Minimum",
+      "maximum": "Maximum",
+      "calculator": "Orlando Housing Calculator",
+      "calculatorResult": "Based on Orlando rent, with ${salary}/year you can afford:",
+      "seeBreakdown": "See rent breakdown",
+      "studio": "Studio",
+      "oneBedroom": "1 Bedroom",
+      "twoBedroom": "2 Bedroom",
+      "threeBedroom": "3 Bedroom",
+      "rentRange": "${min} - ${max}/month"
+    },
+    "challenges": {
+      "title": "Any Challenges We Can Help With?",
+      "subtitle": "This is optional, but helps us find support resources.",
+      "prompt": "Do you face any challenges we can help with?",
+      "trustBanner": "Your challenges help us find support resources. We NEVER use this to filter jobs.",
+      "context": "Anything else you'd like us to know?",
+      "contextPlaceholder": "Share any context about your situation (optional)..."
+    },
+    "complete": {
+      "title": "You're All Set!",
+      "subtitle": "Let's find you a job.",
+      "summary": "Here's what we know about you:",
+      "goToDashboard": "Go to Dashboard"
+    }
+  }
+}

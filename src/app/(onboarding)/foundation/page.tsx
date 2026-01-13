@@ -3,54 +3,81 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOnboarding } from '@/contexts/onboarding-context'
-import { MapPin, GraduationCap, ChevronRight, Building2 } from 'lucide-react'
-
-interface ValenciaProgram {
-  program_id: string
-  program_name: string
-  program_type: string
-  school: string
-  career_pathway: string
-}
+import { useTranslation } from '@/i18n/config'
+import { MapPin, User, ChevronRight, ChevronDown, ChevronUp, Locate, Link2, Linkedin, Globe } from 'lucide-react'
+import { CredentialStack } from '@/components/onboarding/CredentialStack'
+import type { Locale } from '@/i18n/config'
 
 export default function FoundationPage() {
   const router = useRouter()
   const { data, updateData, setCurrentStep } = useOnboarding()
-  const [valenciaPrograms, setValenciaPrograms] = useState<ValenciaProgram[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const { t, locale } = useTranslation(data.preferredLanguage)
+  const [showOptional, setShowOptional] = useState(false)
+  const [isLocating, setIsLocating] = useState(false)
+  const [locationError, setLocationError] = useState<string | null>(null)
 
   // Set current step on mount
   useEffect(() => {
     setCurrentStep(1)
   }, [setCurrentStep])
 
-  // Fetch Valencia programs
-  useEffect(() => {
-    async function fetchPrograms() {
-      try {
-        const response = await fetch('/api/valencia-programs')
-        if (response.ok) {
-          const programs = await response.json()
-          setValenciaPrograms(programs)
-        }
-      } catch (error) {
-        console.error('Failed to fetch Valencia programs:', error)
-      } finally {
-        setIsLoading(false)
-      }
+  const handleLanguageSelect = (lang: Locale) => {
+    updateData({ preferredLanguage: lang })
+  }
+
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError(locale === 'es' ? 'Geolocalización no soportada' : 'Geolocation not supported')
+      return
     }
-    fetchPrograms()
-  }, [])
 
-  const educationOptions = [
-    { value: 'valencia', label: 'Valencia College' },
-    { value: 'other_college', label: 'Other College' },
-    { value: 'high_school', label: 'High School Diploma' },
-    { value: 'ged', label: 'GED' },
-    { value: 'none', label: 'No formal education' },
-  ]
+    setIsLocating(true)
+    setLocationError(null)
 
-  const canContinue = data.address.trim() !== '' && data.education !== ''
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords
+        updateData({
+          addressCoords: { lat: latitude, lng: longitude },
+        })
+
+        // Reverse geocode using a free API
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+          )
+          if (response.ok) {
+            const result = await response.json()
+            const city = result.address?.city || result.address?.town || result.address?.village || ''
+            const state = result.address?.state || ''
+            const displayAddress = [city, state].filter(Boolean).join(', ')
+            if (displayAddress) {
+              updateData({ address: displayAddress })
+            }
+          }
+        } catch {
+          // Silently fail geocoding, we still have coordinates
+        }
+
+        setIsLocating(false)
+      },
+      (error) => {
+        setIsLocating(false)
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationError(locale === 'es' ? 'Permiso de ubicación denegado' : 'Location permission denied')
+        } else {
+          setLocationError(locale === 'es' ? 'No se pudo obtener ubicación' : 'Could not get location')
+        }
+      },
+      { enableHighAccuracy: false, timeout: 10000 }
+    )
+  }
+
+  // Validation: need name, address, and at least one credential
+  const canContinue =
+    data.fullName.trim() !== '' &&
+    data.address.trim() !== '' &&
+    data.credentials.length > 0
 
   const handleContinue = () => {
     if (canContinue) {
@@ -59,114 +86,161 @@ export default function FoundationPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">Let&apos;s Start with the Basics</h1>
-        <p className="text-slate-600">Tell us where you live and your educational background.</p>
+    <div className="space-y-6">
+      {/* Language Selector */}
+      <div className="space-y-3">
+        <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+          {locale === 'es' ? 'Idioma / Language' : 'Language / Idioma'}
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => handleLanguageSelect('en')}
+            className={`language-btn px-4 py-4 rounded-xl border-2 font-bold text-center transition-all focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 ${
+              data.preferredLanguage === 'en'
+                ? 'border-amber-500 bg-amber-50 text-amber-900'
+                : 'border-slate-200 hover:border-slate-300 text-slate-700'
+            }`}
+          >
+            <Globe className="w-5 h-5 mx-auto mb-1" />
+            English
+          </button>
+          <button
+            type="button"
+            onClick={() => handleLanguageSelect('es')}
+            className={`language-btn px-4 py-4 rounded-xl border-2 font-bold text-center transition-all focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 ${
+              data.preferredLanguage === 'es'
+                ? 'border-amber-500 bg-amber-50 text-amber-900'
+                : 'border-slate-200 hover:border-slate-300 text-slate-700'
+            }`}
+          >
+            <Globe className="w-5 h-5 mx-auto mb-1" />
+            Español
+          </button>
+        </div>
       </div>
 
-      {/* Location Input */}
-      <div className="space-y-3">
-        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-          <MapPin className="w-4 h-4 text-amber-500" />
-          Where do you live?
+      {/* Full Name */}
+      <div className="space-y-2">
+        <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-slate-500">
+          <User className="w-4 h-4" />
+          {t('onboarding.foundation.fullName')}
         </label>
         <input
           type="text"
-          value={data.address}
-          onChange={(e) => updateData({ address: e.target.value })}
-          placeholder="Enter your address or neighborhood (e.g., Pine Hills, Orlando)"
-          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all text-slate-900 placeholder:text-slate-400"
+          value={data.fullName}
+          onChange={(e) => updateData({ fullName: e.target.value })}
+          placeholder={locale === 'es' ? 'Nombre completo' : 'Your full name'}
+          className="w-full px-4 py-3.5 min-h-[44px] border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 focus:outline-none transition-all text-slate-900 placeholder:text-slate-400"
         />
+      </div>
+
+      {/* Location Input */}
+      <div className="space-y-2">
+        <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-slate-500">
+          <MapPin className="w-4 h-4" />
+          {t('onboarding.foundation.address')}
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={data.address}
+            onChange={(e) => updateData({ address: e.target.value })}
+            placeholder={locale === 'es' ? 'Ciudad, Estado' : 'City, State'}
+            className="flex-1 px-4 py-3.5 min-h-[44px] border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 focus:outline-none transition-all text-slate-900 placeholder:text-slate-400"
+          />
+          <button
+            type="button"
+            onClick={handleUseMyLocation}
+            disabled={isLocating}
+            className="px-4 min-h-[44px] min-w-[44px] border border-slate-300 rounded-xl hover:bg-slate-50 text-slate-600 transition-all focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:opacity-50"
+            aria-label={locale === 'es' ? 'Usar mi ubicación' : 'Use my location'}
+          >
+            <Locate className={`w-5 h-5 ${isLocating ? 'animate-pulse' : ''}`} />
+          </button>
+        </div>
+        {locationError && (
+          <p className="text-xs text-red-500">{locationError}</p>
+        )}
         <p className="text-xs text-slate-500">
-          We use this to find jobs within your commute range. Your exact address is never shared.
+          {t('onboarding.foundation.addressHint')}
         </p>
       </div>
 
-      {/* Education Selection */}
-      <div className="space-y-3">
-        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-          <GraduationCap className="w-4 h-4 text-amber-500" />
-          What&apos;s your education?
+      {/* Education / Credentials */}
+      <div className="space-y-2">
+        <label className="block text-xs font-medium uppercase tracking-wider text-slate-500">
+          {t('onboarding.foundation.education')}
         </label>
-        <div className="grid gap-3">
-          {educationOptions.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => updateData({
-                education: option.value as typeof data.education,
-                valenciaProgram: '',
-                otherInstitution: ''
-              })}
-              className={`w-full px-4 py-3 text-left rounded-xl border-2 transition-all ${
-                data.education === option.value
-                  ? 'border-amber-500 bg-amber-50 text-amber-900'
-                  : 'border-slate-200 hover:border-slate-300 text-slate-700'
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
+        <CredentialStack
+          credentials={data.credentials}
+          onChange={(credentials) => updateData({ credentials })}
+          locale={locale}
+        />
       </div>
 
-      {/* Valencia Program Selector */}
-      {data.education === 'valencia' && (
-        <div className="space-y-3 animate-in slide-in-from-top-2">
-          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <Building2 className="w-4 h-4 text-amber-500" />
-            Which Valencia program?
-          </label>
-          {isLoading ? (
-            <div className="px-4 py-3 text-slate-500">Loading programs...</div>
+      {/* Optional Fields Accordion */}
+      <div className="border border-slate-200 rounded-xl overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowOptional(!showOptional)}
+          className="w-full px-4 py-3.5 min-h-[44px] flex items-center justify-between text-slate-600 hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-inset"
+        >
+          <span className="text-sm font-medium">
+            {locale === 'es' ? 'Campos opcionales' : 'Optional fields'}
+          </span>
+          {showOptional ? (
+            <ChevronUp className="w-5 h-5" />
           ) : (
-            <select
-              value={data.valenciaProgram}
-              onChange={(e) => updateData({ valenciaProgram: e.target.value })}
-              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all text-slate-900"
-            >
-              <option value="">Select your program</option>
-              {valenciaPrograms.map((program) => (
-                <option key={program.program_id} value={program.program_id}>
-                  {program.program_name} ({program.program_type})
-                </option>
-              ))}
-            </select>
+            <ChevronDown className="w-5 h-5" />
           )}
-          <p className="text-xs text-slate-500">
-            We&apos;ll match you with jobs that value your Valencia credentials.
-          </p>
-        </div>
-      )}
+        </button>
 
-      {/* Other Institution Input */}
-      {data.education === 'other_college' && (
-        <div className="space-y-3 animate-in slide-in-from-top-2">
-          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <Building2 className="w-4 h-4 text-amber-500" />
-            Institution name
-          </label>
-          <input
-            type="text"
-            value={data.otherInstitution}
-            onChange={(e) => updateData({ otherInstitution: e.target.value })}
-            placeholder="Enter your college or university name"
-            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all text-slate-900 placeholder:text-slate-400"
-          />
-        </div>
-      )}
+        {showOptional && (
+          <div className="px-4 pb-4 space-y-4 animate-slide-up">
+            {/* LinkedIn URL */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-slate-500">
+                <Linkedin className="w-4 h-4" />
+                LinkedIn URL
+              </label>
+              <input
+                type="url"
+                value={data.linkedInUrl}
+                onChange={(e) => updateData({ linkedInUrl: e.target.value })}
+                placeholder="https://linkedin.com/in/yourprofile"
+                className="w-full px-4 py-3.5 min-h-[44px] border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 focus:outline-none transition-all text-slate-900 placeholder:text-slate-400"
+              />
+            </div>
+
+            {/* Portfolio URL */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-slate-500">
+                <Link2 className="w-4 h-4" />
+                {locale === 'es' ? 'Portafolio / Sitio web' : 'Portfolio / Website'}
+              </label>
+              <input
+                type="url"
+                value={data.portfolioUrl}
+                onChange={(e) => updateData({ portfolioUrl: e.target.value })}
+                placeholder="https://yourwebsite.com"
+                className="w-full px-4 py-3.5 min-h-[44px] border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 focus:outline-none transition-all text-slate-900 placeholder:text-slate-400"
+              />
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Continue Button */}
-      <div className="flex justify-end pt-6 border-t border-slate-200">
+      <div className="pt-4">
         <button
           type="button"
           onClick={handleContinue}
           disabled={!canContinue}
-          className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+          className="w-full min-h-[44px] py-4 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
         >
-          Continue
-          <ChevronRight className="w-4 h-4" />
+          {t('onboarding.common.continue')}
+          <ChevronRight className="w-5 h-5" />
         </button>
       </div>
     </div>

@@ -1,6 +1,20 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Routes that require authentication
+const PROTECTED_ROUTES = [
+  '/dashboard',
+  '/foundation',
+  '/transportation',
+  '/availability',
+  '/salary',
+  '/challenges',
+  '/complete',
+]
+
+// Routes that should redirect logged-in users away
+const AUTH_ROUTES = ['/login', '/signup']
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -35,16 +49,32 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  const pathname = request.nextUrl.pathname
+
+  // Check if current route is protected
+  const isProtectedRoute = PROTECTED_ROUTES.some((route) => pathname.startsWith(route))
+
+  // Check if current route is auth route (login/signup)
+  const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route))
+
   // If no user and trying to access protected routes, redirect to login
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/signup') &&
-    !request.nextUrl.pathname.startsWith('/auth') &&
-    request.nextUrl.pathname.startsWith('/dashboard')
-  ) {
+  if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  // If user is logged in and on auth routes, redirect to onboarding
+  if (user && isAuthRoute) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/foundation'
+    return NextResponse.redirect(url)
+  }
+
+  // If user is logged in and on home page, redirect to onboarding
+  if (user && pathname === '/') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/foundation'
     return NextResponse.redirect(url)
   }
 
