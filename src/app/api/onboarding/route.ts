@@ -71,7 +71,6 @@ export async function POST(request: Request) {
         challenges: challenges,
         reality_context: realityContext,
         onboarding_completed: true,
-        onboarding_completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq('id', user.id)
