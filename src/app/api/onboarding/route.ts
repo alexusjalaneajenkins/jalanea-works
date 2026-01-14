@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { onboardingSchema } from '@/lib/validation/onboarding'
 
 export async function POST(request: Request) {
   try {
@@ -17,6 +18,20 @@ export async function POST(request: Request) {
 
     // Parse the onboarding data from request body
     const body = await request.json()
+
+    // Server-side validation with Zod
+    const validation = onboardingSchema.safeParse(body)
+    if (!validation.success) {
+      const errors = validation.error.issues.map(issue => ({
+        field: issue.path.join('.'),
+        message: issue.message,
+      }))
+      return NextResponse.json(
+        { error: 'Validation failed', errors },
+        { status: 400 }
+      )
+    }
+
     const {
       preferredLanguage,
       fullName,
@@ -34,7 +49,7 @@ export async function POST(request: Request) {
       salaryMax,
       challenges,
       realityContext,
-    } = body
+    } = validation.data
 
     // Update profile with onboarding data
     const { error: profileError } = await supabase
@@ -56,6 +71,7 @@ export async function POST(request: Request) {
         challenges: challenges,
         reality_context: realityContext,
         onboarding_completed: true,
+        onboarding_completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq('id', user.id)

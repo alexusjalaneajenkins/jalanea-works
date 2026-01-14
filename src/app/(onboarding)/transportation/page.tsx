@@ -1,11 +1,13 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOnboarding } from '@/contexts/onboarding-context'
 import { useTranslation } from '@/i18n/config'
 import { Car, Bus, Bike, ChevronRight, ChevronLeft, Clock } from 'lucide-react'
 import { TRANSPORT_METHODS, COMMUTE_OPTIONS } from '@/data/centralFloridaSchools'
+import { FormError } from '@/components/ui/FormError'
+import { validateTransportation } from '@/lib/validation/onboarding'
 
 export default function TransportationPage() {
   const router = useRouter()
@@ -25,6 +27,8 @@ export default function TransportationPage() {
     }
   }
 
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
+
   const toggleTransport = (value: string) => {
     const current = data.transportMethods
     if (current.includes(value)) {
@@ -34,9 +38,24 @@ export default function TransportationPage() {
     }
   }
 
-  const canContinue = data.transportMethods.length > 0
+  // Validate with Zod
+  const validation = useMemo(() => {
+    return validateTransportation({
+      transportMethods: data.transportMethods,
+      maxCommute: data.maxCommute,
+    })
+  }, [data.transportMethods, data.maxCommute])
+
+  const getFieldError = (field: string) => {
+    if (!hasAttemptedSubmit || validation.success) return undefined
+    const error = validation.error?.errors.find(e => e.path[0] === field)
+    return error?.message
+  }
+
+  const canContinue = validation.success
 
   const handleContinue = () => {
+    setHasAttemptedSubmit(true)
     if (canContinue) {
       router.push('/availability')
     }
@@ -91,6 +110,7 @@ export default function TransportationPage() {
             )
           })}
         </div>
+        <FormError message={getFieldError('transportMethods')} />
       </div>
 
       {/* Max Commute - Segmented Control */}

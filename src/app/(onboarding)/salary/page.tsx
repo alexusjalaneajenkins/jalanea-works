@@ -1,11 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOnboarding } from '@/contexts/onboarding-context'
 import { useTranslation } from '@/i18n/config'
 import { DollarSign, Home, ChevronRight, ChevronLeft, Info } from 'lucide-react'
 import { SALARY_TIERS, ORLANDO_RENT_DATA, calculateAffordableHousing } from '@/data/centralFloridaSchools'
+import { FormError } from '@/components/ui/FormError'
+import { validateSalary } from '@/lib/validation/onboarding'
 
 export default function SalaryPage() {
   const router = useRouter()
@@ -27,9 +29,26 @@ export default function SalaryPage() {
     }).format(value)
   }
 
-  const canContinue = data.salaryMin > 0 && data.salaryMax > data.salaryMin
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
+
+  // Validate with Zod
+  const validation = useMemo(() => {
+    return validateSalary({
+      salaryMin: data.salaryMin,
+      salaryMax: data.salaryMax,
+    })
+  }, [data.salaryMin, data.salaryMax])
+
+  const getFieldError = (field: string) => {
+    if (!hasAttemptedSubmit || validation.success) return undefined
+    const error = validation.error?.errors.find(e => e.path[0] === field)
+    return error?.message
+  }
+
+  const canContinue = validation.success
 
   const handleContinue = () => {
+    setHasAttemptedSubmit(true)
     if (canContinue) {
       router.push('/challenges')
     }
@@ -196,6 +215,8 @@ export default function SalaryPage() {
             </div>
           </div>
         </div>
+        <FormError message={getFieldError('salaryMin')} />
+        <FormError message={getFieldError('salaryMax')} />
       </div>
 
       {/* Navigation Buttons */}

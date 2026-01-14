@@ -1,10 +1,12 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOnboarding } from '@/contexts/onboarding-context'
 import { useTranslation } from '@/i18n/config'
 import { Calendar, Sun, Moon, Sunrise, ChevronRight, ChevronLeft } from 'lucide-react'
+import { FormError } from '@/components/ui/FormError'
+import { validateAvailability } from '@/lib/validation/onboarding'
 
 const AVAILABILITY_OPTIONS = [
   { value: 'open', labelEn: 'Open to anything', labelEs: 'Abierto a todo', descEn: 'Any day, any shift', descEs: 'Cualquier día, cualquier turno' },
@@ -57,10 +59,31 @@ export default function AvailabilityPage() {
     }
   }
 
-  const canContinue = data.availability !== '' && data.preferredShifts.length > 0 &&
-    (data.availability !== 'specific' || data.specificDays.length > 0)
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
+
+  // Validate with Zod
+  const validation = useMemo(() => {
+    // Only validate if availability is selected (to allow initial empty state)
+    if (!data.availability) {
+      return { success: false, error: { errors: [{ path: ['availability'], message: 'Select your availability' }] } }
+    }
+    return validateAvailability({
+      availability: data.availability as 'open' | 'weekdays' | 'weekends' | 'specific',
+      specificDays: data.specificDays,
+      preferredShifts: data.preferredShifts,
+    })
+  }, [data.availability, data.specificDays, data.preferredShifts])
+
+  const getFieldError = (field: string) => {
+    if (!hasAttemptedSubmit || validation.success) return undefined
+    const error = validation.error?.errors.find(e => e.path[0] === field)
+    return error?.message
+  }
+
+  const canContinue = validation.success
 
   const handleContinue = () => {
+    setHasAttemptedSubmit(true)
     if (canContinue) {
       router.push('/salary')
     }
@@ -112,6 +135,7 @@ export default function AvailabilityPage() {
             </button>
           ))}
         </div>
+        <FormError message={getFieldError('availability')} />
       </div>
 
       {/* Specific Days Selector */}
@@ -139,6 +163,7 @@ export default function AvailabilityPage() {
               )
             })}
           </div>
+          <FormError message={getFieldError('specificDays')} />
         </div>
       )}
 
@@ -178,6 +203,7 @@ export default function AvailabilityPage() {
             )
           })}
         </div>
+        <FormError message={getFieldError('preferredShifts')} />
       </div>
 
       {/* Navigation Buttons */}

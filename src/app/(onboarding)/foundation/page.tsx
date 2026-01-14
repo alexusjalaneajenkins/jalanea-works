@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOnboarding } from '@/contexts/onboarding-context'
 import { useTranslation } from '@/i18n/config'
 import { MapPin, User, ChevronRight, ChevronDown, ChevronUp, Locate, Link2, Linkedin, Globe } from 'lucide-react'
 import { CredentialStack } from '@/components/onboarding/CredentialStack'
+import { FormError } from '@/components/ui/FormError'
+import { validateFoundation } from '@/lib/validation/onboarding'
 import type { Locale } from '@/i18n/config'
 
 export default function FoundationPage() {
@@ -73,13 +75,34 @@ export default function FoundationPage() {
     )
   }
 
+  // Track if user has attempted to submit (to show errors)
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
+
+  // Validate form data using Zod schema
+  const validation = useMemo(() => {
+    return validateFoundation({
+      preferredLanguage: data.preferredLanguage,
+      fullName: data.fullName,
+      address: data.address,
+      addressCoords: data.addressCoords,
+      linkedInUrl: data.linkedInUrl,
+      portfolioUrl: data.portfolioUrl,
+      credentials: data.credentials,
+    })
+  }, [data.preferredLanguage, data.fullName, data.address, data.addressCoords, data.linkedInUrl, data.portfolioUrl, data.credentials])
+
+  // Get specific field errors
+  const getFieldError = (field: string) => {
+    if (!hasAttemptedSubmit || validation.success) return undefined
+    const error = validation.error?.errors.find(e => e.path[0] === field)
+    return error?.message
+  }
+
   // Validation: need name, address, and at least one credential
-  const canContinue =
-    data.fullName.trim() !== '' &&
-    data.address.trim() !== '' &&
-    data.credentials.length > 0
+  const canContinue = validation.success
 
   const handleContinue = () => {
+    setHasAttemptedSubmit(true)
     if (canContinue) {
       router.push('/transportation')
     }
@@ -131,8 +154,11 @@ export default function FoundationPage() {
           value={data.fullName}
           onChange={(e) => updateData({ fullName: e.target.value })}
           placeholder={locale === 'es' ? 'Nombre completo' : 'Your full name'}
-          className="w-full px-4 py-3.5 min-h-[44px] border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 focus:outline-none transition-all text-slate-900 placeholder:text-slate-400"
+          className={`w-full px-4 py-3.5 min-h-[44px] border rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 focus:outline-none transition-all text-slate-900 placeholder:text-slate-400 ${
+            getFieldError('fullName') ? 'border-red-500' : 'border-slate-300'
+          }`}
         />
+        <FormError message={getFieldError('fullName')} />
       </div>
 
       {/* Location Input */}
@@ -147,7 +173,9 @@ export default function FoundationPage() {
             value={data.address}
             onChange={(e) => updateData({ address: e.target.value })}
             placeholder={locale === 'es' ? 'Ciudad, Estado' : 'City, State'}
-            className="flex-1 px-4 py-3.5 min-h-[44px] border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 focus:outline-none transition-all text-slate-900 placeholder:text-slate-400"
+            className={`flex-1 px-4 py-3.5 min-h-[44px] border rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 focus:outline-none transition-all text-slate-900 placeholder:text-slate-400 ${
+              getFieldError('address') ? 'border-red-500' : 'border-slate-300'
+            }`}
           />
           <button
             type="button"
@@ -162,6 +190,7 @@ export default function FoundationPage() {
         {locationError && (
           <p className="text-xs text-red-500">{locationError}</p>
         )}
+        <FormError message={getFieldError('address')} />
         <p className="text-xs text-slate-500">
           {t('onboarding.foundation.addressHint')}
         </p>
@@ -177,6 +206,7 @@ export default function FoundationPage() {
           onChange={(credentials) => updateData({ credentials })}
           locale={locale}
         />
+        <FormError message={getFieldError('credentials')} />
       </div>
 
       {/* Optional Fields Accordion */}
