@@ -15,11 +15,28 @@
   },
   "onboarding": {
     "branding": "Registro en Jalanea Works",
+    "stepOf": "Paso {current} de {total}",
+    "steps": {
+      "foundation": "Información Básica",
+      "transportation": "Transporte",
+      "availability": "Disponibilidad",
+      "salary": "Salario",
+      "challenges": "Desafíos",
+      "complete": "Completado"
+    },
+    "common": {
+      "continue": "Continuar",
+      "back": "Atrás",
+      "skip": "Omitir"
+    },
     "foundation": {
       "title": "Comencemos con lo Básico",
       "subtitle": "Cuéntanos sobre ti y tu formación educativa.",
       "fullName": "¿Cuál es tu nombre?",
       "fullNamePlaceholder": "Ingresa tu nombre completo",
+      "address": "¿Dónde vives?",
+      "addressPlaceholder": "Ingresa tu dirección o vecindario",
+      "addressHint": "Usamos esto para encontrar trabajos dentro de tu rango de transporte. Tu dirección exacta nunca se comparte.",
       "location": "¿Dónde vives?",
       "locationPlaceholder": "Ingresa tu dirección o vecindario (ej: Pine Hills, Orlando)",
       "locationHelp": "Usamos esto para encontrar trabajos dentro de tu rango de transporte. Tu dirección exacta nunca se comparte.",
@@ -41,20 +58,25 @@
     "transportation": {
       "title": "¿Cómo te transportas?",
       "subtitle": "Esto nos ayuda a encontrar trabajos que puedas alcanzar.",
+      "howGetAround": "¿Cómo te mueves?",
       "methods": "¿Cómo te mueves?",
       "methodsHelp": "Selecciona todos los que apliquen",
+      "maxCommute": "¿Cuál es la distancia máxima que puedes viajar?",
       "commute": "¿Cuál es la distancia máxima que puedes viajar?",
-      "commuteHelp": "Solo ida, para llegar al trabajo"
+      "commuteHelp": "Solo ida, para llegar al trabajo",
+      "commuteHint": "Solo ida, para llegar al trabajo"
     },
     "availability": {
       "title": "¿Cuándo Puedes Trabajar?",
       "subtitle": "Déjanos saber tus preferencias de horario.",
+      "whenWork": "¿Cuándo puedes trabajar?",
       "when": "¿Cuándo puedes trabajar?",
       "open": "Abierto a todo",
       "weekdays": "Solo días de semana",
       "weekends": "Solo fines de semana",
       "specific": "Días específicos",
       "selectDays": "Selecciona tus días disponibles",
+      "preferredShifts": "Turnos preferidos",
       "shifts": "Turnos preferidos",
       "shiftsHelp": "Selecciona todos los que apliquen",
       "morning": "Mañana (6am-12pm)",
@@ -65,6 +87,7 @@
     "salary": {
       "title": "¿Qué Salario Necesitas?",
       "subtitle": "Te conectaremos con trabajos en tu rango.",
+      "targetRange": "Tu rango de salario deseado",
       "range": "Tu rango de salario deseado",
       "minimum": "Mínimo",
       "maximum": "Máximo",
@@ -80,8 +103,10 @@
     "challenges": {
       "title": "¿Algún Desafío en el que Podamos Ayudar?",
       "subtitle": "Esto es opcional, pero nos ayuda a encontrar recursos de apoyo.",
+      "selectLabel": "¿Enfrentas algún desafío en el que podamos ayudar?",
       "prompt": "¿Enfrentas algún desafío en el que podamos ayudar?",
       "trustBanner": "Tus desafíos nos ayudan a encontrar recursos de apoyo. NUNCA usamos esto para filtrar trabajos.",
+      "privacyNotice": "Tu privacidad está protegida. Esta información nos ayuda a encontrar recursos de apoyo.",
       "context": "¿Algo más que quieras que sepamos?",
       "contextPlaceholder": "Comparte cualquier contexto sobre tu situación (opcional)..."
     },

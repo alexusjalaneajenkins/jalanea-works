@@ -15,11 +15,28 @@
   },
   "onboarding": {
     "branding": "Jalanea Works Onboarding",
+    "stepOf": "Step {current} of {total}",
+    "steps": {
+      "foundation": "Foundation",
+      "transportation": "Transportation",
+      "availability": "Availability",
+      "salary": "Salary",
+      "challenges": "Challenges",
+      "complete": "Complete"
+    },
+    "common": {
+      "continue": "Continue",
+      "back": "Back",
+      "skip": "Skip"
+    },
     "foundation": {
       "title": "Let's Start with the Basics",
       "subtitle": "Tell us about yourself and your educational background.",
       "fullName": "What's your name?",
       "fullNamePlaceholder": "Enter your full name",
+      "address": "Where do you live?",
+      "addressPlaceholder": "Enter your address or neighborhood",
+      "addressHint": "We use this to find jobs within your commute range. Your exact address is never shared.",
       "location": "Where do you live?",
       "locationPlaceholder": "Enter your address or neighborhood (e.g., Pine Hills, Orlando)",
       "locationHelp": "We use this to find jobs within your commute range. Your exact address is never shared.",
@@ -41,20 +58,25 @@
     "transportation": {
       "title": "How Do You Get Around?",
       "subtitle": "This helps us find jobs you can actually reach.",
+      "howGetAround": "How do you get around?",
       "methods": "How do you get around?",
       "methodsHelp": "Select all that apply",
+      "maxCommute": "What's the farthest you can commute?",
       "commute": "What's the farthest you can commute?",
-      "commuteHelp": "One way, to get to work"
+      "commuteHelp": "One way, to get to work",
+      "commuteHint": "One way, to get to work"
     },
     "availability": {
       "title": "When Can You Work?",
       "subtitle": "Let us know your schedule preferences.",
+      "whenWork": "When can you work?",
       "when": "When can you work?",
       "open": "Open to anything",
       "weekdays": "Weekdays only",
       "weekends": "Weekends only",
       "specific": "Specific days",
       "selectDays": "Select your available days",
+      "preferredShifts": "Preferred shifts",
       "shifts": "Preferred shifts",
       "shiftsHelp": "Select all that apply",
       "morning": "Morning (6am-12pm)",
@@ -65,6 +87,7 @@
     "salary": {
       "title": "What Salary Do You Need?",
       "subtitle": "We'll match you with jobs in your range.",
+      "targetRange": "Your target salary range",
       "range": "Your target salary range",
       "minimum": "Minimum",
       "maximum": "Maximum",
@@ -80,8 +103,10 @@
     "challenges": {
       "title": "Any Challenges We Can Help With?",
       "subtitle": "This is optional, but helps us find support resources.",
+      "selectLabel": "Do you face any challenges we can help with?",
       "prompt": "Do you face any challenges we can help with?",
       "trustBanner": "Your challenges help us find support resources. We NEVER use this to filter jobs.",
+      "privacyNotice": "Your privacy is protected. This info helps us find support resources.",
       "context": "Anything else you'd like us to know?",
       "contextPlaceholder": "Share any context about your situation (optional)..."
     },
