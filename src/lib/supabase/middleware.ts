@@ -64,17 +64,18 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // If user is logged in and on auth routes, redirect to onboarding
-  if (user && isAuthRoute) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/foundation'
-    return NextResponse.redirect(url)
-  }
+  // If user is logged in and on auth routes or home, check onboarding status
+  if (user && (isAuthRoute || pathname === '/')) {
+    // Check if user has completed onboarding
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('onboarding_completed')
+      .eq('id', user.id)
+      .single()
 
-  // If user is logged in and on home page, redirect to onboarding
-  if (user && pathname === '/') {
     const url = request.nextUrl.clone()
-    url.pathname = '/foundation'
+    // If onboarding completed, go to dashboard; otherwise, go to foundation
+    url.pathname = profile?.onboarding_completed ? '/dashboard' : '/foundation'
     return NextResponse.redirect(url)
   }
 
