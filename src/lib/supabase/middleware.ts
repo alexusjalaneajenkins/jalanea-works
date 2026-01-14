@@ -4,12 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 // Routes that require authentication
 const PROTECTED_ROUTES = [
   '/dashboard',
-  '/foundation',
-  '/transportation',
-  '/availability',
-  '/salary',
-  '/challenges',
-  '/complete',
+  '/foundation', // New single-page onboarding (v2)
 ]
 
 // Routes that should redirect logged-in users away
