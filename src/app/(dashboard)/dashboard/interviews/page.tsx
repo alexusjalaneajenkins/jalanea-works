@@ -24,7 +24,7 @@ import {
   Users
 } from 'lucide-react'
 import { PracticeSession, PrepChecklist } from '@/components/interview'
-import { INTERVIEW_TYPES, QUESTION_CATEGORIES } from '@/data/interview-questions'
+import { INTERVIEW_TYPES, QUESTION_CATEGORIES, INTERVIEW_QUESTIONS } from '@/data/interview-questions'
 import { getInterviewPrepChecklist, getQuestionsToAsk } from '@/lib/interview-prep'
 
 interface Interview {
@@ -148,13 +148,17 @@ export default function InterviewsPage() {
           ← Back to Interview Prep
         </button>
         <PracticeSession
+          questions={INTERVIEW_QUESTIONS.slice(0, 5)}
           jobTitle={selectedInterview?.job?.title}
           companyName={selectedInterview?.job?.company}
-          onComplete={(score) => {
+          onComplete={(results) => {
+            const avgScore = results.length > 0
+              ? results.reduce((sum, r) => sum + r.score, 0) / results.length
+              : 0
             setPracticeStats(prev => ({
               totalSessions: prev.totalSessions + 1,
-              averageScore: (prev.averageScore * prev.totalSessions + score) / (prev.totalSessions + 1),
-              questionsAnswered: prev.questionsAnswered + 5
+              averageScore: (prev.averageScore * prev.totalSessions + avgScore) / (prev.totalSessions + 1),
+              questionsAnswered: prev.questionsAnswered + results.length
             }))
             setShowPractice(false)
           }}
