@@ -218,16 +218,24 @@ function PricingPageContent() {
               </thead>
               <tbody>
                 <FeatureRow
-                  feature="Job Applications"
-                  values={['25/mo', '50/mo', 'Unlimited', 'Unlimited']}
+                  feature="Regular Job Pockets"
+                  values={['30', '100', 'Unlimited', 'Unlimited']}
+                />
+                <FeatureRow
+                  feature="Advanced Pockets/mo"
+                  values={['—', '1', '5*', '10*']}
+                />
+                <FeatureRow
+                  feature="Professional Pockets/mo"
+                  values={['—', '—', '5*', '10*']}
+                />
+                <FeatureRow
+                  feature="AI Messages/week"
+                  values={['50', '1,000', 'Unlimited', 'Unlimited']}
                 />
                 <FeatureRow
                   feature="Resume Versions"
-                  values={['3', '5', 'Unlimited', 'Unlimited']}
-                />
-                <FeatureRow
-                  feature="AI Credits"
-                  values={['50', '150', '500', 'Unlimited']}
+                  values={['1', '3', 'Unlimited', 'Unlimited']}
                 />
                 <FeatureRow
                   feature="Skills Translation"
@@ -247,14 +255,22 @@ function PricingPageContent() {
                 />
                 <FeatureRow
                   feature="Priority Support"
-                  values={[false, false, true, true]}
+                  values={['48hr', '24hr', '12hr', '4hr']}
                 />
                 <FeatureRow
-                  feature="Expert Resume Review"
+                  feature="Success Coach"
+                  values={[false, false, false, true]}
+                />
+                <FeatureRow
+                  feature="Advanced Analytics"
                   values={[false, false, false, true]}
                 />
               </tbody>
             </table>
+            <p className="text-xs text-gray-500 mt-4 text-center">
+              * Professional and Max tiers share a combined pool for Advanced and Professional pockets.
+              For example, Professional tier users can use 5 credits total as any mix (e.g., 3 Professional + 2 Advanced).
+            </p>
           </div>
         </div>
       </section>

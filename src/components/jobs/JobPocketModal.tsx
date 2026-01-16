@@ -2,13 +2,18 @@
 
 /**
  * JobPocketModal - Modal for displaying generated Job Pockets
- * Shows tier-appropriate content based on user's subscription
+ * Shows tier-appropriate content based on pocket type
  *
- * Tiers:
- * - Essential ($15): Tier 1 - 20-second quick intel
- * - Starter ($25): Tier 2 - 90-second breakdown
- * - Premium ($75): Tier 3 - 8-page deep dive (5/month)
- * - Unlimited ($150): Tier 3 - 12-page Deep Research (10/month)
+ * Pocket Types (Updated January 2026):
+ * - Regular: 20-second quick intel (free with subscription)
+ * - Advanced: 90-second breakdown ($5 à la carte or included in tiers)
+ * - Professional: Full deep-research report ($10 à la carte or included in tiers)
+ *
+ * Subscription Tiers:
+ * - Essential ($15): 30 regular pockets
+ * - Starter ($25): 100 regular + 1 advanced/month
+ * - Professional ($50): Unlimited regular + 5 advanced or professional/month
+ * - Max ($100): Unlimited regular + 10 advanced or professional/month
  */
 
 import { useState, useEffect } from 'react'
@@ -22,13 +27,17 @@ import {
   Clock,
   Lock,
   ArrowRight,
-  FileText
+  ArrowUp,
+  FileText,
+  Zap
 } from 'lucide-react'
 import { PocketTier1, type PocketTier1Data } from './PocketTier1'
 import { PocketTier2, type PocketTier2Data } from './PocketTier2'
 import { PocketTier3, type PocketTier3Data } from './PocketTier3'
+import type { PocketType, SubscriptionTier } from '@/lib/stripe'
 
-export type UserTier = 'essential' | 'starter' | 'premium' | 'unlimited'
+// Legacy support - map old tier names to new structure
+export type UserTier = 'essential' | 'starter' | 'premium' | 'unlimited' | 'professional' | 'max' | 'free'
 
 interface JobPocketModalProps {
   isOpen: boolean
@@ -36,13 +45,52 @@ interface JobPocketModalProps {
   jobTitle: string
   companyName: string
   userTier: UserTier
+  pocketType?: PocketType // New: explicit pocket type
   pocketData: PocketTier1Data | PocketTier2Data | PocketTier3Data | null
   isGenerating?: boolean
   generationProgress?: number // 0-100
   onUpgrade?: () => void
+  onUpgradePocket?: (targetType: 'advanced' | 'professional') => void // New: pocket upgrade handler
+  canUpgradeTo?: {
+    advanced: boolean
+    professional: boolean
+  }
 }
 
+// Pocket type configuration (primary display)
+const pocketTypeConfig = {
+  regular: {
+    label: 'Regular',
+    color: 'text-gray-400',
+    bgColor: 'bg-gray-500/20',
+    readTime: '20 seconds',
+    description: 'Quick qualification check and key talking points'
+  },
+  advanced: {
+    label: 'Advanced',
+    color: 'text-blue-400',
+    bgColor: 'bg-blue-500/20',
+    readTime: '90 seconds',
+    description: 'Role breakdown, culture fit, and positioning strategy'
+  },
+  professional: {
+    label: 'Professional',
+    color: 'text-purple-400',
+    bgColor: 'bg-purple-500/20',
+    readTime: '5-10 minutes',
+    description: 'Complete deep-research intelligence report'
+  }
+}
+
+// Legacy tier config for backwards compatibility
 const tierConfig = {
+  free: {
+    label: 'Free',
+    color: 'text-gray-400',
+    bgColor: 'bg-gray-500/20',
+    readTime: '20 seconds',
+    description: 'Quick qualification check and key talking points'
+  },
   essential: {
     label: 'Essential',
     color: 'text-blue-400',
@@ -58,18 +106,32 @@ const tierConfig = {
     description: 'Role breakdown, culture fit, and positioning strategy'
   },
   premium: {
-    label: 'Premium',
+    label: 'Professional',
     color: 'text-purple-400',
     bgColor: 'bg-purple-500/20',
     readTime: '5-10 minutes',
     description: 'Complete 8-page intelligence report'
   },
+  professional: {
+    label: 'Professional',
+    color: 'text-purple-400',
+    bgColor: 'bg-purple-500/20',
+    readTime: '5-10 minutes',
+    description: 'Complete deep-research intelligence report'
+  },
   unlimited: {
-    label: 'Unlimited',
+    label: 'Max',
     color: 'text-emerald-400',
     bgColor: 'bg-emerald-500/20',
     readTime: '10-15 minutes',
     description: '12-page Deep Research report with advanced analytics'
+  },
+  max: {
+    label: 'Max',
+    color: 'text-emerald-400',
+    bgColor: 'bg-emerald-500/20',
+    readTime: '10-15 minutes',
+    description: 'Deep Research report with advanced analytics'
   }
 }
 
@@ -134,7 +196,7 @@ function UpgradePrompt({
   onUpgrade
 }: {
   currentTier: UserTier
-  targetTier: 'starter' | 'premium' | 'unlimited'
+  targetTier: 'starter' | 'premium' | 'unlimited' | 'professional' | 'max'
   onUpgrade?: () => void
 }) {
   const config = tierConfig[targetTier]
@@ -169,17 +231,81 @@ function UpgradePrompt({
   )
 }
 
-// Get the next tier to upgrade to
-function getNextTier(currentTier: UserTier): 'starter' | 'premium' | 'unlimited' | null {
+// Pocket upgrade prompt (for upgrading pocket type within the same job)
+function PocketUpgradePrompt({
+  currentType,
+  canUpgradeTo,
+  onUpgrade
+}: {
+  currentType: PocketType
+  canUpgradeTo?: { advanced: boolean; professional: boolean }
+  onUpgrade?: (targetType: 'advanced' | 'professional') => void
+}) {
+  if (!canUpgradeTo || (!canUpgradeTo.advanced && !canUpgradeTo.professional)) {
+    return null
+  }
+
+  const nextType = currentType === 'regular'
+    ? (canUpgradeTo.advanced ? 'advanced' : canUpgradeTo.professional ? 'professional' : null)
+    : currentType === 'advanced'
+      ? (canUpgradeTo.professional ? 'professional' : null)
+      : null
+
+  if (!nextType) return null
+
+  const config = pocketTypeConfig[nextType]
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mt-8 p-6 rounded-xl bg-gradient-to-r from-slate-800 to-slate-800/50 border border-slate-700"
+    >
+      <div className="flex items-start gap-4">
+        <div className={`w-12 h-12 rounded-xl ${config.bgColor} flex items-center justify-center flex-shrink-0`}>
+          <ArrowUp size={24} className={config.color} />
+        </div>
+        <div className="flex-1">
+          <h4 className="text-lg font-bold text-white mb-1">
+            Upgrade to {config.label} Pocket
+          </h4>
+          <p className="text-slate-400 text-sm mb-4">
+            {config.description}. Get {config.readTime} of detailed intelligence.
+          </p>
+          <button
+            onClick={() => onUpgrade?.(nextType)}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${
+              nextType === 'advanced'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-purple-600 text-white hover:bg-purple-700'
+            }`}
+          >
+            Upgrade This Pocket
+            <ArrowUp size={18} />
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+// Get the next subscription tier to upgrade to
+function getNextTier(currentTier: UserTier): 'starter' | 'premium' | 'unlimited' | 'professional' | 'max' | null {
   switch (currentTier) {
+    case 'free':
+      return 'starter'
     case 'essential':
       return 'starter'
     case 'starter':
-      return 'premium'
+      return 'professional'
     case 'premium':
-      return 'unlimited'
+    case 'professional':
+      return 'max'
     case 'unlimited':
+    case 'max':
       return null // Already at top tier
+    default:
+      return null
   }
 }
 
@@ -189,25 +315,34 @@ export function JobPocketModal({
   jobTitle,
   companyName,
   userTier,
+  pocketType = 'regular',
   pocketData,
   isGenerating = false,
   generationProgress = 0,
-  onUpgrade
+  onUpgrade,
+  onUpgradePocket,
+  canUpgradeTo
 }: JobPocketModalProps) {
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
   const config = tierConfig[userTier]
+  const pocketConfig = pocketTypeConfig[pocketType]
 
   useEffect(() => {
     // Show upgrade prompt after viewing pocket for a bit
     if (pocketData && !isGenerating) {
       const timer = setTimeout(() => {
-        if (userTier !== 'unlimited') {
+        // Show pocket upgrade prompt if not at max tier and can upgrade pocket
+        if (pocketType !== 'professional' && (canUpgradeTo?.advanced || canUpgradeTo?.professional)) {
+          setShowUpgradePrompt(true)
+        }
+        // Or show subscription upgrade prompt if not at max tier
+        else if (!['max', 'unlimited'].includes(userTier)) {
           setShowUpgradePrompt(true)
         }
       }, 5000)
       return () => clearTimeout(timer)
     }
-  }, [pocketData, isGenerating, userTier])
+  }, [pocketData, isGenerating, userTier, pocketType, canUpgradeTo])
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -275,18 +410,22 @@ export function JobPocketModal({
               </div>
 
               <div className="flex items-center gap-2">
-                {/* Tier badge */}
-                <div className={`px-3 py-1.5 rounded-full ${config.bgColor} flex items-center gap-2`}>
-                  <Sparkles size={14} className={config.color} />
-                  <span className={`text-sm font-medium ${config.color}`}>
-                    {config.label}
+                {/* Pocket type badge (primary) */}
+                <div className={`px-3 py-1.5 rounded-full ${pocketConfig.bgColor} flex items-center gap-2`}>
+                  {pocketType === 'advanced' ? (
+                    <Zap size={14} className={pocketConfig.color} />
+                  ) : (
+                    <Sparkles size={14} className={pocketConfig.color} />
+                  )}
+                  <span className={`text-sm font-medium ${pocketConfig.color}`}>
+                    {pocketConfig.label}
                   </span>
                 </div>
 
                 {/* Read time */}
                 <div className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-full bg-slate-800 text-slate-400 text-sm">
                   <Clock size={14} />
-                  {config.readTime}
+                  {pocketConfig.readTime}
                 </div>
 
                 {/* Actions */}
@@ -325,41 +464,63 @@ export function JobPocketModal({
                 <LoadingState progress={generationProgress} />
               ) : pocketData ? (
                 <div>
-                  {/* Render appropriate tier */}
-                  {userTier === 'essential' && (
+                  {/* Render based on pocket type (primary) or fall back to user tier */}
+                  {pocketType === 'regular' || (userTier === 'essential' || userTier === 'free') ? (
                     <>
                       <PocketTier1 data={pocketData as PocketTier1Data} />
-                      {showUpgradePrompt && nextTier && (
-                        <UpgradePrompt
-                          currentTier={userTier}
-                          targetTier={nextTier}
-                          onUpgrade={onUpgrade}
-                        />
+                      {showUpgradePrompt && (
+                        <>
+                          {/* Show pocket upgrade prompt first if available */}
+                          {(canUpgradeTo?.advanced || canUpgradeTo?.professional) && (
+                            <PocketUpgradePrompt
+                              currentType={pocketType}
+                              canUpgradeTo={canUpgradeTo}
+                              onUpgrade={onUpgradePocket}
+                            />
+                          )}
+                          {/* Show subscription upgrade prompt if applicable */}
+                          {nextTier && !canUpgradeTo?.advanced && !canUpgradeTo?.professional && (
+                            <UpgradePrompt
+                              currentTier={userTier}
+                              targetTier={nextTier}
+                              onUpgrade={onUpgrade}
+                            />
+                          )}
+                        </>
                       )}
                     </>
-                  )}
-
-                  {userTier === 'starter' && (
+                  ) : pocketType === 'advanced' || userTier === 'starter' ? (
                     <>
                       <PocketTier2 data={pocketData as PocketTier2Data} />
-                      {showUpgradePrompt && nextTier && (
-                        <UpgradePrompt
-                          currentTier={userTier}
-                          targetTier={nextTier}
-                          onUpgrade={onUpgrade}
-                        />
+                      {showUpgradePrompt && (
+                        <>
+                          {/* Show pocket upgrade prompt first if available */}
+                          {canUpgradeTo?.professional && (
+                            <PocketUpgradePrompt
+                              currentType={pocketType}
+                              canUpgradeTo={canUpgradeTo}
+                              onUpgrade={onUpgradePocket}
+                            />
+                          )}
+                          {/* Show subscription upgrade prompt if applicable */}
+                          {nextTier && !canUpgradeTo?.professional && (
+                            <UpgradePrompt
+                              currentTier={userTier}
+                              targetTier={nextTier}
+                              onUpgrade={onUpgrade}
+                            />
+                          )}
+                        </>
                       )}
                     </>
-                  )}
-
-                  {/* Premium and Unlimited both get Tier 3, but Unlimited gets extended version */}
-                  {(userTier === 'premium' || userTier === 'unlimited') && (
+                  ) : (pocketType === 'professional' || userTier === 'premium' || userTier === 'professional' || userTier === 'unlimited' || userTier === 'max') ? (
                     <>
                       <PocketTier3
                         data={pocketData as PocketTier3Data}
                         jobTitle={jobTitle}
                         companyName={companyName}
                       />
+                      {/* Professional pockets have no upgrade, but may show subscription upgrade */}
                       {showUpgradePrompt && nextTier && (
                         <UpgradePrompt
                           currentTier={userTier}
@@ -368,7 +529,7 @@ export function JobPocketModal({
                         />
                       )}
                     </>
-                  )}
+                  ) : null}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 text-center">

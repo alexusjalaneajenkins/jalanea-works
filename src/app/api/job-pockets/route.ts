@@ -18,12 +18,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-// Monthly limits per tier
+// Monthly limits per tier (Updated: regular pockets)
+// Advanced/Professional pockets tracked separately via pocket_credits table
 const TIER_LIMITS: Record<string, number> = {
-  essential: 999999,
-  starter: 999999,
-  premium: 5,
-  unlimited: 10
+  free: 5,           // 5 regular pockets
+  essential: 30,     // 30 regular pockets
+  starter: 100,      // 100 regular pockets
+  premium: -1,       // Unlimited (legacy name)
+  professional: -1,  // Unlimited regular pockets
+  unlimited: -1,     // Unlimited (legacy name)
+  max: -1           // Unlimited regular pockets
 }
 
 export async function GET(request: NextRequest) {

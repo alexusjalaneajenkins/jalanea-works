@@ -52,11 +52,11 @@ function getDisplayStage(status: ApplicationStatus): DisplayStage {
 
 // Derive mode from application salary or other heuristics
 function deriveMode(app: Application): Mode {
-  const salary = app.salary?.toLowerCase() || ''
+  const salaryType = app.salaryType || ''
   const title = app.jobTitle?.toLowerCase() || ''
 
   // Simple heuristic: survival = hourly/low pay, career = senior/lead, bridge = everything else
-  if (salary.includes('hour') || title.includes('associate') || title.includes('clerk')) {
+  if (salaryType === 'hourly' || title.includes('associate') || title.includes('clerk')) {
     return 'survival'
   }
   if (title.includes('senior') || title.includes('lead') || title.includes('manager') || title.includes('director')) {
@@ -201,7 +201,8 @@ function AppCard({
   onClick: () => void
 }) {
   const stage = getDisplayStage(app.status)
-  const match = app.matchScore || 75
+  // Use a default match score since Application type doesn't have matchScore
+  const match = 75
 
   // Format date
   const dateLabel = app.appliedAt

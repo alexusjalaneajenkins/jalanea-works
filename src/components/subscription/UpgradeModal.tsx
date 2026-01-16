@@ -30,13 +30,13 @@ interface UpgradeModalProps {
   onUpgrade?: (tierId: SubscriptionTier) => Promise<void>
 }
 
-// Tier display colors
+// Tier display colors (Updated: premium -> professional, unlimited -> max)
 const TIER_COLORS: Record<SubscriptionTier, string> = {
   free: 'gray',
   essential: 'blue',
   starter: 'purple',
-  premium: 'amber',
-  unlimited: 'emerald'
+  professional: 'amber',
+  max: 'emerald'
 }
 
 export default function UpgradeModal({

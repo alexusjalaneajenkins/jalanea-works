@@ -16,20 +16,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-// Monthly limits per tier
+// Regular pocket limits per tier (Advanced/Professional tracked separately)
 const TIER_LIMITS: Record<string, number> = {
-  essential: 999999,   // Unlimited
-  starter: 999999,     // Unlimited
-  premium: 5,          // 5 Tier 3 pockets per month
-  unlimited: 10        // 10 Tier 3+ pockets per month
+  free: 5,             // 5 regular pockets
+  essential: 30,       // 30 regular pockets
+  starter: 100,        // 100 regular pockets
+  premium: -1,         // Unlimited (legacy)
+  professional: -1,    // Unlimited regular pockets
+  unlimited: -1,       // Unlimited (legacy)
+  max: -1              // Unlimited regular pockets
 }
 
-// Tier names for display
+// Tier names for display (Updated January 2026)
 const TIER_NAMES: Record<string, string> = {
-  essential: 'Essential (Tier 1)',
-  starter: 'Starter (Tier 2)',
-  premium: 'Premium (Tier 3)',
-  unlimited: 'Unlimited (Tier 3+)'
+  free: 'Free Trial',
+  essential: 'Essential',
+  starter: 'Starter',
+  premium: 'Professional (legacy)',
+  professional: 'Professional',
+  unlimited: 'Max (legacy)',
+  max: 'Max'
 }
 
 export async function GET(request: NextRequest) {
@@ -93,10 +99,13 @@ export async function GET(request: NextRequest) {
     let totalPocketsGenerated = 0
     let totalTokensUsed = 0
     const pocketsByTier: Record<string, number> = {
+      free: 0,
       essential: 0,
       starter: 0,
-      premium: 0,
-      unlimited: 0
+      premium: 0,         // legacy
+      professional: 0,
+      unlimited: 0,       // legacy
+      max: 0
     }
 
     if (pocketStats) {
@@ -181,46 +190,57 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * Get tier level for comparison
+ * Get tier level for comparison (Updated January 2026)
  */
 function getTierLevel(tier: string): number {
   const levels: Record<string, number> = {
+    free: 0,
     essential: 1,
     starter: 2,
-    premium: 3,
-    unlimited: 4
+    premium: 3,        // legacy - maps to professional
+    professional: 3,
+    unlimited: 4,      // legacy - maps to max
+    max: 4
   }
-  return levels[tier] || 1
+  return levels[tier] || 0
 }
 
 /**
- * Get limit description for tier
+ * Get limit description for tier (Updated January 2026)
  */
 function getLimitDescription(tier: string): string {
   switch (tier) {
+    case 'max':
     case 'unlimited':
-      return '10 Deep Research (Tier 3+) pockets per month, plus unlimited Tier 1 & 2 pockets'
+      return '10 Advanced or Professional pockets per month (shared pool), plus unlimited regular pockets'
+    case 'professional':
     case 'premium':
-      return '5 comprehensive (Tier 3) pockets per month, plus unlimited Tier 1 & 2 pockets'
+      return '5 Advanced or Professional pockets per month (shared pool), plus unlimited regular pockets'
     case 'starter':
-      return 'Unlimited Tier 2 (90-second breakdown) pockets, plus unlimited Tier 1 pockets'
+      return '100 regular pockets + 1 Advanced pocket per month'
     case 'essential':
+      return '30 regular (20-second quick brief) pockets per month'
+    case 'free':
     default:
-      return 'Unlimited Tier 1 (20-second quick brief) pockets'
+      return '5 regular (20-second quick brief) pockets'
   }
 }
 
 /**
- * Get upgrade message for tier
+ * Get upgrade message for tier (Updated January 2026)
  */
 function getUpgradeMessage(tier: string): string | null {
   switch (tier) {
+    case 'free':
+      return 'Upgrade to Essential ($15/mo) for 30 regular pockets'
     case 'essential':
-      return 'Upgrade to Starter ($25/mo) for detailed 90-second breakdowns'
+      return 'Upgrade to Starter ($25/mo) for 100 regular pockets + 1 Advanced pocket'
     case 'starter':
-      return 'Upgrade to Premium ($75/mo) for comprehensive 8-page reports'
+      return 'Upgrade to Professional ($50/mo) for unlimited regular + 5 Advanced/Professional pockets'
+    case 'professional':
     case 'premium':
-      return 'Upgrade to Unlimited ($150/mo) for 12-page Deep Research reports'
+      return 'Upgrade to Max ($100/mo) for 10 Advanced/Professional pockets + Success Coach'
+    case 'max':
     case 'unlimited':
     default:
       return null

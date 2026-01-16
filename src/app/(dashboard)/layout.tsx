@@ -22,7 +22,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { user, isLoading, profile } = useAuth()
+  const { user, isLoading } = useAuth()
   const router = useRouter()
 
   // Redirect to login if not authenticated
@@ -54,12 +54,13 @@ export default function DashboardLayout({
     return null
   }
 
-  // Extract user info for shell
-  const userName = profile?.full_name || user.email?.split('@')[0] || 'User'
+  // Extract user info for shell (using user metadata or fallbacks)
+  const userMetadata = user.user_metadata || {}
+  const userName = userMetadata.full_name || userMetadata.name || user.email?.split('@')[0] || 'User'
   const userInitial = userName.charAt(0).toUpperCase()
-  const userLocation = profile?.location || 'Central Florida'
-  const userTier = profile?.subscription_tier
-    ? profile.subscription_tier.charAt(0).toUpperCase() + profile.subscription_tier.slice(1)
+  const userLocation = userMetadata.location || 'Central Florida'
+  const userTier = userMetadata.subscription_tier
+    ? String(userMetadata.subscription_tier).charAt(0).toUpperCase() + String(userMetadata.subscription_tier).slice(1)
     : 'Essential'
 
   return (

@@ -63,9 +63,11 @@ export async function GET() {
     },
     usage: {
       applicationsThisMonth: profile.monthly_applications || 0,
-      applicationsLimit: tier?.limits.applicationsPerMonth || 5,
-      aiCreditsUsed: profile.monthly_ai_credits_used || 0,
-      aiCreditsLimit: tier?.limits.aiCredits || 10
+      regularPocketsLimit: tier?.limits.regularPockets || 5,
+      aiMessagesUsed: profile.monthly_ai_credits_used || 0,
+      aiMessagesLimit: tier?.limits.aiMessagesPerWeek || 10,
+      advancedPocketsPerMonth: tier?.limits.advancedPocketsPerMonth || 0,
+      professionalPocketsPerMonth: tier?.limits.professionalPocketsPerMonth || 0
     },
     features: tier?.limits || {},
     availableTiers: SUBSCRIPTION_TIERS.map(t => ({

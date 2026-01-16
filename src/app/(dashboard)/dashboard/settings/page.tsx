@@ -333,8 +333,8 @@ export default function SettingsPage() {
 
   // Compute plan details
   const planName =
-    settings.subscription.tier === 'free'
-      ? 'Free'
+    settings.subscription.tier === 'essential'
+      ? 'Essential'
       : settings.subscription.tier === 'starter'
       ? 'Starter'
       : settings.subscription.tier === 'premium'
@@ -342,7 +342,7 @@ export default function SettingsPage() {
       : 'Unlimited'
 
   const planPrice =
-    settings.subscription.tier === 'free'
+    settings.subscription.tier === 'essential'
       ? '$0'
       : settings.subscription.tier === 'starter'
       ? '$25'

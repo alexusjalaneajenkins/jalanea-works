@@ -2,9 +2,7 @@
  * Stripe Configuration & Utilities
  *
  * Handles Stripe integration for subscription management.
- * 4-tier model: Essential ($15), Starter ($25), Professional ($50), Max ($100)
- *
- * Updated: January 16, 2026 - TIER_AND_POCKET_STRUCTURE_UPDATE.md
+ * 4-tier model: Essential ($15), Starter ($25), Premium ($75), Unlimited ($150)
  */
 
 import Stripe from 'stripe'
@@ -23,11 +21,8 @@ export const stripe = stripeSecretKey
     })
   : null
 
-// Subscription tier types (Updated: Premium -> Professional, Unlimited -> Max)
-export type SubscriptionTier = 'free' | 'essential' | 'starter' | 'professional' | 'max'
-
-// Pocket types
-export type PocketType = 'regular' | 'advanced' | 'professional'
+// Subscription tier types
+export type SubscriptionTier = 'free' | 'essential' | 'starter' | 'premium' | 'unlimited'
 
 // Tier configuration
 export interface TierConfig {
@@ -37,21 +32,17 @@ export interface TierConfig {
   priceId?: string // Stripe Price ID
   productId?: string // Stripe Product ID
   description: string
-  tagline: string // e.g., "Survival Mode", "Bridge Mode"
   features: string[]
   limits: {
-    regularPockets: number // -1 = unlimited
-    advancedPocketsPerMonth: number
-    professionalPocketsPerMonth: number
-    aiMessagesPerWeek: number // -1 = unlimited
-    resumeVersions: number // -1 = unlimited
+    jobsPerMonth: number
+    resumeVersions: number
+    applicationsPerMonth: number
+    aiCredits: number
     skillsTranslation: boolean
     careerCoach: boolean
     shadowCalendar: boolean
     interviewPrep: boolean
     prioritySupport: boolean
-    successCoach: boolean
-    advancedAnalytics: boolean
   }
   popular?: boolean
   communityContribution: number // Amount that goes to community fund
@@ -65,51 +56,35 @@ export const COMMUNITY_FUND_REVENUE_THRESHOLD = 4583
 // These will be activated once revenue threshold is met
 export const COMMUNITY_CONTRIBUTION_RATES: Record<SubscriptionTier, number> = {
   free: 0,
-  essential: 1.50,   // 10% of $15
-  starter: 2.50,     // 10% of $25
-  professional: 5.00, // 10% of $50
-  max: 10.00         // 10% of $100
+  essential: 1.50,  // 10% of $15
+  starter: 2.50,    // 10% of $25
+  premium: 7.50,    // 10% of $75
+  unlimited: 15.00  // 10% of $150
 }
 
-// Pocket pricing for à la carte purchases
-export const POCKET_PRICES = {
-  advanced: 5,      // $5 per advanced pocket
-  professional: 10  // $10 per professional pocket
-} as const
-
-// Pocket generation costs (internal)
-export const POCKET_COSTS = {
-  advanced: 1,      // ~$1 cost to us
-  professional: 5   // ~$5 cost to us
-} as const
-
-// Tier configurations (Updated per TIER_AND_POCKET_STRUCTURE_UPDATE.md)
+// Tier configurations
 export const SUBSCRIPTION_TIERS: TierConfig[] = [
   {
     id: 'free',
     name: 'Free Trial',
     price: 0,
     description: 'Get started with basic features',
-    tagline: 'Try it out',
     features: [
-      '5 regular job pockets',
-      '10 AI messages/week',
+      '5 job applications per month',
+      '1 resume version',
       'Basic job search',
       'Application tracking'
     ],
     limits: {
-      regularPockets: 5,
-      advancedPocketsPerMonth: 0,
-      professionalPocketsPerMonth: 0,
-      aiMessagesPerWeek: 10,
+      jobsPerMonth: 20,
       resumeVersions: 1,
+      applicationsPerMonth: 5,
+      aiCredits: 10,
       skillsTranslation: false,
       careerCoach: false,
       shadowCalendar: false,
       interviewPrep: false,
-      prioritySupport: false,
-      successCoach: false,
-      advancedAnalytics: false
+      prioritySupport: false
     },
     communityContribution: 0
   },
@@ -119,28 +94,24 @@ export const SUBSCRIPTION_TIERS: TierConfig[] = [
     price: 15,
     priceId: process.env.STRIPE_ESSENTIAL_PRICE_ID,
     productId: process.env.STRIPE_ESSENTIAL_PRODUCT_ID,
-    description: 'Survival Mode - Get ANY job fast',
-    tagline: 'Survival Mode',
+    description: 'Perfect for casual job seekers',
     features: [
-      '30 regular job pockets',
-      '50 AI messages/week',
-      '1 resume version',
-      'Basic Scam Shield',
-      '48-hour support'
+      '25 job applications per month',
+      '3 resume versions',
+      'AI-powered job matching',
+      'Application tracking',
+      'Email notifications'
     ],
     limits: {
-      regularPockets: 30,
-      advancedPocketsPerMonth: 0,
-      professionalPocketsPerMonth: 0,
-      aiMessagesPerWeek: 50,
-      resumeVersions: 1,
+      jobsPerMonth: 50,
+      resumeVersions: 3,
+      applicationsPerMonth: 25,
+      aiCredits: 50,
       skillsTranslation: false,
       careerCoach: false,
       shadowCalendar: true,
       interviewPrep: false,
-      prioritySupport: false,
-      successCoach: false,
-      advancedAnalytics: false
+      prioritySupport: false
     },
     communityContribution: 0 // Contributions start after $55k/yr revenue threshold
   },
@@ -150,94 +121,83 @@ export const SUBSCRIPTION_TIERS: TierConfig[] = [
     price: 25,
     priceId: process.env.STRIPE_STARTER_PRICE_ID,
     productId: process.env.STRIPE_STARTER_PRODUCT_ID,
-    description: 'Bridge Mode - Strategic job search',
-    tagline: 'Bridge Mode',
+    description: 'Great for active job seekers',
+    popular: true,
     features: [
-      '100 regular job pockets',
-      '1 Advanced Pocket/month',
-      '1000 AI messages/week',
-      '3 resume versions',
-      'Full Scam Shield',
-      '24-hour support'
+      '50 job applications per month',
+      '5 resume versions',
+      'AI job matching & recommendations',
+      'Skills Translation Engine',
+      'Shadow Calendar',
+      'Basic interview prep'
     ],
     limits: {
-      regularPockets: 100,
-      advancedPocketsPerMonth: 1,
-      professionalPocketsPerMonth: 0,
-      aiMessagesPerWeek: 1000,
-      resumeVersions: 3,
+      jobsPerMonth: 100,
+      resumeVersions: 5,
+      applicationsPerMonth: 50,
+      aiCredits: 150,
       skillsTranslation: true,
       careerCoach: false,
       shadowCalendar: true,
       interviewPrep: true,
-      prioritySupport: false,
-      successCoach: false,
-      advancedAnalytics: false
+      prioritySupport: false
     },
     communityContribution: 0 // Contributions start after $55k/yr revenue threshold
   },
   {
-    id: 'professional',
-    name: 'Professional',
-    price: 50,
-    priceId: process.env.STRIPE_PROFESSIONAL_PRICE_ID,
-    productId: process.env.STRIPE_PROFESSIONAL_PRODUCT_ID,
-    description: 'Career Mode - Land professional roles',
-    tagline: 'Career Mode',
-    popular: true,
+    id: 'premium',
+    name: 'Premium',
+    price: 75,
+    priceId: process.env.STRIPE_PREMIUM_PRICE_ID,
+    productId: process.env.STRIPE_PREMIUM_PRODUCT_ID,
+    description: 'Full access to all features',
     features: [
-      'Unlimited regular job pockets',
-      '5 Advanced or Professional Pockets/month',
-      'Unlimited AI messages',
+      'Unlimited applications',
       'Unlimited resume versions',
-      'Advanced interview prep',
-      '12-hour support'
+      'AI Career Coach (OSKAR)',
+      'Advanced interview prep with AI feedback',
+      'Priority job matching',
+      'Skills Translation Engine',
+      'Shadow Calendar with transit'
     ],
     limits: {
-      regularPockets: -1, // unlimited
-      advancedPocketsPerMonth: 5, // Can mix with professional
-      professionalPocketsPerMonth: 5, // Shared pool with advanced
-      aiMessagesPerWeek: -1, // unlimited
-      resumeVersions: -1, // unlimited
+      jobsPerMonth: -1, // unlimited
+      resumeVersions: -1,
+      applicationsPerMonth: -1,
+      aiCredits: 500,
       skillsTranslation: true,
       careerCoach: true,
       shadowCalendar: true,
       interviewPrep: true,
-      prioritySupport: true,
-      successCoach: false,
-      advancedAnalytics: false
+      prioritySupport: true
     },
     communityContribution: 0 // Contributions start after $55k/yr revenue threshold
   },
   {
-    id: 'max',
-    name: 'Max',
-    price: 100,
-    priceId: process.env.STRIPE_MAX_PRICE_ID,
-    productId: process.env.STRIPE_MAX_PRODUCT_ID,
-    description: 'High-Stakes Mode - Senior roles $60k-100k+',
-    tagline: 'High-Stakes Mode',
+    id: 'unlimited',
+    name: 'Unlimited',
+    price: 150,
+    priceId: process.env.STRIPE_UNLIMITED_PRICE_ID,
+    productId: process.env.STRIPE_UNLIMITED_PRODUCT_ID,
+    description: 'For power users and career changers',
     features: [
-      'Everything in Professional, PLUS:',
-      '10 Advanced or Professional Pockets/month',
-      'Daily AI strategy sessions',
-      'Success coach (monthly call)',
-      'Priority 4-hour support',
-      'Advanced analytics dashboard'
+      'Everything in Premium',
+      'Unlimited AI credits',
+      '1-on-1 career coaching sessions',
+      'Resume review by experts',
+      'Priority support',
+      'Early access to new features'
     ],
     limits: {
-      regularPockets: -1, // unlimited
-      advancedPocketsPerMonth: 10, // Can mix with professional
-      professionalPocketsPerMonth: 10, // Shared pool with advanced
-      aiMessagesPerWeek: -1, // unlimited
-      resumeVersions: -1, // unlimited
+      jobsPerMonth: -1,
+      resumeVersions: -1,
+      applicationsPerMonth: -1,
+      aiCredits: -1, // unlimited
       skillsTranslation: true,
       careerCoach: true,
       shadowCalendar: true,
       interviewPrep: true,
-      prioritySupport: true,
-      successCoach: true,
-      advancedAnalytics: true
+      prioritySupport: true
     },
     communityContribution: 0 // Contributions start after $55k/yr revenue threshold
   }
@@ -274,78 +234,19 @@ export function hasFeatureAccess(
 }
 
 /**
- * Check if user is within pocket limit
+ * Check if user is within limit
  */
-export function isWithinPocketLimit(
+export function isWithinLimit(
   userTier: SubscriptionTier,
-  pocketType: PocketType,
+  limit: 'jobsPerMonth' | 'resumeVersions' | 'applicationsPerMonth' | 'aiCredits',
   currentUsage: number
 ): boolean {
   const tier = getTierConfig(userTier)
   if (!tier) return false
 
-  if (pocketType === 'regular') {
-    if (tier.limits.regularPockets === -1) return true // unlimited
-    return currentUsage < tier.limits.regularPockets
-  }
-
-  // Advanced and Professional share a pool for Professional/Max tiers
-  if (pocketType === 'advanced') {
-    if (tier.limits.advancedPocketsPerMonth === 0) return false
-    return currentUsage < tier.limits.advancedPocketsPerMonth
-  }
-
-  if (pocketType === 'professional') {
-    if (tier.limits.professionalPocketsPerMonth === 0) return false
-    return currentUsage < tier.limits.professionalPocketsPerMonth
-  }
-
-  return false
-}
-
-/**
- * Check if user can access a pocket type
- */
-export function canAccessPocketType(
-  userTier: SubscriptionTier,
-  pocketType: PocketType
-): boolean {
-  const tier = getTierConfig(userTier)
-  if (!tier) return false
-
-  if (pocketType === 'regular') return true // All tiers can use regular
-
-  if (pocketType === 'advanced') {
-    // Starter, Professional, Max can access advanced
-    return ['starter', 'professional', 'max'].includes(userTier)
-  }
-
-  if (pocketType === 'professional') {
-    // Only Professional and Max can access professional pockets
-    return ['professional', 'max'].includes(userTier)
-  }
-
-  return false
-}
-
-/**
- * Get pocket credits for a tier
- */
-export function getPocketCredits(userTier: SubscriptionTier): {
-  advancedPerMonth: number
-  professionalPerMonth: number
-  regularLimit: number
-} {
-  const tier = getTierConfig(userTier)
-  if (!tier) {
-    return { advancedPerMonth: 0, professionalPerMonth: 0, regularLimit: 0 }
-  }
-
-  return {
-    advancedPerMonth: tier.limits.advancedPocketsPerMonth,
-    professionalPerMonth: tier.limits.professionalPocketsPerMonth,
-    regularLimit: tier.limits.regularPockets
-  }
+  const limitValue = tier.limits[limit]
+  if (limitValue === -1) return true // unlimited
+  return currentUsage < limitValue
 }
 
 /**
@@ -559,56 +460,6 @@ export async function getOrCreateCustomer(
     return customer.id
   } catch (error) {
     console.error('Failed to get/create customer:', error)
-    return null
-  }
-}
-
-/**
- * Create one-time payment for à la carte pocket purchase
- */
-export async function createPocketPurchaseSession(
-  userId: string,
-  customerId: string,
-  pocketType: 'advanced' | 'professional',
-  jobId: string,
-  successUrl: string,
-  cancelUrl: string
-): Promise<Stripe.Checkout.Session | null> {
-  if (!stripe) {
-    console.error('Stripe not initialized')
-    return null
-  }
-
-  const price = POCKET_PRICES[pocketType]
-  const priceId = pocketType === 'advanced'
-    ? process.env.STRIPE_ADVANCED_POCKET_PRICE_ID
-    : process.env.STRIPE_PROFESSIONAL_POCKET_PRICE_ID
-
-  try {
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      payment_method_types: ['card'],
-      customer: customerId,
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1
-        }
-      ],
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      client_reference_id: userId,
-      metadata: {
-        userId,
-        jobId,
-        pocketType,
-        purchaseType: 'pocket_ala_carte'
-      }
-    })
-
-    return session
-  } catch (error) {
-    console.error('Failed to create pocket purchase session:', error)
     return null
   }
 }
