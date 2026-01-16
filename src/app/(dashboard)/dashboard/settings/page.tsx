@@ -337,18 +337,22 @@ export default function SettingsPage() {
       ? 'Essential'
       : settings.subscription.tier === 'starter'
       ? 'Starter'
-      : settings.subscription.tier === 'premium'
-      ? 'Premium'
-      : 'Unlimited'
+      : settings.subscription.tier === 'professional'
+      ? 'Professional'
+      : settings.subscription.tier === 'max'
+      ? 'Max'
+      : 'Owner'
 
   const planPrice =
     settings.subscription.tier === 'essential'
-      ? '$0'
+      ? '$15'
       : settings.subscription.tier === 'starter'
       ? '$25'
-      : settings.subscription.tier === 'premium'
-      ? '$45'
-      : '$75'
+      : settings.subscription.tier === 'professional'
+      ? '$50'
+      : settings.subscription.tier === 'max'
+      ? '$100'
+      : '$0'
 
   const daysLeft = settings.subscription.currentPeriodEnd
     ? Math.max(0, Math.ceil((new Date(settings.subscription.currentPeriodEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))

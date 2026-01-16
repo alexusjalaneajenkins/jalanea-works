@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import { AppShell } from '@/components/shell'
 import { ModeProvider } from '@/lib/mode/ModeContext'
 import { Sun } from 'lucide-react'
-import { isOwner, getOwnerTier } from '@/lib/owner'
+import { isOwner, getOwnerDisplayTier, getEffectiveTier } from '@/lib/owner'
 
 // ============================================
 // DASHBOARD LAYOUT
@@ -61,10 +61,10 @@ export default function DashboardLayout({
   const userInitial = userName.charAt(0).toUpperCase()
   const userLocation = userMetadata.location || 'Central Florida'
 
-  // Check for owner privileges (full access)
+  // Check for owner privileges (full access with tier switching)
   const userIsOwner = isOwner(user.email)
   const userTier = userIsOwner
-    ? getOwnerTier() // Shows "Owner" in UI
+    ? getOwnerDisplayTier() // Shows current tier being tested, or "Owner"
     : userMetadata.subscription_tier
       ? String(userMetadata.subscription_tier).charAt(0).toUpperCase() + String(userMetadata.subscription_tier).slice(1)
       : 'Essential'
@@ -76,6 +76,7 @@ export default function DashboardLayout({
         userInitial={userInitial}
         userLocation={userLocation}
         userTier={userTier}
+        isOwner={userIsOwner}
       >
         {children}
       </AppShell>

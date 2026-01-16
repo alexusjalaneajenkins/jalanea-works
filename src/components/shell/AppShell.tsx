@@ -22,6 +22,7 @@ interface AppShellProps {
   userName?: string
   userLocation?: string
   userInitial?: string
+  isOwner?: boolean
 }
 
 export function AppShell({
@@ -29,7 +30,8 @@ export function AppShell({
   userTier = 'Essential',
   userName = 'User',
   userLocation = 'Central Florida',
-  userInitial = 'U'
+  userInitial = 'U',
+  isOwner = false
 }: AppShellProps) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light')
@@ -86,6 +88,7 @@ export function AppShell({
           userName={userName}
           userLocation={userLocation}
           userInitial={userInitial}
+          isOwner={isOwner}
         />
 
         <div className="flex-1">

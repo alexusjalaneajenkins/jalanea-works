@@ -13,7 +13,7 @@ import { CareerCoach } from '@/components/coach'
 import { OSKAR_PHASES } from '@/data/oskar-framework'
 
 export default function CoachPage() {
-  const [userTier, setUserTier] = useState<'essential' | 'starter' | 'premium' | 'unlimited'>('premium')
+  const [userTier, setUserTier] = useState<'essential' | 'starter' | 'professional' | 'max'>('professional')
   const [showGuide, setShowGuide] = useState(false)
 
   // Fetch user tier on mount

@@ -12,11 +12,13 @@
  */
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { ChevronDown, LogOut, MessageSquare, Rocket, Sparkles, Sun } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { ChevronDown, LogOut, MessageSquare, Rocket, Sparkles, Sun, FlaskConical } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { primaryNavItems, secondaryNavItems, footerNavItems } from './nav'
 import { useJalaneaMode } from '@/lib/mode/ModeContext'
+import { TESTABLE_TIERS, setTierOverride, getTierOverride, type TestableTier } from '@/lib/owner'
 
 function PlanChip({ tier }: { tier: string }) {
   return (
@@ -32,16 +34,83 @@ interface SideRailProps {
   userName?: string
   userLocation?: string
   userInitial?: string
+  isOwner?: boolean
+}
+
+function TierSwitcher({ onTierChange }: { onTierChange: (tier: TestableTier | null) => void }) {
+  const [currentOverride, setCurrentOverride] = useState<TestableTier | null>(getTierOverride())
+  const [isOpen, setIsOpen] = useState(false)
+
+  const handleSelectTier = (tier: TestableTier | null) => {
+    setTierOverride(tier)
+    setCurrentOverride(tier)
+    onTierChange(tier)
+    setIsOpen(false)
+  }
+
+  const tierLabels: Record<string, string> = {
+    essential: 'Essential ($15)',
+    starter: 'Starter ($25)',
+    professional: 'Professional ($50)',
+    max: 'Max ($100)',
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <FlaskConical size={14} />
+          <span>Test as: {currentOverride ? tierLabels[currentOverride] : 'Owner (Full)'}</span>
+        </div>
+        <ChevronDown size={14} className={cn('transition-transform', isOpen && 'rotate-180')} />
+      </button>
+      {isOpen && (
+        <div className="absolute left-0 right-0 mt-1 z-50 rounded-xl border border-border bg-card shadow-lg overflow-hidden">
+          <button
+            onClick={() => handleSelectTier(null)}
+            className={cn(
+              'w-full text-left px-3 py-2 text-xs font-semibold hover:bg-muted/50 transition-colors',
+              !currentOverride && 'bg-primary/10 text-primary'
+            )}
+          >
+            Owner (Full Access)
+          </button>
+          {TESTABLE_TIERS.map((tier) => (
+            <button
+              key={tier}
+              onClick={() => handleSelectTier(tier)}
+              className={cn(
+                'w-full text-left px-3 py-2 text-xs font-semibold hover:bg-muted/50 transition-colors',
+                currentOverride === tier && 'bg-primary/10 text-primary'
+              )}
+            >
+              {tierLabels[tier]}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function SideRail({
   userTier = 'Essential',
   userName = 'User',
   userLocation = 'Central Florida',
-  userInitial = 'U'
+  userInitial = 'U',
+  isOwner = false
 }: SideRailProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const { mode } = useJalaneaMode()
+
+  const handleTierChange = () => {
+    // Reload the page to apply new tier
+    window.location.reload()
+  }
 
   const isActive = (to: string) => {
     if (to === '/dashboard') {
@@ -76,6 +145,13 @@ export function SideRail({
           </div>
           <PlanChip tier={userTier} />
         </div>
+
+        {/* Owner Tier Switcher */}
+        {isOwner && (
+          <div className="relative mt-3">
+            <TierSwitcher onTierChange={handleTierChange} />
+          </div>
+        )}
       </div>
 
       {/* Navigation */}

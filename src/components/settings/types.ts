@@ -3,7 +3,7 @@
  */
 
 // Subscription tiers (4 tiers + owner for admin access)
-export type SubscriptionTier = 'essential' | 'starter' | 'premium' | 'unlimited' | 'owner'
+export type SubscriptionTier = 'essential' | 'starter' | 'professional' | 'max' | 'owner'
 
 export interface SubscriptionPlan {
   id: SubscriptionTier
@@ -127,44 +127,41 @@ export const subscriptionPlans: SubscriptionPlan[] = [
     highlighted: true
   },
   {
-    id: 'premium',
-    name: 'Premium',
-    price: 75,
+    id: 'professional',
+    name: 'Professional',
+    price: 50,
     billingPeriod: 'monthly',
-    description: 'The complete toolkit for landing your dream job',
+    description: 'For serious job seekers targeting $60k-100k+ roles',
     features: [
       'Everything in Starter, plus:',
-      '5 Advanced Job Pockets per month (Tier 3)',
-      '8-page deep-dive reports',
-      'Personalized career coaching',
-      'Salary negotiation guides',
-      'Company culture analysis',
-      'LinkedIn connection mapping',
-      'Priority support with 24hr response'
+      'Unlimited Job Pockets',
+      '5 Advanced Job Pockets per month',
+      'Unlimited AI messages',
+      'Unlimited resume versions',
+      '5 Deep Research Reports/month',
+      'Economic Events Dashboard',
+      'Apply Copilot Enhanced (Smart Answers)',
+      'Monthly 15-min strategy call'
     ],
-    limitations: [
-      'Limited to 5 Advanced Pockets/month'
-    ]
+    limitations: []
   },
   {
-    id: 'unlimited',
-    name: 'Unlimited',
-    price: 150,
+    id: 'max',
+    name: 'Max',
+    price: 100,
     billingPeriod: 'monthly',
-    description: 'Go all-in on landing your dream role',
+    description: 'White-glove executive job search support',
     features: [
-      'Everything in Premium, plus:',
+      'Everything in Professional, plus:',
       '10 Advanced Job Pockets per month',
-      '12-page Deep Research reports',
-      'Daily AI Strategy Sessions',
-      'Salary Negotiation Coaching',
-      'Priority 4-hour support',
-      'Success Dashboard with Analytics',
-      'Monthly Success Coach call',
-      'Custom branding on exports',
-      'Unlimited job pockets',
-      'Unlimited AI messages',
-      'Unlimited resume versions'
+      '10 Deep Research Reports/month',
+      'AI Job Market Analyst',
+      'SMS job alerts',
+      'Personal career coach (30 min/week)',
+      'LinkedIn optimization',
+      'Application Concierge (5 jobs/week)',
+      'Direct Slack/text access',
+      '2-hour priority support'
     ],
     limitations: []
   }
@@ -185,23 +182,23 @@ export function hasFeatureAccess(
 
   switch (feature) {
     case 'tier2Pockets':
-      return tier === 'starter' || tier === 'premium' || tier === 'unlimited'
+      return tier === 'starter' || tier === 'professional' || tier === 'max'
     case 'tier3Pockets':
-      return tier === 'premium' || tier === 'unlimited'
+      return tier === 'professional' || tier === 'max'
     case 'advancedPockets':
-      return tier === 'unlimited'
+      return tier === 'max'
     case 'unlimitedApps':
-      return tier === 'starter' || tier === 'premium' || tier === 'unlimited'
+      return tier === 'starter' || tier === 'professional' || tier === 'max'
     case 'aiSuggestions':
-      return tier === 'starter' || tier === 'premium' || tier === 'unlimited'
+      return tier === 'starter' || tier === 'professional' || tier === 'max'
     case 'allTemplates':
-      return tier === 'starter' || tier === 'premium' || tier === 'unlimited'
+      return tier === 'starter' || tier === 'professional' || tier === 'max'
     case 'unlimitedAI':
-      return tier === 'unlimited'
+      return tier === 'max'
     case 'successCoach':
-      return tier === 'unlimited'
+      return tier === 'max'
     case 'customBranding':
-      return tier === 'unlimited'
+      return tier === 'max'
     default:
       return false
   }
@@ -212,8 +209,8 @@ export function getTierLevel(tier: SubscriptionTier): number {
   const levels: Record<SubscriptionTier, number> = {
     essential: 1,
     starter: 2,
-    premium: 3,
-    unlimited: 4,
+    professional: 3,
+    max: 4,
     owner: 5
   }
   return levels[tier]

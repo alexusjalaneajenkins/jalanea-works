@@ -2,13 +2,13 @@
 
 /**
  * TierBadge - Displays user's subscription tier
- * Essential | Starter | Premium | Unlimited
+ * Essential | Starter | Premium | Max
  */
 
 import { motion } from 'framer-motion'
 import { Zap, Star, Crown, Rocket, Sparkles } from 'lucide-react'
 
-export type Tier = 'essential' | 'starter' | 'premium' | 'unlimited'
+export type Tier = 'essential' | 'starter' | 'professional' | 'max'
 
 interface TierBadgeProps {
   tier: Tier
@@ -36,23 +36,23 @@ const tierConfig = {
     textColor: 'text-[#ffc425]',
     description: '$25/mo • 15 pockets/month'
   },
-  premium: {
-    label: 'Premium',
+  professional: {
+    label: 'Professional',
     icon: Crown,
     color: '#a855f7',
     bgColor: 'bg-purple-500/10',
     borderColor: 'border-purple-500/20',
     textColor: 'text-purple-400',
-    description: '$75/mo • 5 Advanced/month'
+    description: '$50/mo • Unlimited AI'
   },
-  unlimited: {
-    label: 'Unlimited',
+  max: {
+    label: 'Max',
     icon: Rocket,
     color: '#10b981',
     bgColor: 'bg-emerald-500/10',
     borderColor: 'border-emerald-500/20',
     textColor: 'text-emerald-400',
-    description: '$150/mo • 10 Advanced/month'
+    description: '$100/mo • 10 Advanced/month'
   }
 }
 

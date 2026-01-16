@@ -56,16 +56,16 @@ export function SubscriptionCard({ subscription, usage, onManage, onUpgrade }: S
   const tierIcons: Record<SubscriptionTier, React.ReactNode> = {
     essential: <Zap size={24} className="text-blue-400" />,
     starter: <Star size={24} className="text-[#ffc425]" />,
-    premium: <Crown size={24} className="text-purple-400" />,
-    unlimited: <Sparkles size={24} className="text-emerald-400" />,
+    professional: <Crown size={24} className="text-purple-400" />,
+    max: <Sparkles size={24} className="text-emerald-400" />,
     owner: <Crown size={24} className="text-primary" />
   }
 
   const tierGradients: Record<SubscriptionTier, string> = {
     essential: 'from-blue-500/20 to-blue-600/5',
     starter: 'from-[#ffc425]/20 to-orange-500/5',
-    premium: 'from-purple-500/20 to-pink-500/5',
-    unlimited: 'from-emerald-500/20 to-teal-500/5',
+    professional: 'from-purple-500/20 to-pink-500/5',
+    max: 'from-emerald-500/20 to-teal-500/5',
     owner: 'from-primary/20 to-amber-500/5'
   }
 
@@ -134,7 +134,7 @@ export function SubscriptionCard({ subscription, usage, onManage, onUpgrade }: S
         />
 
         {/* Show Advanced Pockets for Premium and Unlimited tiers */}
-        {(subscription.tier === 'premium' || subscription.tier === 'unlimited') && (
+        {(subscription.tier === 'professional' || subscription.tier === 'max') && (
           <UsageBar
             used={usage.advancedPocketsGenerated}
             limit={usage.advancedPocketsLimit}
@@ -180,7 +180,7 @@ export function SubscriptionCard({ subscription, usage, onManage, onUpgrade }: S
           <CreditCard size={18} />
           Manage Billing
         </button>
-        {subscription.tier !== 'unlimited' && (
+        {subscription.tier !== 'max' && (
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}

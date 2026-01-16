@@ -12,7 +12,7 @@ import { ReactNode } from 'react'
 import { Lock, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
-type SubscriptionTier = 'free' | 'essential' | 'starter' | 'premium' | 'unlimited' | 'owner'
+type SubscriptionTier = 'free' | 'essential' | 'starter' | 'professional' | 'max' | 'owner'
 
 interface FeatureGateProps {
   children: ReactNode
@@ -28,8 +28,8 @@ const TIER_LEVELS: Record<SubscriptionTier, number> = {
   free: 0,
   essential: 1,
   starter: 2,
-  premium: 3,
-  unlimited: 4,
+  professional: 3,
+  max: 4,
   owner: 5 // Owner has access to everything
 }
 
@@ -38,8 +38,8 @@ const TIER_NAMES: Record<SubscriptionTier, string> = {
   free: 'Free',
   essential: 'Essential',
   starter: 'Starter',
-  premium: 'Premium',
-  unlimited: 'Unlimited',
+  professional: 'Professional',
+  max: 'Max',
   owner: 'Owner'
 }
 
@@ -118,13 +118,13 @@ export function useFeatureAccess(
 export function getRequiredTier(feature: string): SubscriptionTier {
   const featureMap: Record<string, SubscriptionTier> = {
     'skills-translation': 'starter',
-    'career-coach': 'premium',
+    'career-coach': 'professional',
     'shadow-calendar': 'essential',
     'interview-prep': 'starter',
     'ai-job-matching': 'essential',
-    'priority-support': 'premium',
-    'unlimited-applications': 'premium',
-    'unlimited-ai': 'unlimited'
+    'priority-support': 'professional',
+    'unlimited-applications': 'professional',
+    'unlimited-ai': 'max'
   }
   return featureMap[feature] || 'free'
 }

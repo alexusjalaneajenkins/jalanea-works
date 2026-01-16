@@ -64,12 +64,12 @@ interface CoachingStats {
 }
 
 interface CareerCoachProps {
-  userTier?: 'essential' | 'starter' | 'premium' | 'unlimited'
+  userTier?: 'essential' | 'starter' | 'professional' | 'max'
   onUpgradeClick?: () => void
 }
 
 export default function CareerCoach({
-  userTier = 'premium',
+  userTier = 'professional',
   onUpgradeClick
 }: CareerCoachProps) {
   const [messages, setMessages] = useState<CoachingMessage[]>([])
@@ -92,7 +92,7 @@ export default function CareerCoach({
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   // Check if user has access
-  const hasAccess = userTier === 'premium' || userTier === 'unlimited'
+  const hasAccess = userTier === 'professional' || userTier === 'max'
 
   // Scroll to bottom when messages change
   useEffect(() => {

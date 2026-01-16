@@ -19,8 +19,8 @@ export function PricingTiers({ isOpen, onClose, currentTier, onSelectTier }: Pri
   const tierIcons: Record<SubscriptionTier, React.ReactNode> = {
     essential: <Zap size={28} />,
     starter: <Star size={28} />,
-    premium: <Crown size={28} />,
-    unlimited: <Rocket size={28} />,
+    professional: <Crown size={28} />,
+    max: <Rocket size={28} />,
     owner: <Sparkles size={28} />
   }
 
@@ -42,13 +42,13 @@ export function PricingTiers({ isOpen, onClose, currentTier, onSelectTier }: Pri
       text: 'text-[#ffc425]',
       border: 'border-[#ffc425]/30'
     },
-    premium: {
+    professional: {
       bg: 'from-purple-500 to-pink-500',
       light: 'bg-purple-500/10',
       text: 'text-purple-400',
       border: 'border-purple-500/30'
     },
-    unlimited: {
+    max: {
       bg: 'from-emerald-500 to-teal-500',
       light: 'bg-emerald-500/10',
       text: 'text-emerald-400',
@@ -116,7 +116,7 @@ export function PricingTiers({ isOpen, onClose, currentTier, onSelectTier }: Pri
                     className={`relative rounded-2xl border-2 transition-colors ${
                       plan.highlighted
                         ? `${colors.border} bg-slate-800/50`
-                        : plan.id === 'unlimited'
+                        : plan.id === 'max'
                         ? `${colors.border} bg-gradient-to-b from-slate-800/80 to-slate-800/30`
                         : 'border-slate-700/50 bg-slate-800/30'
                     }`}
@@ -131,7 +131,7 @@ export function PricingTiers({ isOpen, onClose, currentTier, onSelectTier }: Pri
                     )}
 
                     {/* Unlimited special badge */}
-                    {plan.id === 'unlimited' && (
+                    {plan.id === 'max' && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r ${colors.bg} text-white whitespace-nowrap`}>
                           Best Value
@@ -200,7 +200,7 @@ export function PricingTiers({ isOpen, onClose, currentTier, onSelectTier }: Pri
                             ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
                             : isDowngrade
                             ? 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
-                            : plan.id === 'unlimited'
+                            : plan.id === 'max'
                             ? `bg-gradient-to-r ${colors.bg} text-white hover:opacity-90`
                             : plan.highlighted
                             ? `bg-gradient-to-r ${colors.bg} text-[#0f172a] hover:opacity-90`
@@ -217,7 +217,7 @@ export function PricingTiers({ isOpen, onClose, currentTier, onSelectTier }: Pri
                       )}
 
                       {/* ROI callout for Unlimited */}
-                      {plan.id === 'unlimited' && !isCurrent && (
+                      {plan.id === 'max' && !isCurrent && (
                         <p className="text-xs text-emerald-400/80 text-center mt-2">
                           16,567% ROI if you land a $75k job
                         </p>
