@@ -5,11 +5,16 @@
  *
  * Top navigation bar for JalaneaWorks "Mission Control".
  * Features:
- * - Mobile menu toggle
+ * - Mobile menu toggle (mobile only)
  * - Search trigger (command palette)
  * - Theme toggle (light/dark)
- * - Mode indicator (Survival/Bridge/Career)
+ * - Mode switcher (Survival/Bridge/Career)
  * - Notifications
+ *
+ * Responsive:
+ * - Mobile (<768px): Hamburger menu, icon-only actions
+ * - Tablet (768-1023px): Icon-only search, mode switcher
+ * - Desktop (1024px+): Full search bar, mode switcher
  */
 
 import { useState } from 'react'
@@ -20,13 +25,13 @@ import {
   Menu,
   Moon,
   Search,
+  Settings,
   Sun,
-  Target,
   X
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { primaryNavItems, secondaryNavItems } from './nav'
-import { useJalaneaMode, type JalaneaMode, modeLabel, modeDescription } from '@/lib/mode/ModeContext'
+import { useJalaneaMode, type JalaneaMode, modeLabel } from '@/lib/mode/ModeContext'
 
 interface TopBarProps {
   onOpenSearch?: () => void
@@ -34,31 +39,11 @@ interface TopBarProps {
   themeMode?: 'light' | 'dark'
 }
 
-function modeShortDesc(mode: JalaneaMode) {
-  if (mode === 'survival') return 'Fast income. High volume.'
-  if (mode === 'bridge') return 'Build your foundation.'
-  return 'Deep research. Quality.'
-}
-
 function modeBgColor(mode: JalaneaMode, active: boolean) {
   if (!active) return 'bg-transparent text-muted-foreground hover:text-foreground'
   if (mode === 'survival') return 'bg-primary text-primary-foreground'
   if (mode === 'bridge') return 'bg-primary text-primary-foreground'
   return 'bg-primary text-primary-foreground'
-}
-
-function ModeIndicator({ mode }: { mode: JalaneaMode }) {
-  return (
-    <div className="hidden lg:flex items-center gap-3 rounded-2xl border border-border bg-card/60 px-4 py-2">
-      <div className="grid h-8 w-8 place-items-center rounded-xl bg-primary/10 text-primary">
-        <Target size={16} />
-      </div>
-      <div>
-        <div className="text-sm font-bold text-foreground">{modeLabel(mode)} Mode</div>
-        <div className="text-[11px] text-muted-foreground">{modeShortDesc(mode)}</div>
-      </div>
-    </div>
-  )
 }
 
 function ModeSwitcher({ mode, setMode }: { mode: JalaneaMode; setMode: (m: JalaneaMode) => void }) {
@@ -98,17 +83,17 @@ export function TopBar({ onOpenSearch, onToggleTheme, themeMode = 'light' }: Top
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="mx-auto max-w-[1200px] px-4 lg:px-8">
           <div className="flex h-16 items-center justify-between gap-4">
-            {/* Mobile menu button */}
+            {/* Mobile menu button - only on mobile, tablet has collapsed sidebar */}
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden grid h-10 w-10 place-items-center rounded-xl border border-border bg-card/60 text-muted-foreground hover:text-foreground transition-colors"
+              className="md:hidden grid h-10 w-10 place-items-center rounded-xl border border-border bg-card/60 text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Open menu"
             >
               <Menu size={20} />
             </button>
 
-            {/* Logo for mobile */}
-            <div className="lg:hidden flex items-center gap-2">
+            {/* Logo for mobile - only on mobile, tablet shows logo in sidebar */}
+            <div className="md:hidden flex items-center gap-2">
               <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
                 <Sun size={16} />
               </div>
@@ -120,21 +105,18 @@ export function TopBar({ onOpenSearch, onToggleTheme, themeMode = 'light' }: Top
               </span>
             </div>
 
-            {/* Mode Indicator (desktop) */}
-            <ModeIndicator mode={mode} />
-
             {/* Spacer */}
             <div className="flex-1" />
 
-            {/* Search button */}
+            {/* Search button - full version only on desktop */}
             <button
               onClick={onOpenSearch}
-              className="hidden sm:flex items-center gap-3 rounded-2xl border border-border bg-card/60 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
+              className="hidden lg:flex items-center gap-3 rounded-2xl border border-border bg-card/60 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
               aria-label="Search"
             >
               <Search size={16} />
               <span>Search...</span>
-              <kbd className="hidden lg:inline-flex items-center gap-1 rounded-md border border-border bg-muted/50 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+              <kbd className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/50 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                 <span className="text-xs">⌘</span>K
               </kbd>
             </button>
@@ -163,10 +145,19 @@ export function TopBar({ onOpenSearch, onToggleTheme, themeMode = 'light' }: Top
                 <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary" />
               </button>
 
-              {/* Mobile search */}
+              {/* Settings */}
+              <Link
+                href="/dashboard/settings"
+                className="grid h-10 w-10 place-items-center rounded-xl border border-border bg-card/60 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Settings"
+              >
+                <Settings size={18} />
+              </Link>
+
+              {/* Icon-only search for mobile and tablet */}
               <button
                 onClick={onOpenSearch}
-                className="sm:hidden grid h-10 w-10 place-items-center rounded-xl border border-border bg-card/60 text-muted-foreground hover:text-foreground transition-colors"
+                className="lg:hidden grid h-10 w-10 place-items-center rounded-xl border border-border bg-card/60 text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Search"
               >
                 <Search size={18} />
@@ -176,9 +167,9 @@ export function TopBar({ onOpenSearch, onToggleTheme, themeMode = 'light' }: Top
         </div>
       </header>
 
-      {/* Mobile menu overlay */}
+      {/* Mobile menu overlay - only on mobile, tablet uses collapsed sidebar */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-50 md:hidden">
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"

@@ -3,12 +3,11 @@
 /**
  * SideRail.tsx
  *
- * Desktop navigation rail for JalaneaWorks "Mission Control".
+ * Responsive navigation rail for JalaneaWorks "Mission Control".
  * Features:
- * - Sticky sidebar with gold brand accent
- * - Clear navigation with active states
- * - Account section pinned to bottom
- * - "Shining Light" brand identity
+ * - Mobile (<768px): Hidden, uses hamburger menu
+ * - Tablet (768-1023px): Collapsed icons-only, expands on hover
+ * - Desktop (1024px+): Full sidebar with labels
  */
 
 import Link from 'next/link'
@@ -30,7 +29,7 @@ interface SideRailProps {
   isOwner?: boolean
 }
 
-function TierSwitcher({ onTierChange }: { onTierChange: (tier: TestableTier | null) => void }) {
+function TierSwitcher({ onTierChange, collapsed }: { onTierChange: (tier: TestableTier | null) => void; collapsed?: boolean }) {
   const [currentOverride, setCurrentOverride] = useState<TestableTier | null>(getTierOverride())
   const [isOpen, setIsOpen] = useState(false)
 
@@ -46,6 +45,18 @@ function TierSwitcher({ onTierChange }: { onTierChange: (tier: TestableTier | nu
     starter: 'Starter ($25)',
     professional: 'Professional ($50)',
     max: 'Max ($100)',
+  }
+
+  if (collapsed) {
+    return (
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 p-2 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors"
+        title={`Test as: ${currentOverride ? tierLabels[currentOverride] : 'Owner (Full)'}`}
+      >
+        <FlaskConical size={16} />
+      </button>
+    )
   }
 
   return (
@@ -100,15 +111,14 @@ export function SideRail({
   const router = useRouter()
   const { mode } = useJalaneaMode()
   const { signOut } = useAuth()
+  const [isHovered, setIsHovered] = useState(false)
 
   const handleSignOut = async () => {
     await signOut()
-    // Use full page navigation to ensure session is cleared before redirect
     window.location.href = '/'
   }
 
   const handleTierChange = () => {
-    // Reload the page to apply new tier
     window.location.reload()
   }
 
@@ -119,43 +129,62 @@ export function SideRail({
     return pathname.startsWith(to)
   }
 
+  // Collapsed state: tablet without hover
+  // Expanded state: desktop OR tablet with hover
+  const isExpanded = isHovered
+
   return (
-    <aside className="hidden lg:flex w-[280px] shrink-0 flex-col border-r border-border bg-card/30 backdrop-blur-xl sticky top-0 h-screen">
+    <aside
+      className={cn(
+        'hidden md:flex shrink-0 flex-col border-r border-border bg-card/30 backdrop-blur-xl sticky top-0 h-screen transition-all duration-300 ease-in-out',
+        // Tablet: 72px collapsed, Desktop: 280px always
+        'w-[72px] lg:w-[280px]',
+        // On tablet hover, expand to full width
+        isHovered && 'md:w-[280px]'
+      )}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {/* Brand header */}
-      <div className="relative px-5 pt-5 pb-4">
-        {/* Ambient glow */}
-        <div className="absolute -top-10 -left-10 h-40 w-40 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+      <div className="relative px-3 lg:px-5 pt-4 lg:pt-5 pb-3 lg:pb-4">
+        {/* Ambient glow - only on expanded */}
+        <div className={cn(
+          'absolute -top-10 -left-10 h-40 w-40 rounded-full bg-primary/10 blur-3xl pointer-events-none transition-opacity',
+          isExpanded ? 'opacity-100' : 'lg:opacity-100 opacity-0'
+        )} />
 
         <div className="relative flex items-center gap-3">
-          <div className="relative grid h-11 w-11 place-items-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+          {/* Sun icon - rounded square shape */}
+          <div className="relative grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
             <Sun size={20} className="drop-shadow-sm" />
-            {/* Subtle pulse */}
-            <div className="absolute inset-0 rounded-xl bg-primary animate-ping opacity-20" />
+            <div className="absolute inset-0 rounded-2xl bg-primary animate-ping opacity-20" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span
-                className="text-base font-black tracking-tight"
-                style={{ fontFamily: 'var(--font-serif)' }}
-              >
-                Jalanea<span className="text-primary">Works</span>
-              </span>
-              <TierBadge tier={userTier.toLowerCase() as Tier} size="sm" />
-            </div>
-            <div className="text-[11px] text-muted-foreground font-medium">Make It Work</div>
+
+          {/* Text - hidden on collapsed tablet, shown on expanded/desktop */}
+          <div className={cn(
+            'transition-all duration-300 overflow-hidden',
+            isExpanded ? 'opacity-100 w-auto' : 'lg:opacity-100 lg:w-auto opacity-0 w-0'
+          )}>
+            <span
+              className="text-base font-black tracking-tight whitespace-nowrap"
+              style={{ fontFamily: 'var(--font-serif)' }}
+            >
+              Jalanea<span className="text-primary">Works</span>
+            </span>
+            <div className="text-[11px] text-muted-foreground font-medium whitespace-nowrap">Make It Work</div>
           </div>
         </div>
 
         {/* Owner Tier Switcher */}
         {isOwner && (
           <div className="relative mt-3">
-            <TierSwitcher onTierChange={handleTierChange} />
+            <TierSwitcher onTierChange={handleTierChange} collapsed={!isExpanded && !isHovered} />
           </div>
         )}
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 overflow-y-auto px-3 pb-4 pt-2">
+      <div className="flex-1 overflow-y-auto px-2 lg:px-3 pb-4 pt-2">
         <nav aria-label="Main navigation">
           {/* Primary nav */}
           <ul className="space-y-1">
@@ -166,16 +195,19 @@ export function SideRail({
                   <Link
                     href={item.to}
                     className={cn(
-                      'group flex items-center gap-3 rounded-2xl px-4 py-3 transition-all duration-200',
+                      'group flex items-center gap-3 rounded-2xl transition-all duration-200',
+                      // Padding: collapsed vs expanded
+                      isExpanded ? 'px-4 py-3' : 'lg:px-4 lg:py-3 px-3 py-3 justify-center lg:justify-start',
                       active
                         ? 'bg-primary/10 border border-primary/30 shadow-sm'
                         : 'hover:bg-muted/30'
                     )}
                     aria-current={active ? 'page' : undefined}
+                    title={!isExpanded ? item.label : undefined}
                   >
                     <span
                       className={cn(
-                        'grid h-8 w-8 place-items-center rounded-lg transition-colors',
+                        'grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors',
                         active
                           ? 'bg-primary/15 text-primary'
                           : 'bg-muted/50 text-muted-foreground group-hover:text-foreground'
@@ -185,14 +217,15 @@ export function SideRail({
                     </span>
                     <span
                       className={cn(
-                        'text-sm font-semibold tracking-tight transition-colors',
-                        active ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'
+                        'text-sm font-semibold tracking-tight transition-all duration-300 whitespace-nowrap',
+                        active ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground',
+                        isExpanded ? 'opacity-100' : 'lg:opacity-100 opacity-0 w-0 lg:w-auto overflow-hidden'
                       )}
                     >
                       {item.label}
                     </span>
-                    {active && (
-                      <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
+                    {active && isExpanded && (
+                      <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary hidden lg:block" aria-hidden="true" />
                     )}
                   </Link>
                 </li>
@@ -202,7 +235,11 @@ export function SideRail({
 
           {/* Secondary nav */}
           <div className="mt-4 pt-4 border-t border-border">
-            <div className="px-4 mb-2">
+            {/* Section title - only when expanded */}
+            <div className={cn(
+              'px-4 mb-2 transition-opacity duration-300',
+              isExpanded ? 'opacity-100' : 'lg:opacity-100 opacity-0 h-0 lg:h-auto overflow-hidden'
+            )}>
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                 Tools
               </span>
@@ -215,15 +252,17 @@ export function SideRail({
                     <Link
                       href={item.to}
                       className={cn(
-                        'group flex items-center gap-3 rounded-2xl px-4 py-2.5 transition-all duration-200',
+                        'group flex items-center gap-3 rounded-2xl transition-all duration-200',
+                        isExpanded ? 'px-4 py-2.5' : 'lg:px-4 lg:py-2.5 px-3 py-2.5 justify-center lg:justify-start',
                         active
                           ? 'bg-primary/10 border border-primary/30'
                           : 'hover:bg-muted/30'
                       )}
+                      title={!isExpanded ? item.label : undefined}
                     >
                       <span
                         className={cn(
-                          'grid h-7 w-7 place-items-center rounded-lg transition-colors',
+                          'grid h-7 w-7 shrink-0 place-items-center rounded-lg transition-colors',
                           active
                             ? 'bg-primary/15 text-primary'
                             : 'bg-muted/50 text-muted-foreground group-hover:text-foreground'
@@ -233,8 +272,9 @@ export function SideRail({
                       </span>
                       <span
                         className={cn(
-                          'text-sm font-medium tracking-tight transition-colors',
-                          active ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'
+                          'text-sm font-medium tracking-tight transition-all duration-300 whitespace-nowrap',
+                          active ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground',
+                          isExpanded ? 'opacity-100' : 'lg:opacity-100 opacity-0 w-0 lg:w-auto overflow-hidden'
                         )}
                       >
                         {item.label}
@@ -247,56 +287,71 @@ export function SideRail({
           </div>
         </nav>
 
-        {/* Promo card */}
-        <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+        {/* Promo card - only when expanded */}
+        <div className={cn(
+          'mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-4 transition-all duration-300',
+          isExpanded ? 'opacity-100' : 'lg:opacity-100 lg:block hidden'
+        )}>
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
               <Rocket size={18} />
             </div>
-            <div>
-              <div className="text-sm font-bold text-foreground">Start a Business</div>
-              <div className="text-xs text-muted-foreground">Light the Block toolkit</div>
+            <div className={cn(
+              'transition-opacity duration-300',
+              isExpanded ? 'opacity-100' : 'lg:opacity-100 opacity-0'
+            )}>
+              <div className="text-sm font-bold text-foreground whitespace-nowrap">Start a Business</div>
+              <div className="text-xs text-muted-foreground whitespace-nowrap">Light the Block toolkit</div>
             </div>
           </div>
-          <button className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity">
+          <button className={cn(
+            'mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity',
+            isExpanded ? '' : 'lg:flex hidden'
+          )}>
             <Sparkles size={14} />
-            Explore
+            <span className={cn(isExpanded ? '' : 'lg:inline hidden')}>Explore</span>
           </button>
         </div>
       </div>
 
       {/* Account section */}
-      <div className="border-t border-border p-3 bg-card/50 backdrop-blur-sm">
-        <div className="flex items-center justify-between rounded-2xl bg-background/60 p-3">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+      <div className="border-t border-border p-2 lg:p-3 bg-card/50 backdrop-blur-sm">
+        <div className={cn(
+          'flex items-center rounded-2xl bg-background/60 p-2 lg:p-3',
+          isExpanded ? 'justify-between' : 'lg:justify-between justify-center'
+        )}>
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="h-9 w-9 shrink-0 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-sm font-bold text-primary">
               {userInitial}
             </div>
-            <div>
-              <div className="text-sm font-bold text-foreground">{userName}</div>
-              <div className="text-xs text-muted-foreground">{userLocation}</div>
+            <div className={cn(
+              'transition-all duration-300 min-w-0',
+              isExpanded ? 'opacity-100' : 'lg:opacity-100 lg:block hidden'
+            )}>
+              <div className="text-sm font-bold text-foreground truncate">{userName}</div>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-xs text-muted-foreground whitespace-nowrap">{userLocation}</span>
+                <TierBadge tier={userTier.toLowerCase() as Tier} size="sm" />
+              </div>
             </div>
           </div>
-          <button
-            className="rounded-lg border border-border bg-background/60 p-2 text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Account menu"
-            aria-expanded="false"
-          >
-            <ChevronDown size={16} />
-          </button>
         </div>
 
-        <div className="mt-2 grid grid-cols-2 gap-2">
+        {/* Action buttons - only when expanded */}
+        <div className={cn(
+          'mt-2 grid grid-cols-2 gap-2 transition-all duration-300',
+          isExpanded ? 'opacity-100' : 'lg:opacity-100 lg:grid hidden'
+        )}>
           <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors">
             <MessageSquare size={14} />
-            Feedback
+            <span className={cn(isExpanded ? '' : 'lg:inline hidden')}>Feedback</span>
           </button>
           <button
             onClick={handleSignOut}
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
           >
             <LogOut size={14} />
-            Sign out
+            <span className={cn(isExpanded ? '' : 'lg:inline hidden')}>Sign out</span>
           </button>
         </div>
       </div>

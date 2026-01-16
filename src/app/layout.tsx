@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Space_Grotesk, Inter } from "next/font/google";
 import { AuthProvider } from "@/components/providers/auth-provider";
+import { OfflineIndicator } from "@/components/shell/OfflineIndicator";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -35,6 +36,24 @@ export const metadata: Metadata = {
   authors: [{ name: "Jalanea Works" }],
   creator: "Jalanea Works",
   publisher: "Jalanea Works",
+  // PWA manifest
+  manifest: "/manifest.json",
+  // Apple PWA meta tags
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "JalaneaWorks",
+  },
+  // Favicons and icons
+  icons: {
+    icon: [
+      { url: "/icons/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -54,12 +73,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#1f2937" }
-  ],
+  // Gold primary color for PWA status bar
+  themeColor: "#ffc425",
   width: "device-width",
-  initialScale: 1
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
@@ -73,6 +92,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} ${inter.variable} antialiased`}
       >
         <AuthProvider>
+          <OfflineIndicator />
           <main id="main-content">
             {children}
           </main>

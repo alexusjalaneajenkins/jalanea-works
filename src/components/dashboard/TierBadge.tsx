@@ -21,10 +21,10 @@ const tierConfig = {
   essential: {
     label: 'Essential',
     icon: Zap,
-    color: '#3b82f6',
-    bgColor: 'bg-blue-500/10',
-    borderColor: 'border-blue-500/20',
-    textColor: 'text-blue-400',
+    color: '#ffc425',
+    bgColor: 'bg-[#ffc425]/10',
+    borderColor: 'border-[#ffc425]/20',
+    textColor: 'text-[#ffc425]',
     description: '$15/mo • 5 pockets/month'
   },
   starter: {

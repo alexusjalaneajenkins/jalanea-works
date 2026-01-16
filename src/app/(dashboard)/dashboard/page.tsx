@@ -9,6 +9,11 @@
  * - Clear daily action plan
  * - Gold accent "Shining Light" theme
  * - Accessible, clean layout
+ *
+ * Responsive:
+ * - Mobile (<768px): Single column, compact padding
+ * - Tablet (768-1023px): Stacked layout, medium padding
+ * - Desktop (1024px+): 8/4 split grid, full padding
  */
 
 import { useMemo, useState } from 'react'
@@ -55,7 +60,7 @@ function StatCard({
   return (
     <div
       className={cn(
-        'rounded-3xl border p-4 transition-all duration-200',
+        'rounded-2xl md:rounded-3xl border p-3 md:p-4 transition-all duration-200',
         accent
           ? 'border-primary/30 bg-primary/5 shadow-[0_4px_24px_hsl(var(--primary)/0.08)]'
           : 'border-border bg-card/60'
@@ -64,7 +69,7 @@ function StatCard({
       <div className="flex items-center justify-between">
         <div
           className={cn(
-            'grid h-10 w-10 place-items-center rounded-xl border',
+            'grid h-8 w-8 md:h-10 md:w-10 place-items-center rounded-lg md:rounded-xl border',
             accent
               ? 'border-primary/30 bg-primary/10 text-primary'
               : 'border-border bg-background/60 text-muted-foreground'
@@ -72,18 +77,18 @@ function StatCard({
         >
           {icon}
         </div>
-        <span className="text-xs text-muted-foreground">{hint}</span>
+        <span className="text-[10px] md:text-xs text-muted-foreground">{hint}</span>
       </div>
       <div
         className={cn(
-          'mt-3 text-2xl font-black tracking-tight',
+          'mt-2 md:mt-3 text-xl md:text-2xl font-black tracking-tight',
           accent ? 'text-primary' : 'text-foreground'
         )}
         style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
       >
         {value}
       </div>
-      <div className="mt-1 text-sm font-semibold text-muted-foreground">{label}</div>
+      <div className="mt-0.5 md:mt-1 text-xs md:text-sm font-semibold text-muted-foreground">{label}</div>
     </div>
   )
 }
@@ -308,11 +313,11 @@ export default function DashboardHomePage() {
   }
 
   return (
-    <main className="jw-grain relative mx-auto max-w-[1200px] px-4 py-6 lg:px-8 lg:py-10">
-      <div className="grid gap-6 lg:grid-cols-12">
+    <main className="jw-grain relative mx-auto max-w-[1200px] px-3 py-4 sm:px-4 md:px-6 md:py-6 lg:px-8 lg:py-10">
+      <div className="grid gap-4 md:gap-6 lg:grid-cols-12">
         {/* Hero card */}
         <div className="lg:col-span-12">
-          <div className="relative overflow-hidden rounded-[2rem] border border-border bg-card/60 backdrop-blur-sm p-6 sm:p-8">
+          <div className="relative overflow-hidden rounded-2xl md:rounded-[2rem] border border-border bg-card/60 backdrop-blur-sm p-4 sm:p-6 md:p-8">
             {/* Ambient glow */}
             <div className="absolute -right-20 -top-20 h-60 w-60 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
             <div className="absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-primary/5 blur-2xl pointer-events-none" />
@@ -373,7 +378,7 @@ export default function DashboardHomePage() {
             </div>
 
             {/* Stats row */}
-            <div className="relative mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="relative mt-4 md:mt-6 grid gap-2 sm:gap-3 grid-cols-2 lg:grid-cols-4">
               <StatCard
                 icon={<Briefcase size={18} />}
                 label="Jobs for you"
@@ -409,7 +414,7 @@ export default function DashboardHomePage() {
 
         {/* Daily Plan */}
         <div className="lg:col-span-8">
-          <div className="rounded-[2rem] border border-border bg-card/60 backdrop-blur-sm p-6 sm:p-7">
+          <div className="rounded-2xl md:rounded-[2rem] border border-border bg-card/60 backdrop-blur-sm p-4 sm:p-5 md:p-7">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2
@@ -490,7 +495,7 @@ export default function DashboardHomePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="mt-6 rounded-[2rem] border border-border bg-card/60 backdrop-blur-sm p-6 sm:p-7"
+              className="mt-4 md:mt-6 rounded-2xl md:rounded-[2rem] border border-border bg-card/60 backdrop-blur-sm p-4 sm:p-5 md:p-7"
             >
               <div className="flex items-center justify-between mb-4">
                 <h2
@@ -542,7 +547,7 @@ export default function DashboardHomePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="mt-6 rounded-[2rem] border border-primary/20 bg-primary/5 p-6 text-center"
+              className="mt-4 md:mt-6 rounded-2xl md:rounded-[2rem] border border-primary/20 bg-primary/5 p-4 md:p-6 text-center"
             >
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center jw-glow-card">
                 <CheckCircle2 size={32} className="text-primary" />
@@ -569,7 +574,7 @@ export default function DashboardHomePage() {
 
         {/* Sidebar - Your Advantage */}
         <div className="lg:col-span-4">
-          <div className="rounded-[2rem] border border-border bg-card/60 backdrop-blur-sm p-6 sm:p-7">
+          <div className="rounded-2xl md:rounded-[2rem] border border-border bg-card/60 backdrop-blur-sm p-4 sm:p-5 md:p-7">
             <div className="flex items-start gap-3">
               <div className="grid h-12 w-12 place-items-center rounded-2xl border border-primary/30 bg-primary/10 text-primary">
                 <HeartHandshake size={22} />
@@ -620,7 +625,7 @@ export default function DashboardHomePage() {
           </div>
 
           {/* Quick Stats Card */}
-          <div className="mt-6 rounded-[2rem] border border-border bg-card/60 backdrop-blur-sm p-6 sm:p-7">
+          <div className="mt-4 md:mt-6 rounded-2xl md:rounded-[2rem] border border-border bg-card/60 backdrop-blur-sm p-4 sm:p-5 md:p-7">
             <h3
               className="text-base font-black text-foreground mb-4"
               style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
