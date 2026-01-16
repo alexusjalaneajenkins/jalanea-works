@@ -126,24 +126,24 @@ export function SideRail({
         {/* Ambient glow */}
         <div className="absolute -top-10 -left-10 h-40 w-40 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
 
-        <div className="relative flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative grid h-11 w-11 place-items-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-              <Sun size={20} className="drop-shadow-sm" />
-              {/* Subtle pulse */}
-              <div className="absolute inset-0 rounded-xl bg-primary animate-ping opacity-20" />
-            </div>
-            <div>
-              <div
+        <div className="relative flex items-center gap-3">
+          <div className="relative grid h-11 w-11 place-items-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+            <Sun size={20} className="drop-shadow-sm" />
+            {/* Subtle pulse */}
+            <div className="absolute inset-0 rounded-xl bg-primary animate-ping opacity-20" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span
                 className="text-base font-black tracking-tight"
                 style={{ fontFamily: 'var(--font-serif)' }}
               >
                 Jalanea<span className="text-primary">Works</span>
-              </div>
-              <div className="text-[11px] text-muted-foreground font-medium">Make It Work</div>
+              </span>
+              <TierBadge tier={userTier.toLowerCase() as Tier} size="sm" />
             </div>
+            <div className="text-[11px] text-muted-foreground font-medium">Make It Work</div>
           </div>
-          <TierBadge tier={userTier.toLowerCase() as Tier} size="sm" />
         </div>
 
         {/* Owner Tier Switcher */}
