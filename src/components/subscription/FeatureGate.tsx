@@ -5,13 +5,14 @@
  *
  * Wraps features that require specific subscription tiers.
  * Shows upgrade prompt if user doesn't have access.
+ * Owner accounts always have access.
  */
 
 import { ReactNode } from 'react'
 import { Lock, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
-type SubscriptionTier = 'free' | 'essential' | 'starter' | 'premium' | 'unlimited'
+type SubscriptionTier = 'free' | 'essential' | 'starter' | 'premium' | 'unlimited' | 'owner'
 
 interface FeatureGateProps {
   children: ReactNode
@@ -22,13 +23,14 @@ interface FeatureGateProps {
   compact?: boolean
 }
 
-// Tier hierarchy for comparison
+// Tier hierarchy for comparison (owner has highest access)
 const TIER_LEVELS: Record<SubscriptionTier, number> = {
   free: 0,
   essential: 1,
   starter: 2,
   premium: 3,
-  unlimited: 4
+  unlimited: 4,
+  owner: 5 // Owner has access to everything
 }
 
 // Tier display names
@@ -37,7 +39,8 @@ const TIER_NAMES: Record<SubscriptionTier, string> = {
   essential: 'Essential',
   starter: 'Starter',
   premium: 'Premium',
-  unlimited: 'Unlimited'
+  unlimited: 'Unlimited',
+  owner: 'Owner'
 }
 
 export default function FeatureGate({

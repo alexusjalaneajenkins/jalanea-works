@@ -20,7 +20,8 @@ export function PricingTiers({ isOpen, onClose, currentTier, onSelectTier }: Pri
     essential: <Zap size={28} />,
     starter: <Star size={28} />,
     premium: <Crown size={28} />,
-    unlimited: <Rocket size={28} />
+    unlimited: <Rocket size={28} />,
+    owner: <Sparkles size={28} />
   }
 
   const tierColors: Record<SubscriptionTier, {
@@ -52,6 +53,12 @@ export function PricingTiers({ isOpen, onClose, currentTier, onSelectTier }: Pri
       light: 'bg-emerald-500/10',
       text: 'text-emerald-400',
       border: 'border-emerald-500/30'
+    },
+    owner: {
+      bg: 'from-amber-500 to-primary',
+      light: 'bg-primary/10',
+      text: 'text-primary',
+      border: 'border-primary/30'
     }
   }
 

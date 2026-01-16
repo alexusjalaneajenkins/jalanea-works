@@ -2,8 +2,8 @@
  * Settings & Subscription types
  */
 
-// Subscription tiers (4 tiers)
-export type SubscriptionTier = 'essential' | 'starter' | 'premium' | 'unlimited'
+// Subscription tiers (4 tiers + owner for admin access)
+export type SubscriptionTier = 'essential' | 'starter' | 'premium' | 'unlimited' | 'owner'
 
 export interface SubscriptionPlan {
   id: SubscriptionTier
@@ -175,11 +175,14 @@ export function getPlanByTier(tier: SubscriptionTier): SubscriptionPlan {
   return subscriptionPlans.find(p => p.id === tier) || subscriptionPlans[0]
 }
 
-// Helper to check feature access
+// Helper to check feature access (owner has access to everything)
 export function hasFeatureAccess(
   tier: SubscriptionTier,
   feature: 'tier2Pockets' | 'tier3Pockets' | 'advancedPockets' | 'unlimitedApps' | 'aiSuggestions' | 'allTemplates' | 'unlimitedAI' | 'successCoach' | 'customBranding'
 ): boolean {
+  // Owner has access to all features
+  if (tier === 'owner') return true
+
   switch (feature) {
     case 'tier2Pockets':
       return tier === 'starter' || tier === 'premium' || tier === 'unlimited'
@@ -204,13 +207,14 @@ export function hasFeatureAccess(
   }
 }
 
-// Get tier level for comparison (higher = more features)
+// Get tier level for comparison (higher = more features, owner is highest)
 export function getTierLevel(tier: SubscriptionTier): number {
   const levels: Record<SubscriptionTier, number> = {
     essential: 1,
     starter: 2,
     premium: 3,
-    unlimited: 4
+    unlimited: 4,
+    owner: 5
   }
   return levels[tier]
 }

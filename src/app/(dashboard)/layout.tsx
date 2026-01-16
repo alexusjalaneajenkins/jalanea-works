@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { AppShell } from '@/components/shell'
 import { ModeProvider } from '@/lib/mode/ModeContext'
 import { Sun } from 'lucide-react'
+import { isOwner, getOwnerTier } from '@/lib/owner'
 
 // ============================================
 // DASHBOARD LAYOUT
@@ -59,9 +60,14 @@ export default function DashboardLayout({
   const userName = userMetadata.full_name || userMetadata.name || user.email?.split('@')[0] || 'User'
   const userInitial = userName.charAt(0).toUpperCase()
   const userLocation = userMetadata.location || 'Central Florida'
-  const userTier = userMetadata.subscription_tier
-    ? String(userMetadata.subscription_tier).charAt(0).toUpperCase() + String(userMetadata.subscription_tier).slice(1)
-    : 'Essential'
+
+  // Check for owner privileges (full access)
+  const userIsOwner = isOwner(user.email)
+  const userTier = userIsOwner
+    ? getOwnerTier() // Shows "Owner" in UI
+    : userMetadata.subscription_tier
+      ? String(userMetadata.subscription_tier).charAt(0).toUpperCase() + String(userMetadata.subscription_tier).slice(1)
+      : 'Essential'
 
   return (
     <ModeProvider defaultMode="bridge">

@@ -26,7 +26,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { primaryNavItems, secondaryNavItems } from './nav'
-import { useJalaneaMode, type JalaneaMode } from '@/lib/mode/ModeContext'
+import { useJalaneaMode, type JalaneaMode, modeLabel, modeDescription } from '@/lib/mode/ModeContext'
 
 interface TopBarProps {
   onOpenSearch?: () => void
@@ -34,21 +34,56 @@ interface TopBarProps {
   themeMode?: 'light' | 'dark'
 }
 
-function modeLabel(mode: JalaneaMode) {
-  if (mode === 'survival') return 'Survival'
-  if (mode === 'bridge') return 'Bridge'
-  return 'Career'
+function modeShortDesc(mode: JalaneaMode) {
+  if (mode === 'survival') return 'Fast income. High volume.'
+  if (mode === 'bridge') return 'Build your foundation.'
+  return 'Deep research. Quality.'
 }
 
-function modeColor(mode: JalaneaMode) {
-  if (mode === 'survival') return 'text-red-500'
-  if (mode === 'bridge') return 'text-primary'
-  return 'text-emerald-500'
+function modeBgColor(mode: JalaneaMode, active: boolean) {
+  if (!active) return 'bg-transparent text-muted-foreground hover:text-foreground'
+  if (mode === 'survival') return 'bg-primary text-primary-foreground'
+  if (mode === 'bridge') return 'bg-primary text-primary-foreground'
+  return 'bg-primary text-primary-foreground'
+}
+
+function ModeIndicator({ mode }: { mode: JalaneaMode }) {
+  return (
+    <div className="hidden lg:flex items-center gap-3 rounded-2xl border border-border bg-card/60 px-4 py-2">
+      <div className="grid h-8 w-8 place-items-center rounded-xl bg-primary/10 text-primary">
+        <Target size={16} />
+      </div>
+      <div>
+        <div className="text-sm font-bold text-foreground">{modeLabel(mode)} Mode</div>
+        <div className="text-[11px] text-muted-foreground">{modeShortDesc(mode)}</div>
+      </div>
+    </div>
+  )
+}
+
+function ModeSwitcher({ mode, setMode }: { mode: JalaneaMode; setMode: (m: JalaneaMode) => void }) {
+  const modes: JalaneaMode[] = ['survival', 'bridge', 'career']
+  return (
+    <div className="hidden md:flex items-center rounded-2xl border border-border bg-card/60 p-1">
+      {modes.map((m) => (
+        <button
+          key={m}
+          onClick={() => setMode(m)}
+          className={cn(
+            'px-4 py-2 text-sm font-bold rounded-xl transition-all',
+            mode === m ? modeBgColor(m, true) : modeBgColor(m, false)
+          )}
+        >
+          {modeLabel(m)}
+        </button>
+      ))}
+    </div>
+  )
 }
 
 export function TopBar({ onOpenSearch, onToggleTheme, themeMode = 'light' }: TopBarProps) {
   const pathname = usePathname()
-  const { mode } = useJalaneaMode()
+  const { mode, setMode } = useJalaneaMode()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const isActive = (to: string) => {
@@ -85,8 +120,11 @@ export function TopBar({ onOpenSearch, onToggleTheme, themeMode = 'light' }: Top
               </span>
             </div>
 
+            {/* Mode Indicator (desktop) */}
+            <ModeIndicator mode={mode} />
+
             {/* Spacer */}
-            <div className="hidden lg:block flex-1" />
+            <div className="flex-1" />
 
             {/* Search button */}
             <button
@@ -103,13 +141,8 @@ export function TopBar({ onOpenSearch, onToggleTheme, themeMode = 'light' }: Top
 
             {/* Right side actions */}
             <div className="flex items-center gap-2">
-              {/* Mode indicator */}
-              <div className="hidden md:flex items-center gap-2 rounded-xl border border-border bg-card/60 px-3 py-2">
-                <Target size={14} className={modeColor(mode)} />
-                <span className="text-xs font-bold text-muted-foreground">
-                  {modeLabel(mode)} Mode
-                </span>
-              </div>
+              {/* Mode Switcher */}
+              <ModeSwitcher mode={mode} setMode={setMode} />
 
               {/* Theme toggle */}
               <button
