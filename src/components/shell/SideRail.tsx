@@ -71,7 +71,7 @@ export function SideRail({
               >
                 Jalanea<span className="text-primary">Works</span>
               </div>
-              <div className="text-[11px] text-muted-foreground font-medium">Shining Light</div>
+              <div className="text-[11px] text-muted-foreground font-medium">Make It Work</div>
             </div>
           </div>
           <PlanChip tier={userTier} />

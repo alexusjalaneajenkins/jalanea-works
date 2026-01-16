@@ -167,7 +167,7 @@ export function TopBar({ onOpenSearch, onToggleTheme, themeMode = 'light' }: Top
                   >
                     Jalanea<span className="text-primary">Works</span>
                   </div>
-                  <div className="text-[10px] text-muted-foreground">Shining Light</div>
+                  <div className="text-[10px] text-muted-foreground">Make It Work</div>
                 </div>
               </div>
               <button
