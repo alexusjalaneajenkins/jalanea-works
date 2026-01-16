@@ -81,16 +81,17 @@ export default function CalendarPage() {
     .reduce((sum, e) => sum + (e.transitTimeMinutes || 0), 0)
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Shadow Calendar</h1>
-          <p className="text-gray-500 mt-1">
-            Manage your schedule and avoid over-committing
-          </p>
+    <main className="jw-grain relative mx-auto max-w-[1200px] px-4 py-6 lg:px-8 lg:py-8">
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Shadow Calendar</h1>
+            <p className="text-muted-foreground mt-1">
+              Manage your schedule and avoid over-committing
+            </p>
+          </div>
         </div>
-      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -204,5 +205,6 @@ export default function CalendarPage() {
         </ul>
       </div>
     </div>
+    </main>
   )
 }

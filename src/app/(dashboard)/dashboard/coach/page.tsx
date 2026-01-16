@@ -33,7 +33,8 @@ export default function CoachPage() {
   }, [])
 
   return (
-    <div className="space-y-6">
+    <main className="jw-grain relative mx-auto max-w-[1200px] px-4 py-6 lg:px-8 lg:py-8">
+      <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -137,6 +138,7 @@ export default function CoachPage() {
           <li>• Come back regularly to review your progress and adjust plans</li>
         </ul>
       </div>
-    </div>
+      </div>
+    </main>
   )
 }
