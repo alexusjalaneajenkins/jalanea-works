@@ -285,7 +285,7 @@ export default function JobDetailPage() {
   const scamFlags = (job.scamReasons || []).map((reason, index) => ({
     id: `scam-flag-${index}`,
     rule: 'job-listing-warning',
-    severity: (job.scamRiskLevel === 'high' ? 'high' : 'medium') as 'high' | 'medium' | 'low' | 'none',
+    severity: (job.scamRiskLevel === 'high' ? 'high' : 'medium') as 'critical' | 'high' | 'medium' | 'low',
     matched: true,
     description: reason
   }))
