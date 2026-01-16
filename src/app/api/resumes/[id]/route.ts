@@ -11,8 +11,9 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -28,13 +29,13 @@ export async function GET(
     // const { data: resume, error } = await supabase
     //   .from('resumes')
     //   .select('*')
-    //   .eq('id', params.id)
+    //   .eq('id', id)
     //   .eq('user_id', user.id)
     //   .single()
 
     return NextResponse.json({
       resume: {
-        id: params.id,
+        id: id,
         message: 'In production, this would return the full resume'
       }
     })
@@ -49,8 +50,9 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -67,7 +69,7 @@ export async function PUT(
     // Update resume
     const updatedResume = {
       ...body,
-      id: params.id,
+      id: id,
       userId: user.id,
       lastUpdated: new Date().toISOString()
     }
@@ -76,7 +78,7 @@ export async function PUT(
     // const { data, error } = await supabase
     //   .from('resumes')
     //   .update(updatedResume)
-    //   .eq('id', params.id)
+    //   .eq('id', id)
     //   .eq('user_id', user.id)
     //   .select()
     //   .single()
@@ -95,8 +97,9 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -112,7 +115,7 @@ export async function DELETE(
     // const { error } = await supabase
     //   .from('resumes')
     //   .delete()
-    //   .eq('id', params.id)
+    //   .eq('id', id)
     //   .eq('user_id', user.id)
 
     return NextResponse.json({

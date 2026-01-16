@@ -11,9 +11,9 @@ import { checkJobForScams } from '@/lib/scam-shield'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
-  const jobId = params.jobId
+  const { jobId } = await params
 
   try {
     const supabase = createAdminClient()
@@ -167,9 +167,9 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
-  const jobId = params.jobId
+  const { jobId } = await params
 
   try {
     const supabase = await createClient()
