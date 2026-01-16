@@ -1,318 +1,317 @@
 'use client'
 
-import { useState } from 'react'
+/**
+ * Settings Page - Full Implementation
+ *
+ * Features:
+ * - Profile editing with avatar
+ * - Subscription management with tier comparison
+ * - Notification preferences
+ * - Privacy settings and data management
+ */
+
+import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { useAuth } from '@/components/providers/auth-provider'
 import { useRouter } from 'next/navigation'
+import { Settings, Loader2 } from 'lucide-react'
 import {
-  User,
-  CreditCard,
-  Shield,
-  Bell,
-  Download,
-  Trash2,
-  ExternalLink,
-  Zap,
-  Check,
-  AlertTriangle
-} from 'lucide-react'
+  ProfileSettings,
+  NotificationSettings,
+  SubscriptionCard,
+  PricingTiers,
+  PrivacySettings,
+  type UserSettings,
+  type UserProfile,
+  type NotificationPreferences,
+  type PrivacySettings as PrivacySettingsType,
+  type SubscriptionTier
+} from '@/components/settings'
 
-// ============================================
-// SETTINGS PAGE
-// ============================================
-// Task 4.3 Requirements:
-// - Profile editing (name, email, location)
-// - Subscription section
-// - Privacy section (download/delete data)
-// - Notifications toggles
+// Mock initial settings for demo
+const defaultSettings: UserSettings = {
+  profile: {
+    id: 'demo-user',
+    email: 'alex.johnson@email.com',
+    firstName: 'Alex',
+    lastName: 'Johnson',
+    phone: '(407) 555-0123',
+    location: 'Orlando, FL',
+    linkedinUrl: 'linkedin.com/in/alexjohnson',
+    avatarUrl: undefined,
+    createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  subscription: {
+    tier: 'starter',
+    status: 'active',
+    currentPeriodStart: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+    currentPeriodEnd: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+    cancelAtPeriodEnd: false
+  },
+  usage: {
+    pocketsGenerated: 8,
+    pocketsLimit: 15,
+    advancedPocketsGenerated: 0,
+    advancedPocketsLimit: null, // Not available for Starter tier
+    resumesCreated: 2,
+    resumesLimit: 5,
+    applicationsTracked: 12,
+    applicationsLimit: null,
+    aiSuggestionsUsed: 23,
+    aiSuggestionsLimit: 50,
+    aiMessagesUsed: 45,
+    aiMessagesLimit: 100
+  },
+  notifications: {
+    emailApplicationUpdates: true,
+    emailJobAlerts: true,
+    emailWeeklyDigest: false,
+    emailProductUpdates: true,
+    pushInterviewReminders: true,
+    pushApplicationDeadlines: true,
+    pushNewMatches: false
+  },
+  privacy: {
+    profileVisible: true,
+    allowDataAnalytics: true,
+    allowPersonalization: true
+  }
+}
 
 export default function SettingsPage() {
   const { user, signOut } = useAuth()
   const router = useRouter()
+  const [settings, setSettings] = useState<UserSettings>(defaultSettings)
+  const [loading, setLoading] = useState(true)
+  const [showPricing, setShowPricing] = useState(false)
 
-  // Form state
-  const [fullName, setFullName] = useState(user?.user_metadata?.full_name || '')
-  const [email, setEmail] = useState(user?.email || '')
-  const [location, setLocation] = useState('Orlando, FL') // TODO: fetch from user profile
-  const [isSaving, setIsSaving] = useState(false)
-  const [saveSuccess, setSaveSuccess] = useState(false)
+  // Fetch settings on mount
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const response = await fetch('/api/settings')
+        if (response.ok) {
+          const data = await response.json()
+          setSettings(data.settings)
+        }
+      } catch (error) {
+        console.error('Failed to fetch settings:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  // Notification toggles
-  const [emailNotifications, setEmailNotifications] = useState(true)
-  const [pushNotifications, setPushNotifications] = useState(false)
+    fetchSettings()
+  }, [])
 
-  // Delete account modal
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  // Update profile from user auth if available
+  useEffect(() => {
+    if (user) {
+      setSettings(prev => ({
+        ...prev,
+        profile: {
+          ...prev.profile,
+          email: user.email || prev.profile.email,
+          firstName: user.user_metadata?.first_name || prev.profile.firstName,
+          lastName: user.user_metadata?.last_name || prev.profile.lastName
+        }
+      }))
+    }
+  }, [user])
 
-  // Current tier
-  const tier = 'Essential' // TODO: fetch from database
+  // Save profile handler
+  const handleSaveProfile = async (profile: UserProfile) => {
+    const response = await fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ section: 'profile', data: profile })
+    })
 
-  async function handleSaveProfile(e: React.FormEvent) {
-    e.preventDefault()
-    setIsSaving(true)
-    setSaveSuccess(false)
-
-    // TODO: Implement profile update API
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    setIsSaving(false)
-    setSaveSuccess(true)
-    setTimeout(() => setSaveSuccess(false), 3000)
+    if (response.ok) {
+      setSettings(prev => ({ ...prev, profile }))
+    } else {
+      throw new Error('Failed to save profile')
+    }
   }
 
-  async function handleDownloadData() {
-    // TODO: Implement data export API
-    alert('Data export will be implemented in Week 11')
+  // Save notifications handler
+  const handleSaveNotifications = async (notifications: NotificationPreferences) => {
+    const response = await fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ section: 'notifications', data: notifications })
+    })
+
+    if (response.ok) {
+      setSettings(prev => ({ ...prev, notifications }))
+    } else {
+      throw new Error('Failed to save notifications')
+    }
   }
 
-  async function handleDeleteAccount() {
-    // TODO: Implement account deletion API
-    setShowDeleteModal(false)
-    await signOut()
-    router.push('/')
+  // Save privacy handler
+  const handleSavePrivacy = async (privacy: PrivacySettingsType) => {
+    const response = await fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ section: 'privacy', data: privacy })
+    })
+
+    if (response.ok) {
+      setSettings(prev => ({ ...prev, privacy }))
+    } else {
+      throw new Error('Failed to save privacy settings')
+    }
+  }
+
+  // Download data handler
+  const handleDownloadData = async () => {
+    try {
+      const response = await fetch('/api/settings/data')
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `jalanea-works-data-${new Date().toISOString().split('T')[0]}.json`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(url)
+      }
+    } catch (error) {
+      console.error('Failed to download data:', error)
+    }
+  }
+
+  // Delete account handler
+  const handleDeleteAccount = async () => {
+    try {
+      const response = await fetch('/api/settings/data', { method: 'DELETE' })
+      if (response.ok) {
+        await signOut()
+        router.push('/')
+      }
+    } catch (error) {
+      console.error('Failed to delete account:', error)
+    }
+  }
+
+  // Manage billing handler
+  const handleManageBilling = () => {
+    // In production, redirect to Stripe customer portal
+    window.open('https://billing.stripe.com/p/login/demo', '_blank')
+  }
+
+  // Upgrade tier handler
+  const handleSelectTier = async (tier: SubscriptionTier) => {
+    try {
+      const response = await fetch('/api/settings/subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setSettings(prev => ({
+          ...prev,
+          subscription: data.subscription
+        }))
+        setShowPricing(false)
+      }
+    } catch (error) {
+      console.error('Failed to update subscription:', error)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 size={32} className="animate-spin text-[#ffc425]" />
+      </div>
+    )
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-white">Settings</h1>
-        <p className="text-slate-400 mt-1">
-          Manage your account and preferences
-        </p>
-      </div>
-
-      {/* Profile Section */}
-      <section className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-            <User size={20} className="text-blue-400" />
-          </div>
-          <h2 className="text-lg font-semibold text-white">Profile</h2>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center gap-4"
+      >
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#ffc425] to-orange-500 flex items-center justify-center">
+          <Settings size={24} className="text-[#0f172a]" />
         </div>
-
-        <form onSubmit={handleSaveProfile} className="space-y-4">
-          <div>
-            <label htmlFor="fullName" className="block text-sm font-medium text-slate-300 mb-2">
-              Full Name
-            </label>
-            <input
-              id="fullName"
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder:text-slate-500 focus:border-[#ffc425] focus:ring-1 focus:ring-[#ffc425] focus:outline-none transition-colors"
-              placeholder="Your name"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
-              Email Address
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder:text-slate-500 focus:border-[#ffc425] focus:ring-1 focus:ring-[#ffc425] focus:outline-none transition-colors"
-              placeholder="your@email.com"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="location" className="block text-sm font-medium text-slate-300 mb-2">
-              Location
-            </label>
-            <input
-              id="location"
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder:text-slate-500 focus:border-[#ffc425] focus:ring-1 focus:ring-[#ffc425] focus:outline-none transition-colors"
-              placeholder="City, State"
-            />
-          </div>
-
-          <div className="flex items-center gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#ffc425] text-[#020617] font-semibold rounded-xl hover:bg-[#ffd768] transition-colors disabled:opacity-50 touch-target"
-            >
-              {isSaving ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-[#020617] border-t-transparent rounded-full animate-spin" />
-                  <span>Saving...</span>
-                </>
-              ) : saveSuccess ? (
-                <>
-                  <Check size={18} />
-                  <span>Saved!</span>
-                </>
-              ) : (
-                <span>Save Changes</span>
-              )}
-            </button>
-          </div>
-        </form>
-      </section>
-
-      {/* Subscription Section */}
-      <section className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-[#ffc425]/10 flex items-center justify-center">
-            <CreditCard size={20} className="text-[#ffc425]" />
-          </div>
-          <h2 className="text-lg font-semibold text-white">Subscription</h2>
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Settings</h1>
+          <p className="text-slate-400">
+            Manage your account, subscription, and preferences
+          </p>
         </div>
+      </motion.div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#ffc425]/10 flex items-center justify-center">
-              <Zap size={20} className="text-[#ffc425]" />
-            </div>
-            <div>
-              <p className="font-semibold text-white">{tier} Tier</p>
-              <p className="text-sm text-slate-400">
-                {tier === 'Essential' ? '$15/month' : tier === 'Starter' ? '$25/month' : '$75/month'}
-              </p>
-            </div>
-          </div>
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 text-white font-medium rounded-xl hover:bg-slate-600 transition-colors touch-target">
-            <span>Upgrade</span>
-            <ExternalLink size={16} />
-          </button>
-        </div>
-      </section>
+      {/* Subscription Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        <SubscriptionCard
+          subscription={settings.subscription}
+          usage={settings.usage}
+          onManage={handleManageBilling}
+          onUpgrade={() => setShowPricing(true)}
+        />
+      </motion.div>
 
-      {/* Notifications Section */}
-      <section className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-            <Bell size={20} className="text-purple-400" />
-          </div>
-          <h2 className="text-lg font-semibold text-white">Notifications</h2>
-        </div>
+      {/* Profile Settings */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <ProfileSettings
+          profile={settings.profile}
+          onSave={handleSaveProfile}
+        />
+      </motion.div>
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl">
-            <div>
-              <p className="font-medium text-white">Email Notifications</p>
-              <p className="text-sm text-slate-400">Receive updates about new jobs and applications</p>
-            </div>
-            <button
-              onClick={() => setEmailNotifications(!emailNotifications)}
-              className={`
-                relative w-12 h-6 rounded-full transition-colors touch-target
-                ${emailNotifications ? 'bg-[#ffc425]' : 'bg-slate-600'}
-              `}
-              role="switch"
-              aria-checked={emailNotifications}
-            >
-              <span
-                className={`
-                  absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform
-                  ${emailNotifications ? 'left-[26px]' : 'left-0.5'}
-                `}
-              />
-            </button>
-          </div>
+      {/* Notification Settings */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <NotificationSettings
+          preferences={settings.notifications}
+          onSave={handleSaveNotifications}
+        />
+      </motion.div>
 
-          <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl">
-            <div>
-              <p className="font-medium text-white">Push Notifications</p>
-              <p className="text-sm text-slate-400">Get instant alerts on your device</p>
-            </div>
-            <button
-              onClick={() => setPushNotifications(!pushNotifications)}
-              className={`
-                relative w-12 h-6 rounded-full transition-colors touch-target
-                ${pushNotifications ? 'bg-[#ffc425]' : 'bg-slate-600'}
-              `}
-              role="switch"
-              aria-checked={pushNotifications}
-            >
-              <span
-                className={`
-                  absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform
-                  ${pushNotifications ? 'left-[26px]' : 'left-0.5'}
-                `}
-              />
-            </button>
-          </div>
-        </div>
-      </section>
+      {/* Privacy Settings */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
+        <PrivacySettings
+          settings={settings.privacy}
+          onSave={handleSavePrivacy}
+          onDownloadData={handleDownloadData}
+          onDeleteAccount={handleDeleteAccount}
+        />
+      </motion.div>
 
-      {/* Privacy Section */}
-      <section className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
-            <Shield size={20} className="text-green-400" />
-          </div>
-          <h2 className="text-lg font-semibold text-white">Privacy</h2>
-        </div>
-
-        <div className="space-y-4">
-          <button
-            onClick={handleDownloadData}
-            className="flex items-center justify-between w-full p-4 bg-slate-800/50 rounded-xl hover:bg-slate-800 transition-colors text-left"
-          >
-            <div className="flex items-center gap-3">
-              <Download size={20} className="text-slate-400" />
-              <div>
-                <p className="font-medium text-white">Download My Data</p>
-                <p className="text-sm text-slate-400">Get a copy of all your data</p>
-              </div>
-            </div>
-            <ExternalLink size={16} className="text-slate-500" />
-          </button>
-
-          <button
-            onClick={() => setShowDeleteModal(true)}
-            className="flex items-center justify-between w-full p-4 bg-red-500/5 border border-red-500/20 rounded-xl hover:bg-red-500/10 transition-colors text-left"
-          >
-            <div className="flex items-center gap-3">
-              <Trash2 size={20} className="text-red-400" />
-              <div>
-                <p className="font-medium text-red-400">Delete My Account</p>
-                <p className="text-sm text-slate-400">Permanently delete your account and data</p>
-              </div>
-            </div>
-          </button>
-        </div>
-      </section>
-
-      {/* Delete Account Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-[#0f172a] border border-slate-700 rounded-2xl p-6 animate-fadeIn">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
-                <AlertTriangle size={24} className="text-red-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-white">Delete Account?</h3>
-            </div>
-            <p className="text-slate-400 mb-6">
-              This action cannot be undone. All your data, including applications,
-              resumes, and preferences will be permanently deleted.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="flex-1 px-4 py-3 bg-slate-700 text-white font-medium rounded-xl hover:bg-slate-600 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteAccount}
-                className="flex-1 px-4 py-3 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 transition-colors"
-              >
-                Delete Account
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Pricing Modal */}
+      <PricingTiers
+        isOpen={showPricing}
+        onClose={() => setShowPricing(false)}
+        currentTier={settings.subscription.tier}
+        onSelectTier={handleSelectTier}
+      />
     </div>
   )
 }

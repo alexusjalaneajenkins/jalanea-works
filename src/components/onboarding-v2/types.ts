@@ -13,7 +13,7 @@ export interface QuestionConfig {
   icon: ReactNode
   title: string
   subtitle?: string
-  type: 'single' | 'multi' | 'input' | 'chips' | 'school' | 'education-details' | 'schedule-days' | 'career-phase' | 'salary-breakdown'
+  type: 'single' | 'multi' | 'input' | 'chips' | 'school' | 'education-details' | 'schedule-days' | 'career-phase' | 'salary-breakdown' | 'career-paths'
   options?: QuestionOption[]
   placeholder?: string
   showWhen?: (answers: Record<string, unknown>) => boolean

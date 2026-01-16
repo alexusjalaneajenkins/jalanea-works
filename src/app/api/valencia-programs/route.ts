@@ -10,7 +10,7 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from('valencia_programs')
-      .select('program_id, program_name, program_type, school, career_pathway')
+      .select('program_id, program_name, program_type, school, career_pathway, keywords, typical_salary_min, typical_salary_max')
       .order('program_name')
 
     if (error) {

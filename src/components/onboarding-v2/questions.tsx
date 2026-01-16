@@ -86,6 +86,18 @@ export const questions: QuestionConfig[] = [
     type: 'education-details',
     showWhen: (answers) => answers['education-level'] === 'completed' && answers['school'] !== undefined
   },
+  {
+    id: 'career-paths',
+    phase: 2,
+    icon: <Target size={20} />,
+    title: 'What career paths interest you?',
+    subtitle: 'Select all that match your goals',
+    type: 'career-paths',
+    showWhen: (answers) => {
+      const details = answers['education-details'] as { school?: string; degreeName?: string } | undefined
+      return details?.school !== undefined && details?.degreeName !== undefined
+    }
+  },
 
   // Phase 3: Work Preferences
   {

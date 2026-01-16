@@ -17,7 +17,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Zap, Check, ChevronRight, Crosshair, Sparkles, Menu, X } from 'lucide-react'
+import { Zap, Check, ChevronRight, ChevronLeft, Crosshair, Sparkles, Menu, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 import { phases } from './constants'
@@ -29,9 +29,12 @@ import {
   SchoolSelector,
   ScheduleDaysSelector,
   CareerPhaseSelector,
+  CareerPathSelector,
   SalaryBreakdown,
   EducationDetailsForm
 } from './index'
+import type { CustomCareerPath } from '@/types/career'
+import { generateProgramKey } from '@/lib/career-utils'
 
 interface OnboardingFlowProps {
   onComplete?: (data: Record<string, unknown>) => Promise<void>
@@ -45,6 +48,10 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
   const [inputValue, setInputValue] = useState('')
   const [showMobileSidebar, setShowMobileSidebar] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Career path selection state
+  const [selectedCareerPaths, setSelectedCareerPaths] = useState<string[]>([])
+  const [customCareerPaths, setCustomCareerPaths] = useState<CustomCareerPath[]>([])
 
   // Filter questions based on showWhen conditions
   const activeQuestions = questions.filter(q => !q.showWhen || q.showWhen(answers))
@@ -84,6 +91,12 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
         setCurrentIndex(currentIndex + 1)
       }
     }, 400)
+  }
+
+  const goBack = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1)
+    }
   }
 
   const handleAnswer = (value: string | string[]) => {
@@ -148,6 +161,37 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
   const handleSalaryBreakdownContinue = () => {
     setAnswers(prev => ({ ...prev, 'salary-breakdown': 'viewed' }))
     advanceToNext()
+  }
+
+  // Career path handlers
+  const handleSelectCareerPath = (pathId: string) => {
+    setSelectedCareerPaths(prev => [...prev, pathId])
+  }
+
+  const handleDeselectCareerPath = (pathId: string) => {
+    setSelectedCareerPaths(prev => prev.filter(id => id !== pathId))
+  }
+
+  const handleAddCustomCareerPath = (title: string, titleEs?: string) => {
+    setCustomCareerPaths(prev => [...prev, { title, titleEs }])
+  }
+
+  const handleRemoveCustomCareerPath = (title: string) => {
+    setCustomCareerPaths(prev => prev.filter(p => p.title !== title))
+  }
+
+  const handleCareerPathsContinue = () => {
+    const totalSelected = selectedCareerPaths.length + customCareerPaths.length
+    if (totalSelected > 0) {
+      setAnswers(prev => ({
+        ...prev,
+        'career-paths': {
+          selected: selectedCareerPaths,
+          custom: customCareerPaths
+        }
+      }))
+      advanceToNext()
+    }
   }
 
   const handleComplete = async () => {
@@ -356,6 +400,19 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
               transition={{ duration: 0.3 }}
               className="w-full max-w-xl"
             >
+              {/* Back Button */}
+              {currentIndex > 0 && (
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  onClick={goBack}
+                  className="flex items-center gap-1.5 text-[#64748b] hover:text-[#e2e8f0] transition-colors mb-4 -mt-2"
+                >
+                  <ChevronLeft size={18} />
+                  <span className="text-sm font-medium">Back</span>
+                </motion.button>
+              )}
+
               {/* Question Header */}
               <div className="text-center mb-6 lg:mb-8">
                 <motion.div
@@ -549,6 +606,44 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
                     onContinue={handleSalaryBreakdownContinue}
                   />
                 )}
+
+                {/* Career Path Selection */}
+                {currentQuestion.type === 'career-paths' && (() => {
+                  const educationDetails = answers['education-details'] as EducationDetails | undefined
+                  const schoolId = answers['school'] as string
+                  const programName = educationDetails?.degreeName || ''
+                  const programKey = schoolId && programName ? generateProgramKey(schoolId, programName) : ''
+                  const language = (answers['language'] as string) === 'spanish' ? 'es' : 'en'
+
+                  return (
+                    <div className="space-y-4">
+                      <CareerPathSelector
+                        programKey={programKey}
+                        school={schoolId}
+                        selectedPaths={selectedCareerPaths}
+                        customPaths={customCareerPaths}
+                        onSelectPath={handleSelectCareerPath}
+                        onDeselectPath={handleDeselectCareerPath}
+                        onAddCustomPath={handleAddCustomCareerPath}
+                        onRemoveCustomPath={handleRemoveCustomCareerPath}
+                        language={language}
+                      />
+                      <motion.button
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleCareerPathsContinue}
+                        disabled={selectedCareerPaths.length === 0 && customCareerPaths.length === 0}
+                        className={`w-full mt-4 py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
+                          selectedCareerPaths.length > 0 || customCareerPaths.length > 0
+                            ? 'bg-[#ffc425] text-[#0f172a] active:bg-[#ffd768]'
+                            : 'bg-[#1e293b] text-[#475569] cursor-not-allowed'
+                        }`}
+                      >
+                        Continue
+                        <ChevronRight size={18} />
+                      </motion.button>
+                    </div>
+                  )
+                })()}
               </div>
 
               {/* Keyboard hint - Hidden on Mobile */}

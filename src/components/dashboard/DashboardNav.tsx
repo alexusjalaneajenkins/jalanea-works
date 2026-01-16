@@ -8,7 +8,8 @@ import {
   FolderOpen,
   FileText,
   Settings,
-  Zap
+  Zap,
+  Sparkles
 } from 'lucide-react'
 
 // ============================================
@@ -28,6 +29,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Home', href: '/dashboard', icon: <Home size={20} /> },
   { label: 'Jobs', href: '/dashboard/jobs', icon: <Search size={20} /> },
+  { label: 'Pockets', href: '/dashboard/pockets', icon: <Sparkles size={20} /> },
   { label: 'Applications', href: '/dashboard/applications', icon: <FolderOpen size={20} /> },
   { label: 'Resume', href: '/dashboard/resume', icon: <FileText size={20} /> },
   { label: 'Settings', href: '/dashboard/settings', icon: <Settings size={20} /> },
