@@ -103,7 +103,8 @@ export function SideRail({
 
   const handleSignOut = async () => {
     await signOut()
-    router.push('/')
+    // Use full page navigation to ensure session is cleared before redirect
+    window.location.href = '/'
   }
 
   const handleTierChange = () => {
