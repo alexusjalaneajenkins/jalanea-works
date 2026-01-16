@@ -16,6 +16,7 @@ import { useAuth } from '@/components/providers/auth-provider'
 import { useRouter } from 'next/navigation'
 import {
   Bell,
+  Check,
   Crown,
   Download,
   Lock,
@@ -163,6 +164,16 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<UserSettings>(defaultSettings)
   const [loading, setLoading] = useState(true)
   const [showPricing, setShowPricing] = useState(false)
+  const [profileForm, setProfileForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    location: '',
+    linkedinUrl: ''
+  })
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [profileSaved, setProfileSaved] = useState(false)
 
   // Fetch settings on mount
   useEffect(() => {
@@ -172,6 +183,15 @@ export default function SettingsPage() {
         if (response.ok) {
           const data = await response.json()
           setSettings(data.settings)
+          // Initialize profile form with fetched data
+          setProfileForm({
+            firstName: data.settings.profile.firstName || '',
+            lastName: data.settings.profile.lastName || '',
+            email: data.settings.profile.email || '',
+            phone: data.settings.profile.phone || '',
+            location: data.settings.profile.location || '',
+            linkedinUrl: data.settings.profile.linkedinUrl || ''
+          })
         }
       } catch (error) {
         console.error('Failed to fetch settings:', error)
@@ -199,21 +219,34 @@ export default function SettingsPage() {
   }, [user])
 
   // Save profile handler
-  const handleSaveProfile = async (profile: UserProfile) => {
+  const handleSaveProfile = async () => {
+    setProfileSaving(true)
+    setProfileSaved(false)
     try {
+      const profileData = {
+        ...settings.profile,
+        ...profileForm
+      }
+
       const response = await fetch('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ section: 'profile', data: profile })
+        body: JSON.stringify({ section: 'profile', data: profileData })
       })
 
       if (response.ok) {
-        setSettings((prev) => ({ ...prev, profile }))
+        const data = await response.json()
+        setSettings(data.settings)
+        setProfileSaved(true)
+        // Reset saved indicator after 3 seconds
+        setTimeout(() => setProfileSaved(false), 3000)
       } else {
         throw new Error('Failed to save profile')
       }
     } catch (error) {
       console.error('Failed to save profile:', error)
+    } finally {
+      setProfileSaving(false)
     }
   }
 
@@ -483,14 +516,40 @@ export default function SettingsPage() {
             transition={{ delay: 0.1 }}
             className="rounded-3xl border border-border bg-card/40 p-5"
           >
-            <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-2xl border border-primary/25 bg-primary/10 text-primary">
-                <User size={18} />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="grid h-10 w-10 place-items-center rounded-2xl border border-primary/25 bg-primary/10 text-primary">
+                  <User size={18} />
+                </div>
+                <div>
+                  <div className="text-base font-extrabold text-foreground">Profile Information</div>
+                  <div className="text-xs text-muted-foreground">This powers your match engine.</div>
+                </div>
               </div>
-              <div>
-                <div className="text-base font-extrabold text-foreground">Profile Information</div>
-                <div className="text-xs text-muted-foreground">This powers your match engine.</div>
-              </div>
+              <button
+                onClick={handleSaveProfile}
+                disabled={profileSaving}
+                className={cn(
+                  'inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-extrabold transition-all',
+                  profileSaved
+                    ? 'bg-green-500/20 text-green-600 border border-green-500/30'
+                    : 'bg-primary text-primary-foreground hover:opacity-95'
+                )}
+              >
+                {profileSaving ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Saving...
+                  </>
+                ) : profileSaved ? (
+                  <>
+                    <Check size={16} />
+                    Saved!
+                  </>
+                ) : (
+                  'Save Profile'
+                )}
+              </button>
             </div>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -507,11 +566,10 @@ export default function SettingsPage() {
                   <input
                     className="mt-2 w-full rounded-xl border border-border bg-card/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/25"
                     placeholder={label}
-                    defaultValue={settings.profile[key as keyof UserProfile] as string || ''}
-                    onBlur={(e) => {
-                      const updated = { ...settings.profile, [key]: e.target.value }
-                      setSettings((prev) => ({ ...prev, profile: updated }))
-                      handleSaveProfile(updated)
+                    value={profileForm[key as keyof typeof profileForm]}
+                    onChange={(e) => {
+                      setProfileForm((prev) => ({ ...prev, [key]: e.target.value }))
+                      setProfileSaved(false)
                     }}
                   />
                 </label>
