@@ -282,11 +282,12 @@ export default function JobDetailPage() {
   }
 
   // Create scam flags for the warning modal
-  const scamFlags = (job.scamReasons || []).map(reason => ({
-    type: 'warning' as const,
-    severity: (job.scamRiskLevel === 'high' ? 'HIGH' : 'MEDIUM') as 'HIGH' | 'MEDIUM',
-    description: reason,
-    weight: 10
+  const scamFlags = (job.scamReasons || []).map((reason, index) => ({
+    id: `scam-flag-${index}`,
+    rule: 'job-listing-warning',
+    severity: (job.scamRiskLevel === 'high' ? 'high' : 'medium') as 'high' | 'medium' | 'low' | 'none',
+    matched: true,
+    description: reason
   }))
 
   return (
