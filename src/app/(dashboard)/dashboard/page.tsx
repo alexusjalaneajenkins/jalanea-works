@@ -16,7 +16,7 @@ import Link from 'next/link'
 
 import { StatsCards, getDefaultStats } from '@/components/dashboard/StatsCards'
 import { TierBadge, type Tier } from '@/components/dashboard/TierBadge'
-import { DailyPlanWidget } from '@/components/dashboard/DailyPlanWidget'
+import { DailyPlanWidget, type DailyPlan, type DailyPlanJob } from '@/components/dashboard/DailyPlanWidget'
 import { useDashboardData, useNextSteps } from '@/hooks/useDashboardData'
 
 export default function DashboardHomePage() {
@@ -44,6 +44,19 @@ export default function DashboardHomePage() {
   // Determine how many jobs in daily plan based on tier
   // Essential: 8, Starter: 24, Premium: 50, Unlimited: unlimited (100 for display)
   const dailyPlanTotal = tier === 'essential' ? 8 : tier === 'starter' ? 24 : tier === 'premium' ? 50 : 100
+
+  // Construct daily plan object for the widget
+  const dailyPlan: DailyPlan | null = dailyPlanJobs.length > 0 ? {
+    id: `daily-plan-${new Date().toISOString().split('T')[0]}`,
+    date: new Date().toISOString().split('T')[0],
+    totalJobs: dailyPlanJobs.length,
+    totalEstimatedTime: dailyPlanJobs.length * 5, // Estimate 5 min per application
+    focusArea: `${dailyPlanJobs.length} jobs curated for today`,
+    motivationalMessage: completedJobsCount > 0
+      ? `Great progress! You've applied to ${completedJobsCount} jobs today.`
+      : "Let's find your next opportunity!",
+    jobs: dailyPlanJobs
+  } : null
 
   // Get stats for cards
   const statCards = getDefaultStats(stats)
@@ -93,18 +106,16 @@ export default function DashboardHomePage() {
         transition={{ delay: 0.2 }}
       >
         <DailyPlanWidget
-          jobs={dailyPlanJobs}
-          completedCount={completedJobsCount}
-          totalCount={dailyPlanTotal}
+          plan={dailyPlan}
           isLoading={isLoading}
           onRefresh={refresh}
           onJobClick={(job) => {
             // TODO: Navigate to job details
             console.log('Job clicked:', job.id)
           }}
-          onMarkComplete={(jobId) => {
-            // TODO: Mark job as complete
-            console.log('Mark complete:', jobId)
+          onStatusChange={async (jobId, status) => {
+            // TODO: Implement status change
+            console.log('Status change:', jobId, status)
           }}
         />
       </motion.div>
