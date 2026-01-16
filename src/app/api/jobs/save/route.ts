@@ -283,23 +283,27 @@ export async function GET(request: NextRequest) {
     // Format response
     const savedJobs = applications
       .filter(app => app.job)
-      .map(app => ({
-        applicationId: app.id,
-        status: app.status,
-        savedAt: app.pocketed_at,
-        job: {
-          id: app.job.id,
-          externalId: app.job.external_id,
-          title: app.job.title,
-          company: app.job.company,
-          location: app.job.location_address,
-          salaryMin: app.job.salary_min,
-          salaryMax: app.job.salary_max,
-          salaryType: app.job.salary_period === 'hourly' ? 'hourly' : 'yearly',
-          postedAt: app.job.posted_at,
-          applicationUrl: app.job.apply_url
+      .map(app => {
+        // Supabase returns joins as arrays, get first element
+        const job = Array.isArray(app.job) ? app.job[0] : app.job
+        return {
+          applicationId: app.id,
+          status: app.status,
+          savedAt: app.pocketed_at,
+          job: {
+            id: job.id,
+            externalId: job.external_id,
+            title: job.title,
+            company: job.company,
+            location: job.location_address,
+            salaryMin: job.salary_min,
+            salaryMax: job.salary_max,
+            salaryType: job.salary_period === 'hourly' ? 'hourly' : 'yearly',
+            postedAt: job.posted_at,
+            applicationUrl: job.apply_url
+          }
         }
-      }))
+      })
 
     return NextResponse.json({
       savedJobs,

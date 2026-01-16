@@ -633,9 +633,10 @@ Scam Shield protects users from job scams using pattern matching and heuristics.
 const CRITICAL_RULES = [
   { id: 'upfront_payment', pattern: /(pay|send|wire|transfer|deposit).*(fee|money|upfront)/i },
   { id: 'check_cashing', pattern: /(cash|deposit).*(check|cheque)/i },
-  { id: 'cryptocurrency', pattern: /(bitcoin|crypto|btc|ethereum)/i },
+  // Note: Cryptocurrency moved to contextual check - see MEDIUM_RULES
   { id: 'money_transfer', pattern: /(western union|moneygram|wire transfer)/i },
   { id: 'personal_bank', pattern: /(your bank account|bank details|routing number)/i },
+  { id: 'crypto_payment_scam', pattern: /(pay|send|invest).*(bitcoin|crypto|btc|ethereum)/i }, // Payment + crypto = scam
 ]
 ```
 
@@ -652,11 +653,33 @@ const HIGH_RULES = [
 
 ### MEDIUM (Warning only)
 ```typescript
+// Whitelist of legitimate crypto/blockchain companies
+const LEGIT_CRYPTO_COMPANIES = [
+  'coinbase', 'kraken', 'binance', 'blockchain.com', 'circle',
+  'consensys', 'chainalysis', 'ripple', 'gemini', 'bitgo',
+  'ledger', 'opensea', 'alchemy', 'infura', 'polygon'
+]
+
 const MEDIUM_RULES = [
   { id: 'personal_email', check: (job) => /@(gmail|yahoo|hotmail|outlook)\./.test(job.contact_email) },
   { id: 'po_box_address', pattern: /p\.?o\.?\s*box/i },
   { id: 'missing_requirements', check: (job) => !job.requirements || job.requirements.length < 20 },
   { id: 'urgency_language', pattern: /(urgent|immediately|right away|asap)/i },
+  {
+    // Contextual crypto check - only flag if NOT a legitimate crypto company
+    // and job description mentions crypto without being a developer role
+    id: 'suspicious_crypto_mention',
+    check: (job) => {
+      const text = `${job.title} ${job.description}`.toLowerCase()
+      const hasCrypto = /(bitcoin|crypto|btc|ethereum|blockchain)/i.test(text)
+      const isDeveloperRole = /(developer|engineer|architect|security)/i.test(job.title)
+      const isLegitCompany = LEGIT_CRYPTO_COMPANIES.some(c =>
+        job.company?.toLowerCase().includes(c)
+      )
+      // Flag only if: has crypto mention + not developer role + not legit company
+      return hasCrypto && !isDeveloperRole && !isLegitCompany
+    }
+  },
 ]
 ```
 
@@ -722,73 +745,142 @@ function checkJobForScams(job: Job): ScamCheckResult
 
 ## Phase 3: Job Search Features (Weeks 5-6)
 
-### Task 3.1: Indeed API Integration
+### Task 3.1: Job Search API Integration (JSearch)
 
 **Status**: 🔴 Not Started
+
+> **Note**: The Indeed Publisher API was deprecated in 2021. We use JSearch API (via RapidAPI) which aggregates jobs from LinkedIn, Indeed, Glassdoor, and other sources.
 
 <details>
 <summary>📋 Claude Code Prompt</summary>
 
 ```
-Implement Indeed API integration for job search.
+Implement JSearch API integration for job search.
 
 ## Context
-Indeed is our primary job data source. We need to search jobs, fetch details, and cache results.
+JSearch (via RapidAPI) is our primary job data source. It aggregates jobs from LinkedIn, Indeed, Glassdoor, ZipRecruiter, and other major job boards. We need to search jobs, fetch details, and cache results.
 
-## Indeed API Details
-- **Endpoint**: `https://api.indeed.com/ads/apisearch`
-- **Auth**: Publisher ID (in environment variable)
-- **Rate Limit**: 1000 calls/day (free tier)
-- **Docs**: https://indeed.readme.io/docs
+## JSearch API Details
+- **Endpoint**: `https://jsearch.p.rapidapi.com/search`
+- **Auth**: RapidAPI Key (in headers)
+- **Rate Limit**:
+  - Free: 500 requests/month
+  - Basic ($50/mo): 10,000 requests/month
+  - Pro ($150/mo): 100,000 requests/month
+- **Docs**: https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch
 
 ## Files to Create
-1. `/src/lib/indeed-client.ts` - API client
+1. `/src/lib/jsearch-client.ts` - API client
 2. `/src/app/api/jobs/search/route.ts` - Search endpoint
 3. `/src/app/api/jobs/[jobId]/route.ts` - Job detail endpoint
 4. `/src/lib/job-cache.ts` - Redis caching layer
 
 ## Environment Variables
 ```
-INDEED_PUBLISHER_ID=your_publisher_id
+RAPIDAPI_KEY=your_rapidapi_key
+RAPIDAPI_HOST=jsearch.p.rapidapi.com
 ```
 
-## Indeed Client Functions
+## JSearch Client Functions
 ```typescript
 // Search jobs
 async function searchJobs(params: {
-  q: string           // Search query
-  l: string           // Location (Orlando, FL)
-  radius?: number     // Miles from location
-  jt?: string         // Job type: fulltime, parttime, contract, internship, temporary
-  salary?: string     // Salary filter
-  fromage?: number    // Days since posted
-  start?: number      // Pagination offset
-  limit?: number      // Results per page (max 25)
-}): Promise<IndeedSearchResponse>
+  query: string              // Search query (e.g., "customer service in Orlando, FL")
+  page?: number              // Page number (default 1)
+  num_pages?: number         // Number of pages to return (default 1)
+  date_posted?: string       // "all", "today", "3days", "week", "month"
+  remote_jobs_only?: boolean // Filter for remote jobs
+  employment_types?: string  // "FULLTIME", "PARTTIME", "CONTRACTOR", "INTERN"
+  job_requirements?: string  // "under_3_years_experience", "more_than_3_years_experience", "no_experience", "no_degree"
+  radius?: number            // Search radius in miles (default 50)
+}): Promise<JSearchResponse>
 
 // Get job details
-async function getJobDetails(jobKey: string): Promise<IndeedJob>
+async function getJobDetails(jobId: string): Promise<JSearchJob>
+
+// Estimated salary (useful when job doesn't list salary)
+async function getEstimatedSalary(params: {
+  job_title: string
+  location: string
+  radius?: number
+}): Promise<SalaryEstimate>
+```
+
+## API Request Example
+```typescript
+const response = await fetch('https://jsearch.p.rapidapi.com/search', {
+  method: 'GET',
+  headers: {
+    'X-RapidAPI-Key': process.env.RAPIDAPI_KEY!,
+    'X-RapidAPI-Host': 'jsearch.p.rapidapi.com'
+  },
+  params: new URLSearchParams({
+    query: 'customer service in Orlando, FL',
+    page: '1',
+    num_pages: '1',
+    date_posted: 'week'
+  })
+})
+
+const data = await response.json()
+// data.data contains array of jobs
 ```
 
 ## Response Transformation
-Transform Indeed response to our Job type:
+Transform JSearch response to our Job type:
 ```typescript
-function transformIndeedJob(indeedJob: IndeedJob): Job {
+interface JSearchJob {
+  job_id: string
+  employer_name: string
+  employer_logo: string | null
+  employer_website: string | null
+  job_title: string
+  job_description: string
+  job_city: string
+  job_state: string
+  job_country: string
+  job_employment_type: string
+  job_apply_link: string
+  job_posted_at_datetime_utc: string
+  job_min_salary: number | null
+  job_max_salary: number | null
+  job_salary_currency: string | null
+  job_salary_period: string | null  // "YEAR", "MONTH", "HOUR"
+  job_highlights: {
+    Qualifications?: string[]
+    Responsibilities?: string[]
+    Benefits?: string[]
+  }
+  job_required_experience: {
+    no_experience_required: boolean
+    required_experience_in_months: number | null
+  }
+}
+
+function transformJSearchJob(job: JSearchJob): Job {
   return {
-    id: generateUUID(),
-    external_id: indeedJob.jobkey,
-    source: 'indeed',
-    title: indeedJob.jobtitle,
-    company: indeedJob.company,
-    location_address: indeedJob.formattedLocation,
-    location_city: indeedJob.city,
-    location_state: indeedJob.state,
-    salary_min: parseSalary(indeedJob.salary).min,
-    salary_max: parseSalary(indeedJob.salary).max,
-    description: indeedJob.snippet,
-    apply_url: indeedJob.url,
-    posted_at: parseRelativeDate(indeedJob.formattedRelativeTime),
-    // ... etc
+    id: crypto.randomUUID(),
+    external_id: job.job_id,
+    source: 'jsearch',
+    title: job.job_title,
+    company: job.employer_name,
+    company_logo: job.employer_logo,
+    company_website: job.employer_website,
+    location_address: `${job.job_city}, ${job.job_state}`,
+    location_city: job.job_city,
+    location_state: job.job_state,
+    salary_min: job.job_min_salary,
+    salary_max: job.job_max_salary,
+    salary_period: job.job_salary_period?.toLowerCase() as 'year' | 'month' | 'hour' | null,
+    description: job.job_description,
+    requirements: job.job_highlights?.Qualifications || [],
+    responsibilities: job.job_highlights?.Responsibilities || [],
+    benefits: job.job_highlights?.Benefits || [],
+    apply_url: job.job_apply_link,
+    posted_at: new Date(job.job_posted_at_datetime_utc),
+    employment_type: job.job_employment_type,
+    experience_required: !job.job_required_experience?.no_experience_required,
+    created_at: new Date()
   }
 }
 ```
@@ -797,26 +889,40 @@ function transformIndeedJob(indeedJob: IndeedJob): Job {
 - Cache search results for 1 hour
 - Cache job details for 24 hours
 - Use Redis (Upstash) for caching
-- Cache key format: `indeed:search:{hash}` or `indeed:job:{jobkey}`
+- Cache key format: `jsearch:search:{hash}` or `jsearch:job:{jobId}`
 
 ## Rate Limiting
-- Track API calls per day
+- Track API calls per month
 - Return cached results if near limit
-- Log warnings when approaching limit
+- Log warnings at 80% usage
+- Implement request queue for high traffic
 
 ## Error Handling
-- Handle rate limit errors gracefully
-- Fall back to cached data when possible
-- Log errors for monitoring
+```typescript
+async function handleJSearchError(response: Response): Promise<never> {
+  if (response.status === 429) {
+    throw new Error('Rate limit exceeded - using cached data')
+  }
+  if (response.status === 403) {
+    throw new Error('Invalid API key')
+  }
+  if (response.status === 404) {
+    throw new Error('Job not found')
+  }
+  throw new Error(`JSearch API error: ${response.status}`)
+}
+```
 
 ## Acceptance Criteria
-- [ ] Search returns relevant jobs
+- [ ] Search returns relevant Orlando-area jobs
 - [ ] Job details fetched correctly
-- [ ] Salary parsing works (hourly/annual)
+- [ ] Salary data extracted (min/max/period)
 - [ ] Location parsing extracts city/state
-- [ ] Caching reduces API calls
-- [ ] Rate limiting prevents overuse
-- [ ] Errors handled gracefully
+- [ ] Job highlights (qualifications, benefits) parsed
+- [ ] Caching reduces API calls significantly
+- [ ] Rate limiting prevents quota overuse
+- [ ] Graceful fallback to cache when API fails
+- [ ] Company logos displayed when available
 ```
 
 </details>
@@ -992,6 +1098,11 @@ CREATE TABLE daily_plans (
 async function generateDailyPlan(userId: string): Promise<DailyPlan> {
   const user = await getUser(userId)
   const todayApplications = await getTodayApplications(userId)
+
+  // Get ALL user applications to avoid showing already-applied jobs
+  const allApplications = await getAllUserApplications(userId)
+  const appliedJobIds = new Set(allApplications.map(a => a.job_id))
+
   const target = 8 // Configurable 6-12
 
   // Search for matching jobs
@@ -999,17 +1110,15 @@ async function generateDailyPlan(userId: string): Promise<DailyPlan> {
     location: user.location,
     max_commute: user.max_commute_minutes,
     transportation: user.transportation,
-    salary_min: user.salary_target.min,
-    salary_max: user.salary_target.max,
-    available_shifts: user.availability.preferred_shifts,
+    salary_min: user.salary_target?.min,
+    salary_max: user.salary_target?.max,
+    available_shifts: user.availability?.preferred_shifts,
     scam_severity: ['LOW', 'MEDIUM'], // Exclude HIGH and CRITICAL
     posted_within: 7 // Last 7 days
   })
 
-  // Filter out already applied jobs
-  const newJobs = jobs.filter(j =>
-    !todayApplications.some(a => a.job_id === j.id)
-  )
+  // Filter out ALL previously applied jobs (not just today's)
+  const newJobs = jobs.filter(j => !appliedJobIds.has(j.id))
 
   // Rank by match score
   const rankedJobs = rankJobsByMatch(newJobs, user)
@@ -1017,11 +1126,15 @@ async function generateDailyPlan(userId: string): Promise<DailyPlan> {
   // Select top N jobs
   const todayJobs = rankedJobs.slice(0, target)
 
+  // Calculate bonus applications (when exceeding target)
+  const bonus = Math.max(0, todayApplications.length - target)
+
   return {
     date: new Date().toISOString().split('T')[0],
     target,
     completed: todayApplications.length,
-    remaining: target - todayApplications.length,
+    remaining: Math.max(0, target - todayApplications.length),
+    bonus, // Show when user exceeds target
     jobs: todayJobs,
     message: generateEncouragementMessage(todayApplications.length, target)
   }
@@ -1041,22 +1154,30 @@ function calculateMatchScore(job: Job, user: User): number {
   let score = 0
 
   // Salary match (0-30 points)
-  if (job.salary_min >= user.salary_target.min) score += 30
-  else if (job.salary_min >= user.salary_target.min * 0.9) score += 20
+  if (job.salary_min != null && user.salary_target?.min != null) {
+    if (job.salary_min >= user.salary_target.min) score += 30
+    else if (job.salary_min >= user.salary_target.min * 0.9) score += 20
+  }
 
   // Commute match (0-25 points)
-  if (job.transit_time <= user.max_commute_minutes * 0.5) score += 25
-  else if (job.transit_time <= user.max_commute_minutes) score += 15
+  if (job.transit_time != null && user.max_commute_minutes != null) {
+    if (job.transit_time <= user.max_commute_minutes * 0.5) score += 25
+    else if (job.transit_time <= user.max_commute_minutes) score += 15
+  }
 
   // Valencia match (0-20 points)
-  if (job.valencia_match_score > 80) score += 20
-  else if (job.valencia_match_score > 50) score += 10
+  if (job.valencia_match_score != null) {
+    if (job.valencia_match_score > 80) score += 20
+    else if (job.valencia_match_score > 50) score += 10
+  }
 
   // Recency (0-15 points)
-  const daysOld = daysSince(job.posted_at)
-  if (daysOld <= 1) score += 15
-  else if (daysOld <= 3) score += 10
-  else if (daysOld <= 7) score += 5
+  if (job.posted_at != null) {
+    const daysOld = daysSince(job.posted_at)
+    if (daysOld <= 1) score += 15
+    else if (daysOld <= 3) score += 10
+    else if (daysOld <= 7) score += 5
+  }
 
   // Scam safety (0-10 points)
   if (job.scam_severity === 'LOW') score += 10
@@ -1069,11 +1190,14 @@ function calculateMatchScore(job: Job, user: User): number {
 ## Encouragement Messages
 ```typescript
 function generateEncouragementMessage(completed: number, target: number): string {
+  // Calculate actual progress percentage
+  const progress = target > 0 ? completed / target : 0
+
   if (completed === 0) return "Let's get started! Your first application is waiting."
-  if (completed < target * 0.25) return "Great start! Keep the momentum going."
-  if (completed < target * 0.5) return "You're doing amazing! Halfway there."
-  if (completed < target * 0.75) return "Almost there! The finish line is in sight."
-  if (completed < target) return "Just a few more! You've got this."
+  if (progress < 0.25) return "Great start! Keep the momentum going."
+  if (progress < 0.5) return "Making progress! Keep it up."
+  if (progress < 0.75) return "Halfway there! You're doing amazing."
+  if (progress < 1) return "Almost there! The finish line is in sight."
   return "🎉 You crushed it today! Well done."
 }
 ```
@@ -1179,19 +1303,44 @@ async function addEventWithCommute(event: CalendarEvent): Promise<void> {
     event.start_time
   )
 
-  // Create commute event before the shift/interview
-  const commuteEvent: CalendarEvent = {
+  // Create commute event BEFORE the shift/interview
+  const commuteToEvent: CalendarEvent = {
+    id: crypto.randomUUID(),
+    user_id: event.user_id,
     type: 'commute',
     start_time: subMinutes(event.start_time, commuteTo.duration_minutes),
     end_time: event.start_time,
     transit_mode: user.transportation.uses_lynx ? 'lynx' : 'car',
-    lynx_route: commuteTo.routes.map(r => r.route_number).join(' → '),
+    lynx_route: commuteTo.routes?.map(r => r.route_number).join(' → ') || null,
     transit_time_minutes: commuteTo.duration_minutes,
     title: `Commute to ${event.title}`
   }
 
-  await db.insert('shadow_calendar_events', commuteEvent)
+  await db.insert('shadow_calendar_events', commuteToEvent)
   await db.insert('shadow_calendar_events', event)
+
+  // Calculate commute HOME (only for shifts, not interviews)
+  if (event.type === 'shift' && event.end_time) {
+    const commuteHome = await calculateTransitTime(
+      event.location,
+      user.location,
+      event.end_time
+    )
+
+    const commuteHomeEvent: CalendarEvent = {
+      id: crypto.randomUUID(),
+      user_id: event.user_id,
+      type: 'commute',
+      start_time: event.end_time,
+      end_time: addMinutes(event.end_time, commuteHome.duration_minutes),
+      transit_mode: user.transportation.uses_lynx ? 'lynx' : 'car',
+      lynx_route: commuteHome.routes?.map(r => r.route_number).join(' → ') || null,
+      transit_time_minutes: commuteHome.duration_minutes,
+      title: `Commute home from ${event.title}`
+    }
+
+    await db.insert('shadow_calendar_events', commuteHomeEvent)
+  }
 }
 ```
 
@@ -1381,15 +1530,20 @@ Show formatted resume as user edits:
 Auto-detect Valencia credentials and format:
 ```typescript
 function highlightValenciaCredentials(education: Education[]): Education[] {
-  return education.map(edu => ({
-    ...edu,
-    isValencia: VALENCIA_PROGRAMS.some(p =>
+  return education.map(edu => {
+    // Compute isValencia first, then use it for highlightText
+    const isValencia = VALENCIA_PROGRAMS.some(p =>
       edu.institution.toLowerCase().includes('valencia')
-    ),
-    highlightText: edu.isValencia
-      ? '⭐ Valencia College Graduate'
-      : null
-  }))
+    )
+
+    return {
+      ...edu,
+      isValencia,
+      highlightText: isValencia
+        ? '⭐ Valencia College Graduate'
+        : null
+    }
+  })
 }
 ```
 
@@ -1680,7 +1834,7 @@ async function translateBulletPoint(
     - Use industry-standard terminology
     - Highlight transferable skills
 
-    Return JSON:
+    Return ONLY valid JSON (no explanation text):
     {
       "translated": "New bullet point",
       "skills_highlighted": ["skill1", "skill2"],
@@ -1688,8 +1842,43 @@ async function translateBulletPoint(
     }
   `
 
-  const response = await gemini.generate(prompt)
-  return JSON.parse(response)
+  let response: string | undefined
+  try {
+    response = await gemini.generate(prompt)
+
+    // Try to extract JSON from response (handles text before/after JSON)
+    const jsonMatch = response.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      throw new Error('No JSON found in response')
+    }
+
+    const parsed = JSON.parse(jsonMatch[0])
+
+    // Validate required fields
+    if (!parsed.translated || typeof parsed.translated !== 'string') {
+      throw new Error('Missing or invalid translated field')
+    }
+
+    return {
+      translated: parsed.translated,
+      skills_highlighted: Array.isArray(parsed.skills_highlighted)
+        ? parsed.skills_highlighted
+        : [],
+      keywords_added: Array.isArray(parsed.keywords_added)
+        ? parsed.keywords_added
+        : []
+    }
+  } catch (error) {
+    console.error('Translation parsing failed:', error, response)
+
+    // Return original as fallback
+    return {
+      translated: original,
+      skills_highlighted: [],
+      keywords_added: [],
+      error: 'Translation failed - showing original'
+    }
+  }
 }
 ```
 
@@ -2010,7 +2199,8 @@ const APPLICATION_STATES = {
   discovered: {
     label: 'Discovered',
     color: 'gray',
-    next: ['pocketed', 'archived']
+    // Allow direct apply without pocketing (quick apply flow)
+    next: ['pocketed', 'applied', 'archived']
   },
   pocketed: {
     label: 'Pocketed',
@@ -2020,12 +2210,12 @@ const APPLICATION_STATES = {
   applied: {
     label: 'Applied',
     color: 'yellow',
-    next: ['interviewing', 'rejected', 'archived']
+    next: ['interviewing', 'rejected', 'withdrawn', 'archived']
   },
   interviewing: {
     label: 'Interviewing',
     color: 'purple',
-    next: ['offer_received', 'rejected', 'archived']
+    next: ['offer_received', 'rejected', 'withdrawn', 'archived']
   },
   offer_received: {
     label: 'Offer',
@@ -2040,7 +2230,8 @@ const APPLICATION_STATES = {
   rejected: {
     label: 'Rejected',
     color: 'red',
-    next: ['archived']
+    // Allow re-interviewing for callbacks/reconsiderations
+    next: ['interviewing', 'archived']
   },
   withdrawn: {
     label: 'Withdrawn',

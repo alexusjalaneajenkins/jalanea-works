@@ -288,7 +288,7 @@ export async function PUT(
         rejected: 'rejected_at'
       }
       const timestampField = statusTimestamps[body.status]
-      if (timestampField && !existing[timestampField]) {
+      if (timestampField && !(existing as Record<string, unknown>)[timestampField]) {
         updateData[timestampField] = now
       }
     }

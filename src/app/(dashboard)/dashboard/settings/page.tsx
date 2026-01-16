@@ -24,9 +24,9 @@ import {
   type UserSettings,
   type UserProfile,
   type NotificationPreferences,
-  type PrivacySettings as PrivacySettingsType,
   type SubscriptionTier
 } from '@/components/settings'
+import type { PrivacySettings as PrivacySettingsType } from '@/components/settings/types'
 
 // Mock initial settings for demo
 const defaultSettings: UserSettings = {

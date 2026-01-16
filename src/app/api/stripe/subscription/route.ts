@@ -70,8 +70,8 @@ export async function GET() {
           .update({
             tier: stripeTier?.id || profile.tier,
             subscription_status: stripeSubscription.status,
-            subscription_current_period_end: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
-            subscription_cancel_at_period_end: stripeSubscription.cancel_at_period_end
+            subscription_current_period_end: new Date((stripeSubscription as unknown as { current_period_end: number }).current_period_end * 1000).toISOString(),
+            subscription_cancel_at_period_end: (stripeSubscription as unknown as { cancel_at_period_end: boolean }).cancel_at_period_end
           })
           .eq('id', user.id)
       }
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
       .from('users')
       .update({
         tier: tierId,
-        subscription_current_period_end: new Date(subscription.current_period_end * 1000).toISOString()
+        subscription_current_period_end: new Date((subscription as unknown as { current_period_end: number }).current_period_end * 1000).toISOString()
       })
       .eq('id', user.id)
 

@@ -9,6 +9,25 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
+// Types for Supabase query results
+interface CareerPathData {
+  id: string
+  title: string
+  title_es: string | null
+  salary_min: number | null
+  salary_max: number | null
+  growth_rate: string | null
+}
+
+interface UserCareerPathInsert {
+  user_id: string
+  career_path_id: string | null
+  is_custom: boolean
+  custom_title?: string | null
+  custom_title_es?: string | null
+  priority: number
+}
+
 // GET: Fetch user's selected career paths
 export async function GET() {
   const supabase = await createClient()
@@ -52,23 +71,26 @@ export async function GET() {
     }
 
     // Transform the data
-    const careerPaths = data?.map((item) => ({
-      id: item.id,
-      isCustom: item.is_custom,
-      customTitle: item.custom_title,
-      customTitleEs: item.custom_title_es,
-      priority: item.priority,
-      careerPath: item.career_paths
-        ? {
-            id: (item.career_paths as any).id,
-            title: (item.career_paths as any).title,
-            titleEs: (item.career_paths as any).title_es,
-            salaryMin: (item.career_paths as any).salary_min,
-            salaryMax: (item.career_paths as any).salary_max,
-            growthRate: (item.career_paths as any).growth_rate,
-          }
-        : null,
-    })) || []
+    const careerPaths = data?.map((item) => {
+      const cp = item.career_paths as unknown as CareerPathData | null
+      return {
+        id: item.id,
+        isCustom: item.is_custom,
+        customTitle: item.custom_title,
+        customTitleEs: item.custom_title_es,
+        priority: item.priority,
+        careerPath: cp
+          ? {
+              id: cp.id,
+              title: cp.title,
+              titleEs: cp.title_es,
+              salaryMin: cp.salary_min,
+              salaryMax: cp.salary_max,
+              growthRate: cp.growth_rate,
+            }
+          : null,
+      }
+    }) || []
 
     return NextResponse.json({ careerPaths })
   } catch (error) {
@@ -120,7 +142,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare rows to insert
-    const rows: any[] = []
+    const rows: UserCareerPathInsert[] = []
 
     // Add selected career paths (from database)
     selectedPaths.forEach((pathId: string, index: number) => {

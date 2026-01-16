@@ -426,7 +426,7 @@ Average match score: ${avgScore}%.
 Keep it encouraging, specific to job hunting, and mention Orlando or their career journey.
 Respond with JSON: { "message": "your message here" }`,
         {
-          model: 'gemini-2.0-flash',
+          model: 'gemini-3.0-flash',
           temperature: 0.8
         }
       )

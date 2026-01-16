@@ -37,14 +37,19 @@ export function ApplicationList({
   const sortedApplications = [...filteredApplications].sort((a, b) => {
     // Prioritize statuses with upcoming actions
     const priorityOrder: Record<ApplicationStatus, number> = {
+      offer_received: 1,
       offer: 1,
-      interviewing: 2,
-      screening: 3,
-      applied: 4,
-      saved: 5,
-      accepted: 6,
-      rejected: 7,
-      withdrawn: 8
+      offer_accepted: 2,
+      accepted: 2,
+      interviewing: 3,
+      screening: 4,
+      applied: 5,
+      pocketed: 6,
+      saved: 6,
+      discovered: 7,
+      rejected: 8,
+      withdrawn: 9,
+      archived: 10
     }
 
     const priorityDiff = priorityOrder[a.status] - priorityOrder[b.status]

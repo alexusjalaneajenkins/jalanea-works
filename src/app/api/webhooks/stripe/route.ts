@@ -192,13 +192,22 @@ async function handleSubscriptionUpdated(
 
   if (!targetUserId) return
 
+  // Cast subscription to include Stripe properties that TypeScript doesn't recognize
+  const sub = subscription as unknown as {
+    cancel_at_period_end?: boolean
+    cancel_at?: number
+    current_period_end?: number
+    status: string
+    id: string
+  }
+
   // Determine subscription status
   let status = 'active'
-  if (subscription.cancel_at_period_end) {
+  if (sub.cancel_at_period_end) {
     status = 'canceling'
-  } else if (subscription.status === 'past_due') {
+  } else if (sub.status === 'past_due') {
     status = 'past_due'
-  } else if (subscription.status === 'unpaid') {
+  } else if (sub.status === 'unpaid') {
     status = 'unpaid'
   }
 
@@ -208,10 +217,10 @@ async function handleSubscriptionUpdated(
     .update({
       subscription_tier: tier?.id || 'free',
       subscription_status: status,
-      subscription_ends_at: subscription.cancel_at
-        ? new Date(subscription.cancel_at * 1000).toISOString()
-        : subscription.current_period_end
-        ? new Date(subscription.current_period_end * 1000).toISOString()
+      subscription_ends_at: sub.cancel_at
+        ? new Date(sub.cancel_at * 1000).toISOString()
+        : sub.current_period_end
+        ? new Date(sub.current_period_end * 1000).toISOString()
         : null,
       updated_at: new Date().toISOString()
     })
@@ -226,7 +235,7 @@ async function handleSubscriptionUpdated(
   await supabase.from('subscription_history').insert({
     user_id: targetUserId,
     tier: tier?.id || 'free',
-    event_type: subscription.cancel_at_period_end ? 'cancellation_scheduled' : 'updated',
+    event_type: sub.cancel_at_period_end ? 'cancellation_scheduled' : 'updated',
     stripe_subscription_id: subscription.id,
     created_at: new Date().toISOString()
   })
@@ -292,10 +301,11 @@ async function handleInvoicePaid(
   supabase: Awaited<ReturnType<typeof createClient>>,
   invoice: Stripe.Invoice
 ) {
-  if (!invoice.subscription) return
+  const inv = invoice as unknown as { subscription?: string; customer: string; payment_intent?: string }
+  if (!inv.subscription) return
 
-  const subscriptionId = invoice.subscription as string
-  const customerId = invoice.customer as string
+  const subscriptionId = inv.subscription as string
+  const customerId = inv.customer as string
 
   // Find user
   const { data: profile } = await supabase
@@ -328,7 +338,7 @@ async function handleInvoicePaid(
       amount: tier.communityContribution,
       source: 'subscription_renewal',
       subscription_tier: tier.id,
-      stripe_payment_id: invoice.payment_intent as string,
+      stripe_payment_id: inv.payment_intent as string,
       created_at: new Date().toISOString()
     })
   }
@@ -354,7 +364,8 @@ async function handlePaymentFailed(
   supabase: Awaited<ReturnType<typeof createClient>>,
   invoice: Stripe.Invoice
 ) {
-  const customerId = invoice.customer as string
+  const inv = invoice as unknown as { customer: string; subscription?: string }
+  const customerId = inv.customer as string
 
   // Find user
   const { data: profile } = await supabase
@@ -382,7 +393,7 @@ async function handlePaymentFailed(
     user_id: profile.id,
     tier: null,
     event_type: 'payment_failed',
-    stripe_subscription_id: invoice.subscription as string,
+    stripe_subscription_id: inv.subscription as string,
     created_at: new Date().toISOString()
   })
 

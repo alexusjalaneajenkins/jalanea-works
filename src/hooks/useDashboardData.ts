@@ -118,11 +118,53 @@ export function useDashboardData(userId: string | undefined): DashboardData {
         })
       }
 
-      // Fetch daily plan (if daily_plans table exists)
-      // For now, we'll return empty array since daily_plans might not be populated yet
-      // TODO: Implement daily plan fetching when the job scraping system is ready
-      setDailyPlanJobs([])
-      setCompletedJobsCount(0)
+      // Fetch daily plan from API
+      try {
+        const dailyPlanResponse = await fetch('/api/daily-plan')
+        if (dailyPlanResponse.ok) {
+          const dailyPlanData = await dailyPlanResponse.json()
+
+          if (dailyPlanData.success && dailyPlanData.plan) {
+            const plan = dailyPlanData.plan
+            const jobs: DailyPlanJob[] = (plan.jobs || []).map((job: Record<string, unknown>) => ({
+              id: job.id as string,
+              jobId: job.job_id as string || job.jobId as string,
+              title: (job.job_title as string) || (job.title as string) || 'Unknown Position',
+              company: (job.company as string) || 'Unknown Company',
+              location: (job.location as string) || 'Orlando, FL',
+              salaryMin: job.salary_min as number | undefined,
+              salaryMax: job.salary_max as number | undefined,
+              salaryType: (job.salary_type as 'hourly' | 'yearly') || 'yearly',
+              matchScore: job.match_score as number || job.matchScore as number,
+              matchReasons: (job.match_reasons as string[]) || (job.matchReasons as string[]),
+              priority: job.priority as 'high' | 'medium' | 'low' | undefined,
+              transitMinutes: job.transit_minutes as number || job.transitMinutes as number,
+              lynxRoutes: (job.lynx_routes as string[]) || (job.lynxRoutes as string[]),
+              applicationUrl: (job.application_url as string) || (job.applicationUrl as string),
+              estimatedApplicationTime: job.estimated_application_time as number || job.estimatedApplicationTime as number,
+              tipsForApplying: (job.tips_for_applying as string[]) || (job.tipsForApplying as string[]),
+              postedDaysAgo: job.posted_days_ago as number || job.postedDaysAgo as number,
+              valenciaMatch: (job.valencia_match as boolean) || (job.valenciaMatch as boolean),
+              status: (job.status as DailyPlanJob['status']) || 'pending',
+              position: job.position as number | undefined
+            }))
+
+            setDailyPlanJobs(jobs)
+            setCompletedJobsCount(jobs.filter(j => j.status === 'applied').length)
+          } else {
+            setDailyPlanJobs([])
+            setCompletedJobsCount(0)
+          }
+        } else {
+          console.warn('Daily plan API returned non-OK status:', dailyPlanResponse.status)
+          setDailyPlanJobs([])
+          setCompletedJobsCount(0)
+        }
+      } catch (dailyPlanError) {
+        console.warn('Failed to fetch daily plan:', dailyPlanError)
+        setDailyPlanJobs([])
+        setCompletedJobsCount(0)
+      }
 
     } catch (err) {
       console.error('Dashboard data fetch error:', err)

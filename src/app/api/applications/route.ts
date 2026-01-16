@@ -145,7 +145,8 @@ export async function GET(request: NextRequest) {
 
     // Transform applications with nested data
     const transformedApplications = applications?.map(app => {
-      const job = app.jobs
+      // Supabase returns joins as arrays, get first element
+      const job = Array.isArray(app.jobs) ? app.jobs[0] : app.jobs
       return {
         id: app.id,
         userId: app.user_id,

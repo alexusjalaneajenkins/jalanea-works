@@ -126,7 +126,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       tier: tier?.id || 'essential',
       subscription_status: 'active',
       subscription_started_at: new Date().toISOString(),
-      subscription_current_period_end: new Date(subscription.current_period_end * 1000).toISOString()
+      subscription_current_period_end: new Date((subscription as unknown as { current_period_end: number }).current_period_end * 1000).toISOString()
     })
     .eq('id', userId)
 
@@ -176,8 +176,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     .update({
       tier: tier?.id || 'free',
       subscription_status: statusMap[subscription.status] || subscription.status,
-      subscription_current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-      subscription_cancel_at_period_end: subscription.cancel_at_period_end
+      subscription_current_period_end: new Date((subscription as unknown as { current_period_end: number }).current_period_end * 1000).toISOString(),
+      subscription_cancel_at_period_end: (subscription as unknown as { cancel_at_period_end: boolean }).cancel_at_period_end
     })
     .eq('id', targetUserId)
 
@@ -226,7 +226,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
  */
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   const customerId = invoice.customer as string
-  const subscriptionId = invoice.subscription as string
+  const subscriptionId = (invoice as unknown as { subscription: string }).subscription as string
 
   if (!subscriptionId) {
     // Not a subscription payment
@@ -255,9 +255,9 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
     await supabaseAdmin.rpc('record_fund_contribution', {
       p_user_id: user.id,
       p_amount: contribution,
-      p_source: invoice.billing_reason === 'subscription_create' ? 'subscription' : 'subscription_renewal',
+      p_source: (invoice as unknown as { billing_reason: string }).billing_reason === 'subscription_create' ? 'subscription' : 'subscription_renewal',
       p_tier: tier,
-      p_stripe_payment_id: invoice.payment_intent as string,
+      p_stripe_payment_id: (invoice as unknown as { payment_intent: string }).payment_intent as string,
       p_stripe_invoice_id: invoice.id
     })
 

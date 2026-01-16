@@ -26,6 +26,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { checkJobForScams, type ScamCheckResult } from '@/lib/scam-shield'
 import { searchIndeedJobs, transformIndeedJob, type IndeedSearchParams, type IndeedJobType } from '@/lib/indeed-client'
+import { searchJobs as searchJSearchJobs, transformJSearchJob, isJSearchAvailable, type JSearchParams } from '@/lib/jsearch-client'
 import { calculateTransitTime, geocodeAddress, type Coordinates, type TransitResult } from '@/lib/transit-client'
 import { getUserValenciaProgram, calculateValenciaMatch, type ValenciaProgram } from '@/lib/valencia-match'
 
@@ -415,16 +416,163 @@ export async function GET(request: NextRequest) {
       valenciaProgram = await getUserValenciaProgram(user.id)
     }
 
-    // Option 1: Check if we should fetch fresh data from Indeed
-    let shouldFetchFromIndeed = forceRefresh
+    // Option 1: Check if we should fetch fresh data from external API
+    let shouldFetchFromAPI = forceRefresh
 
-    // For now, always try to fetch from Indeed if we have a search query
+    // For now, always try to fetch from API if we have a search query
     if (query || forceRefresh) {
-      shouldFetchFromIndeed = true
+      shouldFetchFromAPI = true
     }
 
-    // Fetch from Indeed API if needed
-    if (shouldFetchFromIndeed) {
+    // Fetch from external API if needed (JSearch first, then Indeed fallback)
+    if (shouldFetchFromAPI) {
+      // Try JSearch API first (via RapidAPI)
+      if (isJSearchAvailable()) {
+        try {
+          // Build JSearch params
+          const jsearchParams: JSearchParams = {
+            query: query ? `${query} in ${location}` : `jobs in ${location}`,
+            page: page,
+            num_pages: 1
+          }
+
+          // Add job type filter
+          if (jobTypes.length > 0) {
+            const typeMap: Record<string, string> = {
+              'full-time': 'FULLTIME',
+              'fulltime': 'FULLTIME',
+              'part-time': 'PARTTIME',
+              'parttime': 'PARTTIME',
+              'contract': 'CONTRACTOR',
+              'internship': 'INTERN'
+            }
+            const mappedTypes = jobTypes
+              .map(t => typeMap[t.toLowerCase()])
+              .filter(Boolean)
+            if (mappedTypes.length > 0) {
+              jsearchParams.employment_types = mappedTypes.join(',')
+            }
+          }
+
+          // Add posted within filter
+          if (postedWithin) {
+            const dateMap: Record<string, 'today' | '3days' | 'week' | 'month'> = {
+              '24h': 'today',
+              '3d': '3days',
+              '7d': 'week',
+              '30d': 'month'
+            }
+            if (dateMap[postedWithin]) {
+              jsearchParams.date_posted = dateMap[postedWithin]
+            }
+          }
+
+          // Search JSearch
+          const jsearchResponse = await searchJSearchJobs(jsearchParams)
+
+          if (jsearchResponse.data && jsearchResponse.data.length > 0) {
+            // Transform and apply scam check to JSearch jobs
+            let transformedJobs: JobWithExtras[] = jsearchResponse.data.map(job => {
+              const transformed = transformJSearchJob(job)
+              return applyScamCheck({
+                id: transformed.id,
+                external_id: transformed.external_id,
+                source: 'jsearch',
+                title: transformed.title,
+                company: transformed.company,
+                company_website: transformed.company_website || undefined,
+                location_address: transformed.location_address,
+                location_city: transformed.location_city,
+                location_state: transformed.location_state,
+                location_lat: transformed.location_lat || undefined,
+                location_lng: transformed.location_lng || undefined,
+                salary_min: transformed.salary_min || undefined,
+                salary_max: transformed.salary_max || undefined,
+                salary_period: transformed.salary_period || undefined,
+                employment_type: transformed.employment_type,
+                description: transformed.description,
+                requirements: transformed.requirements,
+                benefits: transformed.benefits,
+                apply_url: transformed.apply_url,
+                posted_at: transformed.posted_at
+              })
+            })
+
+            // Apply Valencia match scoring
+            const jobsWithValencia = applyBatchValenciaMatch(transformedJobs, valenciaProgram)
+
+            // Save jobs to database (async, don't wait)
+            saveJobsToDatabase(jobsWithValencia).catch(err => {
+              console.error('Background job save failed:', err)
+            })
+
+            // Filter out critical scam jobs
+            let filteredJobs = jobsWithValencia.filter(job => job.scamRiskLevel !== 'critical')
+
+            // Calculate transit times if user location provided
+            if (userCoords) {
+              filteredJobs = await calculateBatchTransit(userCoords, filteredJobs)
+
+              // Filter by max commute if specified
+              if (maxCommute !== undefined) {
+                filteredJobs = filteredJobs.filter(
+                  job => job.transitMinutes != null && job.transitMinutes <= maxCommute
+                )
+              }
+
+              // Filter for LYNX accessible only
+              if (lynxAccessible) {
+                filteredJobs = filteredJobs.filter(
+                  job => job.transitMinutes != null && job.lynxRoutes && job.lynxRoutes.length > 0
+                )
+              }
+            }
+
+            // Filter by Valencia friendly
+            if (valenciaFriendly) {
+              filteredJobs = filteredJobs.filter(job => job.valencia_friendly)
+            }
+
+            // Sort jobs
+            if (sortBy === 'commute' && userCoords) {
+              filteredJobs.sort((a, b) => {
+                if (a.transitMinutes == null && b.transitMinutes == null) return 0
+                if (a.transitMinutes == null) return 1
+                if (b.transitMinutes == null) return -1
+                return a.transitMinutes - b.transitMinutes
+              })
+            } else if (sortBy === 'salary') {
+              filteredJobs.sort((a, b) => {
+                const salaryA = a.salary_max || a.salary_min || 0
+                const salaryB = b.salary_max || b.salary_min || 0
+                return salaryB - salaryA // Highest first
+              })
+            }
+
+            // Paginate (JSearch already returns paginated results, but we re-paginate after filtering)
+            const total = filteredJobs.length
+            const startIndex = 0 // Already paginated from API
+            const paginatedJobs = filteredJobs.slice(0, limit)
+
+            return NextResponse.json({
+              jobs: paginatedJobs.map(formatJobResponse),
+              total,
+              page,
+              limit,
+              hasMore: jsearchResponse.data.length >= 10, // JSearch returns up to 10 per page
+              source: 'jsearch',
+              hasTransitData: !!userCoords,
+              hasValenciaData: !!valenciaProgram,
+              sortedBy: sortBy
+            })
+          }
+        } catch (jsearchError) {
+          console.error('JSearch API error, trying Indeed fallback:', jsearchError)
+          // Fall through to Indeed
+        }
+      }
+
+      // Fallback to Indeed API
       try {
         // Build Indeed search params
         const indeedParams: IndeedSearchParams = {
@@ -500,14 +648,14 @@ export async function GET(request: NextRequest) {
           // Filter by max commute if specified
           if (maxCommute !== undefined) {
             filteredJobs = filteredJobs.filter(
-              job => job.transitMinutes !== null && job.transitMinutes <= maxCommute
+              job => job.transitMinutes != null && job.transitMinutes <= maxCommute
             )
           }
 
           // Filter for LYNX accessible only
           if (lynxAccessible) {
             filteredJobs = filteredJobs.filter(
-              job => job.transitMinutes !== null && job.lynxRoutes && job.lynxRoutes.length > 0
+              job => job.transitMinutes != null && job.lynxRoutes && job.lynxRoutes.length > 0
             )
           }
         }
@@ -520,9 +668,9 @@ export async function GET(request: NextRequest) {
         // Sort jobs
         if (sortBy === 'commute' && userCoords) {
           filteredJobs.sort((a, b) => {
-            if (a.transitMinutes === null && b.transitMinutes === null) return 0
-            if (a.transitMinutes === null) return 1
-            if (b.transitMinutes === null) return -1
+            if (a.transitMinutes == null && b.transitMinutes == null) return 0
+            if (a.transitMinutes == null) return 1
+            if (b.transitMinutes == null) return -1
             return a.transitMinutes - b.transitMinutes
           })
         } else if (sortBy === 'salary') {
@@ -584,14 +732,14 @@ export async function GET(request: NextRequest) {
       // Filter by max commute if specified
       if (maxCommute !== undefined) {
         processedJobs = processedJobs.filter(
-          job => job.transitMinutes !== null && job.transitMinutes <= maxCommute
+          job => job.transitMinutes != null && job.transitMinutes <= maxCommute
         )
       }
 
       // Filter for LYNX accessible only
       if (lynxAccessible) {
         processedJobs = processedJobs.filter(
-          job => job.transitMinutes !== null && job.lynxRoutes && job.lynxRoutes.length > 0
+          job => job.transitMinutes != null && job.lynxRoutes && job.lynxRoutes.length > 0
         )
       }
     }
@@ -604,9 +752,9 @@ export async function GET(request: NextRequest) {
     // Sort jobs
     if (sortBy === 'commute' && userCoords) {
       processedJobs.sort((a, b) => {
-        if (a.transitMinutes === null && b.transitMinutes === null) return 0
-        if (a.transitMinutes === null) return 1
-        if (b.transitMinutes === null) return -1
+        if (a.transitMinutes == null && b.transitMinutes == null) return 0
+        if (a.transitMinutes == null) return 1
+        if (b.transitMinutes == null) return -1
         return a.transitMinutes - b.transitMinutes
       })
     } else if (sortBy === 'salary') {

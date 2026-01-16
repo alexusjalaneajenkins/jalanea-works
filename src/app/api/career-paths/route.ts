@@ -7,6 +7,24 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
+// Types for Supabase query results
+interface CareerPathRow {
+  id: string
+  title: string
+  title_es: string | null
+  description: string | null
+  salary_min: number | null
+  salary_max: number | null
+  growth_rate: string | null
+}
+
+interface SkillRow {
+  id: string
+  name: string
+  name_es: string | null
+  category: string
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const programKey = searchParams.get('program')
@@ -71,9 +89,9 @@ export async function GET(request: NextRequest) {
 
     // Transform the data
     const careerPaths = careerPathData
-      ?.map((item) => item.career_paths)
-      .filter(Boolean)
-      .map((cp: any) => ({
+      ?.map((item) => item.career_paths as unknown as CareerPathRow | null)
+      .filter((cp): cp is CareerPathRow => cp !== null)
+      .map((cp) => ({
         id: cp.id,
         title: cp.title,
         titleEs: cp.title_es,
@@ -84,9 +102,9 @@ export async function GET(request: NextRequest) {
       })) || []
 
     const skills = skillsData
-      ?.map((item) => item.skills)
-      .filter(Boolean)
-      .map((s: any) => ({
+      ?.map((item) => item.skills as unknown as SkillRow | null)
+      .filter((s): s is SkillRow => s !== null)
+      .map((s) => ({
         id: s.id,
         name: s.name,
         nameEs: s.name_es,

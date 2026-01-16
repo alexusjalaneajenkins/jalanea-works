@@ -301,7 +301,7 @@ export async function generateTier2Pocket(
       score: job.valenciaMatch ? 7.5 + Math.random() * 2 : 6 + Math.random() * 2.5,
       notes: `${job.company} appears to have a ${job.company.includes('Valencia') || job.company.includes('Health') ? 'mission-driven, supportive' : 'professional, growth-oriented'} culture. ${job.benefits?.includes('Tuition') || job.benefits?.some(b => b.includes('tuition')) ? 'Their tuition benefits suggest investment in employee development.' : ''}`
     },
-    yourPositioning: `Lead with your ${profile.resume ? 'relevant experience' : 'enthusiasm and transferable skills'}. Emphasize your ${job.valenciaMatch ? 'Valencia education which directly aligns with this role' : 'eagerness to contribute and grow'}. ${job.transitMinutes ? `Mention that you have reliable transportation (${job.transitMinutes} min via LYNX).` : ''}`
+    yourPositioning: `Lead with your ${profile.resume ? 'relevant experience' : 'enthusiasm and transferable skills'}. Emphasize your ${job.valenciaMatch ? 'Valencia education which directly aligns with this role' : 'eagerness to contribute and grow'}. ${(job as unknown as { transitMinutes?: number }).transitMinutes ? `Mention that you have reliable transportation (${(job as unknown as { transitMinutes: number }).transitMinutes} min via LYNX).` : ''}`
   }
 }
 

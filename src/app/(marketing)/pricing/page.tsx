@@ -7,7 +7,7 @@
  * Handles checkout flow via Stripe.
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
@@ -26,7 +26,8 @@ import {
 } from 'lucide-react'
 import { SUBSCRIPTION_TIERS, type TierConfig } from '@/lib/stripe'
 
-export default function PricingPage() {
+// Wrapper component to handle Suspense boundary for useSearchParams
+function PricingPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState<string | null>(null)
@@ -337,6 +338,24 @@ export default function PricingPage() {
         </div>
       </section>
     </div>
+  )
+}
+
+// Loading fallback for Suspense
+function PricingPageLoading() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+    </div>
+  )
+}
+
+// Main export with Suspense boundary
+export default function PricingPage() {
+  return (
+    <Suspense fallback={<PricingPageLoading />}>
+      <PricingPageContent />
+    </Suspense>
   )
 }
 

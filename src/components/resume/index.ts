@@ -12,3 +12,8 @@ export { ResumePreview } from './ResumePreview'
 export { TemplateSelector } from './TemplateSelector'
 export { default as SkillsTranslator } from './SkillsTranslator'
 export { default as TranslationPreview } from './TranslationPreview'
+
+// ATS Optimization components
+export { ATSScoreCard, type ATSScoreBreakdown, type ATSScoreCardProps } from './ATSScoreCard'
+export { KeywordSuggestions, type KeywordAnalysis, type KeywordSuggestionsProps } from './KeywordSuggestions'
+export { OptimizationModal, type ATSSuggestion, type OptimizationResult, type OptimizationModalProps } from './OptimizationModal'

@@ -112,8 +112,9 @@ export async function POST(request: NextRequest) {
           status: 'canceled'
         })
       } else {
-        const endsAt = subscription.current_period_end
-          ? new Date(subscription.current_period_end * 1000).toISOString()
+        const subData = subscription as unknown as { current_period_end?: number }
+        const endsAt = subData.current_period_end
+          ? new Date(subData.current_period_end * 1000).toISOString()
           : null
 
         await supabase

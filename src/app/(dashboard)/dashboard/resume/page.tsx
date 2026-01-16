@@ -418,15 +418,15 @@ export default function ResumePage() {
                     that resonates with employers in your target industry.
                   </p>
                   <SkillsTranslator
-                    bullets={resume.experience.flatMap(exp => exp.bullets || [])}
+                    bullets={resume.experience.flatMap(exp => exp.highlights || [])}
                     onApplyTranslations={(translations) => {
-                      // Update experience bullets with translations
+                      // Update experience highlights with translations
                       const updatedExperience = resume.experience.map(exp => {
-                        const updatedBullets = (exp.bullets || []).map(bullet => {
-                          const translation = translations.find(t => t.original === bullet)
-                          return translation ? translation.translated : bullet
+                        const updatedHighlights = (exp.highlights || []).map(highlight => {
+                          const translation = translations.find(t => t.original === highlight)
+                          return translation ? translation.translated : highlight
                         })
-                        return { ...exp, bullets: updatedBullets }
+                        return { ...exp, highlights: updatedHighlights }
                       })
                       updateResume({ experience: updatedExperience })
                       setHasChanges(true)

@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { checkJobForScams } from '@/lib/scam-shield'
+import { getJobDetails, transformJSearchJob, isJSearchAvailable } from '@/lib/jsearch-client'
 
 export async function GET(
   request: NextRequest,
@@ -64,6 +65,90 @@ export async function GET(
 
       if (!error && data) {
         job = data
+      }
+    }
+
+    // Try jsearch_ prefix
+    if (!job && !jobId.startsWith('jsearch_')) {
+      const { data, error } = await supabase
+        .from('jobs')
+        .select('*')
+        .eq('external_id', `jsearch_${jobId}`)
+        .is('deleted_at', null)
+        .single()
+
+      if (!error && data) {
+        job = data
+      }
+    }
+
+    // If still not found and JSearch is available, try fetching directly from JSearch API
+    if (!job && isJSearchAvailable()) {
+      // Extract the actual job ID (remove prefixes if present)
+      let jsearchJobId = jobId
+      if (jobId.startsWith('jsearch_')) {
+        jsearchJobId = jobId.replace('jsearch_', '')
+      }
+
+      try {
+        const jsearchJob = await getJobDetails(jsearchJobId)
+        if (jsearchJob) {
+          const transformed = transformJSearchJob(jsearchJob)
+
+          // Return the transformed JSearch job directly (not saved to DB yet)
+          const scamCheck = checkJobForScams({
+            title: transformed.title,
+            company: transformed.company,
+            company_website: transformed.company_website || undefined,
+            description: transformed.description,
+            requirements: transformed.requirements,
+            salary_min: transformed.salary_min || undefined,
+            salary_max: transformed.salary_max || undefined,
+            contact_email: undefined,
+            location_address: transformed.location_address,
+            apply_url: transformed.apply_url
+          })
+
+          return NextResponse.json({
+            job: {
+              id: transformed.id,
+              externalId: transformed.external_id,
+              source: 'jsearch',
+              title: transformed.title,
+              company: transformed.company,
+              companyWebsite: transformed.company_website,
+              location: transformed.location_address,
+              locationCity: transformed.location_city,
+              locationState: transformed.location_state,
+              locationLat: transformed.location_lat,
+              locationLng: transformed.location_lng,
+              remote: transformed.is_remote,
+              salaryMin: transformed.salary_min,
+              salaryMax: transformed.salary_max,
+              salaryType: transformed.salary_period === 'hourly' ? 'hourly' : 'yearly',
+              description: transformed.description,
+              fullDescription: transformed.description,
+              requirements: transformed.requirements ? transformed.requirements.split('\n').filter(Boolean) : [],
+              benefits: transformed.benefits ? transformed.benefits.split('\n').filter(Boolean) : [],
+              jobType: transformed.employment_type,
+              applicationUrl: transformed.apply_url,
+              applicationMethod: 'external',
+              postedAt: transformed.posted_at,
+              expiresAt: null,
+              scamRiskLevel: scamCheck.severity,
+              scamReasons: scamCheck.flags.map(f => f.description),
+              scamScore: scamCheck.score,
+              valenciaMatch: false,
+              valenciaMatchPercentage: null,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            },
+            isSaved: false
+          })
+        }
+      } catch (jsearchError) {
+        console.error('JSearch fetch error:', jsearchError)
+        // Fall through to 404
       }
     }
 

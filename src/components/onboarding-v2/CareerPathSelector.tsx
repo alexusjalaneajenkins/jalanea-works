@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, AlertCircle, Briefcase, Target } from 'lucide-react'
 import { CareerPathCard } from './CareerPathCard'
 import { CustomCareerInput } from './CustomCareerInput'
-import type { CareerPath, CustomCareerPath, CareerPathSelectorProps } from '@/types/career'
+import type { CareerPath, CareerPathSelectorProps } from '@/types/career'
 
 export function CareerPathSelector({
   programKey,

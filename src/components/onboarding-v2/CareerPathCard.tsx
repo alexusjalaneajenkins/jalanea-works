@@ -5,8 +5,8 @@
  */
 
 import { motion } from 'framer-motion'
-import { Check, TrendingUp, DollarSign, Briefcase } from 'lucide-react'
-import type { CareerPath, GrowthRate } from '@/types/career'
+import { Check, DollarSign, Briefcase } from 'lucide-react'
+import type { CareerPath } from '@/types/career'
 import { formatSalaryRange, getGrowthRateInfo } from '@/lib/career-utils'
 
 interface CareerPathCardProps {
