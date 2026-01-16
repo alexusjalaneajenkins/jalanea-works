@@ -2,22 +2,27 @@
 
 import { useAuth } from '@/components/providers/auth-provider'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
-import { DashboardSidebar, DashboardBottomNav, DashboardHeader } from '@/components/dashboard'
+import { useEffect, useState } from 'react'
+import { AppShell } from '@/components/shell'
+import { ModeProvider } from '@/lib/mode/ModeContext'
+import { Sun } from 'lucide-react'
 
 // ============================================
 // DASHBOARD LAYOUT
 // ============================================
-// - Desktop: Sidebar on left (fixed)
-// - Mobile: Bottom navigation bar
-// - Header: User profile button (top-right), Logo (mobile only)
+// - New "Shining Light" design system
+// - Desktop: Side rail on left
+// - Mobile: Top bar with hamburger menu
+// - Command palette (Cmd/Ctrl + K)
+// - Light/Dark theme toggle
+// - Jalanea Mode (Survival/Bridge/Career)
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { user, isLoading } = useAuth()
+  const { user, isLoading, profile } = useAuth()
   const router = useRouter()
 
   // Redirect to login if not authenticated
@@ -30,10 +35,15 @@ export default function DashboardLayout({
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-dvh bg-[#020617] flex items-center justify-center">
+      <div className="min-h-dvh bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-4 border-[#ffc425] border-t-transparent rounded-full animate-spin" />
-          <p className="text-slate-400 text-sm">Loading...</p>
+          <div className="relative">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="absolute inset-0 grid place-items-center">
+              <Sun size={20} className="text-primary animate-pulse" />
+            </div>
+          </div>
+          <p className="text-muted-foreground text-sm">Loading...</p>
         </div>
       </div>
     )
@@ -44,24 +54,24 @@ export default function DashboardLayout({
     return null
   }
 
+  // Extract user info for shell
+  const userName = profile?.full_name || user.email?.split('@')[0] || 'User'
+  const userInitial = userName.charAt(0).toUpperCase()
+  const userLocation = profile?.location || 'Central Florida'
+  const userTier = profile?.subscription_tier
+    ? profile.subscription_tier.charAt(0).toUpperCase() + profile.subscription_tier.slice(1)
+    : 'Essential'
+
   return (
-    <div className="min-h-dvh bg-[#020617]">
-      {/* Desktop Sidebar */}
-      <DashboardSidebar />
-
-      {/* Main Content Area */}
-      <div className="lg:pl-64">
-        {/* Header */}
-        <DashboardHeader />
-
-        {/* Page Content */}
-        <main className="px-4 py-6 lg:px-6 lg:py-8 pb-24 lg:pb-8">
-          {children}
-        </main>
-      </div>
-
-      {/* Mobile Bottom Nav */}
-      <DashboardBottomNav />
-    </div>
+    <ModeProvider defaultMode="bridge">
+      <AppShell
+        userName={userName}
+        userInitial={userInitial}
+        userLocation={userLocation}
+        userTier={userTier}
+      >
+        {children}
+      </AppShell>
+    </ModeProvider>
   )
 }

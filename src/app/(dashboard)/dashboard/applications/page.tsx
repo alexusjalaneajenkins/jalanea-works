@@ -2,23 +2,27 @@
 
 /**
  * Applications Tracker Page
- * Track job applications with status updates, interviews, and reminders
+ * Track job applications with status updates — now with Shining Light design.
+ * Mode-aware filtering (Survival / Bridge / Career).
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
-  FolderOpen,
+  Briefcase,
+  Calendar,
+  ChevronRight,
   Plus,
-  ArrowRight,
-  TrendingUp,
-  XCircle,
-  Gift,
-  Users,
-  Send,
   Search,
-  RefreshCw
+  Target,
+  RefreshCw,
+  Send,
+  Users,
+  Gift,
+  TrendingUp,
+  FolderOpen,
+  ArrowRight
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -26,23 +30,239 @@ import {
   type Application,
   type ApplicationStatus,
   type ApplicationStats,
-  ApplicationList,
   ApplicationDetailModal,
   AddApplicationModal,
   UpcomingEventsCard
 } from '@/components/applications'
+import { cn } from '@/lib/utils'
 
-type FilterTab = 'all' | 'saved' | 'applied' | 'interviewing' | 'offers' | 'rejected' | 'archived'
+// Mode type for Jalanea Works
+type Mode = 'survival' | 'bridge' | 'career'
 
-const filterTabs: { id: FilterTab; label: string; statusMatch: ApplicationStatus[] }[] = [
-  { id: 'all', label: 'All', statusMatch: [] },
-  { id: 'saved', label: 'Saved', statusMatch: ['discovered', 'pocketed', 'saved'] },
-  { id: 'applied', label: 'Applied', statusMatch: ['applied'] },
-  { id: 'interviewing', label: 'Interviewing', statusMatch: ['screening', 'interviewing'] },
-  { id: 'offers', label: 'Offers', statusMatch: ['offer', 'offer_received', 'accepted', 'offer_accepted'] },
-  { id: 'rejected', label: 'Rejected', statusMatch: ['rejected', 'withdrawn'] },
-  { id: 'archived', label: 'Archived', statusMatch: ['archived'] }
-]
+// Map application status to display stage
+type DisplayStage = 'Saved' | 'Applied' | 'Interview' | 'Offer' | 'Rejected'
+
+function getDisplayStage(status: ApplicationStatus): DisplayStage {
+  if (['discovered', 'pocketed', 'saved'].includes(status)) return 'Saved'
+  if (['applied'].includes(status)) return 'Applied'
+  if (['screening', 'interviewing'].includes(status)) return 'Interview'
+  if (['offer', 'offer_received', 'accepted', 'offer_accepted'].includes(status)) return 'Offer'
+  return 'Rejected'
+}
+
+// Derive mode from application salary or other heuristics
+function deriveMode(app: Application): Mode {
+  const salary = app.salary?.toLowerCase() || ''
+  const title = app.jobTitle?.toLowerCase() || ''
+
+  // Simple heuristic: survival = hourly/low pay, career = senior/lead, bridge = everything else
+  if (salary.includes('hour') || title.includes('associate') || title.includes('clerk')) {
+    return 'survival'
+  }
+  if (title.includes('senior') || title.includes('lead') || title.includes('manager') || title.includes('director')) {
+    return 'career'
+  }
+  return 'bridge'
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPONENTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+function MatchRing({ value }: { value: number }) {
+  const circumference = 2 * Math.PI * 14
+  const strokeDashoffset = circumference - (value / 100) * circumference
+
+  return (
+    <div className="relative h-9 w-9 flex-shrink-0">
+      <svg className="h-9 w-9 -rotate-90" viewBox="0 0 36 36">
+        <circle
+          cx="18"
+          cy="18"
+          r="14"
+          fill="none"
+          stroke="hsl(var(--border))"
+          strokeWidth="3"
+        />
+        <circle
+          cx="18"
+          cy="18"
+          r="14"
+          fill="none"
+          stroke="hsl(var(--primary))"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          className="transition-all duration-500"
+        />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-foreground">
+        {value}
+      </span>
+    </div>
+  )
+}
+
+function StagePill({
+  active,
+  label,
+  count,
+  onClick
+}: {
+  active: boolean
+  label: string
+  count: number
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'inline-flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm font-extrabold transition-colors',
+        active
+          ? 'border-primary/25 bg-primary/10 text-foreground'
+          : 'border-border bg-background/40 text-muted-foreground hover:text-foreground'
+      )}
+    >
+      <span className={cn('h-2 w-2 rounded-full', active ? 'bg-primary' : 'bg-border')} />
+      {label}
+      <span className="rounded-full border border-border bg-card/50 px-2 py-0.5 text-[11px] font-bold text-muted-foreground">
+        {count}
+      </span>
+    </button>
+  )
+}
+
+function ModeChip({
+  active,
+  mode,
+  onClick
+}: {
+  active: boolean
+  mode: Mode | 'all'
+  onClick: () => void
+}) {
+  const label = mode === 'all' ? 'All modes' : mode === 'survival' ? 'Survival' : mode === 'bridge' ? 'Bridge' : 'Career'
+
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'inline-flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm font-extrabold transition-colors',
+        active
+          ? 'border-primary/25 bg-primary/10 text-foreground'
+          : 'border-border bg-background/40 text-muted-foreground hover:text-foreground'
+      )}
+    >
+      <Target size={16} className={cn(active ? 'text-primary' : 'text-muted-foreground')} />
+      {label}
+    </button>
+  )
+}
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  color
+}: {
+  icon: React.ElementType
+  label: string
+  value: number
+  color: string
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-3xl border border-border bg-card/60 p-4"
+    >
+      <div className="flex items-center gap-3">
+        <div className={cn('grid h-10 w-10 place-items-center rounded-2xl', color)}>
+          <Icon size={18} />
+        </div>
+        <div>
+          <p className="text-2xl font-black text-foreground">{value}</p>
+          <p className="text-xs text-muted-foreground">{label}</p>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+function AppCard({
+  app,
+  mode,
+  onClick
+}: {
+  app: Application
+  mode: Mode
+  onClick: () => void
+}) {
+  const stage = getDisplayStage(app.status)
+  const match = app.matchScore || 75
+
+  // Format date
+  const dateLabel = app.appliedAt
+    ? `Applied ${new Date(app.appliedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+    : app.createdAt
+    ? `Saved ${new Date(app.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+    : 'Recently added'
+
+  return (
+    <div
+      onClick={onClick}
+      className={cn(
+        'cursor-pointer rounded-3xl border border-border p-4 transition-colors hover:bg-card/60',
+        mode === 'survival' ? 'bg-card/40' : mode === 'bridge' ? 'bg-primary/5' : 'bg-accent/5'
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <MatchRing value={match} />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={cn(
+                'rounded-full border px-3 py-1 text-[11px] font-extrabold',
+                mode === 'survival' && 'border-border bg-background/40 text-muted-foreground',
+                mode === 'bridge' && 'border-primary/25 bg-primary/10 text-primary',
+                mode === 'career' && 'border-accent/25 bg-accent/10 text-foreground'
+              )}
+            >
+              {mode === 'survival' ? 'Survival Mode' : mode === 'bridge' ? 'Bridge Mode' : 'Career Mode'}
+            </span>
+            <span className="rounded-full border border-border bg-background/40 px-3 py-1 text-[11px] font-bold text-muted-foreground">
+              {stage}
+            </span>
+          </div>
+
+          <div
+            className="mt-2 text-sm font-black tracking-tight text-foreground"
+            style={{ fontFamily: 'var(--font-serif), Satoshi, sans-serif' }}
+          >
+            {app.jobTitle}
+          </div>
+          <div className="mt-0.5 text-xs text-muted-foreground">{app.company}</div>
+          <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-border bg-background/40 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
+            <Calendar size={14} />
+            {dateLabel}
+          </div>
+        </div>
+        <button
+          className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-background/40 text-muted-foreground hover:text-foreground"
+          aria-label="Open"
+        >
+          <ChevronRight size={18} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN PAGE
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function ApplicationsPage() {
   const router = useRouter()
@@ -54,7 +274,8 @@ export default function ApplicationsPage() {
   const [error, setError] = useState<string | null>(null)
 
   // Filter state
-  const [activeTab, setActiveTab] = useState<FilterTab>('all')
+  const [activeStage, setActiveStage] = useState<DisplayStage | 'All'>('All')
+  const [activeMode, setActiveMode] = useState<Mode | 'all'>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
   // Modal state
@@ -86,33 +307,42 @@ export default function ApplicationsPage() {
     fetchApplications()
   }, [fetchApplications])
 
-  // Filter applications by tab and search
-  const filteredApplications = applications.filter(app => {
-    // Tab filter
-    if (activeTab !== 'all') {
-      const tab = filterTabs.find(t => t.id === activeTab)
-      if (!tab?.statusMatch.includes(app.status)) return false
+  // Compute stage counts
+  const stageCounts = useMemo(() => {
+    const counts: Record<DisplayStage, number> = { Saved: 0, Applied: 0, Interview: 0, Offer: 0, Rejected: 0 }
+    for (const app of applications) {
+      const stage = getDisplayStage(app.status)
+      counts[stage] += 1
     }
+    return counts
+  }, [applications])
 
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      return (
-        app.jobTitle.toLowerCase().includes(query) ||
-        app.company.toLowerCase().includes(query) ||
-        app.location?.toLowerCase().includes(query)
-      )
-    }
+  // Filter applications
+  const filteredApplications = useMemo(() => {
+    return applications.filter((app) => {
+      // Stage filter
+      if (activeStage !== 'All' && getDisplayStage(app.status) !== activeStage) {
+        return false
+      }
 
-    return true
-  })
+      // Mode filter
+      if (activeMode !== 'all' && deriveMode(app) !== activeMode) {
+        return false
+      }
 
-  // Get counts for tabs
-  const getTabCount = (tabId: FilterTab): number => {
-    if (tabId === 'all') return applications.length
-    const tab = filterTabs.find(t => t.id === tabId)
-    return applications.filter(app => tab?.statusMatch.includes(app.status)).length
-  }
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase()
+        return (
+          app.jobTitle.toLowerCase().includes(query) ||
+          app.company.toLowerCase().includes(query) ||
+          app.location?.toLowerCase().includes(query)
+        )
+      }
+
+      return true
+    })
+  }, [applications, activeStage, activeMode, searchQuery])
 
   // Handlers
   const handleApplicationClick = useCallback((application: Application) => {
@@ -120,32 +350,32 @@ export default function ApplicationsPage() {
     setIsDetailModalOpen(true)
   }, [])
 
-  const handleAddApplication = useCallback(async (
-    applicationData: Omit<Application, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
-  ) => {
-    try {
-      const response = await fetch('/api/applications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(applicationData)
-      })
+  const handleAddApplication = useCallback(
+    async (applicationData: Omit<Application, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+      try {
+        const response = await fetch('/api/applications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(applicationData)
+        })
 
-      if (response.ok) {
-        const { application } = await response.json()
-        setApplications(prev => [application, ...prev])
-        // Update stats
-        if (stats) {
-          setStats({
-            ...stats,
-            total: stats.total + 1,
-            applied: stats.applied + (application.status === 'applied' ? 1 : 0)
-          })
+        if (response.ok) {
+          const { application } = await response.json()
+          setApplications((prev) => [application, ...prev])
+          if (stats) {
+            setStats({
+              ...stats,
+              total: stats.total + 1,
+              applied: stats.applied + (application.status === 'applied' ? 1 : 0)
+            })
+          }
         }
+      } catch (err) {
+        console.error('Error adding application:', err)
       }
-    } catch (err) {
-      console.error('Error adding application:', err)
-    }
-  }, [stats])
+    },
+    [stats]
+  )
 
   const handleUpdateApplication = useCallback(async (updatedApp: Application) => {
     try {
@@ -157,309 +387,295 @@ export default function ApplicationsPage() {
 
       if (response.ok) {
         const { application } = await response.json()
-        setApplications(prev =>
-          prev.map(app => app.id === application.id ? { ...app, ...application } : app)
-        )
-        setSelectedApplication(prev => prev ? { ...prev, ...application } : null)
+        setApplications((prev) => prev.map((app) => (app.id === application.id ? { ...app, ...application } : app)))
+        setSelectedApplication((prev) => (prev ? { ...prev, ...application } : null))
       }
     } catch (err) {
       console.error('Error updating application:', err)
     }
   }, [])
 
-  const handleDeleteApplication = useCallback(async (applicationId: string) => {
-    try {
-      const response = await fetch(`/api/applications/${applicationId}`, {
-        method: 'DELETE'
-      })
+  const handleDeleteApplication = useCallback(
+    async (applicationId: string) => {
+      try {
+        const response = await fetch(`/api/applications/${applicationId}`, {
+          method: 'DELETE'
+        })
 
-      if (response.ok) {
-        setApplications(prev => prev.filter(app => app.id !== applicationId))
-        setIsDetailModalOpen(false)
-        setSelectedApplication(null)
-        // Update stats
-        if (stats) {
-          setStats({
-            ...stats,
-            total: stats.total - 1
-          })
+        if (response.ok) {
+          setApplications((prev) => prev.filter((app) => app.id !== applicationId))
+          setIsDetailModalOpen(false)
+          setSelectedApplication(null)
+          if (stats) {
+            setStats({
+              ...stats,
+              total: stats.total - 1
+            })
+          }
         }
+      } catch (err) {
+        console.error('Error deleting application:', err)
       }
-    } catch (err) {
-      console.error('Error deleting application:', err)
-    }
-  }, [stats])
+    },
+    [stats]
+  )
 
-  const handleViewPocket = useCallback((application: Application) => {
-    if (application.pocketId) {
-      router.push(`/dashboard/pockets/${application.pocketId}`)
-    } else if (application.jobId) {
-      router.push(`/dashboard/jobs/${application.jobId}`)
-    }
-  }, [router])
+  // Handler for viewing associated pocket (used by detail modal)
+  const _handleViewPocket = useCallback(
+    (application: Application) => {
+      if (application.pocketId) {
+        router.push(`/dashboard/pockets/${application.pocketId}`)
+      } else if (application.jobId) {
+        router.push(`/dashboard/jobs/${application.jobId}`)
+      }
+    },
+    [router]
+  )
+  void _handleViewPocket // Suppress unused warning - available for future use
 
-  const handleUpcomingEventClick = useCallback((applicationId: string) => {
-    const application = applications.find(app => app.id === applicationId)
-    if (application) {
-      handleApplicationClick(application)
-    }
-  }, [applications, handleApplicationClick])
+  const handleUpcomingEventClick = useCallback(
+    (applicationId: string) => {
+      const application = applications.find((app) => app.id === applicationId)
+      if (application) {
+        handleApplicationClick(application)
+      }
+    },
+    [applications, handleApplicationClick]
+  )
 
-  // Error state
+  const stages: DisplayStage[] = ['Saved', 'Applied', 'Interview', 'Offer', 'Rejected']
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // ERROR STATE
+  // ─────────────────────────────────────────────────────────────────────────────
   if (error && !isLoading) {
     return (
-      <div className="max-w-5xl mx-auto space-y-6">
+      <main className="jw-grain relative mx-auto max-w-[1200px] px-4 py-6 lg:px-8 lg:py-10">
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <XCircle className="w-16 h-16 text-red-400 mb-4" />
-          <h2 className="text-xl font-semibold text-white mb-2">Error Loading Applications</h2>
-          <p className="text-slate-400 mb-6">{error}</p>
+          <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl border border-destructive/25 bg-destructive/10 text-destructive">
+            <RefreshCw size={28} />
+          </div>
+          <h2
+            className="mt-6 text-xl font-black text-foreground"
+            style={{ fontFamily: 'var(--font-serif), Satoshi, sans-serif' }}
+          >
+            Error Loading Applications
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">{error}</p>
           <button
             onClick={fetchApplications}
-            className="flex items-center gap-2 px-6 py-3 bg-[#ffc425] text-[#020617] font-semibold rounded-xl hover:bg-[#ffd768] transition-colors"
+            className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-extrabold text-primary-foreground hover:opacity-95"
           >
-            <RefreshCw size={20} />
+            <RefreshCw size={16} />
             Try Again
           </button>
         </div>
-      </div>
+      </main>
     )
   }
 
-  // Empty state
+  // ─────────────────────────────────────────────────────────────────────────────
+  // EMPTY STATE
+  // ─────────────────────────────────────────────────────────────────────────────
   if (!isLoading && applications.length === 0) {
     return (
-      <div className="max-w-5xl mx-auto space-y-6">
+      <main className="jw-grain relative mx-auto max-w-[1200px] px-4 py-6 lg:px-8 lg:py-10">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">Applications</h1>
-            <p className="text-slate-400 mt-1">Track your job applications</p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-2xl border border-primary/25 bg-primary/10 text-primary">
+              <Briefcase size={18} />
+            </div>
+            <div>
+              <h1
+                className="text-3xl font-black tracking-tight"
+                style={{ fontFamily: 'var(--font-serif), Satoshi, sans-serif' }}
+              >
+                Applications
+              </h1>
+              <p className="mt-1 text-sm text-muted-foreground">Track your job applications</p>
+            </div>
           </div>
 
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#ffc425] text-[#020617] font-semibold rounded-xl hover:bg-[#ffd768] transition-colors touch-target w-fit"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-extrabold text-primary-foreground hover:opacity-95"
           >
-            <Plus size={20} />
-            <span>Add Application</span>
+            <Plus size={16} />
+            Add Application
           </button>
         </div>
 
-        {/* Empty State */}
+        {/* Empty State Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-[#0f172a] border border-slate-800 rounded-2xl p-8 sm:p-12"
+          className="mt-8 rounded-3xl border border-border bg-card/40 p-10 text-center"
         >
-          <div className="flex flex-col items-center justify-center text-center">
-            <div className="w-20 h-20 rounded-full bg-slate-800 flex items-center justify-center mb-6">
-              <FolderOpen size={40} className="text-slate-600" />
-            </div>
-            <h2 className="text-xl font-semibold text-white mb-2">
-              No applications yet
-            </h2>
-            <p className="text-slate-400 max-w-md mb-6">
-              Start by searching for jobs and applying! We&apos;ll help you track every
-              application from discovery to offer.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Link
-                href="/dashboard/jobs"
-                className="flex items-center gap-2 px-6 py-3 bg-[#ffc425] text-[#020617] font-semibold rounded-xl hover:bg-[#ffd768] transition-colors touch-target"
-              >
-                <span>Search Jobs</span>
-                <ArrowRight size={20} />
-              </Link>
-              <button
-                onClick={() => setIsAddModalOpen(true)}
-                className="flex items-center gap-2 px-6 py-3 border border-slate-700 text-white font-semibold rounded-xl hover:bg-slate-800 transition-colors touch-target"
-              >
-                <Plus size={20} />
-                <span>Add Manually</span>
-              </button>
-            </div>
+          <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl border border-primary/25 bg-primary/10 text-primary">
+            <FolderOpen size={28} />
+          </div>
+          <div
+            className="mt-6 text-xl font-black text-foreground"
+            style={{ fontFamily: 'var(--font-serif), Satoshi, sans-serif' }}
+          >
+            No applications yet
+          </div>
+          <p className="mt-2 max-w-md mx-auto text-sm text-muted-foreground">
+            Start by searching for jobs and applying! We&apos;ll help you track every application from discovery to offer.
+          </p>
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              href="/dashboard/jobs"
+              className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-extrabold text-primary-foreground hover:opacity-95"
+            >
+              Search Jobs
+              <ArrowRight size={16} />
+            </Link>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="inline-flex items-center gap-2 rounded-2xl border border-border bg-card/40 px-5 py-3 text-sm font-extrabold text-foreground hover:bg-card/60"
+            >
+              <Plus size={16} />
+              Add Manually
+            </button>
           </div>
         </motion.div>
 
-        <AddApplicationModal
-          isOpen={isAddModalOpen}
-          onClose={() => setIsAddModalOpen(false)}
-          onAdd={handleAddApplication}
-        />
-      </div>
+        <AddApplicationModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAdd={handleAddApplication} />
+      </main>
     )
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // MAIN VIEW
+  // ─────────────────────────────────────────────────────────────────────────────
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <main className="jw-grain relative mx-auto max-w-[1200px] px-4 py-6 lg:px-8 lg:py-10">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Applications</h1>
-          <p className="text-slate-400 mt-1">Track your job applications</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="grid h-10 w-10 place-items-center rounded-2xl border border-primary/25 bg-primary/10 text-primary">
+            <Briefcase size={18} />
+          </div>
+          <div>
+            <h1
+              className="text-3xl font-black tracking-tight"
+              style={{ fontFamily: 'var(--font-serif), Satoshi, sans-serif' }}
+            >
+              Applications
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Track your pipeline by stage — and by the mode you&apos;re optimizing for.
+            </p>
+          </div>
         </div>
 
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#ffc425] text-[#020617] font-semibold rounded-xl hover:bg-[#ffd768] transition-colors touch-target w-fit"
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-extrabold text-primary-foreground hover:opacity-95"
         >
-          <Plus size={20} />
-          <span>Add Application</span>
+          <Plus size={16} />
+          Add Application
         </button>
       </div>
 
       {/* Upcoming Events */}
-      <UpcomingEventsCard onEventClick={handleUpcomingEventClick} />
+      <div className="mt-5">
+        <UpcomingEventsCard onEventClick={handleUpcomingEventClick} />
+      </div>
 
       {/* Stats Cards */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-[#0f172a] border border-slate-800 rounded-xl p-4"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                <Send size={20} className="text-blue-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-white">{stats.applied}</p>
-                <p className="text-sm text-slate-400">Applied</p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="bg-[#0f172a] border border-slate-800 rounded-xl p-4"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                <Users size={20} className="text-purple-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-white">{stats.interviewing}</p>
-                <p className="text-sm text-slate-400">Interviewing</p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-[#0f172a] border border-slate-800 rounded-xl p-4"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                <Gift size={20} className="text-green-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-white">{stats.offers}</p>
-                <p className="text-sm text-slate-400">Offers</p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-            className="bg-[#0f172a] border border-slate-800 rounded-xl p-4"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[#ffc425]/10 flex items-center justify-center">
-                <TrendingUp size={20} className="text-[#ffc425]" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-white">{stats.total}</p>
-                <p className="text-sm text-slate-400">Total</p>
-              </div>
-            </div>
-          </motion.div>
+        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatCard icon={Send} label="Applied" value={stats.applied} color="border-blue-500/25 bg-blue-500/10 text-blue-500" />
+          <StatCard icon={Users} label="Interviewing" value={stats.interviewing} color="border-purple-500/25 bg-purple-500/10 text-purple-500" />
+          <StatCard icon={Gift} label="Offers" value={stats.offers} color="border-green-500/25 bg-green-500/10 text-green-500" />
+          <StatCard icon={TrendingUp} label="Total" value={stats.total} color="border-primary/25 bg-primary/10 text-primary" />
         </div>
       )}
 
       {/* Search */}
-      <div className="relative">
-        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+      <div className="mt-5 relative">
+        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search applications..."
-          className="w-full pl-11 pr-4 py-3 rounded-xl bg-[#0f172a] border border-slate-800 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#ffc425]/50 focus:border-transparent"
+          className="w-full rounded-2xl border border-border bg-card/40 py-3 pl-11 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/25"
         />
       </div>
 
-      {/* Tab Filters */}
-      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
-        {filterTabs.map((tab) => {
-          const count = getTabCount(tab.id)
-          const isActive = activeTab === tab.id
-
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`
-                flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap
-                transition-colors touch-target
-                ${isActive
-                  ? 'bg-[#ffc425]/10 text-[#ffc425] border border-[#ffc425]/20'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }
-              `}
-            >
-              <span>{tab.label}</span>
-              <span className={`
-                px-2 py-0.5 rounded-full text-xs
-                ${isActive ? 'bg-[#ffc425]/20' : 'bg-slate-700'}
-              `}>
-                {count}
-              </span>
-            </button>
-          )
-        })}
+      {/* Mode Chips */}
+      <div className="mt-5 flex flex-wrap items-center gap-2">
+        <ModeChip active={activeMode === 'all'} mode="all" onClick={() => setActiveMode('all')} />
+        <ModeChip active={activeMode === 'survival'} mode="survival" onClick={() => setActiveMode('survival')} />
+        <ModeChip active={activeMode === 'bridge'} mode="bridge" onClick={() => setActiveMode('bridge')} />
+        <ModeChip active={activeMode === 'career'} mode="career" onClick={() => setActiveMode('career')} />
       </div>
 
-      {/* Application List */}
-      <ApplicationList
-        applications={filteredApplications}
-        isLoading={isLoading}
-        onApplicationClick={handleApplicationClick}
-        onEdit={handleApplicationClick}
-        onDelete={handleDeleteApplication}
-        onViewPocket={handleViewPocket}
-      />
+      {/* Stage Pills */}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <StagePill active={activeStage === 'All'} label="All" count={applications.length} onClick={() => setActiveStage('All')} />
+        {stages.map((s) => (
+          <StagePill key={s} active={activeStage === s} label={s} count={stageCounts[s]} onClick={() => setActiveStage(s)} />
+        ))}
+      </div>
 
-      {/* No results */}
-      {!isLoading && filteredApplications.length === 0 && applications.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center py-12"
-        >
-          <Search size={40} className="mx-auto text-slate-600 mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">No matching applications</h3>
-          <p className="text-slate-400">
-            {searchQuery
-              ? `No applications match "${searchQuery}"`
-              : `No applications with ${activeTab} status`}
-          </p>
-        </motion.div>
-      )}
+      {/* Application Cards */}
+      <div className="mt-5 grid gap-3 lg:grid-cols-2">
+        <AnimatePresence mode="popLayout">
+          {isLoading ? (
+            // Loading skeleton
+            [...Array(4)].map((_, i) => (
+              <motion.div
+                key={`skeleton-${i}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="h-32 rounded-3xl border border-border bg-card/40 animate-pulse"
+              />
+            ))
+          ) : filteredApplications.length === 0 ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="lg:col-span-2 rounded-3xl border border-border bg-card/40 p-10 text-center"
+            >
+              <div className="mx-auto grid h-14 w-14 place-items-center rounded-3xl border border-primary/25 bg-primary/10 text-primary">
+                <Search size={22} />
+              </div>
+              <div
+                className="mt-4 text-xl font-black text-foreground"
+                style={{ fontFamily: 'var(--font-serif), Satoshi, sans-serif' }}
+              >
+                No matching applications
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {searchQuery ? `No applications match "${searchQuery}"` : 'Try switching mode or stage — or add your next application.'}
+              </p>
+            </motion.div>
+          ) : (
+            filteredApplications.map((app) => (
+              <motion.div
+                key={app.id}
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+              >
+                <AppCard app={app} mode={deriveMode(app)} onClick={() => handleApplicationClick(app)} />
+              </motion.div>
+            ))
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Modals */}
-      <AddApplicationModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAdd={handleAddApplication}
-      />
+      <AddApplicationModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAdd={handleAddApplication} />
 
       <ApplicationDetailModal
         isOpen={isDetailModalOpen}
@@ -471,6 +687,6 @@ export default function ApplicationsPage() {
         onUpdate={handleUpdateApplication}
         onDelete={handleDeleteApplication}
       />
-    </div>
+    </main>
   )
 }
