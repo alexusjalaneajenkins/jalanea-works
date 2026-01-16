@@ -19,15 +19,8 @@ import { cn } from '@/lib/utils/cn'
 import { primaryNavItems, secondaryNavItems, footerNavItems } from './nav'
 import { useJalaneaMode } from '@/lib/mode/ModeContext'
 import { TESTABLE_TIERS, setTierOverride, getTierOverride, type TestableTier } from '@/lib/owner'
-
-function PlanChip({ tier }: { tier: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
-      <Sparkles size={10} />
-      {tier}
-    </span>
-  )
-}
+import { useAuth } from '@/components/providers/auth-provider'
+import { TierBadge, type Tier } from '@/components/dashboard/TierBadge'
 
 interface SideRailProps {
   userTier?: string
@@ -106,6 +99,12 @@ export function SideRail({
   const pathname = usePathname()
   const router = useRouter()
   const { mode } = useJalaneaMode()
+  const { signOut } = useAuth()
+
+  const handleSignOut = async () => {
+    await signOut()
+    router.push('/')
+  }
 
   const handleTierChange = () => {
     // Reload the page to apply new tier
@@ -143,7 +142,7 @@ export function SideRail({
               <div className="text-[11px] text-muted-foreground font-medium">Make It Work</div>
             </div>
           </div>
-          <PlanChip tier={userTier} />
+          <TierBadge tier={userTier.toLowerCase() as Tier} size="sm" />
         </div>
 
         {/* Owner Tier Switcher */}
@@ -291,7 +290,10 @@ export function SideRail({
             <MessageSquare size={14} />
             Feedback
           </button>
-          <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors">
+          <button
+            onClick={handleSignOut}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+          >
             <LogOut size={14} />
             Sign out
           </button>
