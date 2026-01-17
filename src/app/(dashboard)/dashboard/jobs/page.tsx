@@ -115,7 +115,7 @@ function TogglePill({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'rounded-xl border px-3 py-2 text-xs font-bold transition-all duration-200',
+        'rounded-xl border px-3 py-2.5 text-xs font-bold transition-all duration-200 min-h-[44px]',
         active
           ? 'border-primary/40 bg-primary/15 text-primary shadow-sm'
           : 'border-border bg-card/60 text-muted-foreground hover:border-primary/20 hover:text-foreground'
