@@ -24,7 +24,7 @@ import {
   Briefcase,
   Bus,
   CheckCircle2,
-  Circle,
+  FileText,
   Flame,
   HeartHandshake,
   Lightbulb,
@@ -41,6 +41,10 @@ import { useAuth } from '@/components/providers/auth-provider'
 import { cn } from '@/lib/utils/cn'
 import { useJalaneaMode, modeLabel, modeDescription } from '@/lib/mode/ModeContext'
 import { useDashboardData, useNextSteps } from '@/hooks/useDashboardData'
+import {
+  OnboardingGatekeeper,
+  type OnboardingStep,
+} from '@/components/dashboard/OnboardingGatekeeper'
 
 // ---------------- COMPONENTS ----------------
 
@@ -108,11 +112,13 @@ function DailyPlanRow({
   isNew?: boolean
   onClick?: () => void
 }) {
+  // Badge colors: Yellow reserved for ACTION buttons only
+  // Status badges use neutral or cool colors
   const badgeStyles = {
-    safe: 'border-primary/30 bg-primary/10 text-primary',
+    safe: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
     warn: 'border-destructive/30 bg-destructive/10 text-destructive',
     lynx: 'border-border bg-background/60 text-muted-foreground',
-    featured: 'border-primary/40 bg-primary/15 text-primary',
+    featured: 'border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400',
   }
 
   const badgeIcons = {
@@ -187,6 +193,105 @@ function AdvantageItem({
   )
 }
 
+// Daily Plan content component (extracted for reuse with OnboardingGatekeeper)
+function DailyPlanContent({
+  isLoading,
+  dayPlan,
+  router,
+  setSeed,
+  refresh,
+}: {
+  isLoading: boolean
+  dayPlan: Array<{
+    id: string
+    title: string
+    org: string
+    meta: string
+    badge: { label: string; tone: 'safe' | 'warn' | 'lynx' | 'featured' }
+    isNew?: boolean
+  }>
+  router: ReturnType<typeof useRouter>
+  setSeed: React.Dispatch<React.SetStateAction<number>>
+  refresh: () => void
+}) {
+  return (
+    <div className="rounded-2xl md:rounded-[2rem] border border-border bg-card/60 backdrop-blur-sm p-4 sm:p-5 md:p-7">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2
+            className="text-lg font-black text-foreground"
+            style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
+          >
+            Your Daily Plan
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Curated jobs based on your skills, location, and goals.
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            setSeed((s) => s + 1)
+            refresh()
+          }}
+          className="inline-flex items-center gap-2 rounded-xl border border-border bg-background/60 px-4 py-2 text-sm font-bold text-foreground hover:bg-background/80 transition-colors"
+        >
+          <Sparkles size={14} className="text-primary" />
+          Refresh
+        </button>
+      </div>
+
+      <div className="mt-5 space-y-3">
+        {isLoading ? (
+          // Loading skeleton
+          Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="animate-pulse rounded-2xl border border-border bg-card/40 p-4"
+            >
+              <div className="flex gap-3">
+                <div className="h-6 w-20 rounded-lg bg-muted" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-3/4 rounded bg-muted" />
+                  <div className="h-3 w-1/2 rounded bg-muted" />
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          dayPlan.map((job) => (
+            <DailyPlanRow
+              key={job.id}
+              title={job.title}
+              org={job.org}
+              meta={job.meta}
+              badge={job.badge}
+              isNew={job.isNew}
+              onClick={() => router.push(`/dashboard/jobs?job=${job.id}`)}
+            />
+          ))
+        )}
+      </div>
+
+      <div className="mt-5 flex flex-wrap gap-2">
+        <Link
+          href="/dashboard/jobs"
+          className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity"
+        >
+          View all jobs
+          <ArrowRight size={14} />
+        </Link>
+        <Link
+          href="/dashboard/resume"
+          className="inline-flex items-center gap-2 rounded-2xl border border-border bg-background/60 px-5 py-3 text-sm font-bold text-foreground hover:bg-background/80 transition-colors"
+        >
+          Resume Studio
+          <Sparkles size={14} className="text-primary" />
+        </Link>
+      </div>
+    </div>
+  )
+}
+
 // ---------------- MAIN PAGE ----------------
 
 export default function DashboardHomePage() {
@@ -194,7 +299,7 @@ export default function DashboardHomePage() {
   const { user } = useAuth()
   const userId = user?.id
   const { mode } = useJalaneaMode()
-  const [seed, setSeed] = useState(0)
+  const [, setSeed] = useState(0) // Used to trigger refresh
 
   // Fetch dashboard data
   const {
@@ -298,19 +403,45 @@ export default function DashboardHomePage() {
     })
   }, [dailyPlanJobs])
 
-  // Step navigation
-  const getStepHref = (stepId: string) => {
-    switch (stepId) {
-      case 'onboarding':
-        return '/foundation'
-      case 'resume':
-        return '/dashboard/resume'
-      case 'first-apply':
-        return '/dashboard/jobs'
-      default:
-        return '/dashboard'
+  // Transform nextSteps into OnboardingStep format
+  const onboardingSteps: OnboardingStep[] = useMemo(() => {
+    // Always include "Account Created" as completed (endowed progress effect)
+    const accountStep: OnboardingStep = {
+      id: 'account',
+      label: 'Account Created',
+      description: 'Welcome to JalaneaWorks!',
+      href: '/dashboard',
+      icon: <CheckCircle2 size={20} />,
+      completed: true, // Always completed - you're logged in!
     }
-  }
+
+    // Map the remaining steps from the API
+    const mappedSteps: OnboardingStep[] = nextSteps.map((step) => ({
+      id: step.id,
+      label: step.label,
+      description: step.id === 'onboarding'
+        ? 'Tell us about your skills and experience'
+        : step.id === 'resume'
+        ? 'Let us help translate your experience'
+        : 'Take the first step on your journey',
+      href: step.id === 'onboarding'
+        ? '/foundation'
+        : step.id === 'resume'
+        ? '/dashboard/resume'
+        : '/dashboard/jobs',
+      icon: step.id === 'onboarding'
+        ? <Target size={20} />
+        : step.id === 'resume'
+        ? <FileText size={20} />
+        : <Briefcase size={20} />,
+      completed: step.completed,
+    }))
+
+    return [accountStep, ...mappedSteps]
+  }, [nextSteps])
+
+  // Check if onboarding is complete
+  const isOnboardingComplete = onboardingSteps.every((s) => s.completed)
 
   return (
     <main className="jw-grain relative mx-auto max-w-[1200px] px-3 py-4 sm:px-4 md:px-6 md:py-6 lg:px-8 lg:py-10">
@@ -347,9 +478,28 @@ export default function DashboardHomePage() {
                   </div>
                 </motion.div>
 
+                {/* Mode badges - use color coding based on urgency, NOT yellow */}
                 <div className="mt-5 flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-bold text-primary">
-                    <Target size={14} />
+                  <span
+                    className={cn(
+                      'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-bold',
+                      mode === 'survival'
+                        ? 'border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                        : mode === 'bridge'
+                        ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                        : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'h-2 w-2 rounded-full',
+                        mode === 'survival'
+                          ? 'bg-rose-500'
+                          : mode === 'bridge'
+                          ? 'bg-amber-500'
+                          : 'bg-emerald-500'
+                      )}
+                    />
                     {modeLabel(mode)} Mode
                   </span>
                   <span className="inline-flex items-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-2 text-sm font-semibold text-muted-foreground">
@@ -412,163 +562,29 @@ export default function DashboardHomePage() {
           </div>
         </div>
 
-        {/* Daily Plan */}
+        {/* Daily Plan with Onboarding Gatekeeper */}
         <div className="lg:col-span-8">
-          <div className="rounded-2xl md:rounded-[2rem] border border-border bg-card/60 backdrop-blur-sm p-4 sm:p-5 md:p-7">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2
-                  className="text-lg font-black text-foreground"
-                  style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
-                >
-                  Your Daily Plan
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Curated jobs based on your skills, location, and goals.
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setSeed((s) => s + 1)
-                  refresh()
-                }}
-                className="inline-flex items-center gap-2 rounded-xl border border-border bg-background/60 px-4 py-2 text-sm font-bold text-foreground hover:bg-background/80 transition-colors"
-              >
-                <Sparkles size={14} className="text-primary" />
-                Refresh
-              </button>
-            </div>
-
-            <div className="mt-5 space-y-3">
-              {isLoading ? (
-                // Loading skeleton
-                Array.from({ length: 3 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="animate-pulse rounded-2xl border border-border bg-card/40 p-4"
-                  >
-                    <div className="flex gap-3">
-                      <div className="h-6 w-20 rounded-lg bg-muted" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-4 w-3/4 rounded bg-muted" />
-                        <div className="h-3 w-1/2 rounded bg-muted" />
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                dayPlan.map((job) => (
-                  <DailyPlanRow
-                    key={job.id}
-                    title={job.title}
-                    org={job.org}
-                    meta={job.meta}
-                    badge={job.badge}
-                    isNew={job.isNew}
-                    onClick={() => router.push(`/dashboard/jobs?job=${job.id}`)}
-                  />
-                ))
-              )}
-            </div>
-
-            <div className="mt-5 flex flex-wrap gap-2">
-              <Link
-                href="/dashboard/jobs"
-                className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity"
-              >
-                View all jobs
-                <ArrowRight size={14} />
-              </Link>
-              <Link
-                href="/dashboard/resume"
-                className="inline-flex items-center gap-2 rounded-2xl border border-border bg-background/60 px-5 py-3 text-sm font-bold text-foreground hover:bg-background/80 transition-colors"
-              >
-                Resume Studio
-                <Sparkles size={14} className="text-primary" />
-              </Link>
-            </div>
-          </div>
-
-          {/* Next Steps Card - Show only if incomplete steps exist */}
-          {!stepsLoading && nextSteps.some((s) => !s.completed) && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="mt-4 md:mt-6 rounded-2xl md:rounded-[2rem] border border-border bg-card/60 backdrop-blur-sm p-4 sm:p-5 md:p-7"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2
-                  className="text-lg font-black text-foreground"
-                  style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
-                >
-                  Get Started
-                </h2>
-                <span className="text-sm text-muted-foreground">
-                  {nextSteps.filter((s) => s.completed).length}/{nextSteps.length} complete
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                {nextSteps.map((step) => (
-                  <Link
-                    key={step.id}
-                    href={getStepHref(step.id)}
-                    className={cn(
-                      'flex items-center gap-4 p-4 rounded-xl border transition-colors',
-                      step.completed
-                        ? 'bg-primary/5 border-primary/20 cursor-default'
-                        : 'bg-background/40 border-border hover:border-primary/20 hover:bg-background/60'
-                    )}
-                  >
-                    {step.completed ? (
-                      <CheckCircle2 size={24} className="text-primary flex-shrink-0" />
-                    ) : (
-                      <Circle size={24} className="text-muted-foreground flex-shrink-0" />
-                    )}
-                    <span
-                      className={cn(
-                        'flex-1 font-semibold',
-                        step.completed ? 'text-primary' : 'text-foreground'
-                      )}
-                    >
-                      {step.label}
-                    </span>
-                    {!step.completed && <ArrowRight size={20} className="text-muted-foreground" />}
-                  </Link>
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {/* All Steps Complete - Celebration */}
-          {!stepsLoading && nextSteps.every((s) => s.completed) && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="mt-4 md:mt-6 rounded-2xl md:rounded-[2rem] border border-primary/20 bg-primary/5 p-4 md:p-6 text-center"
-            >
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center jw-glow-card">
-                <CheckCircle2 size={32} className="text-primary" />
-              </div>
-              <h3
-                className="text-lg font-black text-foreground mb-2"
-                style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
-              >
-                You&apos;re all set up!
-              </h3>
-              <p className="text-muted-foreground text-sm mb-4">
-                Your profile is complete. Now focus on your daily job applications.
-              </p>
-              <Link
-                href="/dashboard/jobs"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-primary-foreground font-bold hover:opacity-90 transition-opacity"
-              >
-                Browse Jobs
-                <ArrowRight size={18} />
-              </Link>
-            </motion.div>
+          {/* Show OnboardingGatekeeper if steps are not complete */}
+          {!stepsLoading && !isOnboardingComplete ? (
+            <OnboardingGatekeeper steps={onboardingSteps}>
+              {/* This is the Daily Plan content that gets blurred/locked */}
+              <DailyPlanContent
+                isLoading={isLoading}
+                dayPlan={dayPlan}
+                router={router}
+                setSeed={setSeed}
+                refresh={refresh}
+              />
+            </OnboardingGatekeeper>
+          ) : (
+            /* Show Daily Plan directly when onboarding is complete */
+            <DailyPlanContent
+              isLoading={isLoading}
+              dayPlan={dayPlan}
+              router={router}
+              setSeed={setSeed}
+              refresh={refresh}
+            />
           )}
         </div>
 

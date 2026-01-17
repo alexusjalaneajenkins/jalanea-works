@@ -57,7 +57,7 @@ export const navItems: NavItem[] = [
   },
   {
     key: 'pockets',
-    label: 'Pockets',
+    label: 'Job Pockets',
     to: '/dashboard/pockets',
     icon: <Target size={18} />,
     description: 'Your job intelligence reports'
