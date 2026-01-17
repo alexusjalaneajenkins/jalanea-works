@@ -1,10 +1,10 @@
 'use client'
 
 /**
- * Job Pockets Page - "Shining Light" Design
+ * My Pockets Page - "Shining Light" Design
  *
  * Entry-level focused pocket management with:
- * - Regular / Advanced / Professional levels
+ * - Status-based filtering (Active / Applied / Expired)
  * - Clean, professional card design
  * - Gold "Shining Light" accents
  * - Credit tracking
@@ -87,41 +87,40 @@ interface UsageData {
   >
 }
 
-type LevelFilter = 'all' | 'essential' | 'starter' | 'premium' | 'professional'
+type StatusFilter = 'all' | 'active' | 'applied' | 'expired'
 
 // -------------------- COMPONENTS --------------------
 
-function LevelTab({
+function StatusTab({
   value,
   active,
   count,
   onClick,
 }: {
-  value: string
+  value: StatusFilter
   active: boolean
   count: number
   onClick: () => void
 }) {
-  const labels: Record<string, string> = {
-    all: 'All Pockets',
-    essential: 'Regular',
-    starter: 'Regular',
-    premium: 'Advanced',
-    professional: 'Professional',
+  const labels: Record<StatusFilter, string> = {
+    all: 'All',
+    active: 'Active',
+    applied: 'Applied',
+    expired: 'Expired',
   }
 
   return (
     <button
       onClick={onClick}
       className={cn(
-        'relative rounded-2xl px-4 py-2.5 text-sm font-bold transition-all duration-200',
+        'relative h-[42px] rounded-2xl px-4 text-sm font-bold transition-all duration-200',
         active
           ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
           : 'bg-card/60 text-muted-foreground hover:bg-card/80 hover:text-foreground'
       )}
     >
       <span className="flex items-center gap-2">
-        {labels[value] || value}
+        {labels[value]}
         <span
           className={cn(
             'rounded-lg px-1.5 py-0.5 text-[10px] font-bold',
@@ -448,44 +447,115 @@ function PocketCard({
 
 function EmptyState({
   favoritesOnly,
+  statusFilter,
   onClear,
 }: {
   favoritesOnly: boolean
+  statusFilter: StatusFilter
   onClear: () => void
 }) {
+  // Different empty states based on filter
+  if (favoritesOnly) {
+    return (
+      <div className="rounded-3xl border border-border bg-card/60 p-10 text-center">
+        <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl border border-border bg-muted/30 text-muted-foreground">
+          <Star size={28} />
+        </div>
+        <h2
+          className="mt-5 text-xl font-black text-foreground"
+          style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
+        >
+          No pinned pockets
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
+          Star your favorite pockets to find them quickly here.
+        </p>
+        <button
+          onClick={onClear}
+          className="mt-6 inline-flex items-center gap-2 rounded-2xl border border-border bg-background/60 px-5 py-3 text-sm font-bold text-foreground hover:bg-background/80 transition-colors"
+        >
+          View all pockets
+        </button>
+      </div>
+    )
+  }
+
+  if (statusFilter === 'applied') {
+    return (
+      <div className="rounded-3xl border border-border bg-card/60 p-10 text-center">
+        <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl border border-border bg-muted/30 text-muted-foreground">
+          <ThumbsUp size={28} />
+        </div>
+        <h2
+          className="mt-5 text-xl font-black text-foreground"
+          style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
+        >
+          No applications yet
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
+          When you apply to jobs through your pockets, they&apos;ll appear here.
+        </p>
+        <button
+          onClick={onClear}
+          className="mt-6 inline-flex items-center gap-2 rounded-2xl border border-border bg-background/60 px-5 py-3 text-sm font-bold text-foreground hover:bg-background/80 transition-colors"
+        >
+          View all pockets
+        </button>
+      </div>
+    )
+  }
+
+  if (statusFilter === 'expired') {
+    return (
+      <div className="rounded-3xl border border-border bg-card/60 p-10 text-center">
+        <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl border border-border bg-muted/30 text-muted-foreground">
+          <Clock size={28} />
+        </div>
+        <h2
+          className="mt-5 text-xl font-black text-foreground"
+          style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
+        >
+          No expired pockets
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
+          Expired pockets will appear here. Good news — none yet!
+        </p>
+        <button
+          onClick={onClear}
+          className="mt-6 inline-flex items-center gap-2 rounded-2xl border border-border bg-background/60 px-5 py-3 text-sm font-bold text-foreground hover:bg-background/80 transition-colors"
+        >
+          View all pockets
+        </button>
+      </div>
+    )
+  }
+
+  // Default empty state - no pockets at all
   return (
-    <div className="rounded-3xl border border-border bg-card/60 p-10 text-center">
-      <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl border border-primary/30 bg-primary/10 text-primary">
-        <Folder size={28} />
+    <div className="rounded-3xl border border-dashed border-border bg-card/30 p-12 text-center">
+      <div className="mx-auto grid h-20 w-20 place-items-center rounded-3xl border border-primary/20 bg-primary/5 text-primary/40">
+        <Folder size={36} />
       </div>
       <h2
-        className="mt-5 text-xl font-black text-foreground"
+        className="mt-6 text-2xl font-black text-foreground"
         style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
       >
-        {favoritesOnly ? 'No pinned pockets' : 'No pockets yet'}
+        Organize your job search
       </h2>
-      <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
-        {favoritesOnly
-          ? "You haven't pinned any pockets yet. Star your best pockets to find them quickly!"
-          : 'Pockets help you track jobs and prepare for applications. Generate one for any role you\'re interested in.'}
+      <p className="mt-3 text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
+        Create a &ldquo;Pocket&rdquo; for any job you&apos;re interested in. We&apos;ll analyze the listing,
+        check for red flags, and help you prepare to apply.
       </p>
-      <div className="mt-6 flex items-center justify-center gap-3">
-        {favoritesOnly && (
-          <button
-            onClick={onClear}
-            className="inline-flex items-center gap-2 rounded-2xl border border-border bg-background/60 px-5 py-3 text-sm font-bold text-foreground hover:bg-background/80 transition-colors"
-          >
-            View all pockets
-          </button>
-        )}
-        <Link
-          href="/dashboard/jobs"
-          className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity"
-        >
-          <Wand2 size={16} />
-          Browse Jobs
-        </Link>
+      <div className="mt-4 text-xs text-muted-foreground/70 max-w-xs mx-auto">
+        Example: &ldquo;Downtown Service Jobs&rdquo; or &ldquo;Remote Support Roles&rdquo;
       </div>
+      <Link
+        href="/dashboard/jobs"
+        className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3.5 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity jw-glow-card"
+      >
+        <Wand2 size={16} />
+        Find Jobs to Pocket
+      </Link>
     </div>
   )
 }
@@ -505,7 +575,7 @@ export default function PocketsPage() {
 
   // Filters
   const [query, setQuery] = useState('')
-  const [levelFilter, setLevelFilter] = useState<LevelFilter>('all')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [favoritesOnly, setFavoritesOnly] = useState(false)
 
   // Fetch pockets
@@ -516,7 +586,6 @@ export default function PocketsPage() {
 
       try {
         const params = new URLSearchParams()
-        if (levelFilter !== 'all') params.set('tier', levelFilter)
         if (favoritesOnly) params.set('favorites_only', 'true')
 
         const response = await fetch(`/api/job-pockets?${params}`)
@@ -535,7 +604,7 @@ export default function PocketsPage() {
     }
 
     fetchPockets()
-  }, [levelFilter, favoritesOnly])
+  }, [favoritesOnly])
 
   // Toggle favorite
   const handleToggleFavorite = async (id: string, isFavorite: boolean) => {
@@ -577,6 +646,12 @@ export default function PocketsPage() {
     const q = query.trim().toLowerCase()
     return pockets
       .filter((p) => {
+        // Status filter
+        if (statusFilter === 'active' && (p.isExpired || p.appliedAfterViewing)) return false
+        if (statusFilter === 'applied' && !p.appliedAfterViewing) return false
+        if (statusFilter === 'expired' && !p.isExpired) return false
+
+        // Search filter
         if (!q) return true
         const title = p.job?.title?.toLowerCase() || ''
         const company = p.job?.company?.toLowerCase() || ''
@@ -584,18 +659,15 @@ export default function PocketsPage() {
         return title.includes(q) || company.includes(q) || location.includes(q)
       })
       .sort((a, b) => Number(Boolean(b.isFavorite)) - Number(Boolean(a.isFavorite)))
-  }, [pockets, query])
+  }, [pockets, query, statusFilter])
 
-  // Count by level
+  // Count by status
   const counts = useMemo(() => {
     return {
       all: pockets.length,
-      essential: pockets.filter((p) => p.tier === 'essential').length,
-      starter: pockets.filter((p) => p.tier === 'starter').length,
-      premium: pockets.filter((p) => p.tier === 'premium').length,
-      professional: pockets.filter(
-        (p) => p.tier === 'professional' || p.tier === 'unlimited'
-      ).length,
+      active: pockets.filter((p) => !p.isExpired && !p.appliedAfterViewing).length,
+      applied: pockets.filter((p) => p.appliedAfterViewing).length,
+      expired: pockets.filter((p) => p.isExpired).length,
     }
   }, [pockets])
 
@@ -613,7 +685,7 @@ export default function PocketsPage() {
                 className="text-3xl font-black tracking-tight text-foreground"
                 style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
               >
-                Job Pockets
+                My Pockets
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 <span className="font-semibold text-primary">{modeLabel(mode)} Mode</span> •{' '}
@@ -637,36 +709,36 @@ export default function PocketsPage() {
 
       {/* Filters row */}
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        {/* Level tabs */}
+        {/* Status tabs */}
         <div className="flex flex-wrap items-center gap-2">
-          <LevelTab
+          <StatusTab
             value="all"
-            active={levelFilter === 'all'}
+            active={statusFilter === 'all'}
             count={counts.all}
-            onClick={() => setLevelFilter('all')}
+            onClick={() => setStatusFilter('all')}
           />
-          <LevelTab
-            value="essential"
-            active={levelFilter === 'essential' || levelFilter === 'starter'}
-            count={counts.essential + counts.starter}
-            onClick={() => setLevelFilter('essential')}
+          <StatusTab
+            value="active"
+            active={statusFilter === 'active'}
+            count={counts.active}
+            onClick={() => setStatusFilter('active')}
           />
-          <LevelTab
-            value="premium"
-            active={levelFilter === 'premium'}
-            count={counts.premium}
-            onClick={() => setLevelFilter('premium')}
+          <StatusTab
+            value="applied"
+            active={statusFilter === 'applied'}
+            count={counts.applied}
+            onClick={() => setStatusFilter('applied')}
           />
-          <LevelTab
-            value="professional"
-            active={levelFilter === 'professional'}
-            count={counts.professional}
-            onClick={() => setLevelFilter('professional')}
+          <StatusTab
+            value="expired"
+            active={statusFilter === 'expired'}
+            count={counts.expired}
+            onClick={() => setStatusFilter('expired')}
           />
           <button
             onClick={() => setFavoritesOnly(!favoritesOnly)}
             className={cn(
-              'rounded-2xl px-4 py-2.5 text-sm font-bold transition-all duration-200 flex items-center gap-2',
+              'h-[42px] rounded-2xl px-4 text-sm font-bold transition-all duration-200 flex items-center gap-2',
               favoritesOnly
                 ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
                 : 'bg-card/60 text-muted-foreground hover:bg-card/80 hover:text-foreground'
@@ -677,9 +749,9 @@ export default function PocketsPage() {
           </button>
         </div>
 
-        {/* Search */}
-        <div className="flex items-center gap-2 rounded-2xl border border-border bg-card/60 px-4 py-2.5">
-          <Search size={16} className="text-muted-foreground" />
+        {/* Search - aligned with tabs height */}
+        <div className="flex h-[42px] items-center gap-2 rounded-2xl border border-border bg-card/60 px-4">
+          <Search size={16} className="text-muted-foreground shrink-0" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -698,28 +770,34 @@ export default function PocketsPage() {
         </div>
       ) : error ? (
         <div className="rounded-3xl border border-border bg-card/60 p-10 text-center">
-          <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl border border-destructive/30 bg-destructive/10 text-destructive">
-            <AlertCircle size={28} />
+          <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl border border-muted bg-muted/30 text-muted-foreground">
+            <RefreshCw size={28} />
           </div>
           <h2
             className="mt-5 text-xl font-black text-foreground"
             style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
           >
-            Error Loading Pockets
+            Couldn&apos;t load your pockets
           </h2>
-          <p className="mt-2 text-sm text-muted-foreground">{error}</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Something went wrong on our end. Give it another try?
+          </p>
           <button
             onClick={() => window.location.reload()}
             className="mt-6 inline-flex items-center gap-2 rounded-2xl border border-border bg-background/60 px-5 py-3 text-sm font-bold text-foreground hover:bg-background/80 transition-colors"
           >
             <RefreshCw size={16} />
-            Try Again
+            Refresh
           </button>
         </div>
       ) : visible.length === 0 ? (
         <EmptyState
           favoritesOnly={favoritesOnly}
-          onClear={() => setFavoritesOnly(false)}
+          statusFilter={statusFilter}
+          onClear={() => {
+            setFavoritesOnly(false)
+            setStatusFilter('all')
+          }}
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
