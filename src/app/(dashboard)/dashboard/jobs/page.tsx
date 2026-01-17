@@ -578,7 +578,7 @@ export default function JobsPage() {
           role="complementary"
           aria-label="Job filters"
         >
-          <div className="sticky top-24 rounded-3xl border border-border bg-card/60 backdrop-blur-sm p-5">
+          <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto rounded-3xl border border-border bg-card/60 backdrop-blur-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <SlidersHorizontal size={16} className="text-primary" />
