@@ -115,10 +115,10 @@ function TogglePill({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'rounded-xl border-2 px-3 py-2.5 text-xs font-bold transition-all duration-200 min-h-[44px]',
+        'rounded-xl border px-3 py-2.5 text-xs font-bold transition-all duration-200 min-h-[44px]',
         active
           ? 'border-primary bg-primary/10 text-foreground'
-          : 'border-transparent bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+          : 'border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground/30 hover:text-foreground'
       )}
     >
       {label}
@@ -706,10 +706,10 @@ export default function JobsPage() {
                     setFilters((f) => ({ ...f, lynxAccessible: !f.lynxAccessible }))
                   }
                   className={cn(
-                    'mt-3 w-full rounded-2xl border-2 px-4 py-2.5 text-sm font-bold transition-colors min-h-[44px]',
+                    'mt-3 w-full rounded-2xl border px-4 py-2.5 text-sm font-bold transition-colors min-h-[44px]',
                     filters.lynxAccessible
-                      ? 'border-primary bg-primary/15 text-foreground'
-                      : 'border-transparent bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                      ? 'border-primary bg-primary/10 text-foreground'
+                      : 'border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground/30 hover:text-foreground'
                   )}
                 >
                   {filters.lynxAccessible ? 'Filter enabled' : 'Enable transit filter'}
@@ -1016,10 +1016,10 @@ export default function JobsPage() {
                 <button
                   onClick={() => setFilters((f) => ({ ...f, lynxAccessible: !f.lynxAccessible }))}
                   className={cn(
-                    'mt-3 w-full rounded-2xl border-2 px-4 py-2.5 text-sm font-bold transition-colors min-h-[44px]',
+                    'mt-3 w-full rounded-2xl border px-4 py-2.5 text-sm font-bold transition-colors min-h-[44px]',
                     filters.lynxAccessible
-                      ? 'border-primary bg-primary/15 text-foreground'
-                      : 'border-transparent bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                      ? 'border-primary bg-primary/10 text-foreground'
+                      : 'border-border bg-muted/50 text-muted-foreground hover:border-muted-foreground/30 hover:text-foreground'
                   )}
                 >
                   {filters.lynxAccessible ? 'Filter enabled' : 'Enable transit filter'}
