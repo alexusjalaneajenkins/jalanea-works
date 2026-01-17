@@ -21,6 +21,7 @@ import {
   Bus,
   Compass,
   MapPin,
+  Search,
   ShieldCheck,
   Sparkles,
   Wallet,
@@ -752,19 +753,30 @@ export default function JobsPage() {
                     className="mt-4 sm:mt-5 text-lg sm:text-xl font-black text-foreground"
                     style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
                   >
-                    Jobs are loading...
+                    New jobs coming soon
                   </h2>
                   <p className="mt-2 text-xs sm:text-sm text-muted-foreground">
-                    We&apos;re finding entry-level opportunities in your area.
-                    Check back in a moment!
+                    We&apos;re adding entry-level opportunities in Central Florida daily.
+                    Try searching for a specific role or check back tomorrow!
                   </p>
-                  <button
-                    onClick={() => fetchJobs(true)}
-                    className="mt-5 sm:mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-5 sm:px-6 py-3 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity min-h-[44px]"
-                  >
-                    Refresh Jobs
-                    <ArrowRight size={16} />
-                  </button>
+                  <div className="mt-5 sm:mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <button
+                      onClick={() => {
+                        const searchInput = document.querySelector('input[aria-label="Search jobs"]') as HTMLInputElement
+                        if (searchInput) searchInput.focus()
+                      }}
+                      className="inline-flex items-center gap-2 rounded-full bg-primary px-5 sm:px-6 py-3 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity min-h-[44px]"
+                    >
+                      <Search size={16} />
+                      Search for a Role
+                    </button>
+                    <Link
+                      href="/dashboard"
+                      className="inline-flex items-center gap-2 rounded-full border border-border bg-background/60 px-5 sm:px-6 py-3 text-sm font-bold text-foreground hover:bg-background/80 transition-colors min-h-[44px]"
+                    >
+                      Back to Dashboard
+                    </Link>
+                  </div>
                 </>
               )}
             </div>
