@@ -595,11 +595,10 @@ export default function JobsPage() {
               className="text-2xl sm:text-3xl font-black tracking-tight text-foreground"
               style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
             >
-              Entry-Level Jobs
+              Job Search
             </h1>
             <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
-              Real opportunities. No gatekeeping.{' '}
-              <span className="text-primary font-semibold hidden sm:inline">You belong here.</span>
+              Entry-level opportunities. No gatekeeping.
             </p>
           </div>
         </div>

@@ -50,7 +50,7 @@ export const navItems: NavItem[] = [
   },
   {
     key: 'jobs',
-    label: 'Jobs',
+    label: 'Job Search',
     to: '/dashboard/jobs',
     icon: <Compass size={18} />,
     description: 'Browse entry-level opportunities'
