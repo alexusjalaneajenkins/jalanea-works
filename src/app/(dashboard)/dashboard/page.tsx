@@ -182,7 +182,7 @@ function AdvantageItem({
 }) {
   return (
     <div className="flex items-start gap-3 rounded-2xl border border-border bg-background/40 p-3">
-      <div className="grid h-8 w-8 place-items-center rounded-lg border border-primary/20 bg-primary/5 text-primary shrink-0">
+      <div className="grid h-8 w-8 place-items-center rounded-lg border border-border bg-muted/30 text-slate-500 dark:text-slate-400 shrink-0">
         {icon}
       </div>
       <div>
@@ -519,10 +519,10 @@ export default function DashboardHomePage() {
                 </Link>
                 <Link
                   href="/dashboard/pockets"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-border bg-background/60 px-5 py-3 text-sm font-bold text-foreground hover:bg-background/80 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <Target size={16} />
-                  Job Pockets
+                  Saved Pockets
                 </Link>
               </div>
             </div>
@@ -626,16 +626,16 @@ export default function DashboardHomePage() {
               />
               <AdvantageItem
                 icon={<Target size={16} />}
-                title="Job Pockets"
+                title="Saved Pockets"
                 desc="Turn any listing into an application strategy."
               />
             </div>
 
             <Link
               href="/dashboard/pockets"
-              className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-primary/30 bg-primary/10 px-5 py-3 text-sm font-bold text-primary hover:bg-primary/20 transition-colors"
+              className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-background/60 px-5 py-3 text-sm font-semibold text-foreground hover:bg-background/80 transition-colors"
             >
-              Start a Job Pocket
+              View Saved Pockets
               <ArrowRight size={14} />
             </Link>
           </div>

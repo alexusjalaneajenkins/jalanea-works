@@ -278,7 +278,7 @@ export function OnboardingGatekeeper({
               className={cn(
                 'flex items-center gap-3 p-3 rounded-xl border transition-all duration-200',
                 step.completed
-                  ? 'bg-primary/10 border-primary/30 cursor-default'
+                  ? 'bg-emerald-500/10 border-emerald-500/30 cursor-default'
                   : 'bg-background/60 border-border hover:border-primary/30 hover:bg-background/80'
               )}
               onClick={(e) => step.completed && e.preventDefault()}
@@ -287,7 +287,7 @@ export function OnboardingGatekeeper({
                 className={cn(
                   'flex h-9 w-9 items-center justify-center rounded-lg shrink-0 transition-colors',
                   step.completed
-                    ? 'bg-primary text-primary-foreground'
+                    ? 'bg-emerald-500 text-white'
                     : 'bg-muted/50 text-muted-foreground'
                 )}
               >
@@ -297,7 +297,7 @@ export function OnboardingGatekeeper({
                 <div
                   className={cn(
                     'text-sm font-bold truncate',
-                    step.completed ? 'text-primary' : 'text-foreground'
+                    step.completed ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'
                   )}
                 >
                   {step.label}
