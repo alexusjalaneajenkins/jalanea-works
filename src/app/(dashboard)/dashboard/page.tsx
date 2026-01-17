@@ -16,8 +16,8 @@
  * - Desktop (1024px+): 8/4 split grid, full padding
  */
 
-import { useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
+import { useMemo, useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowRight,
   BadgeCheck,
@@ -33,6 +33,7 @@ import {
   Star,
   Target,
   TrendingUp,
+  X,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -172,24 +173,44 @@ function DailyPlanRow({
 }
 
 function AdvantageItem({
+  id,
   icon,
   title,
   desc,
+  onDismiss,
 }: {
+  id: string
   icon: React.ReactNode
   title: string
   desc: string
+  onDismiss?: (id: string) => void
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-2xl border border-border bg-background/40 p-3">
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95, height: 0, marginBottom: 0 }}
+      transition={{ duration: 0.2 }}
+      className="group relative flex items-start gap-3 rounded-2xl border border-border bg-background/40 p-3"
+    >
       <div className="grid h-8 w-8 place-items-center rounded-lg border border-border bg-muted/30 text-slate-500 dark:text-slate-400 shrink-0">
         {icon}
       </div>
-      <div>
+      <div className="flex-1 min-w-0">
         <div className="text-sm font-bold text-foreground">{title}</div>
         <div className="mt-0.5 text-xs text-muted-foreground">{desc}</div>
       </div>
-    </div>
+      {onDismiss && (
+        <button
+          onClick={() => onDismiss(id)}
+          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground shrink-0"
+          aria-label={`Dismiss ${title}`}
+        >
+          <X size={14} />
+        </button>
+      )}
+    </motion.div>
   )
 }
 
@@ -294,12 +315,47 @@ function DailyPlanContent({
 
 // ---------------- MAIN PAGE ----------------
 
+// Advantage items configuration
+const ADVANTAGE_ITEMS = [
+  { id: 'scam-shield', icon: <ShieldCheck size={16} />, title: 'Scam Shield', desc: 'Blocks predatory job posts automatically.' },
+  { id: 'transit-filter', icon: <Bus size={16} />, title: 'Transit Filter', desc: 'Only see jobs you can actually reach.' },
+  { id: 'resume-translation', icon: <Sparkles size={16} />, title: 'Resume Translation', desc: 'Turn retail experience into office language.' },
+  { id: 'my-pockets', icon: <Target size={16} />, title: 'My Pockets', desc: 'Turn any listing into an application strategy.' },
+]
+
+const DISMISSED_ADVANTAGES_KEY = 'jw-dismissed-advantages'
+
 export default function DashboardHomePage() {
   const router = useRouter()
   const { user } = useAuth()
   const userId = user?.id
   const { mode } = useJalaneaMode()
   const [, setSeed] = useState(0) // Used to trigger refresh
+
+  // Dismissible advantage cards state
+  const [dismissedAdvantages, setDismissedAdvantages] = useState<string[]>([])
+
+  // Load dismissed advantages from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem(DISMISSED_ADVANTAGES_KEY)
+    if (stored) {
+      try {
+        setDismissedAdvantages(JSON.parse(stored))
+      } catch {
+        // Ignore invalid JSON
+      }
+    }
+  }, [])
+
+  // Handle dismissing an advantage card
+  const handleDismissAdvantage = (id: string) => {
+    const updated = [...dismissedAdvantages, id]
+    setDismissedAdvantages(updated)
+    localStorage.setItem(DISMISSED_ADVANTAGES_KEY, JSON.stringify(updated))
+  }
+
+  // Get visible advantage items
+  const visibleAdvantages = ADVANTAGE_ITEMS.filter(item => !dismissedAdvantages.includes(item.id))
 
   // Fetch dashboard data
   const {
@@ -478,26 +534,26 @@ export default function DashboardHomePage() {
                   </div>
                 </motion.div>
 
-                {/* Mode badges - use color coding based on urgency, NOT yellow */}
+                {/* Mode badges - softer colors, matches navbar segmented control */}
                 <div className="mt-5 flex flex-wrap items-center gap-2">
                   <span
                     className={cn(
                       'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-bold',
                       mode === 'survival'
-                        ? 'border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                        ? 'border-rose-400/20 bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-400/20'
                         : mode === 'bridge'
-                        ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                        : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                        ? 'border-amber-400/20 bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-400/20'
+                        : 'border-emerald-400/20 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-400/20'
                     )}
                   >
                     <span
                       className={cn(
-                        'h-2 w-2 rounded-full',
+                        'h-2 w-2 rounded-full animate-pulse',
                         mode === 'survival'
-                          ? 'bg-rose-500'
+                          ? 'bg-rose-400'
                           : mode === 'bridge'
-                          ? 'bg-amber-500'
-                          : 'bg-emerald-500'
+                          ? 'bg-amber-400'
+                          : 'bg-emerald-400'
                       )}
                     />
                     {modeLabel(mode)} Mode
@@ -505,6 +561,9 @@ export default function DashboardHomePage() {
                   <span className="inline-flex items-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-2 text-sm font-semibold text-muted-foreground">
                     <TrendingUp size={14} />
                     {modeDescription(mode)}
+                  </span>
+                  <span className="text-xs text-muted-foreground hidden sm:inline">
+                    Change mode in the navbar →
                   </span>
                 </div>
               </div>
@@ -522,7 +581,7 @@ export default function DashboardHomePage() {
                   className="inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <Target size={16} />
-                  Saved Pockets
+                  My Pockets
                 </Link>
               </div>
             </div>
@@ -608,34 +667,43 @@ export default function DashboardHomePage() {
               </div>
             </div>
 
-            <div className="mt-5 space-y-3">
-              <AdvantageItem
-                icon={<ShieldCheck size={16} />}
-                title="Scam Shield"
-                desc="Blocks predatory job posts automatically."
-              />
-              <AdvantageItem
-                icon={<Bus size={16} />}
-                title="Transit Filter"
-                desc="Only see jobs you can actually reach."
-              />
-              <AdvantageItem
-                icon={<Sparkles size={16} />}
-                title="Resume Translation"
-                desc="Turn retail experience into office language."
-              />
-              <AdvantageItem
-                icon={<Target size={16} />}
-                title="Saved Pockets"
-                desc="Turn any listing into an application strategy."
-              />
-            </div>
+            {visibleAdvantages.length > 0 ? (
+              <div className="mt-5 space-y-3">
+                <AnimatePresence mode="popLayout">
+                  {visibleAdvantages.map((item) => (
+                    <AdvantageItem
+                      key={item.id}
+                      id={item.id}
+                      icon={item.icon}
+                      title={item.title}
+                      desc={item.desc}
+                      onDismiss={handleDismissAdvantage}
+                    />
+                  ))}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <div className="mt-5 p-4 rounded-2xl border border-dashed border-border bg-muted/20 text-center">
+                <p className="text-sm text-muted-foreground">
+                  All tips dismissed.{' '}
+                  <button
+                    onClick={() => {
+                      setDismissedAdvantages([])
+                      localStorage.removeItem(DISMISSED_ADVANTAGES_KEY)
+                    }}
+                    className="text-primary hover:underline font-semibold"
+                  >
+                    Reset
+                  </button>
+                </p>
+              </div>
+            )}
 
             <Link
               href="/dashboard/pockets"
               className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-background/60 px-5 py-3 text-sm font-semibold text-foreground hover:bg-background/80 transition-colors"
             >
-              View Saved Pockets
+              View My Pockets
               <ArrowRight size={14} />
             </Link>
           </div>

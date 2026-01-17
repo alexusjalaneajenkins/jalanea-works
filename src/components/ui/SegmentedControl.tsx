@@ -20,6 +20,10 @@ import { cn } from '@/lib/utils/cn'
 export interface SegmentOption<T extends string> {
   value: T
   label: string
+  /** Optional color class for the active indicator (e.g., 'bg-rose-500') */
+  activeColor?: string
+  /** Optional text color class when active (e.g., 'text-rose-600') */
+  activeTextColor?: string
 }
 
 interface SegmentedControlProps<T extends string> {
@@ -83,6 +87,11 @@ export function SegmentedControl<T extends string>({
     md: 'px-4',
   }
 
+  // Get the active option for its color settings
+  const activeOption = options.find((opt) => opt.value === value)
+  const indicatorColorClass = activeOption?.activeColor || 'bg-card'
+  const hasCustomColor = !!activeOption?.activeColor
+
   return (
     <div
       ref={containerRef}
@@ -95,7 +104,10 @@ export function SegmentedControl<T extends string>({
     >
       {/* Sliding indicator */}
       <motion.div
-        className="absolute top-1 bottom-1 rounded-full bg-card shadow-sm border border-border/30"
+        className={cn(
+          'absolute top-1 bottom-1 rounded-full shadow-sm',
+          hasCustomColor ? indicatorColorClass : 'bg-card border border-border/30'
+        )}
         initial={false}
         animate={{
           left: indicatorStyle.left,
@@ -111,6 +123,7 @@ export function SegmentedControl<T extends string>({
       {/* Options */}
       {options.map((option) => {
         const isActive = option.value === value
+        const activeTextClass = option.activeTextColor || 'text-foreground'
         return (
           <button
             key={option.value}
@@ -121,7 +134,11 @@ export function SegmentedControl<T extends string>({
             className={cn(
               'relative z-10 rounded-full font-semibold transition-colors duration-200 min-w-[44px]',
               paddingClasses[size],
-              isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground/80'
+              isActive
+                ? option.activeColor
+                  ? 'text-white'
+                  : activeTextClass
+                : 'text-muted-foreground hover:text-foreground/80'
             )}
           >
             {option.label}

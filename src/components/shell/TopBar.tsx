@@ -40,11 +40,11 @@ interface TopBarProps {
   themeMode?: 'light' | 'dark'
 }
 
-// Mode options for segmented control
+// Mode options for segmented control with color-coded active states
 const modeOptions: SegmentOption<JalaneaMode>[] = [
-  { value: 'survival', label: 'Survival' },
-  { value: 'bridge', label: 'Bridge' },
-  { value: 'career', label: 'Career' },
+  { value: 'survival', label: 'Survival', activeColor: 'bg-rose-500' },
+  { value: 'bridge', label: 'Bridge', activeColor: 'bg-amber-500' },
+  { value: 'career', label: 'Career', activeColor: 'bg-emerald-500' },
 ]
 
 // Dynamic search placeholder based on mode
