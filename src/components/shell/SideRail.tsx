@@ -136,7 +136,7 @@ export function SideRail({
   return (
     <aside
       className={cn(
-        'hidden md:flex shrink-0 flex-col border-r border-border bg-card/30 backdrop-blur-xl sticky top-0 h-screen transition-all duration-300 ease-in-out',
+        'hidden md:flex shrink-0 flex-col border-r border-border bg-card backdrop-blur-xl fixed top-0 left-0 h-screen z-40 transition-all duration-300 ease-in-out',
         // Tablet: 72px collapsed, Desktop: 280px always
         'w-[72px] lg:w-[280px]',
         // On tablet hover, expand to full width

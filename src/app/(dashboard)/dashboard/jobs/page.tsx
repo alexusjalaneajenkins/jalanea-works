@@ -571,11 +571,11 @@ export default function JobsPage() {
       <div className="grid gap-6 lg:grid-cols-12">
         {/* Filters sidebar - hidden on mobile */}
         <aside
-          className="hidden lg:block lg:col-span-4 xl:col-span-3"
+          className="hidden lg:block lg:col-span-4 xl:col-span-3 self-start sticky top-24"
           role="complementary"
           aria-label="Job filters"
         >
-          <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto rounded-3xl border border-border bg-card/60 backdrop-blur-sm p-5">
+          <div className="max-h-[calc(100vh-7rem)] overflow-y-auto rounded-3xl border border-border bg-card/60 backdrop-blur-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <SlidersHorizontal size={16} className="text-primary" />
@@ -662,7 +662,7 @@ export default function JobsPage() {
                   <label className="text-xs font-semibold text-muted-foreground">Job type</label>
                   <span className="text-[10px] text-muted-foreground">multi-select</span>
                 </div>
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="mt-2 grid grid-cols-2 gap-2">
                   {(
                     ['Full-time', 'Part-time', 'Contract', 'Temporary', 'Internship'] as JobType[]
                   ).map((t) => {
@@ -976,7 +976,7 @@ export default function JobsPage() {
                   <label className="text-xs font-semibold text-muted-foreground">Job type</label>
                   <span className="text-[10px] text-muted-foreground">multi-select</span>
                 </div>
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="mt-2 grid grid-cols-2 gap-2">
                   {(['Full-time', 'Part-time', 'Contract', 'Temporary', 'Internship'] as JobType[]).map((t) => {
                     const active = jobTypes.includes(t)
                     return (

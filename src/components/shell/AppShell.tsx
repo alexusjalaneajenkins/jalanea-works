@@ -79,7 +79,7 @@ export function AppShell({
   }, [])
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+    <div className="min-h-screen bg-background text-foreground overflow-x-clip">
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
 
       <div className="flex">
@@ -91,7 +91,8 @@ export function AppShell({
           isOwner={isOwner}
         />
 
-        <div className="flex-1 overflow-x-hidden">
+        {/* Main content area - offset by fixed sidebar width */}
+        <div className="flex-1 overflow-x-clip md:ml-[72px] lg:ml-[280px]">
           <TopBar
             onOpenSearch={() => setSearchOpen(true)}
             onToggleTheme={toggleTheme}
