@@ -72,8 +72,8 @@ function MatchRing({ value }: { value: number }) {
   const strokeDashoffset = circumference - (value / 100) * circumference
 
   return (
-    <div className="relative h-8 w-8">
-      <svg className="h-8 w-8 -rotate-90" viewBox="0 0 36 36">
+    <div className="relative h-9 w-9" title={`${value}% match`}>
+      <svg className="h-9 w-9 -rotate-90" viewBox="0 0 36 36">
         <circle
           cx="18"
           cy="18"
@@ -94,8 +94,8 @@ function MatchRing({ value }: { value: number }) {
           strokeLinecap="round"
         />
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-primary">
-        {value}
+      <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-foreground">
+        {value}%
       </span>
     </div>
   )
@@ -200,10 +200,7 @@ function JobCard({
           <div className="min-w-0 flex-1">
             {/* Match score + Posted */}
             <div className="flex items-center gap-3 mb-3">
-              <div className="flex items-center gap-2">
-                <MatchRing value={matchScore} />
-                <span className="text-xs font-bold text-primary">{matchScore}% match</span>
-              </div>
+              <MatchRing value={matchScore} />
               {job.postedAt && (
                 <span className="text-xs text-muted-foreground">{formatPostedDate()}</span>
               )}
@@ -538,9 +535,9 @@ export default function JobsPage() {
       <header className="mb-6">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-2xl border border-primary/30 bg-primary/10 text-primary jw-glow-card flex-shrink-0">
-              <Briefcase size={20} className="sm:hidden" />
-              <Briefcase size={22} className="hidden sm:block" />
+            <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl border border-primary/30 bg-primary/10 text-primary jw-glow-card flex-shrink-0">
+              <Briefcase size={18} className="sm:hidden" />
+              <Briefcase size={20} className="hidden sm:block" />
             </div>
             <div className="min-w-0">
               <h1
@@ -563,7 +560,7 @@ export default function JobsPage() {
             <SlidersHorizontal size={16} />
             <span className="hidden sm:inline">Filters</span>
             {activeFilterCount > 0 && (
-              <span className="grid h-5 w-5 place-items-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+              <span className="grid h-5 w-5 place-items-center rounded-full bg-primary text-[10px] font-bold text-foreground">
                 {activeFilterCount}
               </span>
             )}
@@ -585,7 +582,7 @@ export default function JobsPage() {
                 <span className="text-sm font-bold text-foreground">Filters</span>
               </div>
               <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-lg">
-                {total} jobs
+                {total} {total === 1 ? 'job' : 'jobs'}
               </span>
             </div>
 
@@ -598,7 +595,7 @@ export default function JobsPage() {
                 >
                   Search
                 </label>
-                <div className="mt-2 flex items-center gap-2 rounded-xl border border-border bg-card/60 px-3 py-2.5">
+                <div className="mt-2 flex items-center gap-2 rounded-xl border border-muted-foreground/25 bg-background px-3 py-2.5 focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-colors">
                   <Search size={16} className="text-muted-foreground" />
                   <input
                     id="job-search"
@@ -618,7 +615,7 @@ export default function JobsPage() {
                 >
                   Location
                 </label>
-                <div className="mt-2 flex items-center gap-2 rounded-xl border border-border bg-card/60 px-3 py-2.5">
+                <div className="mt-2 flex items-center gap-2 rounded-xl border border-muted-foreground/25 bg-background px-3 py-2.5 focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-colors">
                   <MapPin size={16} className="text-muted-foreground" />
                   <input
                     id="job-location"
@@ -749,15 +746,15 @@ export default function JobsPage() {
               className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
             >
               <span className="text-xs sm:text-sm text-muted-foreground">
-                Showing {jobs.length} of {total} jobs
+                Showing {jobs.length} of {total} {total === 1 ? 'job' : 'jobs'}
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground hidden sm:inline">Sort:</span>
-                <div className="flex gap-1 rounded-lg border border-border bg-card/60 p-1 overflow-x-auto">
+                <span className="text-xs text-muted-foreground hidden sm:inline">Sort by:</span>
+                <div className="inline-flex rounded-lg border border-border bg-muted/30 overflow-hidden" role="group" aria-label="Sort options">
                   <button
                     onClick={() => setSortBy('date')}
                     className={cn(
-                      'px-3 py-1.5 text-xs rounded-md transition-colors whitespace-nowrap',
+                      'px-3 py-1.5 text-xs transition-colors whitespace-nowrap border-r border-border',
                       sortBy === 'date'
                         ? 'bg-foreground text-background font-semibold'
                         : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
@@ -769,7 +766,7 @@ export default function JobsPage() {
                     <button
                       onClick={() => setSortBy('commute')}
                       className={cn(
-                        'px-3 py-1.5 text-xs rounded-md transition-colors flex items-center gap-1 whitespace-nowrap',
+                        'px-3 py-1.5 text-xs transition-colors flex items-center gap-1 whitespace-nowrap border-r border-border',
                         sortBy === 'commute'
                           ? 'bg-foreground text-background font-semibold'
                           : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
@@ -782,7 +779,7 @@ export default function JobsPage() {
                   <button
                     onClick={() => setSortBy('salary')}
                     className={cn(
-                      'px-3 py-1.5 text-xs rounded-md transition-colors whitespace-nowrap',
+                      'px-3 py-1.5 text-xs transition-colors whitespace-nowrap',
                       sortBy === 'salary'
                         ? 'bg-foreground text-background font-semibold'
                         : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
@@ -906,7 +903,7 @@ export default function JobsPage() {
                 <SlidersHorizontal size={18} className="text-primary" />
                 <span className="text-lg font-bold text-foreground">Filters</span>
                 <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-lg">
-                  {total} jobs
+                  {total} {total === 1 ? 'job' : 'jobs'}
                 </span>
               </div>
               <button
@@ -921,7 +918,7 @@ export default function JobsPage() {
               {/* Search */}
               <div className="rounded-2xl border border-border bg-background/60 p-3">
                 <label className="text-xs font-semibold text-muted-foreground">Search</label>
-                <div className="mt-2 flex items-center gap-2 rounded-xl border border-border bg-card/60 px-3 py-2.5">
+                <div className="mt-2 flex items-center gap-2 rounded-xl border border-muted-foreground/25 bg-background px-3 py-2.5 focus-within:border-primary/50 transition-colors">
                   <Search size={16} className="text-muted-foreground" />
                   <input
                     value={query}
@@ -935,7 +932,7 @@ export default function JobsPage() {
               {/* Location */}
               <div className="rounded-2xl border border-border bg-background/60 p-3">
                 <label className="text-xs font-semibold text-muted-foreground">Location</label>
-                <div className="mt-2 flex items-center gap-2 rounded-xl border border-border bg-card/60 px-3 py-2.5">
+                <div className="mt-2 flex items-center gap-2 rounded-xl border border-muted-foreground/25 bg-background px-3 py-2.5 focus-within:border-primary/50 transition-colors">
                   <MapPin size={16} className="text-muted-foreground" />
                   <input
                     value={location}
@@ -1044,7 +1041,7 @@ export default function JobsPage() {
                 onClick={() => setIsFiltersOpen(false)}
                 className="flex-1 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground"
               >
-                Show {total} jobs
+                Show {total} {total === 1 ? 'job' : 'jobs'}
               </button>
             </div>
           </motion.div>
