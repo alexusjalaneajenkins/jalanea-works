@@ -631,7 +631,7 @@ export default function JobsPage() {
                 <label className="text-xs font-semibold text-muted-foreground">
                   Max commute
                 </label>
-                <div className="mt-2 grid grid-cols-4 gap-2">
+                <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {(
                     [
                       { k: '15', l: '15m' },
@@ -945,7 +945,7 @@ export default function JobsPage() {
               {/* Commute */}
               <div className="rounded-2xl border border-border bg-background/60 p-3">
                 <label className="text-xs font-semibold text-muted-foreground">Max commute</label>
-                <div className="mt-2 grid grid-cols-4 gap-2">
+                <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {(
                     [
                       { k: '15', l: '15m' },
