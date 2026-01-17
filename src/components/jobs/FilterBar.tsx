@@ -24,10 +24,11 @@ const LOCATION_OPTIONS: FilterOption[] = [
 ]
 
 const COMMUTE_OPTIONS: FilterOption[] = [
-  { value: '15', label: '15 min or less' },
-  { value: '30', label: '30 min or less' },
-  { value: '45', label: '45 min or less' },
-  { value: '60', label: '60 min or less' },
+  { value: 'bus', label: 'On Bus Line' },
+  { value: '15', label: 'Walkable (< 15 min)' },
+  { value: '30', label: '< 30 min by car' },
+  { value: '45', label: '< 45 min by car' },
+  { value: '60', label: '< 60 min by car' },
 ]
 
 const JOB_TYPE_OPTIONS: FilterOption[] = [
@@ -90,7 +91,7 @@ export function FilterBar({
             value={filters.query}
             onChange={(e) => handleQueryChange(e.target.value)}
             placeholder="Search jobs..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-full border border-gray-300 bg-white text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
+            className="w-full pl-10 pr-4 py-2.5 rounded-full border-2 border-gray-200 bg-gray-50 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 transition-colors"
             aria-label="Search jobs"
           />
         </div>

@@ -80,12 +80,12 @@ function JobCard({
   job,
   isSaved,
   onSave,
-  onClick,
+  onPocketAndApply,
 }: {
   job: Job & { matchScore?: number }
   isSaved: boolean
   onSave: () => void
-  onClick: () => void
+  onPocketAndApply: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
 
@@ -172,6 +172,21 @@ function JobCard({
                 <MapPin size={12} />
                 {job.location}
               </span>
+              {/* Transit badge - show if job is transit accessible */}
+              {job.transitMinutes !== undefined && (
+                <>
+                  <span className="text-muted-foreground/50">•</span>
+                  <span className="inline-flex items-center gap-1 text-primary font-medium">
+                    <Bus size={12} />
+                    {job.transitMinutes} min
+                    {job.lynxRoutes && job.lynxRoutes.length > 0 && (
+                      <span className="text-[10px] text-muted-foreground">
+                        (Route {job.lynxRoutes[0]})
+                      </span>
+                    )}
+                  </span>
+                </>
+              )}
             </div>
 
             {/* Pay */}
@@ -181,23 +196,29 @@ function JobCard({
             </div>
           </div>
 
-          {/* Save button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onSave()
-            }}
-            className={cn(
-              'flex h-11 w-11 items-center justify-center rounded-2xl border transition-all duration-200',
-              isSaved
-                ? 'border-primary/30 bg-primary/15 text-primary'
-                : 'border-border bg-card/80 text-muted-foreground hover:border-primary/30 hover:text-primary'
-            )}
-            aria-label={isSaved ? 'Remove from saved' : 'Save job'}
-            aria-pressed={isSaved}
-          >
-            <Bookmark size={18} className={isSaved ? 'fill-current' : ''} />
-          </button>
+          {/* Pocket button with tooltip */}
+          <div className="relative group/pocket">
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onSave()
+              }}
+              className={cn(
+                'flex h-11 w-11 items-center justify-center rounded-2xl border transition-all duration-200',
+                isSaved
+                  ? 'border-primary/30 bg-primary/15 text-primary'
+                  : 'border-border bg-card/80 text-muted-foreground hover:border-primary/30 hover:text-primary'
+              )}
+              aria-label={isSaved ? 'Remove from Pocket' : 'Save to Pocket'}
+              aria-pressed={isSaved}
+            >
+              <Bookmark size={18} className={isSaved ? 'fill-current' : ''} />
+            </button>
+            {/* Tooltip */}
+            <div className="absolute right-0 top-full mt-2 px-2 py-1 bg-foreground text-background text-[10px] font-medium rounded-lg opacity-0 group-hover/pocket:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+              {isSaved ? 'In Pocket' : 'Save to Pocket'}
+            </div>
+          </div>
         </div>
 
         {/* Tags */}
@@ -289,12 +310,12 @@ function JobCard({
           <button
             onClick={(e) => {
               e.stopPropagation()
-              onClick()
+              onPocketAndApply()
             }}
             className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity jw-glow-card min-h-[44px]"
           >
             <Sparkles size={14} />
-            Quick Apply
+            Pocket & Apply
           </button>
         </div>
       </div>
@@ -482,6 +503,16 @@ export default function JobsPage() {
 
   // Job click - navigate to job detail page
   const handleJobClick = (job: Job) => {
+    router.push(`/dashboard/jobs/${job.id}`)
+  }
+
+  // Pocket & Apply - save to pocket then navigate to job detail
+  const handlePocketAndApply = (job: Job) => {
+    // Auto-save to pocket if not already saved
+    if (!savedJobIds.includes(job.id)) {
+      setSavedJobIds((ids) => [...ids, job.id])
+    }
+    // Navigate to job detail page for full pocket generation
     router.push(`/dashboard/jobs/${job.id}`)
   }
 
@@ -685,7 +716,7 @@ export default function JobsPage() {
                   job={job}
                   isSaved={savedJobIds.includes(job.id)}
                   onSave={() => toggleSave(job.id)}
-                  onClick={() => handleJobClick(job)}
+                  onPocketAndApply={() => handlePocketAndApply(job)}
                 />
               ))}
             </div>
