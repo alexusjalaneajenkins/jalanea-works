@@ -530,32 +530,71 @@ function EmptyState({
     )
   }
 
-  // Default empty state - no pockets at all
+  // Default empty state - no pockets at all, show how to create one
   return (
-    <div className="rounded-3xl border border-dashed border-border bg-card/30 p-12 text-center">
-      <div className="mx-auto grid h-20 w-20 place-items-center rounded-3xl border border-primary/20 bg-primary/5 text-primary/40">
-        <Folder size={36} />
+    <div className="rounded-3xl border border-dashed border-border bg-card/30 p-8 md:p-12">
+      <div className="text-center">
+        <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-primary/20 bg-primary/5 text-primary">
+          <Target size={28} />
+        </div>
+        <h2
+          className="mt-5 text-2xl font-black text-foreground"
+          style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
+        >
+          Your job intel starts here
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
+          Pockets help you research jobs before you apply. We check for scams,
+          match your skills, and prep you for interviews.
+        </p>
       </div>
-      <h2
-        className="mt-6 text-2xl font-black text-foreground"
-        style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
-      >
-        Organize your job search
-      </h2>
-      <p className="mt-3 text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-        Create a &ldquo;Pocket&rdquo; for any job you&apos;re interested in. We&apos;ll analyze the listing,
-        check for red flags, and help you prepare to apply.
-      </p>
-      <div className="mt-4 text-xs text-muted-foreground/70 max-w-xs mx-auto">
-        Example: &ldquo;Downtown Service Jobs&rdquo; or &ldquo;Remote Support Roles&rdquo;
+
+      {/* How it works steps */}
+      <div className="mt-8 grid gap-4 md:grid-cols-3 max-w-2xl mx-auto">
+        <div className="rounded-2xl border border-border bg-background/40 p-4 text-left">
+          <div className="flex items-center gap-3">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
+              1
+            </span>
+            <span className="text-sm font-bold text-foreground">Browse Jobs</span>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+            Find a job you&apos;re interested in from our curated listings.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-border bg-background/40 p-4 text-left">
+          <div className="flex items-center gap-3">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
+              2
+            </span>
+            <span className="text-sm font-bold text-foreground">Create Pocket</span>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+            Click &ldquo;Generate Pocket&rdquo; to create your intel report.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-border bg-background/40 p-4 text-left">
+          <div className="flex items-center gap-3">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
+              3
+            </span>
+            <span className="text-sm font-bold text-foreground">Apply Smart</span>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+            Use our insights to apply with confidence.
+          </p>
+        </div>
       </div>
-      <Link
-        href="/dashboard/jobs"
-        className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3.5 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity jw-glow-card"
-      >
-        <Wand2 size={16} />
-        Find Jobs to Pocket
-      </Link>
+
+      <div className="mt-8 text-center">
+        <Link
+          href="/dashboard/jobs"
+          className="inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3.5 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity jw-glow-card"
+        >
+          <Search size={16} />
+          Browse Jobs
+        </Link>
+      </div>
     </div>
   )
 }
