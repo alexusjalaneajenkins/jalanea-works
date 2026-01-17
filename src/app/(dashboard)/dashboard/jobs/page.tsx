@@ -115,10 +115,10 @@ function TogglePill({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'rounded-xl border px-3 py-2.5 text-xs font-bold transition-all duration-200 min-h-[44px]',
+        'rounded-xl border-2 px-3 py-2.5 text-xs font-bold transition-all duration-200 min-h-[44px]',
         active
-          ? 'border-primary/40 bg-primary/15 text-primary shadow-sm'
-          : 'border-border bg-card/60 text-muted-foreground hover:border-primary/20 hover:text-foreground'
+          ? 'border-primary bg-primary/10 text-foreground'
+          : 'border-transparent bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
       )}
     >
       {label}
@@ -706,10 +706,10 @@ export default function JobsPage() {
                     setFilters((f) => ({ ...f, lynxAccessible: !f.lynxAccessible }))
                   }
                   className={cn(
-                    'mt-3 w-full rounded-2xl border px-4 py-2.5 text-sm font-bold transition-colors',
+                    'mt-3 w-full rounded-2xl border-2 px-4 py-2.5 text-sm font-bold transition-colors min-h-[44px]',
                     filters.lynxAccessible
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/20'
+                      ? 'border-primary bg-primary/15 text-foreground'
+                      : 'border-transparent bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
                   )}
                 >
                   {filters.lynxAccessible ? 'Filter enabled' : 'Enable transit filter'}
@@ -759,8 +759,8 @@ export default function JobsPage() {
                     className={cn(
                       'px-3 py-1.5 text-xs rounded-md transition-colors whitespace-nowrap',
                       sortBy === 'date'
-                        ? 'bg-primary text-primary-foreground font-semibold'
-                        : 'text-muted-foreground hover:text-foreground'
+                        ? 'bg-foreground text-background font-semibold'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                     )}
                   >
                     Newest
@@ -771,8 +771,8 @@ export default function JobsPage() {
                       className={cn(
                         'px-3 py-1.5 text-xs rounded-md transition-colors flex items-center gap-1 whitespace-nowrap',
                         sortBy === 'commute'
-                          ? 'bg-primary text-primary-foreground font-semibold'
-                          : 'text-muted-foreground hover:text-foreground'
+                          ? 'bg-foreground text-background font-semibold'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                       )}
                     >
                       <Bus size={12} />
@@ -784,8 +784,8 @@ export default function JobsPage() {
                     className={cn(
                       'px-3 py-1.5 text-xs rounded-md transition-colors whitespace-nowrap',
                       sortBy === 'salary'
-                        ? 'bg-primary text-primary-foreground font-semibold'
-                        : 'text-muted-foreground hover:text-foreground'
+                        ? 'bg-foreground text-background font-semibold'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                     )}
                   >
                     Salary
@@ -1016,10 +1016,10 @@ export default function JobsPage() {
                 <button
                   onClick={() => setFilters((f) => ({ ...f, lynxAccessible: !f.lynxAccessible }))}
                   className={cn(
-                    'mt-3 w-full rounded-2xl border px-4 py-2.5 text-sm font-bold transition-colors',
+                    'mt-3 w-full rounded-2xl border-2 px-4 py-2.5 text-sm font-bold transition-colors min-h-[44px]',
                     filters.lynxAccessible
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/20'
+                      ? 'border-primary bg-primary/15 text-foreground'
+                      : 'border-transparent bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
                   )}
                 >
                   {filters.lynxAccessible ? 'Filter enabled' : 'Enable transit filter'}
