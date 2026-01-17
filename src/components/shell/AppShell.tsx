@@ -79,7 +79,7 @@ export function AppShell({
   }, [])
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
 
       <div className="flex">
@@ -91,7 +91,7 @@ export function AppShell({
           isOwner={isOwner}
         />
 
-        <div className="flex-1">
+        <div className="flex-1 overflow-x-hidden">
           <TopBar
             onOpenSearch={() => setSearchOpen(true)}
             onToggleTheme={toggleTheme}

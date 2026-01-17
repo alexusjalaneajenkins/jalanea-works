@@ -163,7 +163,7 @@ function PreviewPanel({
   if (hidden) return null
 
   return (
-    <aside className="hidden lg:block lg:col-span-5 sticky top-24">
+    <aside className="hidden lg:block lg:col-span-5 sticky top-24 overflow-hidden">
       <div className="rounded-3xl border border-border bg-card/60 backdrop-blur-sm overflow-hidden">
         {/* Preview header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-border">
@@ -185,12 +185,13 @@ function PreviewPanel({
           </div>
         </div>
 
-        {/* Preview content */}
+        {/* Preview content - scrollable container with hidden overflow */}
         <div className="p-4 max-h-[calc(100vh-280px)] overflow-auto bg-muted/30">
           <div
             className="bg-white rounded-lg shadow-lg mx-auto transition-transform origin-top"
             style={{
-              width: '816px',
+              width: '100%',
+              maxWidth: '816px',
               transform: `scale(${zoom / 100})`,
               transformOrigin: 'top center',
             }}
