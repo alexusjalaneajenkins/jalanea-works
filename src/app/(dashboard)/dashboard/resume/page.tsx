@@ -163,7 +163,7 @@ function PreviewPanel({
   if (hidden) return null
 
   return (
-    <aside className="lg:col-span-5 sticky top-24">
+    <aside className="hidden lg:block lg:col-span-5 sticky top-24">
       <div className="rounded-3xl border border-border bg-card/60 backdrop-blur-sm overflow-hidden">
         {/* Preview header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-border">
@@ -401,7 +401,7 @@ export default function ResumePage() {
 
   // Editor view
   return (
-    <main className="jw-grain relative mx-auto max-w-[1200px] px-4 py-6 lg:px-8 lg:py-10">
+    <main className="jw-grain relative mx-auto max-w-[1200px] px-4 py-6 lg:px-8 lg:py-10 overflow-x-hidden">
       {/* Header */}
       <header className="mb-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -429,7 +429,7 @@ export default function ResumePage() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setShowPreview(!showPreview)}
-              className="inline-flex items-center gap-2 rounded-2xl border border-border bg-card/40 px-4 py-3 text-sm font-bold text-foreground hover:bg-card/60 transition-colors"
+              className="hidden lg:inline-flex items-center gap-2 rounded-2xl border border-border bg-card/40 px-4 py-3 text-sm font-bold text-foreground hover:bg-card/60 transition-colors"
             >
               {showPreview ? <EyeOff size={16} /> : <Eye size={16} />}
               {showPreview ? 'Hide Preview' : 'Show Preview'}

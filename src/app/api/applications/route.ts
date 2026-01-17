@@ -110,6 +110,24 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Error fetching applications:', error)
+      // Return empty list if table doesn't exist or other database error
+      // This allows the page to render even if migrations haven't run
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        return NextResponse.json({
+          applications: [],
+          total: 0,
+          stats: {
+            total: 0,
+            saved: 0,
+            applied: 0,
+            interviewing: 0,
+            offers: 0,
+            rejected: 0,
+            withdrawn: 0,
+            archived: 0
+          }
+        })
+      }
       throw error
     }
 
@@ -198,12 +216,8 @@ export async function GET(request: NextRequest) {
       }
     }) || []
 
-    // Get stats using RPC function
-    const { data: stats } = await supabase.rpc('get_application_stats', {
-      p_user_id: user.id
-    })
-
-    const statsResult = stats?.[0] || {
+    // Get stats using RPC function (with graceful fallback)
+    let statsResult = {
       total_count: 0,
       saved_count: 0,
       applied_count: 0,
@@ -212,6 +226,19 @@ export async function GET(request: NextRequest) {
       rejected_count: 0,
       withdrawn_count: 0,
       archived_count: 0
+    }
+
+    try {
+      const { data: stats, error: statsError } = await supabase.rpc('get_application_stats', {
+        p_user_id: user.id
+      })
+
+      if (!statsError && stats?.[0]) {
+        statsResult = stats[0]
+      }
+    } catch (rpcError) {
+      // RPC function may not exist yet - use defaults
+      console.warn('RPC get_application_stats not available:', rpcError)
     }
 
     return NextResponse.json({
