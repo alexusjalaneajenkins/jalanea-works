@@ -102,11 +102,11 @@ export function SegmentedControl<T extends string>({
       )}
       role="tablist"
     >
-      {/* Sliding indicator */}
+      {/* Sliding indicator - stronger shadow for better contrast */}
       <motion.div
         className={cn(
-          'absolute top-1 bottom-1 rounded-full shadow-sm',
-          hasCustomColor ? indicatorColorClass : 'bg-card border border-border/30'
+          'absolute top-1 bottom-1 rounded-full shadow-md',
+          hasCustomColor ? indicatorColorClass : 'bg-background border border-border/50'
         )}
         initial={false}
         animate={{
@@ -132,13 +132,13 @@ export function SegmentedControl<T extends string>({
             aria-selected={isActive}
             onClick={() => onChange(option.value)}
             className={cn(
-              'relative z-10 rounded-full font-semibold transition-colors duration-200 min-w-[44px]',
+              'relative z-10 rounded-full transition-colors duration-200 min-w-[44px]',
               paddingClasses[size],
               isActive
                 ? option.activeColor
-                  ? 'text-white'
-                  : activeTextClass
-                : 'text-muted-foreground hover:text-foreground/80'
+                  ? 'text-white font-semibold'
+                  : cn(activeTextClass, 'font-semibold')
+                : 'font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             )}
           >
             {option.label}
