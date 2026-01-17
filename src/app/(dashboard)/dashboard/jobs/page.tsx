@@ -692,10 +692,10 @@ export default function JobsPage() {
               </p>
               <button
                 onClick={() => fetchJobs(true)}
-                className="mt-5 sm:mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-5 sm:px-6 py-3 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity min-h-[44px]"
+                className="mt-5 sm:mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
               >
                 Refresh
-                <ArrowRight size={16} />
+                <ArrowRight size={14} />
               </button>
             </div>
           </div>
@@ -741,10 +741,10 @@ export default function JobsPage() {
                   </p>
                   <button
                     onClick={clearAllFilters}
-                    className="mt-5 sm:mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-5 sm:px-6 py-3 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity min-h-[44px]"
+                    className="mt-5 sm:mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
                   >
                     Show All Jobs
-                    <ArrowRight size={16} />
+                    <ArrowRight size={14} />
                   </button>
                 </>
               ) : (
@@ -759,20 +759,20 @@ export default function JobsPage() {
                     We&apos;re adding entry-level opportunities in Central Florida daily.
                     Try searching for a specific role or check back tomorrow!
                   </p>
-                  <div className="mt-5 sm:mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <div className="mt-5 sm:mt-6 flex flex-col sm:flex-row items-center justify-center gap-2">
                     <button
                       onClick={() => {
                         const searchInput = document.querySelector('input[aria-label="Search jobs"]') as HTMLInputElement
                         if (searchInput) searchInput.focus()
                       }}
-                      className="inline-flex items-center gap-2 rounded-full bg-primary px-5 sm:px-6 py-3 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity min-h-[44px]"
+                      className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
                     >
-                      <Search size={16} />
+                      <Search size={14} />
                       Search for a Role
                     </button>
                     <Link
                       href="/dashboard"
-                      className="inline-flex items-center gap-2 rounded-full border border-border bg-background/60 px-5 sm:px-6 py-3 text-sm font-bold text-foreground hover:bg-background/80 transition-colors min-h-[44px]"
+                      className="inline-flex items-center gap-2 rounded-full border border-border bg-background/60 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-background/80 transition-colors"
                     >
                       Back to Dashboard
                     </Link>
