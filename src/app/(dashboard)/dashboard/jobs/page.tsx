@@ -531,6 +531,18 @@ export default function JobsPage() {
     allFiltersState.valenciaFriendly,
   ].filter(Boolean).length
 
+  // Check if ANY filters are active (for empty state logic)
+  const hasActiveFilters = !!(
+    allFiltersState.query ||
+    allFiltersState.location ||
+    allFiltersState.commute ||
+    allFiltersState.jobTypes.length > 0 ||
+    allFiltersState.salaryMin ||
+    allFiltersState.postedWithin ||
+    allFiltersState.lynxAccessible ||
+    allFiltersState.valenciaFriendly
+  )
+
   // Clear all filters
   const clearAllFilters = () => {
     const cleared: AllFiltersState = {
@@ -660,8 +672,34 @@ export default function JobsPage() {
 
       {/* Job listings */}
       <section role="main" aria-label="Job listings">
-        {/* Loading state */}
-        {isLoading ? (
+        {/* Error state */}
+        {error ? (
+          <div className="flex justify-center">
+            <div className="max-w-md w-full rounded-3xl border border-border bg-card/60 p-6 sm:p-10 text-center">
+              <div className="mx-auto grid h-14 w-14 sm:h-16 sm:w-16 place-items-center rounded-3xl border border-muted bg-muted/30 text-muted-foreground">
+                <Compass size={24} className="sm:hidden" />
+                <Compass size={28} className="hidden sm:block" />
+              </div>
+              <h2
+                className="mt-4 sm:mt-5 text-lg sm:text-xl font-black text-foreground"
+                style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
+              >
+                Couldn&apos;t load jobs
+              </h2>
+              <p className="mt-2 text-xs sm:text-sm text-muted-foreground">
+                Something went wrong on our end. Give it another try?
+              </p>
+              <button
+                onClick={() => fetchJobs(true)}
+                className="mt-5 sm:mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-5 sm:px-6 py-3 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity min-h-[44px]"
+              >
+                Refresh
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          </div>
+        ) : isLoading ? (
+          /* Loading state */
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <div
@@ -681,30 +719,54 @@ export default function JobsPage() {
             ))}
           </div>
         ) : displayJobs.length === 0 ? (
-          /* Empty state - centered */
+          /* Empty state - different for filtered vs unfiltered */
           <div className="flex justify-center">
             <div className="max-w-md w-full rounded-3xl border border-border bg-card/60 p-6 sm:p-10 text-center">
               <div className="mx-auto grid h-14 w-14 sm:h-16 sm:w-16 place-items-center rounded-3xl border border-primary/30 bg-primary/10 text-primary">
                 <Compass size={24} className="sm:hidden" />
                 <Compass size={28} className="hidden sm:block" />
               </div>
-              <h2
-                className="mt-4 sm:mt-5 text-lg sm:text-xl font-black text-foreground"
-                style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
-              >
-                No matches found
-              </h2>
-              <p className="mt-2 text-xs sm:text-sm text-muted-foreground">
-                Try adjusting your filters or search terms. Every job here welcomes entry-level
-                candidates.
-              </p>
-              <button
-                onClick={clearAllFilters}
-                className="mt-5 sm:mt-6 inline-flex items-center gap-2 rounded-full bg-[#FCD34D] px-5 sm:px-6 py-3 text-sm font-bold text-black hover:bg-[#FBBF24] transition-colors min-h-[44px]"
-              >
-                Clear filters
-                <ArrowRight size={16} />
-              </button>
+              {hasActiveFilters ? (
+                <>
+                  <h2
+                    className="mt-4 sm:mt-5 text-lg sm:text-xl font-black text-foreground"
+                    style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
+                  >
+                    No matches found
+                  </h2>
+                  <p className="mt-2 text-xs sm:text-sm text-muted-foreground">
+                    Try adjusting your filters or search terms. Every job here welcomes entry-level
+                    candidates.
+                  </p>
+                  <button
+                    onClick={clearAllFilters}
+                    className="mt-5 sm:mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-5 sm:px-6 py-3 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity min-h-[44px]"
+                  >
+                    Show All Jobs
+                    <ArrowRight size={16} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h2
+                    className="mt-4 sm:mt-5 text-lg sm:text-xl font-black text-foreground"
+                    style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
+                  >
+                    Jobs are loading...
+                  </h2>
+                  <p className="mt-2 text-xs sm:text-sm text-muted-foreground">
+                    We&apos;re finding entry-level opportunities in your area.
+                    Check back in a moment!
+                  </p>
+                  <button
+                    onClick={() => fetchJobs(true)}
+                    className="mt-5 sm:mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-5 sm:px-6 py-3 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity min-h-[44px]"
+                  >
+                    Refresh Jobs
+                    <ArrowRight size={16} />
+                  </button>
+                </>
+              )}
             </div>
           </div>
         ) : (
