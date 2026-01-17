@@ -142,6 +142,13 @@ function CreditDisplay({ usage }: { usage: UsageData | null }) {
   const advancedCredits = usage.byTier.premium || usage.byTier.starter
   const proCredits = usage.byTier.professional || usage.byTier.unlimited
 
+  // Clamp credits to 0 (never show negative)
+  const advancedRemaining = Math.max(0, advancedCredits?.remaining ?? 0)
+  const proRemaining = Math.max(0, proCredits?.remaining ?? 0)
+
+  // Hide credit display if both are 0 (user hasn't purchased any)
+  if (advancedRemaining === 0 && proRemaining === 0) return null
+
   return (
     <div className="flex items-center gap-4 rounded-2xl border border-border bg-card/60 px-4 py-3">
       <div className="grid h-10 w-10 place-items-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
@@ -151,14 +158,12 @@ function CreditDisplay({ usage }: { usage: UsageData | null }) {
         <div className="text-xs font-semibold text-muted-foreground">Pocket Credits</div>
         <div className="mt-1 flex items-center gap-3">
           <span className="inline-flex items-center gap-1.5 text-sm">
-            <span className="font-bold text-foreground">
-              {advancedCredits?.remaining ?? 0}
-            </span>
+            <span className="font-bold text-foreground">{advancedRemaining}</span>
             <span className="text-muted-foreground">Advanced</span>
           </span>
           <span className="text-muted-foreground/30">|</span>
           <span className="inline-flex items-center gap-1.5 text-sm">
-            <span className="font-bold text-foreground">{proCredits?.remaining ?? 0}</span>
+            <span className="font-bold text-foreground">{proRemaining}</span>
             <span className="text-muted-foreground">Pro</span>
           </span>
         </div>
@@ -534,7 +539,7 @@ function EmptyState({
   return (
     <div className="rounded-3xl border border-dashed border-border bg-card/30 p-8 md:p-12">
       <div className="text-center">
-        <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-primary/20 bg-primary/5 text-primary">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/20 bg-primary/5 text-primary">
           <Target size={28} />
         </div>
         <h2
@@ -570,7 +575,7 @@ function EmptyState({
             <span className="text-sm font-bold text-foreground">Create Pocket</span>
           </div>
           <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-            Click &ldquo;Generate Pocket&rdquo; to create your intel report.
+            Click the <strong>Pocket</strong> button on any job card to generate intel.
           </p>
         </div>
         <div className="rounded-2xl border border-border bg-background/40 p-4 text-left">
@@ -739,8 +744,8 @@ export default function PocketsPage() {
               href="/dashboard/jobs"
               className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity jw-glow-card"
             >
-              <Wand2 size={16} />
-              Generate Pocket
+              <Search size={16} />
+              Browse Jobs
             </Link>
           </div>
         </div>
