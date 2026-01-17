@@ -76,19 +76,19 @@ export function ATSScoreCard({
 
   if (isCompact) {
     return (
-      <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-4">
+      <div className="bg-muted/50 rounded-xl border border-border p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`text-3xl font-bold ${scoreColor}`}>{score}</div>
             <div>
-              <div className="text-sm font-medium text-white">ATS Score</div>
+              <div className="text-sm font-medium text-foreground">ATS Score</div>
               <div className={`text-xs ${scoreColor}`}>{scoreLabel}</div>
             </div>
           </div>
           {onOptimize && (
             <button
               onClick={onOptimize}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#ffc425]/10 text-[#ffc425] hover:bg-[#ffc425]/20 transition-colors text-sm font-medium"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-sm font-medium"
             >
               <TrendingUp size={16} />
               Optimize
@@ -96,7 +96,7 @@ export function ATSScoreCard({
           )}
         </div>
         {(criticalSuggestions > 0 || importantSuggestions > 0) && (
-          <div className="flex items-center gap-3 mt-3 pt-3 border-t border-slate-700">
+          <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border">
             {criticalSuggestions > 0 && (
               <div className="flex items-center gap-1.5 text-xs text-red-400">
                 <AlertCircle size={14} />
@@ -116,15 +116,15 @@ export function ATSScoreCard({
   }
 
   return (
-    <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6">
+    <div className="bg-card border border-border rounded-2xl p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h3 className="font-semibold text-white flex items-center gap-2">
-          <Target size={20} className="text-[#ffc425]" />
+        <h3 className="font-semibold text-foreground flex items-center gap-2">
+          <Target size={20} className="text-primary" />
           ATS Compatibility Score
         </h3>
         {keywordMatchRate !== undefined && (
-          <div className="text-sm text-slate-400">
+          <div className="text-sm text-muted-foreground">
             {keywordMatchRate}% keyword match
           </div>
         )}
@@ -142,7 +142,7 @@ export function ATSScoreCard({
               stroke="currentColor"
               strokeWidth="12"
               fill="none"
-              className="text-slate-700"
+              className="text-muted"
             />
             <motion.circle
               cx="64"
@@ -169,7 +169,7 @@ export function ATSScoreCard({
             >
               {score}
             </motion.span>
-            <span className="text-xs text-slate-400">out of 100</span>
+            <span className="text-xs text-muted-foreground">out of 100</span>
           </div>
         </div>
         <div className={`mt-2 text-lg font-medium ${scoreColor}`}>
@@ -189,11 +189,11 @@ export function ATSScoreCard({
               <div key={key}>
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2 text-sm">
-                    <Icon size={14} className="text-slate-500" />
-                    <span className="text-slate-300">{label}</span>
+                    <Icon size={14} className="text-muted-foreground" />
+                    <span className="text-foreground">{label}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-slate-400">
+                    <span className="text-sm text-muted-foreground">
                       {value}/{max}
                     </span>
                     {isGood ? (
@@ -203,7 +203,7 @@ export function ATSScoreCard({
                     )}
                   </div>
                 </div>
-                <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${percentage}%` }}
@@ -222,11 +222,11 @@ export function ATSScoreCard({
 
       {/* Issues Summary */}
       {(criticalSuggestions > 0 || importantSuggestions > 0) && (
-        <div className="flex items-center gap-4 p-3 bg-slate-800/50 rounded-xl mb-4">
+        <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-xl mb-4">
           {criticalSuggestions > 0 && (
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-red-400" />
-              <span className="text-sm text-slate-300">
+              <span className="text-sm text-foreground">
                 {criticalSuggestions} critical issue{criticalSuggestions > 1 ? 's' : ''}
               </span>
             </div>
@@ -234,7 +234,7 @@ export function ATSScoreCard({
           {importantSuggestions > 0 && (
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-yellow-400" />
-              <span className="text-sm text-slate-300">
+              <span className="text-sm text-foreground">
                 {importantSuggestions} improvement{importantSuggestions > 1 ? 's' : ''}
               </span>
             </div>
@@ -246,7 +246,7 @@ export function ATSScoreCard({
       {onOptimize && (
         <button
           onClick={onOptimize}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#ffc425] text-[#0f172a] font-semibold hover:bg-[#ffd85d] transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-colors"
         >
           <TrendingUp size={18} />
           Optimize Resume
@@ -254,7 +254,7 @@ export function ATSScoreCard({
       )}
 
       {/* Tips */}
-      <div className="mt-4 text-xs text-slate-500">
+      <div className="mt-4 text-xs text-muted-foreground">
         {score >= 80 ? (
           <p>Your resume is well-optimized for ATS systems.</p>
         ) : score >= 60 ? (

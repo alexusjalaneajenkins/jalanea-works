@@ -35,13 +35,13 @@ export function SummaryEditor({ summary, onChange, jobTitle }: SummaryEditorProp
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-muted-foreground">
           Write a brief professional summary highlighting your key qualifications and career goals.
         </p>
         <button
           onClick={handleGenerateSummary}
           disabled={isGenerating}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-colors text-sm font-medium disabled:opacity-50"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-sm font-medium disabled:opacity-50"
         >
           {isGenerating ? (
             <Loader2 size={16} className="animate-spin" />
@@ -57,14 +57,14 @@ export function SummaryEditor({ summary, onChange, jobTitle }: SummaryEditorProp
         onChange={(e) => onChange(e.target.value)}
         placeholder="Experienced professional seeking to leverage skills in..."
         rows={5}
-        className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#ffc425]/50 focus:border-transparent resize-none"
+        className="w-full px-4 py-3 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent resize-none"
       />
 
       <div className="flex items-center justify-between text-sm">
-        <p className="text-slate-500">
+        <p className="text-muted-foreground">
           Keep it concise - 2-4 sentences work best
         </p>
-        <span className={isOverLimit ? 'text-red-400' : 'text-slate-500'}>
+        <span className={isOverLimit ? 'text-destructive' : 'text-muted-foreground'}>
           {charCount}/{maxChars}
         </span>
       </div>

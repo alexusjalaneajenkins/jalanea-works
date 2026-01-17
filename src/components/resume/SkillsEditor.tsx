@@ -104,7 +104,7 @@ export function SkillsEditor({ skills, onChange }: SkillsEditorProps) {
 
   return (
     <div className="space-y-4">
-      <p className="text-slate-400 text-sm">
+      <p className="text-muted-foreground text-sm">
         Add skills relevant to the jobs you&apos;re applying for. Include both technical and soft skills.
       </p>
 
@@ -118,12 +118,12 @@ export function SkillsEditor({ skills, onChange }: SkillsEditorProps) {
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#ffc425]/10 text-[#ffc425] text-sm"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm"
               >
                 {skill.name}
                 <button
                   onClick={() => removeSkill(skill.id)}
-                  className="hover:bg-[#ffc425]/20 rounded-full p-0.5"
+                  className="hover:bg-primary/20 rounded-full p-0.5"
                 >
                   <X size={14} />
                 </button>
@@ -141,12 +141,12 @@ export function SkillsEditor({ skills, onChange }: SkillsEditorProps) {
           onChange={(e) => setNewSkill(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder="Type a skill and press Enter..."
-          className="flex-1 px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#ffc425]/50"
+          className="flex-1 px-4 py-2.5 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
         />
         <button
           onClick={() => addSkill(newSkill)}
           disabled={!newSkill.trim()}
-          className="px-4 py-2.5 rounded-xl bg-[#ffc425] text-[#0f172a] font-semibold hover:bg-[#ffd85d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Plus size={20} />
         </button>
@@ -157,7 +157,7 @@ export function SkillsEditor({ skills, onChange }: SkillsEditorProps) {
         <button
           onClick={generateSkills}
           disabled={isGenerating}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-colors font-medium disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium disabled:opacity-50"
         >
           {isGenerating ? (
             <Loader2 size={18} className="animate-spin" />
@@ -168,7 +168,7 @@ export function SkillsEditor({ skills, onChange }: SkillsEditorProps) {
         </button>
         <button
           onClick={() => setShowSuggestions(!showSuggestions)}
-          className="text-sm text-slate-400 hover:text-white transition-colors"
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           {showSuggestions ? 'Hide suggestions' : 'Show common skills'}
         </button>
@@ -181,11 +181,11 @@ export function SkillsEditor({ skills, onChange }: SkillsEditorProps) {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="space-y-4 pt-4 border-t border-slate-700"
+            className="space-y-4 pt-4 border-t border-border"
           >
             {Object.entries(suggestedSkills).map(([category, categorySkills]) => (
               <div key={category}>
-                <h4 className="text-sm font-medium text-slate-400 mb-2">{category}</h4>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">{category}</h4>
                 <div className="flex flex-wrap gap-2">
                   {categorySkills.map((skill) => {
                     const isAdded = skills.some(s => s.name.toLowerCase() === skill.toLowerCase())
@@ -196,8 +196,8 @@ export function SkillsEditor({ skills, onChange }: SkillsEditorProps) {
                         disabled={isAdded}
                         className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                           isAdded
-                            ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
-                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                            ? 'bg-background text-muted-foreground cursor-not-allowed'
+                            : 'bg-background text-muted-foreground hover:bg-muted hover:text-foreground'
                         }`}
                       >
                         {isAdded ? '✓ ' : '+ '}

@@ -79,18 +79,18 @@ function ExperienceItem({
   }
 
   return (
-    <div className="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
+    <div className="bg-card/50 rounded-xl border border-border overflow-hidden">
       {/* Header */}
       <div
-        className="flex items-center gap-3 p-4 cursor-pointer hover:bg-slate-800/70 transition-colors"
+        className="flex items-center gap-3 p-4 cursor-pointer hover:bg-card/70 transition-colors"
         onClick={onToggleExpand}
       >
-        <GripVertical size={18} className="text-slate-600 cursor-grab" />
+        <GripVertical size={18} className="text-muted-foreground cursor-grab" />
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-white truncate">
+          <h4 className="font-medium text-foreground truncate">
             {experience.title || 'Job Title'}
           </h4>
-          <p className="text-sm text-slate-400 truncate">
+          <p className="text-sm text-muted-foreground truncate">
             {experience.company || 'Company'} • {experience.isCurrent ? 'Present' : experience.endDate || 'End Date'}
           </p>
         </div>
@@ -99,14 +99,14 @@ function ExperienceItem({
             e.stopPropagation()
             onDelete()
           }}
-          className="p-2 rounded-lg hover:bg-slate-700 text-slate-500 hover:text-red-400 transition-colors"
+          className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-destructive transition-colors"
         >
           <Trash2 size={18} />
         </button>
         {isExpanded ? (
-          <ChevronUp size={18} className="text-slate-400" />
+          <ChevronUp size={18} className="text-muted-foreground" />
         ) : (
-          <ChevronDown size={18} className="text-slate-400" />
+          <ChevronDown size={18} className="text-muted-foreground" />
         )}
       </div>
 
@@ -117,88 +117,88 @@ function ExperienceItem({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="border-t border-slate-700"
+            className="border-t border-border"
           >
             <div className="p-4 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                    Job Title <span className="text-red-400">*</span>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1.5">
+                    Job Title <span className="text-destructive">*</span>
                   </label>
                   <div className="relative">
-                    <Briefcase size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <Briefcase size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <input
                       type="text"
                       value={experience.title}
                       onChange={(e) => handleChange('title', e.target.value)}
                       placeholder="e.g. Customer Service Representative"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#ffc425]/50"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                    Company <span className="text-red-400">*</span>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1.5">
+                    Company <span className="text-destructive">*</span>
                   </label>
                   <div className="relative">
-                    <Building2 size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <Building2 size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <input
                       type="text"
                       value={experience.company}
                       onChange={(e) => handleChange('company', e.target.value)}
                       placeholder="e.g. Target"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#ffc425]/50"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                   Location
                 </label>
                 <div className="relative">
-                  <MapPin size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <MapPin size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <input
                     type="text"
                     value={experience.location}
                     onChange={(e) => handleChange('location', e.target.value)}
                     placeholder="e.g. Orlando, FL"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#ffc425]/50"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                  <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                     Start Date
                   </label>
                   <div className="relative">
-                    <Calendar size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <Calendar size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <input
                       type="month"
                       value={experience.startDate}
                       onChange={(e) => handleChange('startDate', e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-[#ffc425]/50"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                  <label className="block text-sm font-medium text-muted-foreground mb-1.5">
                     End Date
                   </label>
                   <div className="relative">
-                    <Calendar size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <Calendar size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <input
                       type="month"
                       value={experience.endDate || ''}
                       onChange={(e) => handleChange('endDate', e.target.value)}
                       disabled={experience.isCurrent}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-[#ffc425]/50 disabled:opacity-50"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
                     />
                   </div>
-                  <label className="flex items-center gap-2 mt-2 text-sm text-slate-400">
+                  <label className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
                     <input
                       type="checkbox"
                       checked={experience.isCurrent}
@@ -206,7 +206,7 @@ function ExperienceItem({
                         handleChange('isCurrent', e.target.checked)
                         if (e.target.checked) handleChange('endDate', undefined)
                       }}
-                      className="rounded border-slate-600 bg-slate-800 text-[#ffc425] focus:ring-[#ffc425]"
+                      className="rounded border-border bg-background text-primary focus:ring-primary"
                     />
                     I currently work here
                   </label>
@@ -216,13 +216,13 @@ function ExperienceItem({
               {/* Highlights */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-slate-300">
+                  <label className="text-sm font-medium text-muted-foreground">
                     Key Achievements & Responsibilities
                   </label>
                   <button
                     onClick={generateHighlights}
                     disabled={isGeneratingHighlights}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-colors text-xs font-medium disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs font-medium disabled:opacity-50"
                   >
                     {isGeneratingHighlights ? (
                       <Loader2 size={14} className="animate-spin" />
@@ -236,17 +236,17 @@ function ExperienceItem({
                 <div className="space-y-2">
                   {experience.highlights.map((highlight, index) => (
                     <div key={index} className="flex gap-2">
-                      <span className="text-slate-500 mt-2.5">•</span>
+                      <span className="text-muted-foreground mt-2.5">•</span>
                       <input
                         type="text"
                         value={highlight}
                         onChange={(e) => handleHighlightChange(index, e.target.value)}
                         placeholder="Describe an achievement or responsibility..."
-                        className="flex-1 px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#ffc425]/50"
+                        className="flex-1 px-3 py-2 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                       />
                       <button
                         onClick={() => removeHighlight(index)}
-                        className="p-2 rounded-lg hover:bg-slate-700 text-slate-500 hover:text-red-400 transition-colors"
+                        className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-destructive transition-colors"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -254,7 +254,7 @@ function ExperienceItem({
                   ))}
                   <button
                     onClick={addHighlight}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-slate-700 text-slate-400 hover:border-slate-600 hover:text-white transition-colors w-full justify-center"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border text-muted-foreground hover:border-border hover:text-foreground transition-colors w-full justify-center"
                   >
                     <Plus size={16} />
                     Add bullet point
@@ -303,7 +303,7 @@ export function ExperienceEditor({ experiences, onChange }: ExperienceEditorProp
   return (
     <div className="space-y-4">
       {experiences.length === 0 ? (
-        <p className="text-slate-400 text-sm mb-4">
+        <p className="text-muted-foreground text-sm mb-4">
           Add your work experience, starting with your most recent position.
         </p>
       ) : (
@@ -323,7 +323,7 @@ export function ExperienceEditor({ experiences, onChange }: ExperienceEditorProp
 
       <button
         onClick={addExperience}
-        className="flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-slate-700 text-slate-400 hover:border-slate-600 hover:text-white transition-colors w-full justify-center"
+        className="flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-border text-muted-foreground hover:border-border hover:text-foreground transition-colors w-full justify-center"
       >
         <Plus size={20} />
         Add Work Experience

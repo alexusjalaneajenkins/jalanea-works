@@ -74,36 +74,36 @@ export function KeywordSuggestions({
   const displayedMissing = showAllMissing ? filteredMissing : filteredMissing.slice(0, 8)
 
   return (
-    <div className="bg-[#0f172a] border border-slate-800 rounded-2xl p-6">
+    <div className="bg-card border border-border rounded-2xl p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-white flex items-center gap-2">
-          <Search size={20} className="text-[#ffc425]" />
+        <h3 className="font-semibold text-foreground flex items-center gap-2">
+          <Search size={20} className="text-primary" />
           Keyword Analysis
         </h3>
         <div className="text-sm">
           <span className={matchRate >= 70 ? 'text-green-400' : matchRate >= 50 ? 'text-yellow-400' : 'text-red-400'}>
             {matchRate}%
           </span>
-          <span className="text-slate-400 ml-1">match rate</span>
+          <span className="text-muted-foreground ml-1">match rate</span>
         </div>
       </div>
 
       {jobTitle && (
-        <p className="text-sm text-slate-400 mb-4">
-          Analyzing keywords for: <span className="text-white">{jobTitle}</span>
+        <p className="text-sm text-muted-foreground mb-4">
+          Analyzing keywords for: <span className="text-foreground">{jobTitle}</span>
         </p>
       )}
 
       {/* Search Filter */}
       <div className="relative mb-4">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Filter keywords..."
-          className="w-full pl-9 pr-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#ffc425]/50 text-sm"
+          className="w-full pl-9 pr-4 py-2 rounded-lg bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
         />
       </div>
 
@@ -137,7 +137,7 @@ export function KeywordSuggestions({
         {filteredMatched.length > 8 && (
           <button
             onClick={() => setShowAllMatched(!showAllMatched)}
-            className="flex items-center gap-1 mt-2 text-sm text-slate-400 hover:text-white transition-colors"
+            className="flex items-center gap-1 mt-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             {showAllMatched ? (
               <>
@@ -164,7 +164,7 @@ export function KeywordSuggestions({
           {filteredMissing.length > 0 && (
             <button
               onClick={handleCopyAllMissing}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <Copy size={12} />
               Copy all
@@ -209,7 +209,7 @@ export function KeywordSuggestions({
         {filteredMissing.length > 8 && (
           <button
             onClick={() => setShowAllMissing(!showAllMissing)}
-            className="flex items-center gap-1 mt-2 text-sm text-slate-400 hover:text-white transition-colors"
+            className="flex items-center gap-1 mt-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             {showAllMissing ? (
               <>
@@ -229,7 +229,7 @@ export function KeywordSuggestions({
       {/* Recommended Keywords */}
       {keywords.recommended && keywords.recommended.length > 0 && (
         <div>
-          <h4 className="text-sm font-medium text-[#ffc425] flex items-center gap-2 mb-3">
+          <h4 className="text-sm font-medium text-primary flex items-center gap-2 mb-3">
             <Lightbulb size={16} />
             Recommended to Add
           </h4>
@@ -241,7 +241,7 @@ export function KeywordSuggestions({
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.05 }}
-                className="group inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#ffc425]/10 text-[#ffc425] text-sm border border-[#ffc425]/20 cursor-pointer hover:bg-[#ffc425]/20 transition-colors"
+                className="group inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-sm border border-primary/20 cursor-pointer hover:bg-primary/20 transition-colors"
                 onClick={() => handleCopyKeyword(keyword)}
               >
                 {copiedKeywords.includes(keyword) ? (
@@ -268,9 +268,9 @@ export function KeywordSuggestions({
       )}
 
       {/* Tips */}
-      <div className="mt-6 p-3 bg-slate-800/50 rounded-xl">
-        <p className="text-xs text-slate-400">
-          <strong className="text-slate-300">Tip:</strong> Click on missing keywords to copy them.
+      <div className="mt-6 p-3 bg-muted/50 rounded-xl">
+        <p className="text-xs text-muted-foreground">
+          <strong className="text-foreground">Tip:</strong> Click on missing keywords to copy them.
           Add them naturally to your experience bullets or skills section. Only include keywords that
           truthfully reflect your experience.
         </p>

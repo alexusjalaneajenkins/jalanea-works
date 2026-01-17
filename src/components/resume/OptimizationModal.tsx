@@ -127,25 +127,25 @@ export function OptimizationModal({
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="w-full max-w-4xl max-h-[90vh] bg-[#0f172a] rounded-2xl shadow-2xl overflow-hidden"
+          className="w-full max-w-4xl max-h-[90vh] bg-card rounded-2xl shadow-2xl overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-[#ffc425]/10 rounded-lg">
-                <Sparkles size={20} className="text-[#ffc425]" />
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Sparkles size={20} className="text-primary" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-white">ATS Optimization</h2>
+                <h2 className="text-lg font-semibold text-foreground">ATS Optimization</h2>
                 {jobTitle && (
-                  <p className="text-sm text-slate-400">Optimizing for: {jobTitle}</p>
+                  <p className="text-sm text-muted-foreground">Optimizing for: {jobTitle}</p>
                 )}
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+              className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
             >
               <X size={20} />
             </button>
@@ -154,9 +154,9 @@ export function OptimizationModal({
           {/* Loading State */}
           {isLoading && (
             <div className="flex flex-col items-center justify-center py-20">
-              <Loader2 size={48} className="animate-spin text-[#ffc425] mb-4" />
-              <p className="text-slate-400">Analyzing your resume...</p>
-              <p className="text-sm text-slate-500 mt-1">This may take a few seconds</p>
+              <Loader2 size={48} className="animate-spin text-primary mb-4" />
+              <p className="text-muted-foreground">Analyzing your resume...</p>
+              <p className="text-sm text-muted-foreground mt-1">This may take a few seconds</p>
             </div>
           )}
 
@@ -164,7 +164,7 @@ export function OptimizationModal({
           {!isLoading && result && (
             <>
               {/* Tabs */}
-              <div className="flex gap-1 px-6 py-3 border-b border-slate-800 bg-slate-900/50">
+              <div className="flex gap-1 px-6 py-3 border-b border-border bg-background/50">
                 {tabs.map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
@@ -172,8 +172,8 @@ export function OptimizationModal({
                     className={`
                       flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors
                       ${activeTab === id
-                        ? 'bg-[#ffc425]/10 text-[#ffc425]'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                       }
                     `}
                   >
@@ -207,40 +207,40 @@ export function OptimizationModal({
                     {/* Quick Stats */}
                     <div className="space-y-4">
                       {/* Issue Summary */}
-                      <div className="bg-slate-800/50 rounded-xl p-4">
-                        <h4 className="text-sm font-medium text-white mb-3">Issue Summary</h4>
+                      <div className="bg-muted/50 rounded-xl p-4">
+                        <h4 className="text-sm font-medium text-foreground mb-3">Issue Summary</h4>
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-red-400">
                               <AlertTriangle size={16} />
                               <span className="text-sm">Critical Issues</span>
                             </div>
-                            <span className="text-sm font-medium text-white">{criticalCount}</span>
+                            <span className="text-sm font-medium text-foreground">{criticalCount}</span>
                           </div>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-yellow-400">
                               <AlertCircle size={16} />
                               <span className="text-sm">Important Improvements</span>
                             </div>
-                            <span className="text-sm font-medium text-white">{importantCount}</span>
+                            <span className="text-sm font-medium text-foreground">{importantCount}</span>
                           </div>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-blue-400">
                               <Lightbulb size={16} />
                               <span className="text-sm">Nice to Have</span>
                             </div>
-                            <span className="text-sm font-medium text-white">{niceToHaveCount}</span>
+                            <span className="text-sm font-medium text-foreground">{niceToHaveCount}</span>
                           </div>
                         </div>
                       </div>
 
                       {/* Formatting Issues */}
                       {result.formatting && result.formatting.issues.length > 0 && (
-                        <div className="bg-slate-800/50 rounded-xl p-4">
-                          <h4 className="text-sm font-medium text-white mb-3">Formatting Issues</h4>
+                        <div className="bg-muted/50 rounded-xl p-4">
+                          <h4 className="text-sm font-medium text-foreground mb-3">Formatting Issues</h4>
                           <ul className="space-y-2">
                             {result.formatting.issues.map((issue, i) => (
-                              <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
+                              <li key={i} className="flex items-start gap-2 text-sm text-foreground">
                                 <AlertCircle size={14} className="mt-0.5 text-yellow-400 flex-shrink-0" />
                                 {issue}
                               </li>
@@ -253,7 +253,7 @@ export function OptimizationModal({
                       {onApplyAllSuggestions && criticalCount > 0 && (
                         <button
                           onClick={onApplyAllSuggestions}
-                          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#ffc425] text-[#0f172a] font-semibold hover:bg-[#ffd85d] transition-colors"
+                          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-colors"
                         >
                           <Sparkles size={18} />
                           Auto-Fix Critical Issues
@@ -305,22 +305,22 @@ export function OptimizationModal({
                                     <div className="flex items-start gap-3 flex-1">
                                       {getSuggestionIcon(suggestion.type)}
                                       <div className="flex-1">
-                                        <h5 className="font-medium text-white flex items-center gap-2">
+                                        <h5 className="font-medium text-foreground flex items-center gap-2">
                                           {suggestion.title}
                                           {isApplied && (
                                             <CheckCircle size={14} className="text-green-400" />
                                           )}
                                         </h5>
-                                        <p className="text-sm text-slate-400 mt-1">
+                                        <p className="text-sm text-muted-foreground mt-1">
                                           {suggestion.description}
                                         </p>
                                         {suggestion.example && (
-                                          <div className="mt-3 p-3 bg-slate-800/50 rounded-lg">
+                                          <div className="mt-3 p-3 bg-muted/50 rounded-lg">
                                             <div className="flex items-center justify-between mb-1">
-                                              <span className="text-xs text-slate-500">Example:</span>
+                                              <span className="text-xs text-muted-foreground">Example:</span>
                                               <button
                                                 onClick={() => handleCopyExample(suggestion.example!)}
-                                                className="text-xs text-slate-400 hover:text-white flex items-center gap-1"
+                                                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                                               >
                                                 {copiedText === suggestion.example ? (
                                                   <>
@@ -335,7 +335,7 @@ export function OptimizationModal({
                                                 )}
                                               </button>
                                             </div>
-                                            <p className="text-sm text-slate-300 italic">
+                                            <p className="text-sm text-foreground italic">
                                               &ldquo;{suggestion.example}&rdquo;
                                             </p>
                                           </div>
@@ -346,7 +346,7 @@ export function OptimizationModal({
                                     {onApplySuggestion && !isApplied && (
                                       <button
                                         onClick={() => handleApplySuggestion(suggestion)}
-                                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors text-sm"
+                                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-muted text-foreground hover:bg-muted/80 transition-colors text-sm"
                                       >
                                         Apply
                                         <ArrowRight size={14} />
@@ -364,10 +364,10 @@ export function OptimizationModal({
                     {result.suggestions.length === 0 && (
                       <div className="text-center py-12">
                         <CheckCircle size={48} className="mx-auto text-green-400 mb-4" />
-                        <h4 className="text-lg font-medium text-white mb-2">
+                        <h4 className="text-lg font-medium text-foreground mb-2">
                           Your resume looks great!
                         </h4>
-                        <p className="text-slate-400">
+                        <p className="text-muted-foreground">
                           No major issues found. Keep up the good work!
                         </p>
                       </div>
@@ -380,8 +380,8 @@ export function OptimizationModal({
 
           {/* Footer */}
           {!isLoading && result && (
-            <div className="flex items-center justify-between px-6 py-4 border-t border-slate-800 bg-slate-900/50">
-              <p className="text-sm text-slate-400">
+            <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-background/50">
+              <p className="text-sm text-muted-foreground">
                 {appliedSuggestions.length > 0 && (
                   <span className="text-green-400">
                     {appliedSuggestions.length} suggestion{appliedSuggestions.length > 1 ? 's' : ''} applied
@@ -390,7 +390,7 @@ export function OptimizationModal({
               </p>
               <button
                 onClick={onClose}
-                className="px-4 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-700 transition-colors"
+                className="px-4 py-2 rounded-lg bg-muted text-foreground hover:bg-muted/80 transition-colors"
               >
                 Done
               </button>

@@ -30,14 +30,14 @@ export function TemplateSelector({ selected, onSelect }: TemplateSelectorProps) 
             onClick={() => onSelect(template)}
             className={`relative p-4 rounded-xl border-2 transition-colors text-left ${
               isSelected
-                ? 'border-[#ffc425] bg-[#ffc425]/5'
-                : 'border-slate-700 hover:border-slate-600'
+                ? 'border-primary bg-primary/5'
+                : 'border-border hover:border-border/80'
             }`}
           >
             {/* Selected indicator */}
             {isSelected && (
-              <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[#ffc425] flex items-center justify-center">
-                <Check size={14} className="text-[#0f172a]" />
+              <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                <Check size={14} className="text-primary-foreground" />
               </div>
             )}
 
@@ -63,8 +63,8 @@ export function TemplateSelector({ selected, onSelect }: TemplateSelectorProps) 
             </div>
 
             {/* Info */}
-            <h3 className="font-semibold text-white mb-1">{config.name}</h3>
-            <p className="text-sm text-slate-400">{config.description}</p>
+            <h3 className="font-semibold text-foreground mb-1">{config.name}</h3>
+            <p className="text-sm text-muted-foreground">{config.description}</p>
           </motion.button>
         )
       })}

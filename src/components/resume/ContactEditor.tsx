@@ -40,17 +40,17 @@ function InputField({
 }: InputFieldProps) {
   return (
     <div>
-      <label className="block text-sm font-medium text-slate-300 mb-1.5">
-        {label} {required && <span className="text-red-400">*</span>}
+      <label className="block text-sm font-medium text-muted-foreground mb-1.5">
+        {label} {required && <span className="text-destructive">*</span>}
       </label>
       <div className="relative">
-        <Icon size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+        <Icon size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <input
           type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#ffc425]/50 focus:border-transparent"
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent"
         />
       </div>
     </div>
