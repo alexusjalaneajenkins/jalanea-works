@@ -194,7 +194,7 @@ function JobCard({
       {/* Shining light effect on hover */}
       <div className="jw-shining-light pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-      <div className="relative p-5">
+      <div className="relative p-4 sm:p-5">
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
@@ -331,7 +331,7 @@ function JobCard({
               e.stopPropagation()
               setExpanded(!expanded)
             }}
-            className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-background/60 px-4 py-3 text-sm font-bold text-foreground hover:bg-background/80 transition-colors"
+            className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-background/60 px-4 py-3 text-sm font-bold text-foreground hover:bg-background/80 transition-colors min-h-[44px]"
           >
             {expanded ? 'Show less' : 'View details'}
             <ArrowRight
@@ -344,7 +344,7 @@ function JobCard({
               e.stopPropagation()
               onClick()
             }}
-            className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity jw-glow-card"
+            className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity jw-glow-card min-h-[44px]"
           >
             <Sparkles size={14} />
             Quick Apply
@@ -536,29 +536,45 @@ export default function JobsPage() {
     <main className="jw-grain relative mx-auto max-w-[1200px] px-4 py-6 lg:px-8 lg:py-10">
       {/* Header */}
       <header className="mb-6">
-        <div className="flex items-center gap-3">
-          <div className="grid h-12 w-12 place-items-center rounded-2xl border border-primary/30 bg-primary/10 text-primary jw-glow-card">
-            <Briefcase size={22} />
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-2xl border border-primary/30 bg-primary/10 text-primary jw-glow-card flex-shrink-0">
+              <Briefcase size={20} className="sm:hidden" />
+              <Briefcase size={22} className="hidden sm:block" />
+            </div>
+            <div className="min-w-0">
+              <h1
+                className="text-2xl sm:text-3xl font-black tracking-tight text-foreground"
+                style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
+              >
+                Entry-Level Jobs
+              </h1>
+              <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground truncate">
+                Real opportunities. No gatekeeping.{' '}
+                <span className="text-primary font-semibold hidden sm:inline">You belong here.</span>
+              </p>
+            </div>
           </div>
-          <div>
-            <h1
-              className="text-3xl font-black tracking-tight text-foreground"
-              style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
-            >
-              Entry-Level Jobs
-            </h1>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              Real opportunities. No experience gatekeeping.{' '}
-              <span className="text-primary font-semibold">You belong here.</span>
-            </p>
-          </div>
+          {/* Mobile filter button */}
+          <button
+            onClick={() => setIsFiltersOpen(true)}
+            className="lg:hidden flex items-center gap-2 rounded-xl border border-border bg-card/60 px-3 py-2.5 text-sm font-semibold text-foreground flex-shrink-0"
+          >
+            <SlidersHorizontal size={16} />
+            <span className="hidden sm:inline">Filters</span>
+            {activeFilterCount > 0 && (
+              <span className="grid h-5 w-5 place-items-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
         </div>
       </header>
 
       <div className="grid gap-6 lg:grid-cols-12">
-        {/* Filters sidebar */}
+        {/* Filters sidebar - hidden on mobile */}
         <aside
-          className="lg:col-span-4 xl:col-span-3"
+          className="hidden lg:block lg:col-span-4 xl:col-span-3"
           role="complementary"
           aria-label="Job filters"
         >
@@ -730,18 +746,18 @@ export default function JobsPage() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="mb-4 flex items-center justify-between"
+              className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
             >
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs sm:text-sm text-muted-foreground">
                 Showing {jobs.length} of {total} jobs
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Sort:</span>
-                <div className="flex gap-1 rounded-lg border border-border bg-card/60 p-1">
+                <span className="text-xs text-muted-foreground hidden sm:inline">Sort:</span>
+                <div className="flex gap-1 rounded-lg border border-border bg-card/60 p-1 overflow-x-auto">
                   <button
                     onClick={() => setSortBy('date')}
                     className={cn(
-                      'px-3 py-1.5 text-xs rounded-md transition-colors',
+                      'px-3 py-1.5 text-xs rounded-md transition-colors whitespace-nowrap',
                       sortBy === 'date'
                         ? 'bg-primary text-primary-foreground font-semibold'
                         : 'text-muted-foreground hover:text-foreground'
@@ -753,7 +769,7 @@ export default function JobsPage() {
                     <button
                       onClick={() => setSortBy('commute')}
                       className={cn(
-                        'px-3 py-1.5 text-xs rounded-md transition-colors flex items-center gap-1',
+                        'px-3 py-1.5 text-xs rounded-md transition-colors flex items-center gap-1 whitespace-nowrap',
                         sortBy === 'commute'
                           ? 'bg-primary text-primary-foreground font-semibold'
                           : 'text-muted-foreground hover:text-foreground'
@@ -766,7 +782,7 @@ export default function JobsPage() {
                   <button
                     onClick={() => setSortBy('salary')}
                     className={cn(
-                      'px-3 py-1.5 text-xs rounded-md transition-colors',
+                      'px-3 py-1.5 text-xs rounded-md transition-colors whitespace-nowrap',
                       sortBy === 'salary'
                         ? 'bg-primary text-primary-foreground font-semibold'
                         : 'text-muted-foreground hover:text-foreground'
@@ -785,7 +801,7 @@ export default function JobsPage() {
               {Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
-                  className="animate-pulse rounded-3xl border border-border bg-card/40 p-5"
+                  className="animate-pulse rounded-3xl border border-border bg-card/40 p-4 sm:p-5"
                 >
                   <div className="flex gap-3 mb-3">
                     <div className="h-8 w-8 rounded-full bg-muted" />
@@ -800,17 +816,18 @@ export default function JobsPage() {
               ))}
             </div>
           ) : displayJobs.length === 0 ? (
-            <div className="rounded-3xl border border-border bg-card/60 p-10 text-center">
-              <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl border border-primary/30 bg-primary/10 text-primary">
-                <Compass size={28} />
+            <div className="rounded-3xl border border-border bg-card/60 p-6 sm:p-10 text-center">
+              <div className="mx-auto grid h-14 w-14 sm:h-16 sm:w-16 place-items-center rounded-3xl border border-primary/30 bg-primary/10 text-primary">
+                <Compass size={24} className="sm:hidden" />
+                <Compass size={28} className="hidden sm:block" />
               </div>
               <h2
-                className="mt-5 text-xl font-black text-foreground"
+                className="mt-4 sm:mt-5 text-lg sm:text-xl font-black text-foreground"
                 style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
               >
                 No matches found
               </h2>
-              <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
+              <p className="mt-2 text-xs sm:text-sm text-muted-foreground max-w-md mx-auto">
                 Try adjusting your filters or search terms. Every job here welcomes entry-level
                 candidates.
               </p>
@@ -821,7 +838,7 @@ export default function JobsPage() {
                   setJobTypes(['Full-time'])
                   setCommute('30')
                 }}
-                className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity"
+                className="mt-5 sm:mt-6 inline-flex items-center gap-2 rounded-2xl bg-primary px-5 sm:px-6 py-3 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity min-h-[44px]"
               >
                 Clear filters
                 <ArrowRight size={16} />
@@ -847,7 +864,7 @@ export default function JobsPage() {
                   <button
                     onClick={() => fetchJobs(false)}
                     disabled={isLoadingMore}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-border bg-card/60 px-6 py-3 text-sm font-bold text-foreground hover:bg-background/80 transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-border bg-card/60 px-5 sm:px-6 py-3 text-sm font-bold text-foreground hover:bg-background/80 transition-colors disabled:opacity-50 min-h-[44px]"
                   >
                     {isLoadingMore ? (
                       <>
@@ -879,20 +896,156 @@ export default function JobsPage() {
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            className="absolute bottom-0 left-0 right-0 max-h-[80vh] overflow-y-auto rounded-t-3xl border-t border-border bg-card p-5"
+            className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto rounded-t-3xl border-t border-border bg-card p-5"
           >
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-lg font-bold text-foreground">Filters</span>
+            {/* Handle bar */}
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-border" />
+
+            <div className="flex items-center justify-between mb-4 pt-2">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal size={18} className="text-primary" />
+                <span className="text-lg font-bold text-foreground">Filters</span>
+                <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-lg">
+                  {total} jobs
+                </span>
+              </div>
               <button
                 onClick={() => setIsFiltersOpen(false)}
-                className="p-2 rounded-lg hover:bg-background/60"
+                className="p-2 rounded-lg hover:bg-background/60 text-muted-foreground"
               >
                 <X size={20} />
               </button>
             </div>
-            {/* Same filter content as sidebar */}
-            <div className="text-sm text-muted-foreground">
-              Filter controls appear here on mobile
+
+            <div className="space-y-4">
+              {/* Search */}
+              <div className="rounded-2xl border border-border bg-background/60 p-3">
+                <label className="text-xs font-semibold text-muted-foreground">Search</label>
+                <div className="mt-2 flex items-center gap-2 rounded-xl border border-border bg-card/60 px-3 py-2.5">
+                  <Search size={16} className="text-muted-foreground" />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Job title, company…"
+                    className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Location */}
+              <div className="rounded-2xl border border-border bg-background/60 p-3">
+                <label className="text-xs font-semibold text-muted-foreground">Location</label>
+                <div className="mt-2 flex items-center gap-2 rounded-xl border border-border bg-card/60 px-3 py-2.5">
+                  <MapPin size={16} className="text-muted-foreground" />
+                  <input
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Commute */}
+              <div className="rounded-2xl border border-border bg-background/60 p-3">
+                <label className="text-xs font-semibold text-muted-foreground">Max commute</label>
+                <div className="mt-2 grid grid-cols-4 gap-2">
+                  {(
+                    [
+                      { k: '15', l: '15m' },
+                      { k: '30', l: '30m' },
+                      { k: '45', l: '45m' },
+                      { k: '60+', l: '60+' },
+                    ] as const
+                  ).map((o) => (
+                    <TogglePill
+                      key={o.k}
+                      active={commute === o.k}
+                      label={o.l}
+                      onClick={() => {
+                        setCommute(o.k)
+                        setFilters((f) => ({
+                          ...f,
+                          maxCommute: o.k === '60+' ? 60 : parseInt(o.k),
+                        }))
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Job type */}
+              <div className="rounded-2xl border border-border bg-background/60 p-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-muted-foreground">Job type</label>
+                  <span className="text-[10px] text-muted-foreground">multi-select</span>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {(['Full-time', 'Part-time', 'Contract', 'Temporary', 'Internship'] as JobType[]).map((t) => {
+                    const active = jobTypes.includes(t)
+                    return (
+                      <TogglePill
+                        key={t}
+                        active={active}
+                        label={t}
+                        onClick={() => {
+                          setJobTypes((prev) =>
+                            active ? prev.filter((x) => x !== t) : [...prev, t]
+                          )
+                          setFilters((f) => ({
+                            ...f,
+                            jobType: active
+                              ? f.jobType.filter((x) => x !== t)
+                              : [...f.jobType, t],
+                          }))
+                        }}
+                      />
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* LYNX transit */}
+              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3">
+                <div className="flex items-center gap-2">
+                  <Timer size={16} className="text-primary" />
+                  <div>
+                    <div className="text-sm font-bold text-foreground">LYNX Accessible</div>
+                    <div className="text-xs text-muted-foreground">Jobs reachable by bus</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setFilters((f) => ({ ...f, lynxAccessible: !f.lynxAccessible }))}
+                  className={cn(
+                    'mt-3 w-full rounded-2xl border px-4 py-2.5 text-sm font-bold transition-colors',
+                    filters.lynxAccessible
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/20'
+                  )}
+                >
+                  {filters.lynxAccessible ? 'Filter enabled' : 'Enable transit filter'}
+                </button>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-3 mt-6 pt-4 border-t border-border">
+              <button
+                onClick={() => {
+                  setQuery('')
+                  setFilters(defaultFilters)
+                  setJobTypes(['Full-time'])
+                  setCommute('30')
+                }}
+                className="flex-1 rounded-2xl border border-border bg-background/60 px-4 py-3 text-sm font-bold text-foreground"
+              >
+                Clear all
+              </button>
+              <button
+                onClick={() => setIsFiltersOpen(false)}
+                className="flex-1 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground"
+              >
+                Show {total} jobs
+              </button>
             </div>
           </motion.div>
         </div>
