@@ -562,9 +562,6 @@ export default function DashboardHomePage() {
                     <TrendingUp size={14} />
                     {modeDescription(mode)}
                   </span>
-                  <span className="text-xs text-muted-foreground hidden sm:inline">
-                    Change mode in the navbar →
-                  </span>
                 </div>
               </div>
 
