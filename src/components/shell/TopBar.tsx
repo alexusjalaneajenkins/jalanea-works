@@ -6,9 +6,9 @@
  * Top navigation bar for JalaneaWorks "Mission Control".
  * Features:
  * - Mobile menu toggle (mobile only)
- * - Search trigger (command palette)
+ * - Search trigger (command palette) with dynamic placeholder
  * - Theme toggle (light/dark)
- * - Mode switcher (Survival/Bridge/Career)
+ * - Segmented control mode switcher (Survival/Bridge/Career)
  * - Notifications
  *
  * Responsive:
@@ -31,7 +31,8 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { primaryNavItems, secondaryNavItems } from './nav'
-import { useJalaneaMode, type JalaneaMode, modeLabel } from '@/lib/mode/ModeContext'
+import { useJalaneaMode, type JalaneaMode } from '@/lib/mode/ModeContext'
+import { SegmentedControl, type SegmentOption } from '@/components/ui/SegmentedControl'
 
 interface TopBarProps {
   onOpenSearch?: () => void
@@ -39,31 +40,25 @@ interface TopBarProps {
   themeMode?: 'light' | 'dark'
 }
 
-function modeBgColor(mode: JalaneaMode, active: boolean) {
-  if (!active) return 'bg-transparent text-muted-foreground hover:text-foreground'
-  if (mode === 'survival') return 'bg-primary text-primary-foreground'
-  if (mode === 'bridge') return 'bg-primary text-primary-foreground'
-  return 'bg-primary text-primary-foreground'
-}
+// Mode options for segmented control
+const modeOptions: SegmentOption<JalaneaMode>[] = [
+  { value: 'survival', label: 'Survival' },
+  { value: 'bridge', label: 'Bridge' },
+  { value: 'career', label: 'Career' },
+]
 
-function ModeSwitcher({ mode, setMode }: { mode: JalaneaMode; setMode: (m: JalaneaMode) => void }) {
-  const modes: JalaneaMode[] = ['survival', 'bridge', 'career']
-  return (
-    <div className="hidden md:flex items-center rounded-2xl border border-border bg-card/60 p-1">
-      {modes.map((m) => (
-        <button
-          key={m}
-          onClick={() => setMode(m)}
-          className={cn(
-            'px-4 py-2 text-sm font-bold rounded-xl transition-all',
-            mode === m ? modeBgColor(m, true) : modeBgColor(m, false)
-          )}
-        >
-          {modeLabel(m)}
-        </button>
-      ))}
-    </div>
-  )
+// Dynamic search placeholder based on mode
+function getSearchPlaceholder(mode: JalaneaMode): string {
+  switch (mode) {
+    case 'survival':
+      return 'Find jobs hiring now...'
+    case 'bridge':
+      return 'Search bridge opportunities...'
+    case 'career':
+      return 'Explore career paths...'
+    default:
+      return 'Search...'
+  }
 }
 
 export function TopBar({ onOpenSearch, onToggleTheme, themeMode = 'light' }: TopBarProps) {
@@ -111,25 +106,35 @@ export function TopBar({ onOpenSearch, onToggleTheme, themeMode = 'light' }: Top
             {/* Search button - full version only on desktop */}
             <button
               onClick={onOpenSearch}
-              className="hidden lg:flex items-center gap-3 rounded-2xl border border-border bg-card/60 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
+              className="hidden lg:flex items-center gap-3 rounded-full border border-border/50 bg-muted/30 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
               aria-label="Search"
             >
               <Search size={16} />
-              <span>Search...</span>
-              <kbd className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/50 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+              <span className="min-w-[160px] text-left">{getSearchPlaceholder(mode)}</span>
+              <kbd className="inline-flex items-center gap-1 rounded-md border border-border/50 bg-background/50 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                 <span className="text-xs">⌘</span>K
               </kbd>
             </button>
 
             {/* Right side actions */}
             <div className="flex items-center gap-2">
-              {/* Mode Switcher */}
-              <ModeSwitcher mode={mode} setMode={setMode} />
+              {/* Mode Switcher - Segmented Control */}
+              <div className="hidden md:block">
+                <SegmentedControl
+                  options={modeOptions}
+                  value={mode}
+                  onChange={setMode}
+                  size="sm"
+                />
+              </div>
+
+              {/* Vertical divider */}
+              <div className="hidden md:block h-6 w-px bg-border/50" />
 
               {/* Theme toggle */}
               <button
                 onClick={onToggleTheme}
-                className="grid h-10 w-10 place-items-center rounded-xl border border-border bg-card/60 text-muted-foreground hover:text-foreground transition-colors"
+                className="grid h-10 w-10 place-items-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
                 aria-label={themeMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 {themeMode === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
@@ -137,7 +142,7 @@ export function TopBar({ onOpenSearch, onToggleTheme, themeMode = 'light' }: Top
 
               {/* Notifications */}
               <button
-                className="relative grid h-10 w-10 place-items-center rounded-xl border border-border bg-card/60 text-muted-foreground hover:text-foreground transition-colors"
+                className="relative grid h-10 w-10 place-items-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
                 aria-label="Notifications"
               >
                 <Bell size={18} />
@@ -148,7 +153,7 @@ export function TopBar({ onOpenSearch, onToggleTheme, themeMode = 'light' }: Top
               {/* Settings */}
               <Link
                 href="/dashboard/settings"
-                className="grid h-10 w-10 place-items-center rounded-xl border border-border bg-card/60 text-muted-foreground hover:text-foreground transition-colors"
+                className="grid h-10 w-10 place-items-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
                 aria-label="Settings"
               >
                 <Settings size={18} />
@@ -157,7 +162,7 @@ export function TopBar({ onOpenSearch, onToggleTheme, themeMode = 'light' }: Top
               {/* Icon-only search for mobile and tablet */}
               <button
                 onClick={onOpenSearch}
-                className="lg:hidden grid h-10 w-10 place-items-center rounded-xl border border-border bg-card/60 text-muted-foreground hover:text-foreground transition-colors"
+                className="lg:hidden grid h-10 w-10 place-items-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
                 aria-label="Search"
               >
                 <Search size={18} />
