@@ -15,13 +15,14 @@
  * - Touch-friendly button sizes
  */
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Zap, Check, ChevronRight, ChevronLeft, Crosshair, Sparkles, Menu, X } from 'lucide-react'
+import { Zap, Check, ChevronRight, ChevronLeft, Crosshair, Sparkles, Menu, X, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 import { phases } from './constants'
-import { questions } from './questions'
+import { getQuestions } from './questions'
+import { t, type Locale } from '@/i18n/config'
 import { EducationDetails } from './types'
 import {
   LightningBolt,
@@ -35,6 +36,7 @@ import {
 } from './index'
 import type { CustomCareerPath } from '@/types/career'
 import { generateProgramKey } from '@/lib/career-utils'
+import { GoogleTranslate } from '@/components/GoogleTranslate'
 
 interface OnboardingFlowProps {
   onComplete?: (data: Record<string, unknown>) => Promise<void>
@@ -52,6 +54,16 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
   // Career path selection state
   const [selectedCareerPaths, setSelectedCareerPaths] = useState<string[]>([])
   const [customCareerPaths, setCustomCareerPaths] = useState<CustomCareerPath[]>([])
+
+  // Geolocation state
+  const [isGettingLocation, setIsGettingLocation] = useState(false)
+  const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null)
+
+  // Derive locale from language selection
+  const locale: Locale = (answers['language'] as string) === 'spanish' ? 'es' : 'en'
+
+  // Get translated questions based on locale
+  const questions = useMemo(() => getQuestions(locale), [locale])
 
   // Filter questions based on showWhen conditions
   const activeQuestions = questions.filter(q => !q.showWhen || q.showWhen(answers))
@@ -130,10 +142,73 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
 
   const handleInputSubmit = () => {
     if (inputValue.trim()) {
-      setAnswers(prev => ({ ...prev, [currentQuestion.id]: inputValue.trim() }))
+      // For location, also save coordinates if we have them
+      if (currentQuestion.id === 'location' && locationCoords) {
+        setAnswers(prev => ({
+          ...prev,
+          [currentQuestion.id]: inputValue.trim(),
+          locationCoords
+        }))
+      } else {
+        setAnswers(prev => ({ ...prev, [currentQuestion.id]: inputValue.trim() }))
+      }
       setInputValue('')
+      setLocationCoords(null)
       advanceToNext()
     }
+  }
+
+  // Geolocation handler - uses browser API + reverse geocoding
+  const handleGetLocation = async () => {
+    if (!navigator.geolocation) {
+      alert(locale === 'es'
+        ? 'Tu navegador no soporta geolocalización'
+        : 'Your browser does not support geolocation')
+      return
+    }
+
+    setIsGettingLocation(true)
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords
+        setLocationCoords({ lat: latitude, lng: longitude })
+
+        try {
+          // Call our reverse geocoding API
+          const response = await fetch(`/api/geocode/reverse?lat=${latitude}&lng=${longitude}`)
+          const data = await response.json()
+
+          if (data.address) {
+            setInputValue(data.address)
+          } else {
+            // Fallback to coordinates display
+            setInputValue(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`)
+          }
+        } catch (error) {
+          console.error('Reverse geocoding error:', error)
+          // Fallback to coordinates
+          setInputValue(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`)
+        }
+
+        setIsGettingLocation(false)
+      },
+      (error) => {
+        setIsGettingLocation(false)
+        let message = locale === 'es'
+          ? 'No pudimos obtener tu ubicación'
+          : 'Could not get your location'
+
+        if (error.code === error.PERMISSION_DENIED) {
+          message = locale === 'es'
+            ? 'Permiso de ubicación denegado. Por favor habilítalo en tu navegador.'
+            : 'Location permission denied. Please enable it in your browser.'
+        }
+
+        alert(message)
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    )
   }
 
   const handleMultiContinue = () => {
@@ -409,7 +484,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
                   className="flex items-center gap-1.5 text-[#64748b] hover:text-[#e2e8f0] transition-colors mb-4 -mt-2"
                 >
                   <ChevronLeft size={18} />
-                  <span className="text-sm font-medium">Back</span>
+                  <span className="text-sm font-medium">{t(locale, 'common.back')}</span>
                 </motion.button>
               )}
 
@@ -446,8 +521,17 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
                         className="w-full px-4 sm:px-6 py-4 lg:py-5 rounded-xl lg:rounded-2xl bg-[#0f172a] border-2 border-[#334155] text-lg lg:text-xl text-[#e2e8f0] placeholder:text-[#475569] focus:outline-none focus:border-[#ffc425] focus:ring-4 focus:ring-[#ffc425]/20 transition-all text-center"
                       />
                       {currentQuestion.id === 'location' && (
-                        <button className="absolute right-3 lg:right-4 top-1/2 -translate-y-1/2 w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-[#1e293b] flex items-center justify-center text-[#64748b] hover:text-[#ffc425] hover:bg-[#ffc425]/10 transition-all">
-                          <Crosshair size={18} />
+                        <button
+                          onClick={handleGetLocation}
+                          disabled={isGettingLocation}
+                          title={locale === 'es' ? 'Usar mi ubicación' : 'Use my location'}
+                          className="absolute right-3 lg:right-4 top-1/2 -translate-y-1/2 w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-[#1e293b] flex items-center justify-center text-[#64748b] hover:text-[#ffc425] hover:bg-[#ffc425]/10 transition-all disabled:opacity-50 disabled:cursor-wait"
+                        >
+                          {isGettingLocation ? (
+                            <Loader2 size={18} className="animate-spin" />
+                          ) : (
+                            <Crosshair size={18} />
+                          )}
                         </button>
                       )}
                     </div>
@@ -461,7 +545,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
                           : 'bg-[#1e293b] text-[#475569] cursor-not-allowed'
                       }`}
                     >
-                      Continue
+                      {t(locale, 'common.continue')}
                       <ChevronRight size={18} />
                     </motion.button>
                   </div>
@@ -560,7 +644,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
                           : 'bg-[#1e293b] text-[#475569] cursor-not-allowed'
                       }`}
                     >
-                      {isLastQuestion ? 'Complete Setup' : 'Continue'}
+                      {isLastQuestion ? t(locale, 'common.completeSetup') : t(locale, 'common.continue')}
                       <ChevronRight size={18} />
                     </motion.button>
                   </>
@@ -579,6 +663,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
                   <EducationDetailsForm
                     answers={answers}
                     onComplete={handleEducationDetails}
+                    language={(answers['language'] as string) === 'spanish' ? 'es' : 'en'}
                   />
                 )}
 
@@ -611,15 +696,21 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
                 {currentQuestion.type === 'career-paths' && (() => {
                   const educationDetails = answers['education-details'] as EducationDetails | undefined
                   const schoolId = answers['school'] as string
-                  const programName = educationDetails?.degreeName || ''
-                  const programKey = schoolId && programName ? generateProgramKey(schoolId, programName) : ''
+                  // Use programKey from education details (set by ProgramSelector)
+                  // Fall back to generating one for "other" schools
+                  const programKey = educationDetails?.programKey ||
+                    (schoolId && educationDetails?.degreeName
+                      ? generateProgramKey(schoolId, educationDetails.degreeName)
+                      : '')
+                  // Normalize school ID for database lookup (orlando-tech -> orange)
+                  const normalizedSchoolId = schoolId === 'orlando-tech' ? 'orange' : schoolId
                   const language = (answers['language'] as string) === 'spanish' ? 'es' : 'en'
 
                   return (
                     <div className="space-y-4">
                       <CareerPathSelector
                         programKey={programKey}
-                        school={schoolId}
+                        school={normalizedSchoolId}
                         selectedPaths={selectedCareerPaths}
                         customPaths={customCareerPaths}
                         onSelectPath={handleSelectCareerPath}
@@ -638,7 +729,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
                             : 'bg-[#1e293b] text-[#475569] cursor-not-allowed'
                         }`}
                       >
-                        Continue
+                        {t(locale, 'common.continue')}
                         <ChevronRight size={18} />
                       </motion.button>
                     </div>
@@ -649,7 +740,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
               {/* Keyboard hint - Hidden on Mobile */}
               <div className="hidden sm:block text-center mt-6 lg:mt-8">
                 <span className="text-xs text-[#475569]">
-                  {currentQuestion.type === 'input' ? 'Press Enter to continue' : 'Click to select'}
+                  {currentQuestion.type === 'input' ? t(locale, 'common.pressEnterToContinue') : t(locale, 'common.clickToSelect')}
                 </span>
               </div>
             </motion.div>
@@ -666,11 +757,14 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
               className="w-full py-4 rounded-xl font-bold bg-[#ffc425] text-[#0f172a] flex items-center justify-center gap-2"
             >
               <Sparkles size={18} />
-              {isSubmitting ? 'Saving...' : 'Launch Dashboard'}
+              {isSubmitting ? t(locale, 'common.saving') : t(locale, 'common.launchDashboard')}
             </motion.button>
           </div>
         )}
       </div>
+
+      {/* Google Translate Widget - Shows when Spanish is selected */}
+      <GoogleTranslate showWhen={locale === 'es'} position="bottom-right" />
     </div>
   )
 }
