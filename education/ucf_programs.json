@@ -1,0 +1,845 @@
+{
+  "school": "University of Central Florida",
+  "programs": [
+    {
+      "name": "Civil Engineering (B.S.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Civil Engineer I",
+          "title_es": "Ingeniero Civil I",
+          "salary_min": 60000,
+          "salary_max": 75000,
+          "growth": "high"
+        },
+        {
+          "title": "Transportation Analyst",
+          "title_es": "Analista de Transporte",
+          "salary_min": 58000,
+          "salary_max": 72000,
+          "growth": "high"
+        },
+        {
+          "title": "Field Engineer",
+          "title_es": "Ingeniero de Campo",
+          "salary_min": 62000,
+          "salary_max": 78000,
+          "growth": "high"
+        },
+        {
+          "title": "Site Design Engineer",
+          "title_es": "Ingeniero de Diseño de Sitio",
+          "salary_min": 60000,
+          "salary_max": 74000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "AutoCAD Civil 3D", "category": "tool" },
+        { "name": "MicroStation", "category": "tool" },
+        { "name": "Site Design", "category": "technical" },
+        { "name": "Permitting and Compliance", "category": "technical" },
+        { "name": "Construction Inspection", "category": "technical" },
+        { "name": "Technical Writing", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Construction Engineering (B.S.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Construction Project Engineer",
+          "title_es": "Ingeniero de Proyectos de Construcción",
+          "salary_min": 65000,
+          "salary_max": 82000,
+          "growth": "high"
+        },
+        {
+          "title": "Assistant Superintendent",
+          "title_es": "Asistente de Superintendente",
+          "salary_min": 60000,
+          "salary_max": 75000,
+          "growth": "high"
+        },
+        {
+          "title": "Cost Estimator",
+          "title_es": "Estimador de Costos",
+          "salary_min": 55000,
+          "salary_max": 70000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Field Engineer",
+          "title_es": "Ingeniero de Campo",
+          "salary_min": 62000,
+          "salary_max": 78000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Project Documentation", "category": "technical" },
+        { "name": "RFI Management", "category": "technical" },
+        { "name": "Submittal Processing", "category": "technical" },
+        { "name": "Safety Compliance", "category": "technical" },
+        { "name": "Subcontractor Management", "category": "soft_skill" },
+        { "name": "Spanish Communication", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Environmental Engineering (B.S.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Environmental Engineer I",
+          "title_es": "Ingeniero Ambiental I",
+          "salary_min": 58000,
+          "salary_max": 72000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Water Resources Engineer",
+          "title_es": "Ingeniero de Recursos Hídricos",
+          "salary_min": 60000,
+          "salary_max": 75000,
+          "growth": "high"
+        },
+        {
+          "title": "Compliance Specialist",
+          "title_es": "Especialista en Cumplimiento",
+          "salary_min": 50000,
+          "salary_max": 65000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Remediation Engineer",
+          "title_es": "Ingeniero de Remediación",
+          "salary_min": 58000,
+          "salary_max": 72000,
+          "growth": "moderate-high"
+        }
+      ],
+      "skills": [
+        { "name": "HEC-RAS", "category": "tool" },
+        { "name": "ICPR", "category": "tool" },
+        { "name": "SWMM", "category": "tool" },
+        { "name": "Hydraulic Modeling", "category": "technical" },
+        { "name": "Stormwater Management", "category": "technical" },
+        { "name": "Environmental Regulations", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Photonic Science and Engineering (B.S.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Photonics Engineer",
+          "title_es": "Ingeniero de Fotónica",
+          "salary_min": 75000,
+          "salary_max": 90000,
+          "growth": "very high"
+        },
+        {
+          "title": "Optical Systems Engineer",
+          "title_es": "Ingeniero de Sistemas Ópticos",
+          "salary_min": 78000,
+          "salary_max": 95000,
+          "growth": "very high"
+        },
+        {
+          "title": "Laser Engineer",
+          "title_es": "Ingeniero Láser",
+          "salary_min": 75000,
+          "salary_max": 92000,
+          "growth": "very high"
+        },
+        {
+          "title": "Test Engineer",
+          "title_es": "Ingeniero de Pruebas",
+          "salary_min": 70000,
+          "salary_max": 85000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Optical Design", "category": "technical" },
+        { "name": "Lens Assembly Design", "category": "technical" },
+        { "name": "Laser Systems", "category": "technical" },
+        { "name": "Optical Bench Setup", "category": "technical" },
+        { "name": "Fiber Optics", "category": "technical" },
+        { "name": "LiDAR Technology", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Materials Science and Engineering (B.S.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Materials Engineer",
+          "title_es": "Ingeniero de Materiales",
+          "salary_min": 70000,
+          "salary_max": 85000,
+          "growth": "high"
+        },
+        {
+          "title": "Process Engineer",
+          "title_es": "Ingeniero de Procesos",
+          "salary_min": 68000,
+          "salary_max": 82000,
+          "growth": "high"
+        },
+        {
+          "title": "Failure Analyst",
+          "title_es": "Analista de Fallas",
+          "salary_min": 65000,
+          "salary_max": 80000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Quality Engineer",
+          "title_es": "Ingeniero de Calidad",
+          "salary_min": 65000,
+          "salary_max": 80000,
+          "growth": "moderate-high"
+        }
+      ],
+      "skills": [
+        { "name": "Scanning Electron Microscopy (SEM)", "category": "tool" },
+        { "name": "X-Ray Diffraction (XRD)", "category": "tool" },
+        { "name": "Spectroscopy", "category": "tool" },
+        { "name": "Composites Analysis", "category": "technical" },
+        { "name": "Semiconductor Processing", "category": "technical" },
+        { "name": "Corrosion Control", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Theme Park and Attraction Management (B.S.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Operations Supervisor",
+          "title_es": "Supervisor de Operaciones",
+          "salary_min": 45000,
+          "salary_max": 55000,
+          "growth": "high"
+        },
+        {
+          "title": "Guest Experience Manager",
+          "title_es": "Gerente de Experiencia del Huésped",
+          "salary_min": 48000,
+          "salary_max": 58000,
+          "growth": "high"
+        },
+        {
+          "title": "Area Manager",
+          "title_es": "Gerente de Área",
+          "salary_min": 50000,
+          "salary_max": 65000,
+          "growth": "high"
+        },
+        {
+          "title": "Attraction Operations Supervisor",
+          "title_es": "Supervisor de Operaciones de Atracción",
+          "salary_min": 45000,
+          "salary_max": 55000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Guest Recovery", "category": "soft_skill" },
+        { "name": "Crew Scheduling", "category": "technical" },
+        { "name": "Safety Compliance", "category": "technical" },
+        { "name": "Bilingual Communication (Spanish)", "category": "soft_skill" },
+        { "name": "Conflict Resolution", "category": "soft_skill" },
+        { "name": "Operational Leadership", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Event Management (B.S.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Event Coordinator",
+          "title_es": "Coordinador de Eventos",
+          "salary_min": 40000,
+          "salary_max": 50000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Catering Sales Manager",
+          "title_es": "Gerente de Ventas de Catering",
+          "salary_min": 45000,
+          "salary_max": 55000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Venue Coordinator",
+          "title_es": "Coordinador de Recinto",
+          "salary_min": 38000,
+          "salary_max": 48000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Meeting Planner Assistant",
+          "title_es": "Asistente de Planificador de Reuniones",
+          "salary_min": 40000,
+          "salary_max": 50000,
+          "growth": "moderate-high"
+        }
+      ],
+      "skills": [
+        { "name": "Event Logistics", "category": "technical" },
+        { "name": "Vendor Management", "category": "technical" },
+        { "name": "Room Block Coordination", "category": "technical" },
+        { "name": "Sales and Negotiation", "category": "soft_skill" },
+        { "name": "Budget Management", "category": "technical" },
+        { "name": "Client Relations", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Integrated Business (B.S.B.A.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Business Analyst",
+          "title_es": "Analista de Negocios",
+          "salary_min": 50000,
+          "salary_max": 65000,
+          "growth": "high"
+        },
+        {
+          "title": "Project Coordinator",
+          "title_es": "Coordinador de Proyectos",
+          "salary_min": 45000,
+          "salary_max": 55000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Sales Representative",
+          "title_es": "Representante de Ventas",
+          "salary_min": 40000,
+          "salary_max": 60000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Operations Analyst",
+          "title_es": "Analista de Operaciones",
+          "salary_min": 48000,
+          "salary_max": 62000,
+          "growth": "moderate-high"
+        }
+      ],
+      "skills": [
+        { "name": "Public Speaking", "category": "soft_skill" },
+        { "name": "Business Presentation", "category": "soft_skill" },
+        { "name": "Process Improvement", "category": "technical" },
+        { "name": "Data Analysis", "category": "technical" },
+        { "name": "Team Collaboration", "category": "soft_skill" },
+        { "name": "Adaptability", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Real Estate (B.S.B.A.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Real Estate Analyst",
+          "title_es": "Analista Inmobiliario",
+          "salary_min": 60000,
+          "salary_max": 75000,
+          "growth": "high"
+        },
+        {
+          "title": "Property Manager",
+          "title_es": "Administrador de Propiedades",
+          "salary_min": 50000,
+          "salary_max": 65000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Commercial Real Estate Agent",
+          "title_es": "Agente Comercial",
+          "salary_min": 40000,
+          "salary_max": 100000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Leasing Consultant",
+          "title_es": "Consultor de Arrendamiento",
+          "salary_min": 40000,
+          "salary_max": 55000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "ARGUS", "category": "tool" },
+        { "name": "Excel Financial Modeling", "category": "tool" },
+        { "name": "Cash Flow Analysis", "category": "technical" },
+        { "name": "Property Valuation", "category": "technical" },
+        { "name": "Market Analysis", "category": "technical" },
+        { "name": "Negotiation", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Medical Laboratory Sciences (B.S.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Medical Laboratory Scientist",
+          "title_es": "Científico de Laboratorio Médico",
+          "salary_min": 50000,
+          "salary_max": 62000,
+          "growth": "high"
+        },
+        {
+          "title": "Clinical Laboratory Technologist",
+          "title_es": "Tecnólogo de Laboratorio Clínico",
+          "salary_min": 48000,
+          "salary_max": 60000,
+          "growth": "high"
+        },
+        {
+          "title": "Lab Technologist",
+          "title_es": "Tecnólogo de Laboratorio",
+          "salary_min": 48000,
+          "salary_max": 58000,
+          "growth": "high"
+        },
+        {
+          "title": "Blood Bank Technologist",
+          "title_es": "Tecnólogo de Banco de Sangre",
+          "salary_min": 50000,
+          "salary_max": 62000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Hematology Testing", "category": "technical" },
+        { "name": "Microbiology", "category": "technical" },
+        { "name": "Clinical Chemistry", "category": "technical" },
+        { "name": "ASCP Certification", "category": "technical" },
+        { "name": "Quality Control", "category": "technical" },
+        { "name": "Microscopy", "category": "tool" }
+      ]
+    },
+    {
+      "name": "Biomedical Sciences (B.S.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Clinical Research Coordinator",
+          "title_es": "Coordinador de Investigación Clínica",
+          "salary_min": 45000,
+          "salary_max": 60000,
+          "growth": "high"
+        },
+        {
+          "title": "Medical Sales Representative",
+          "title_es": "Representante de Ventas Médicas",
+          "salary_min": 50000,
+          "salary_max": 80000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Biological Technician",
+          "title_es": "Técnico Biológico",
+          "salary_min": 35000,
+          "salary_max": 45000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Research Assistant",
+          "title_es": "Asistente de Investigación",
+          "salary_min": 38000,
+          "salary_max": 48000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Clinical Research (CCRP)", "category": "technical" },
+        { "name": "Phlebotomy", "category": "technical" },
+        { "name": "Laboratory Techniques", "category": "technical" },
+        { "name": "Data Collection", "category": "technical" },
+        { "name": "Scientific Writing", "category": "soft_skill" },
+        { "name": "Regulatory Compliance", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Communication Sciences and Disorders (B.A./B.S.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Speech-Language Pathology Assistant",
+          "title_es": "Asistente de Patología del Habla",
+          "salary_min": 40000,
+          "salary_max": 50000,
+          "growth": "high"
+        },
+        {
+          "title": "Audiology Assistant",
+          "title_es": "Asistente de Audiología",
+          "salary_min": 35000,
+          "salary_max": 45000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Early Intervention Specialist",
+          "title_es": "Especialista en Intervención Temprana",
+          "salary_min": 38000,
+          "salary_max": 48000,
+          "growth": "high"
+        },
+        {
+          "title": "Rehabilitation Aide",
+          "title_es": "Asistente de Rehabilitación",
+          "salary_min": 32000,
+          "salary_max": 42000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Speech Therapy Techniques", "category": "technical" },
+        { "name": "Hearing Assessment", "category": "technical" },
+        { "name": "Bilingual Therapy (Spanish)", "category": "soft_skill" },
+        { "name": "Patient Documentation", "category": "technical" },
+        { "name": "Therapy Plan Implementation", "category": "technical" },
+        { "name": "Empathy and Patience", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Digital Media and Game Design (B.A.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Game QA Tester",
+          "title_es": "Probador de Calidad de Videojuegos",
+          "salary_min": 35000,
+          "salary_max": 45000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Junior 3D Artist",
+          "title_es": "Artista 3D Junior",
+          "salary_min": 50000,
+          "salary_max": 65000,
+          "growth": "high"
+        },
+        {
+          "title": "UX Designer",
+          "title_es": "Diseñador de Experiencia de Usuario",
+          "salary_min": 60000,
+          "salary_max": 75000,
+          "growth": "high"
+        },
+        {
+          "title": "Junior Game Designer",
+          "title_es": "Diseñador de Videojuegos Junior",
+          "salary_min": 48000,
+          "salary_max": 62000,
+          "growth": "moderate-high"
+        }
+      ],
+      "skills": [
+        { "name": "Unity", "category": "tool" },
+        { "name": "Unreal Engine", "category": "tool" },
+        { "name": "3D Modeling", "category": "technical" },
+        { "name": "UI/UX Design", "category": "technical" },
+        { "name": "Game Testing", "category": "technical" },
+        { "name": "Portfolio Development", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Emerging Media: Character Animation (B.F.A.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "3D Generalist",
+          "title_es": "Generalista 3D",
+          "salary_min": 50000,
+          "salary_max": 65000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Motion Graphics Artist",
+          "title_es": "Artista de Gráficos en Movimiento",
+          "salary_min": 48000,
+          "salary_max": 60000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Character Animator",
+          "title_es": "Animador de Personajes",
+          "salary_min": 52000,
+          "salary_max": 68000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Visualization Artist",
+          "title_es": "Artista de Visualización",
+          "salary_min": 48000,
+          "salary_max": 62000,
+          "growth": "moderate-high"
+        }
+      ],
+      "skills": [
+        { "name": "Maya", "category": "tool" },
+        { "name": "Blender", "category": "tool" },
+        { "name": "After Effects", "category": "tool" },
+        { "name": "Character Rigging", "category": "technical" },
+        { "name": "Texturing and Lighting", "category": "technical" },
+        { "name": "Storytelling", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Psychology (B.A./B.S.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Case Manager",
+          "title_es": "Administrador de Casos",
+          "salary_min": 40000,
+          "salary_max": 48000,
+          "growth": "high"
+        },
+        {
+          "title": "Human Resources Assistant",
+          "title_es": "Asistente de Recursos Humanos",
+          "salary_min": 45000,
+          "salary_max": 55000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Registered Behavior Technician",
+          "title_es": "Técnico de Comportamiento Registrado",
+          "salary_min": 35000,
+          "salary_max": 45000,
+          "growth": "very high"
+        },
+        {
+          "title": "Mental Health Technician",
+          "title_es": "Técnico de Salud Mental",
+          "salary_min": 35000,
+          "salary_max": 45000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "ABA Therapy", "category": "technical" },
+        { "name": "Case Documentation", "category": "technical" },
+        { "name": "Bilingual Communication (Spanish)", "category": "soft_skill" },
+        { "name": "Crisis Intervention", "category": "technical" },
+        { "name": "Active Listening", "category": "soft_skill" },
+        { "name": "Data Collection", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Sociology (B.A./B.S.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Case Manager",
+          "title_es": "Administrador de Casos",
+          "salary_min": 40000,
+          "salary_max": 48000,
+          "growth": "high"
+        },
+        {
+          "title": "Community Outreach Coordinator",
+          "title_es": "Coordinador de Alcance Comunitario",
+          "salary_min": 38000,
+          "salary_max": 48000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Research Assistant",
+          "title_es": "Asistente de Investigación",
+          "salary_min": 38000,
+          "salary_max": 48000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Social Services Specialist",
+          "title_es": "Especialista en Servicios Sociales",
+          "salary_min": 40000,
+          "salary_max": 50000,
+          "growth": "moderate-high"
+        }
+      ],
+      "skills": [
+        { "name": "Research Methods", "category": "technical" },
+        { "name": "Data Analysis", "category": "technical" },
+        { "name": "Community Engagement", "category": "soft_skill" },
+        { "name": "Report Writing", "category": "soft_skill" },
+        { "name": "Bilingual Communication (Spanish)", "category": "soft_skill" },
+        { "name": "Critical Thinking", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "History (B.A.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Field Technician (CRM)",
+          "title_es": "Técnico de Campo (Arqueología)",
+          "salary_min": 35000,
+          "salary_max": 45000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Grant Writer",
+          "title_es": "Redactor de Subvenciones",
+          "salary_min": 48000,
+          "salary_max": 60000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Museum Assistant",
+          "title_es": "Asistente de Museo",
+          "salary_min": 32000,
+          "salary_max": 40000,
+          "growth": "low"
+        },
+        {
+          "title": "Compliance Analyst",
+          "title_es": "Analista de Cumplimiento",
+          "salary_min": 45000,
+          "salary_max": 58000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Archival Research", "category": "technical" },
+        { "name": "Grant Writing", "category": "technical" },
+        { "name": "Historical Analysis", "category": "technical" },
+        { "name": "Technical Writing", "category": "soft_skill" },
+        { "name": "Data Synthesis", "category": "soft_skill" },
+        { "name": "Public Presentation", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Anthropology (B.A.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Field Technician (CRM)",
+          "title_es": "Técnico de Campo (Arqueología)",
+          "salary_min": 35000,
+          "salary_max": 45000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Cultural Resource Specialist",
+          "title_es": "Especialista en Recursos Culturales",
+          "salary_min": 40000,
+          "salary_max": 52000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Research Assistant",
+          "title_es": "Asistente de Investigación",
+          "salary_min": 36000,
+          "salary_max": 46000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Museum Technician",
+          "title_es": "Técnico de Museo",
+          "salary_min": 34000,
+          "salary_max": 44000,
+          "growth": "low"
+        }
+      ],
+      "skills": [
+        { "name": "Archaeological Survey", "category": "technical" },
+        { "name": "GIS Mapping", "category": "tool" },
+        { "name": "Ethnographic Research", "category": "technical" },
+        { "name": "Artifact Analysis", "category": "technical" },
+        { "name": "Field Documentation", "category": "technical" },
+        { "name": "Cross-Cultural Communication", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Political Science (B.A.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Legislative Aide",
+          "title_es": "Asistente Legislativo",
+          "salary_min": 40000,
+          "salary_max": 52000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Field Organizer",
+          "title_es": "Organizador de Campo",
+          "salary_min": 42000,
+          "salary_max": 54000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Policy Analyst (Junior)",
+          "title_es": "Analista de Políticas (Junior)",
+          "salary_min": 45000,
+          "salary_max": 58000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Campaign Coordinator",
+          "title_es": "Coordinador de Campaña",
+          "salary_min": 38000,
+          "salary_max": 50000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Policy Research", "category": "technical" },
+        { "name": "Legislative Analysis", "category": "technical" },
+        { "name": "Public Speaking", "category": "soft_skill" },
+        { "name": "Campaign Management", "category": "technical" },
+        { "name": "Constituent Relations", "category": "soft_skill" },
+        { "name": "Political Writing", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Social Work (B.S.W.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Child Protective Investigator",
+          "title_es": "Investigador de Protección Infantil",
+          "salary_min": 45000,
+          "salary_max": 52000,
+          "growth": "high"
+        },
+        {
+          "title": "Family Support Worker",
+          "title_es": "Trabajador de Apoyo Familiar",
+          "salary_min": 40000,
+          "salary_max": 48000,
+          "growth": "high"
+        },
+        {
+          "title": "Social Services Coordinator",
+          "title_es": "Coordinador de Servicios Sociales",
+          "salary_min": 42000,
+          "salary_max": 50000,
+          "growth": "high"
+        },
+        {
+          "title": "Case Manager",
+          "title_es": "Administrador de Casos",
+          "salary_min": 40000,
+          "salary_max": 48000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Crisis Intervention", "category": "technical" },
+        { "name": "Case Management", "category": "technical" },
+        { "name": "Bilingual Communication (Spanish)", "category": "soft_skill" },
+        { "name": "Family Assessment", "category": "technical" },
+        { "name": "Child Welfare Regulations", "category": "technical" },
+        { "name": "Advocacy", "category": "soft_skill" }
+      ]
+    }
+  ]
+}

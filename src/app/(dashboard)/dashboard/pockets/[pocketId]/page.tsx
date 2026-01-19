@@ -1,36 +1,28 @@
 'use client'
 
 /**
- * Pocket Detail Page
- * Shows full pocket content with job details
+ * Pocket Workbench Page
+ * Full-page workspace for managing a job application
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
+import { useParams } from 'next/navigation'
+import { Loader2, AlertCircle, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-import {
-  ArrowLeft,
-  Loader2,
-  Star,
-  StarOff,
-  Building2,
-  MapPin,
-  DollarSign,
-  Calendar,
-  ExternalLink,
-  Clock,
-  Sparkles,
-  Share2,
-  Printer,
-  CheckCircle,
-  AlertCircle,
-  FileText
-} from 'lucide-react'
+import { motion } from 'framer-motion'
 
-import { PocketTier1, type PocketTier1Data } from '@/components/jobs/PocketTier1'
-import { PocketTier2, type PocketTier2Data } from '@/components/jobs/PocketTier2'
-import { PocketTier3, type PocketTier3Data } from '@/components/jobs/PocketTier3'
+import {
+  WorkbenchLayout,
+  type WorkbenchTab,
+  JobIntelTab,
+  TrackerTab,
+  type ApplicationStatus,
+  ResumeTab,
+  CoverLetterTab,
+  InterviewPrepTab
+} from '@/components/workbench'
+
+import { type PocketTier1Data } from '@/components/jobs/PocketTier1'
 
 interface JobData {
   id: string
@@ -55,7 +47,7 @@ interface PocketData {
   id: string
   jobId: string
   tier: string
-  data: PocketTier1Data | PocketTier2Data | PocketTier3Data
+  data: PocketTier1Data
   modelUsed: string | null
   generationTimeMs: number | null
   tokensUsed: number | null
@@ -67,42 +59,57 @@ interface PocketData {
   isExpired: boolean
 }
 
-const tierConfig: Record<string, { label: string; color: string; bgColor: string; readTime: string }> = {
-  essential: {
-    label: 'Essential',
-    color: 'text-blue-400',
-    bgColor: 'bg-blue-500/20',
-    readTime: '20 seconds'
-  },
-  starter: {
-    label: 'Starter',
-    color: 'text-[#ffc425]',
-    bgColor: 'bg-[#ffc425]/20',
-    readTime: '90 seconds'
-  },
-  premium: {
-    label: 'Premium',
-    color: 'text-purple-400',
-    bgColor: 'bg-purple-500/20',
-    readTime: '5-10 minutes'
-  },
-  unlimited: {
-    label: 'Unlimited',
-    color: 'text-emerald-400',
-    bgColor: 'bg-emerald-500/20',
-    readTime: '10-15 minutes'
-  }
+interface Contact {
+  id: string
+  name: string
+  role: string
+  email?: string
+  phone?: string
+  linkedin?: string
 }
 
-export default function PocketDetailPage() {
+interface FollowUp {
+  id: string
+  date: string
+  note: string
+  completed: boolean
+}
+
+interface Resume {
+  id: string
+  name: string
+  template: string
+  updatedAt: string
+  atsScore?: number
+}
+
+export default function PocketWorkbenchPage() {
   const params = useParams()
-  const router = useRouter()
   const pocketId = params.pocketId as string
 
+  // Data state
   const [pocket, setPocket] = useState<PocketData | null>(null)
   const [job, setJob] = useState<JobData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Workbench state
+  const [activeTab, setActiveTab] = useState<WorkbenchTab>('intel')
+  const [applicationStatus, setApplicationStatus] = useState<ApplicationStatus>('not_applied')
+  const [notes, setNotes] = useState('')
+  const [contacts, setContacts] = useState<Contact[]>([])
+  const [followUps, setFollowUps] = useState<FollowUp[]>([])
+  const [preparedAnswers, setPreparedAnswers] = useState<Record<string, string>>({})
+  const [coverLetter, setCoverLetter] = useState('')
+  const [coverLetterTemplate, setCoverLetterTemplate] = useState<'professional' | 'casual' | 'direct'>('professional')
+  const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false)
+
+  // Mock resumes (would come from API)
+  const [availableResumes] = useState<Resume[]>([
+    { id: 'master-1', name: 'Master Resume', template: 'Professional', updatedAt: '2025-01-10', atsScore: 85 },
+    { id: 'customer-service', name: 'Customer Service Focus', template: 'Modern', updatedAt: '2025-01-08', atsScore: 78 }
+  ])
+  const [forkedResumeId, setForkedResumeId] = useState<string | undefined>()
 
   // Fetch pocket details
   useEffect(() => {
@@ -123,6 +130,11 @@ export default function PocketDetailPage() {
         const data = await response.json()
         setPocket(data.pocket)
         setJob(data.job)
+
+        // Initialize status from pocket data if available
+        if (data.pocket.appliedAfterViewing) {
+          setApplicationStatus('applied')
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Something went wrong')
       } finally {
@@ -133,89 +145,65 @@ export default function PocketDetailPage() {
     fetchPocket()
   }, [pocketId])
 
-  // Toggle favorite
-  const handleToggleFavorite = useCallback(async () => {
-    if (!pocket) return
-
-    try {
-      const response = await fetch(`/api/job-pockets/${pocketId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isFavorite: !pocket.isFavorite })
-      })
-
-      if (response.ok) {
-        setPocket(prev => prev ? { ...prev, isFavorite: !prev.isFavorite } : null)
-      }
-    } catch (err) {
-      console.error('Error updating favorite:', err)
-    }
-  }, [pocket, pocketId])
-
-  // Mark as applied
-  const handleMarkApplied = useCallback(async () => {
-    if (!pocket) return
-
-    try {
-      const response = await fetch(`/api/job-pockets/${pocketId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ appliedAfterViewing: true })
-      })
-
-      if (response.ok) {
-        setPocket(prev => prev ? { ...prev, appliedAfterViewing: true } : null)
-      }
-    } catch (err) {
-      console.error('Error marking applied:', err)
-    }
-  }, [pocket, pocketId])
-
   // Handle apply
   const handleApply = useCallback(() => {
     if (!job?.applyUrl) return
-    handleMarkApplied()
+
+    // Update status
+    setApplicationStatus('applied')
+
+    // Update pocket in database
+    fetch(`/api/job-pockets/${pocketId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ appliedAfterViewing: true })
+    }).catch(console.error)
+
+    // Open application URL
     window.open(job.applyUrl, '_blank', 'noopener,noreferrer')
-  }, [job, handleMarkApplied])
+  }, [job, pocketId])
 
-  // Handle print
-  const handlePrint = () => window.print()
+  // Handle answer change
+  const handleAnswerChange = useCallback((questionId: string, answer: string) => {
+    setPreparedAnswers(prev => ({ ...prev, [questionId]: answer }))
+  }, [])
 
-  // Handle share
-  const handleShare = async () => {
-    if (navigator.share && job) {
-      try {
-        await navigator.share({
-          title: `Job Pocket: ${job.title} at ${job.company}`,
-          text: `Check out this job opportunity!`
-        })
-      } catch (err) {
-        // User cancelled
-      }
-    }
-  }
+  // Handle fork resume
+  const handleForkResume = useCallback((resumeId: string) => {
+    // In reality, this would call an API to create a forked copy
+    setForkedResumeId(`forked-${resumeId}-${Date.now()}`)
+  }, [])
 
-  // Format salary
-  const formatSalary = (min: number | null, max: number | null, period: string | null) => {
-    if (!min && !max) return null
+  // Handle generate cover letter
+  const handleGenerateCoverLetter = useCallback(async () => {
+    if (!job) return
+    setIsGeneratingCoverLetter(true)
 
-    const format = (amount: number) => {
-      if (period === 'hourly') return `$${amount}/hr`
-      return `$${Math.round(amount / 1000)}k`
-    }
+    // Simulate AI generation (would be API call)
+    await new Promise(resolve => setTimeout(resolve, 2000))
 
-    if (min && max) return `${format(min)} - ${format(max)}`
-    if (min) return `${format(min)}+`
-    return null
-  }
+    const generated = `Dear Hiring Manager,
+
+I am writing to express my strong interest in the ${job.title} position at ${job.company}. With my background and skills, I am confident I would be a valuable addition to your team.
+
+${job.location !== 'Remote' ? `I am excited about the opportunity to work in ${job.location} and contribute to your organization's success.` : "I am excited about the opportunity to contribute to your organization's success in a remote capacity."}
+
+I look forward to the opportunity to discuss how my qualifications align with your needs.
+
+Best regards,
+[Your Name]`
+
+    setCoverLetter(generated)
+    setIsGeneratingCoverLetter(false)
+  }, [job])
 
   // Loading state
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto py-12">
-        <div className="flex flex-col items-center justify-center">
-          <Loader2 className="w-12 h-12 animate-spin text-[#ffc425] mb-4" />
-          <p className="text-slate-400">Loading pocket...</p>
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-[#ffc425] mx-auto mb-4" />
+          <p className="text-slate-500">Loading workbench...</p>
         </div>
       </div>
     )
@@ -224,24 +212,24 @@ export default function PocketDetailPage() {
   // Error state
   if (error) {
     return (
-      <div className="max-w-4xl mx-auto py-12">
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center"
+          className="text-center max-w-md mx-auto px-4"
         >
           <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-white mb-4">
-            {error === 'Pocket not found' ? 'Pocket Not Found' : 'Error Loading Pocket'}
+          <h1 className="text-2xl font-bold text-slate-900 mb-4">
+            {error === 'Pocket not found' ? 'Pocket Not Found' : 'Error Loading Workbench'}
           </h1>
-          <p className="text-slate-400 mb-6">
+          <p className="text-slate-500 mb-6">
             {error === 'Pocket not found'
               ? 'This pocket may have been deleted or expired.'
               : 'We had trouble loading this pocket. Please try again.'}
           </p>
           <Link
             href="/dashboard/pockets"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#ffc425] text-[#0f172a] font-semibold hover:bg-[#ffd85d] transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#ffc425] text-slate-900 font-semibold hover:bg-[#ffcd4a] transition-colors"
           >
             <ArrowLeft size={20} />
             Back to Pockets
@@ -251,200 +239,81 @@ export default function PocketDetailPage() {
     )
   }
 
-  // No pocket found
+  // No data
   if (!pocket || !job) {
     return null
   }
 
-  const config = tierConfig[pocket.tier] || tierConfig.essential
-  const salary = formatSalary(job.salaryMin, job.salaryMax, job.salaryPeriod)
+  // Extract data from pocket
+  const pocketData = pocket.data
+
+  // Build interview prep props
+  const likelyQuestions = pocketData.likelyQuestions || []
+  const talkingPoints = pocketData.talkingPoints || []
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Back link */}
-      <Link
-        href="/dashboard/pockets"
-        className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6"
-      >
-        <ArrowLeft size={18} />
-        Back to Pockets
-      </Link>
+    <WorkbenchLayout
+      jobTitle={job.title}
+      companyName={job.company}
+      applicationUrl={job.applyUrl}
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      onApply={handleApply}
+    >
+      {activeTab === 'intel' && (
+        <JobIntelTab
+          data={pocketData}
+          jobDescription={job.description}
+        />
+      )}
 
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
-      >
-        {/* Job info card */}
-        <div className="p-6 rounded-xl bg-slate-800/50 border border-slate-700 mb-4">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-white mb-2">{job.title}</h1>
-              <div className="flex flex-wrap items-center gap-4 text-slate-400">
-                <span className="flex items-center gap-2">
-                  <Building2 size={16} />
-                  {job.company}
-                </span>
-                <span className="flex items-center gap-2">
-                  <MapPin size={16} />
-                  {job.location}
-                </span>
-                {salary && (
-                  <span className="flex items-center gap-2">
-                    <DollarSign size={16} />
-                    {salary}
-                  </span>
-                )}
-                {job.postedAt && (
-                  <span className="flex items-center gap-2">
-                    <Calendar size={16} />
-                    Posted {new Date(job.postedAt).toLocaleDateString()}
-                  </span>
-                )}
-              </div>
-            </div>
+      {activeTab === 'tracker' && (
+        <TrackerTab
+          status={applicationStatus}
+          onStatusChange={setApplicationStatus}
+          appliedAt={pocket.appliedAfterViewing ? pocket.viewedAt : undefined}
+          notes={notes}
+          onNotesChange={setNotes}
+          contacts={contacts}
+          onContactsChange={setContacts}
+          followUps={followUps}
+          onFollowUpsChange={setFollowUps}
+          linkedResume={forkedResumeId ? { id: forkedResumeId, name: `Resume for ${job.title}` } : undefined}
+          linkedCoverLetter={coverLetter ? { id: 'cover-1', name: `Cover Letter for ${job.company}` } : undefined}
+        />
+      )}
 
-            {/* Actions */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleToggleFavorite}
-                className={`p-2 rounded-lg transition-colors ${
-                  pocket.isFavorite
-                    ? 'text-[#ffc425] bg-[#ffc425]/20 hover:bg-[#ffc425]/30'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-700'
-                }`}
-                title={pocket.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-              >
-                {pocket.isFavorite ? <Star size={20} fill="currentColor" /> : <StarOff size={20} />}
-              </button>
-              <button
-                onClick={handleShare}
-                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
-                title="Share"
-              >
-                <Share2 size={20} />
-              </button>
-              <button
-                onClick={handlePrint}
-                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
-                title="Print"
-              >
-                <Printer size={20} />
-              </button>
-            </div>
-          </div>
+      {activeTab === 'resume' && (
+        <ResumeTab
+          availableResumes={availableResumes}
+          onForkResume={handleForkResume}
+          forkedResumeId={forkedResumeId}
+          jobTitle={job.title}
+          companyName={job.company}
+        />
+      )}
 
-          {/* Badges */}
-          <div className="flex flex-wrap items-center gap-2 mt-4">
-            {/* Tier badge */}
-            <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${config.bgColor} ${config.color}`}>
-              <Sparkles size={14} />
-              {config.label} Pocket
-            </span>
+      {activeTab === 'cover-letter' && (
+        <CoverLetterTab
+          jobTitle={job.title}
+          companyName={job.company}
+          coverLetter={coverLetter}
+          onCoverLetterChange={setCoverLetter}
+          template={coverLetterTemplate}
+          onTemplateChange={setCoverLetterTemplate}
+          isGenerating={isGeneratingCoverLetter}
+          onGenerate={handleGenerateCoverLetter}
+        />
+      )}
 
-            {/* Read time */}
-            <span className="px-3 py-1 rounded-full bg-slate-700 text-slate-300 text-sm flex items-center gap-2">
-              <Clock size={14} />
-              {config.readTime} read
-            </span>
-
-            {/* Valencia match */}
-            {job.valenciaMatch && (
-              <span className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-sm font-medium">
-                Valencia Match {job.valenciaMatchScore && `(${job.valenciaMatchScore}%)`}
-              </span>
-            )}
-
-            {/* Applied badge */}
-            {pocket.appliedAfterViewing && (
-              <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-sm font-medium flex items-center gap-1">
-                <CheckCircle size={14} />
-                Applied
-              </span>
-            )}
-
-            {/* Expired badge */}
-            {pocket.isExpired && (
-              <span className="px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-sm font-medium">
-                Expired
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Quick actions */}
-        <div className="flex gap-3">
-          <button
-            onClick={handleApply}
-            disabled={!job.applyUrl || pocket.appliedAfterViewing}
-            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#ffc425] text-[#0f172a] font-semibold hover:bg-[#ffd85d] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {pocket.appliedAfterViewing ? (
-              <>
-                <CheckCircle size={20} />
-                Already Applied
-              </>
-            ) : (
-              <>
-                <ExternalLink size={20} />
-                Apply to This Job
-              </>
-            )}
-          </button>
-
-          <Link
-            href={`/dashboard/jobs/${job.id}`}
-            className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-700 transition-colors"
-          >
-            <FileText size={20} />
-            View Job Details
-          </Link>
-        </div>
-      </motion.div>
-
-      {/* Pocket content */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="p-6 rounded-xl bg-slate-800/30 border border-slate-700"
-      >
-        {pocket.tier === 'essential' && (
-          <PocketTier1 data={pocket.data as PocketTier1Data} />
-        )}
-
-        {pocket.tier === 'starter' && (
-          <PocketTier2 data={pocket.data as PocketTier2Data} />
-        )}
-
-        {(pocket.tier === 'premium' || pocket.tier === 'unlimited') && (
-          <PocketTier3
-            data={pocket.data as PocketTier3Data}
-            jobTitle={job.title}
-            companyName={job.company}
-          />
-        )}
-      </motion.div>
-
-      {/* Generation info */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="mt-6 text-center text-sm text-slate-500"
-      >
-        <p>
-          Generated on {new Date(pocket.createdAt).toLocaleDateString()} at {new Date(pocket.createdAt).toLocaleTimeString()}
-          {pocket.modelUsed && ` • Model: ${pocket.modelUsed}`}
-          {pocket.generationTimeMs && ` • ${(pocket.generationTimeMs / 1000).toFixed(1)}s`}
-        </p>
-        {pocket.expiresAt && !pocket.isExpired && (
-          <p className="mt-1">
-            Expires on {new Date(pocket.expiresAt).toLocaleDateString()}
-          </p>
-        )}
-      </motion.div>
-    </div>
+      {activeTab === 'prep' && (
+        <InterviewPrepTab
+          likelyQuestions={likelyQuestions}
+          talkingPoints={talkingPoints}
+          preparedAnswers={preparedAnswers}
+          onAnswerChange={handleAnswerChange}
+        />
+      )}
+    </WorkbenchLayout>
   )
 }

@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/components/providers/auth-provider'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { AppShell } from '@/components/shell'
 import { ModeProvider } from '@/lib/mode/ModeContext'
 import { Sun } from 'lucide-react'
@@ -25,6 +25,7 @@ export default function DashboardLayout({
 }) {
   const { user, isLoading } = useAuth()
   const router = useRouter()
+  const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(null)
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -32,6 +33,20 @@ export default function DashboardLayout({
       router.push('/login')
     }
   }, [user, isLoading, router])
+
+  // Fetch user avatar from settings
+  useEffect(() => {
+    if (user) {
+      fetch('/api/settings')
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data?.settings?.profile?.avatarUrl) {
+            setUserAvatarUrl(data.settings.profile.avatarUrl)
+          }
+        })
+        .catch(() => {})
+    }
+  }, [user])
 
   // Loading state
   if (isLoading) {
@@ -76,6 +91,7 @@ export default function DashboardLayout({
         userInitial={userInitial}
         userLocation={userLocation}
         userTier={userTier}
+        userAvatarUrl={userAvatarUrl}
         isOwner={userIsOwner}
       >
         {children}

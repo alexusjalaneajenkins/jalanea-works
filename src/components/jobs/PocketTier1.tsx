@@ -19,15 +19,70 @@ import {
 } from 'lucide-react'
 
 export interface PocketTier1Data {
+  // Core fields
   qualificationCheck: {
     status: 'QUALIFIED' | 'PARTIALLY_QUALIFIED' | 'NOT_QUALIFIED'
     missing: string[]
   }
-  quickBrief: string
+  recommendation: 'APPLY_NOW' | 'CONSIDER' | 'SKIP'
+  matchScore?: number
+
+  // Legacy field (deprecated - use structured zones instead)
+  quickBrief?: string
+
+  // Prep tab fields
   talkingPoints: string[]
   likelyQuestions: string[]
   redFlags: string[]
-  recommendation: 'APPLY_NOW' | 'CONSIDER' | 'SKIP'
+
+  // Zone A: Logistics (Where & When)
+  logistics?: {
+    locationType: 'on-site' | 'hybrid' | 'remote'
+    locationAddress?: string
+    schedule: string
+    employmentType: string
+    transitInfo?: string
+    payRate?: string
+  }
+
+  // Zone B: Profile (Who & Why) - Enhanced with Proof Points
+  requirements?: {
+    text: string
+    met: boolean
+    proofPoint?: string  // Script for proving soft skills in interview
+  }[]
+  mission?: string
+
+  // Zone C: Execution - Legacy (kept for backwards compatibility)
+  dailyTasks?: {
+    title: string
+    description: string
+  }[]
+  toolsUsed?: string[]
+
+  // Zone C: Reality Check (replaces dailyTasks with insider perspective)
+  realityCheck?: {
+    official: string      // Corporate speak: "Assist Customers"
+    reality: string       // Truth: "You're the emotional firewall"
+    intensity: 'low' | 'medium' | 'high'
+  }[]
+
+  // Skill Gaps - Learning bridge for missing skills
+  skillGaps?: {
+    skill: string
+    gapType: 'software' | 'certification' | 'experience'
+    learnTime: string
+    resourceTitle: string
+    resourceUrl?: string
+  }[]
+
+  // Day Timeline - Visualize the actual workday rhythm
+  dayTimeline?: {
+    time: string
+    activity: string
+    description: string
+    intensity: 'calm' | 'busy' | 'rush'
+  }[]
 }
 
 interface PocketTier1Props {

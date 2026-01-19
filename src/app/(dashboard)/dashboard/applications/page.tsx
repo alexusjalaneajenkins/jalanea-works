@@ -22,7 +22,14 @@ import {
   Gift,
   TrendingUp,
   FolderOpen,
-  ArrowRight
+  ArrowRight,
+  LayoutGrid,
+  List,
+  Bus,
+  DollarSign,
+  Clock,
+  Archive,
+  MessageSquare
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -161,6 +168,65 @@ function ModeChip({
   )
 }
 
+// View toggle component (Board | List)
+type ViewMode = 'board' | 'list'
+
+function ViewToggle({
+  viewMode,
+  onChange
+}: {
+  viewMode: ViewMode
+  onChange: (mode: ViewMode) => void
+}) {
+  return (
+    <div className="inline-flex items-center rounded-2xl border border-border bg-card/40 p-1">
+      <button
+        onClick={() => onChange('board')}
+        className={cn(
+          'inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-bold transition-colors',
+          viewMode === 'board'
+            ? 'bg-primary/10 text-foreground'
+            : 'text-muted-foreground hover:text-foreground'
+        )}
+      >
+        <LayoutGrid size={14} />
+        Board
+      </button>
+      <button
+        onClick={() => onChange('list')}
+        className={cn(
+          'inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-bold transition-colors',
+          viewMode === 'list'
+            ? 'bg-primary/10 text-foreground'
+            : 'text-muted-foreground hover:text-foreground'
+        )}
+      >
+        <List size={14} />
+        List
+      </button>
+    </div>
+  )
+}
+
+// Helper: Check if application is stale (>14 days in Applied status)
+function isStaleApplication(app: Application): boolean {
+  const stage = getDisplayStage(app.status)
+  if (stage !== 'Applied') return false
+
+  const appliedDate = app.appliedAt ? new Date(app.appliedAt) : null
+  if (!appliedDate) return false
+
+  const daysSinceApplied = Math.floor((Date.now() - appliedDate.getTime()) / (1000 * 60 * 60 * 24))
+  return daysSinceApplied > 14
+}
+
+// Helper: Get days since applied
+function getDaysSinceApplied(app: Application): number | null {
+  const appliedDate = app.appliedAt ? new Date(app.appliedAt) : null
+  if (!appliedDate) return null
+  return Math.floor((Date.now() - appliedDate.getTime()) / (1000 * 60 * 60 * 24))
+}
+
 function StatCard({
   icon: Icon,
   label,
@@ -194,15 +260,23 @@ function StatCard({
 function AppCard({
   app,
   mode,
-  onClick
+  onClick,
+  onMoveToInterview,
+  onArchive,
+  onFollowUp
 }: {
   app: Application
   mode: Mode
   onClick: () => void
+  onMoveToInterview?: (app: Application) => void
+  onArchive?: (app: Application) => void
+  onFollowUp?: (app: Application) => void
 }) {
   const stage = getDisplayStage(app.status)
   // Use a default match score since Application type doesn't have matchScore
   const match = 75
+  const stale = isStaleApplication(app)
+  const daysSince = getDaysSinceApplied(app)
 
   // Format date
   const dateLabel = app.appliedAt
@@ -211,17 +285,32 @@ function AppCard({
     ? `Saved ${new Date(app.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
     : 'Recently added'
 
+  // Format salary display
+  const salaryDisplay = app.salaryMin || app.salaryMax
+    ? app.salaryType === 'hourly'
+      ? `$${app.salaryMin || app.salaryMax}/hr`
+      : `$${((app.salaryMin || app.salaryMax || 0) / 1000).toFixed(0)}k`
+    : null
+
+  // Check for transit accessibility based on location (Orlando area = LYNX reachable)
+  const isTransitAccessible = app.location?.toLowerCase().includes('orlando') ||
+    app.location?.toLowerCase().includes('kissimmee') ||
+    app.location?.toLowerCase().includes('sanford') ||
+    app.location?.toLowerCase().includes('altamonte')
+
   return (
     <div
       onClick={onClick}
       className={cn(
-        'cursor-pointer rounded-3xl border border-border p-4 transition-colors hover:bg-card/60',
-        mode === 'survival' ? 'bg-card/40' : mode === 'bridge' ? 'bg-primary/5' : 'bg-accent/5'
+        'cursor-pointer rounded-3xl border border-border p-4 transition-all hover:bg-card/60',
+        mode === 'survival' ? 'bg-card/40' : mode === 'bridge' ? 'bg-primary/5' : 'bg-accent/5',
+        stale && 'opacity-60'
       )}
     >
       <div className="flex items-start gap-3">
         <MatchRing value={match} />
         <div className="min-w-0 flex-1">
+          {/* Top row: Mode + Stage badges */}
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={cn(
@@ -236,8 +325,15 @@ function AppCard({
             <span className="rounded-full border border-border bg-background/40 px-3 py-1 text-[11px] font-bold text-muted-foreground">
               {stage}
             </span>
+            {stale && (
+              <span className="rounded-full border border-amber-500/25 bg-amber-500/10 px-3 py-1 text-[11px] font-bold text-amber-600">
+                <Clock size={10} className="mr-1 inline" />
+                {daysSince}d waiting
+              </span>
+            )}
           </div>
 
+          {/* Job title */}
           <div
             className="mt-2 text-sm font-black tracking-tight text-foreground"
             style={{ fontFamily: 'var(--font-serif), Satoshi, sans-serif' }}
@@ -245,13 +341,75 @@ function AppCard({
             {app.jobTitle}
           </div>
           <div className="mt-0.5 text-xs text-muted-foreground">{app.company}</div>
-          <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-border bg-background/40 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
-            <Calendar size={14} />
-            {dateLabel}
+
+          {/* Info badges row: salary, transit, date */}
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {salaryDisplay && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-green-500/25 bg-green-500/10 px-2.5 py-1 text-[11px] font-bold text-green-600">
+                <DollarSign size={12} />
+                {salaryDisplay}
+              </span>
+            )}
+            {isTransitAccessible && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-blue-500/25 bg-blue-500/10 px-2.5 py-1 text-[11px] font-bold text-blue-600">
+                <Bus size={12} />
+                LYNX
+              </span>
+            )}
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/40 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
+              <Calendar size={12} />
+              {dateLabel}
+            </span>
           </div>
+
+          {/* Stale actions or Move to Interview button */}
+          {stale && (onArchive || onFollowUp) && (
+            <div className="mt-3 flex items-center gap-2">
+              {onFollowUp && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onFollowUp(app)
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-primary/25 bg-primary/10 px-3 py-1.5 text-[11px] font-bold text-primary hover:bg-primary/20"
+                >
+                  <MessageSquare size={12} />
+                  Follow Up
+                </button>
+              )}
+              {onArchive && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onArchive(app)
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background/40 px-3 py-1.5 text-[11px] font-bold text-muted-foreground hover:text-foreground"
+                >
+                  <Archive size={12} />
+                  Archive
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Move to Interview button for Applied stage (non-stale) */}
+          {stage === 'Applied' && !stale && onMoveToInterview && (
+            <div className="mt-3">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onMoveToInterview(app)
+                }}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-[11px] font-bold text-primary-foreground hover:opacity-90"
+              >
+                Move to Interview
+                <ChevronRight size={12} />
+              </button>
+            </div>
+          )}
         </div>
         <button
-          className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-background/40 text-muted-foreground hover:text-foreground"
+          className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl border border-border bg-background/40 text-muted-foreground hover:text-foreground"
           aria-label="Open"
         >
           <ChevronRight size={18} />
@@ -278,6 +436,7 @@ export default function ApplicationsPage() {
   const [activeStage, setActiveStage] = useState<DisplayStage | 'All'>('All')
   const [activeMode, setActiveMode] = useState<Mode | 'all'>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [viewMode, setViewMode] = useState<ViewMode>('list')
 
   // Modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -444,7 +603,68 @@ export default function ApplicationsPage() {
     [applications, handleApplicationClick]
   )
 
+  // Handler for "Move to Interview" button
+  const handleMoveToInterview = useCallback(async (app: Application) => {
+    try {
+      const response = await fetch(`/api/applications/${app.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...app, status: 'interviewing' })
+      })
+
+      if (response.ok) {
+        const { application } = await response.json()
+        setApplications((prev) => prev.map((a) => (a.id === application.id ? { ...a, ...application } : a)))
+      }
+    } catch (err) {
+      console.error('Error moving to interview:', err)
+    }
+  }, [])
+
+  // Handler for "Archive" button (marks as rejected/archived)
+  const handleArchive = useCallback(async (app: Application) => {
+    try {
+      const response = await fetch(`/api/applications/${app.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...app, status: 'rejected' })
+      })
+
+      if (response.ok) {
+        const { application } = await response.json()
+        setApplications((prev) => prev.map((a) => (a.id === application.id ? { ...a, ...application } : a)))
+      }
+    } catch (err) {
+      console.error('Error archiving application:', err)
+    }
+  }, [])
+
+  // Handler for "Follow Up" button (opens detail modal with follow-up context)
+  const handleFollowUp = useCallback((app: Application) => {
+    setSelectedApplication(app)
+    setIsDetailModalOpen(true)
+    // The detail modal would have follow-up functionality
+  }, [])
+
   const stages: DisplayStage[] = ['Saved', 'Applied', 'Interview', 'Offer', 'Rejected']
+
+  // Group applications by stage for board view
+  const applicationsByStage = useMemo(() => {
+    const grouped: Record<DisplayStage, Application[]> = {
+      Saved: [],
+      Applied: [],
+      Interview: [],
+      Offer: [],
+      Rejected: []
+    }
+
+    for (const app of filteredApplications) {
+      const stage = getDisplayStage(app.status)
+      grouped[stage].push(app)
+    }
+
+    return grouped
+  }, [filteredApplications])
 
   // ─────────────────────────────────────────────────────────────────────────────
   // ERROR STATE
@@ -616,64 +836,155 @@ export default function ApplicationsPage() {
         <ModeChip active={activeMode === 'career'} mode="career" onClick={() => setActiveMode('career')} />
       </div>
 
-      {/* Stage Pills */}
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <StagePill active={activeStage === 'All'} label="All" count={applications.length} onClick={() => setActiveStage('All')} />
-        {stages.map((s) => (
-          <StagePill key={s} active={activeStage === s} label={s} count={stageCounts[s]} onClick={() => setActiveStage(s)} />
-        ))}
+      {/* Stage Pills + View Toggle */}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <StagePill active={activeStage === 'All'} label="All" count={applications.length} onClick={() => setActiveStage('All')} />
+          {stages.map((s) => (
+            <StagePill key={s} active={activeStage === s} label={s} count={stageCounts[s]} onClick={() => setActiveStage(s)} />
+          ))}
+        </div>
+        <ViewToggle viewMode={viewMode} onChange={setViewMode} />
       </div>
 
-      {/* Application Cards */}
-      <div className="mt-5 grid gap-3 lg:grid-cols-2">
-        <AnimatePresence mode="popLayout">
-          {isLoading ? (
-            // Loading skeleton
-            [...Array(4)].map((_, i) => (
+      {/* Application Cards - List View */}
+      {viewMode === 'list' && (
+        <div className="mt-5 grid gap-3 lg:grid-cols-2">
+          <AnimatePresence mode="popLayout">
+            {isLoading ? (
+              // Loading skeleton
+              [...Array(4)].map((_, i) => (
+                <motion.div
+                  key={`skeleton-${i}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="h-32 rounded-3xl border border-border bg-card/40 animate-pulse"
+                />
+              ))
+            ) : filteredApplications.length === 0 ? (
               <motion.div
-                key={`skeleton-${i}`}
+                key="empty"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="h-32 rounded-3xl border border-border bg-card/40 animate-pulse"
-              />
-            ))
-          ) : filteredApplications.length === 0 ? (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="lg:col-span-2 rounded-3xl border border-border bg-card/40 p-10 text-center"
-            >
-              <div className="mx-auto grid h-14 w-14 place-items-center rounded-3xl border border-primary/25 bg-primary/10 text-primary">
-                <Search size={22} />
-              </div>
-              <div
-                className="mt-4 text-xl font-black text-foreground"
-                style={{ fontFamily: 'var(--font-serif), Satoshi, sans-serif' }}
+                className="lg:col-span-2 rounded-3xl border border-border bg-card/40 p-10 text-center"
               >
-                No matching applications
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {searchQuery ? `No applications match "${searchQuery}"` : 'Try switching mode or stage — or add your next application.'}
-              </p>
-            </motion.div>
-          ) : (
-            filteredApplications.map((app) => (
-              <motion.div
-                key={app.id}
-                layout
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-              >
-                <AppCard app={app} mode={deriveMode(app)} onClick={() => handleApplicationClick(app)} />
+                <div className="mx-auto grid h-14 w-14 place-items-center rounded-3xl border border-primary/25 bg-primary/10 text-primary">
+                  <Search size={22} />
+                </div>
+                <div
+                  className="mt-4 text-xl font-black text-foreground"
+                  style={{ fontFamily: 'var(--font-serif), Satoshi, sans-serif' }}
+                >
+                  No matching applications
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {searchQuery ? `No applications match "${searchQuery}"` : 'Try switching mode or stage — or add your next application.'}
+                </p>
               </motion.div>
-            ))
+            ) : (
+              filteredApplications.map((app) => (
+                <motion.div
+                  key={app.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <AppCard
+                    app={app}
+                    mode={deriveMode(app)}
+                    onClick={() => handleApplicationClick(app)}
+                    onMoveToInterview={handleMoveToInterview}
+                    onArchive={handleArchive}
+                    onFollowUp={handleFollowUp}
+                  />
+                </motion.div>
+              ))
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
+      {/* Application Cards - Board View (Kanban) */}
+      {viewMode === 'board' && (
+        <div className="mt-5 overflow-x-auto pb-4">
+          {isLoading ? (
+            <div className="flex gap-4">
+              {stages.map((stage) => (
+                <div key={stage} className="min-w-[280px] flex-shrink-0">
+                  <div className="h-8 w-24 rounded-lg bg-card/40 animate-pulse mb-3" />
+                  <div className="space-y-3">
+                    {[...Array(2)].map((_, i) => (
+                      <div key={i} className="h-32 rounded-3xl border border-border bg-card/40 animate-pulse" />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex gap-4">
+              {stages.map((stage) => (
+                <div key={stage} className="min-w-[300px] flex-shrink-0">
+                  {/* Column header */}
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        'h-2.5 w-2.5 rounded-full',
+                        stage === 'Saved' && 'bg-gray-400',
+                        stage === 'Applied' && 'bg-blue-500',
+                        stage === 'Interview' && 'bg-purple-500',
+                        stage === 'Offer' && 'bg-green-500',
+                        stage === 'Rejected' && 'bg-red-400'
+                      )} />
+                      <span className="text-sm font-bold text-foreground">{stage}</span>
+                    </div>
+                    <span className="rounded-full border border-border bg-card/40 px-2 py-0.5 text-xs font-bold text-muted-foreground">
+                      {applicationsByStage[stage].length}
+                    </span>
+                  </div>
+
+                  {/* Column cards */}
+                  <div className="space-y-3">
+                    <AnimatePresence mode="popLayout">
+                      {applicationsByStage[stage].length === 0 ? (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="rounded-2xl border border-dashed border-border bg-card/20 p-4 text-center"
+                        >
+                          <p className="text-xs text-muted-foreground">No applications</p>
+                        </motion.div>
+                      ) : (
+                        applicationsByStage[stage].map((app) => (
+                          <motion.div
+                            key={app.id}
+                            layout
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <AppCard
+                              app={app}
+                              mode={deriveMode(app)}
+                              onClick={() => handleApplicationClick(app)}
+                              onMoveToInterview={handleMoveToInterview}
+                              onArchive={handleArchive}
+                              onFollowUp={handleFollowUp}
+                            />
+                          </motion.div>
+                        ))
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
-        </AnimatePresence>
-      </div>
+        </div>
+      )}
 
       {/* Modals */}
       <AddApplicationModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAdd={handleAddApplication} />

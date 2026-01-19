@@ -1,0 +1,1750 @@
+{
+  "school": "Valencia College",
+  "programs": [
+    {
+      "name": "Computing Technology & Software Development (B.A.S.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Software Developer I",
+          "title_es": "Desarrollador de Software I",
+          "salary_min": 64000,
+          "salary_max": 95000,
+          "growth": "high"
+        },
+        {
+          "title": "Cloud Support Associate",
+          "title_es": "Asociado de Soporte en la Nube",
+          "salary_min": 64000,
+          "salary_max": 95000,
+          "growth": "high"
+        },
+        {
+          "title": "Applications Analyst",
+          "title_es": "Analista de Aplicaciones",
+          "salary_min": 64000,
+          "salary_max": 95000,
+          "growth": "high"
+        },
+        {
+          "title": "Junior DevOps Engineer",
+          "title_es": "Ingeniero DevOps Junior",
+          "salary_min": 64000,
+          "salary_max": 95000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Python", "category": "technical" },
+        { "name": "Java", "category": "technical" },
+        { "name": "Cloud Architecture (AWS)", "category": "technical" },
+        { "name": "Machine Learning Concepts", "category": "technical" },
+        { "name": "Agile Methodology", "category": "process" },
+        { "name": "Problem Solving", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Computer Information Technology (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "IT Support Specialist",
+          "title_es": "Especialista en Soporte de TI",
+          "salary_min": 45000,
+          "salary_max": 65000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Junior Network Administrator",
+          "title_es": "Administrador de Red Junior",
+          "salary_min": 45000,
+          "salary_max": 65000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "System Administrator I",
+          "title_es": "Administrador de Sistemas I",
+          "salary_min": 45000,
+          "salary_max": 65000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Technical Support Analyst",
+          "title_es": "Analista de Soporte Técnico",
+          "salary_min": 45000,
+          "salary_max": 65000,
+          "growth": "moderate-high"
+        }
+      ],
+      "skills": [
+        { "name": "Network Configuration", "category": "technical" },
+        { "name": "Windows Server Admin", "category": "technical" },
+        { "name": "Virtualization", "category": "tool" },
+        { "name": "Hardware Diagnostics", "category": "technical" },
+        { "name": "Customer Service", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Computer Programming & Analysis (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Junior Programmer",
+          "title_es": "Programador Junior",
+          "salary_min": 48000,
+          "salary_max": 70000,
+          "growth": "high"
+        },
+        {
+          "title": "Front-End Developer",
+          "title_es": "Desarrollador Front-End",
+          "salary_min": 48000,
+          "salary_max": 70000,
+          "growth": "high"
+        },
+        {
+          "title": "QA Tester",
+          "title_es": "Probador de Control de Calidad",
+          "salary_min": 48000,
+          "salary_max": 70000,
+          "growth": "high"
+        },
+        {
+          "title": "Database Assistant",
+          "title_es": "Asistente de Base de Datos",
+          "salary_min": 48000,
+          "salary_max": 70000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "C#", "category": "technical" },
+        { "name": "C++", "category": "technical" },
+        { "name": "Java", "category": "technical" },
+        { "name": "SQL Querying", "category": "technical" },
+        { "name": "HTML5 / CSS3", "category": "technical" },
+        { "name": "Debugging", "category": "technical" },
+        { "name": "Algorithm Logic", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Network Engineering Technology (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Network Technician",
+          "title_es": "Técnico de Redes",
+          "salary_min": 50000,
+          "salary_max": 72000,
+          "growth": "moderate"
+        },
+        {
+          "title": "NOC Technician",
+          "title_es": "Técnico de Centro de Operaciones de Red",
+          "salary_min": 50000,
+          "salary_max": 72000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Junior Network Engineer",
+          "title_es": "Ingeniero de Redes Junior",
+          "salary_min": 50000,
+          "salary_max": 72000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Telecommunications Specialist",
+          "title_es": "Especialista en Telecomunicaciones",
+          "salary_min": 50000,
+          "salary_max": 72000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Cisco IOS", "category": "tool" },
+        { "name": "Subnetting", "category": "technical" },
+        { "name": "Network Security", "category": "technical" },
+        { "name": "Protocol Analysis", "category": "tool" },
+        { "name": "Structured Cabling", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Cyber Security (Certificate)",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "SOC Analyst (Tier 1)",
+          "title_es": "Analista SOC (Nivel 1)",
+          "salary_min": 45000,
+          "salary_max": 65000,
+          "growth": "high"
+        },
+        {
+          "title": "InfoSec Assistant",
+          "title_es": "Asistente de Seguridad de la Información",
+          "salary_min": 45000,
+          "salary_max": 65000,
+          "growth": "high"
+        },
+        {
+          "title": "IAM Specialist",
+          "title_es": "Especialista en Gestión de Identidad y Acceso",
+          "salary_min": 45000,
+          "salary_max": 65000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Vulnerability Scanning", "category": "technical" },
+        { "name": "Risk Assessment", "category": "technical" },
+        { "name": "Incident Response", "category": "technical" },
+        { "name": "Compliance", "category": "technical" },
+        { "name": "Linux Security", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Database Administration (Certificate)",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Junior DBA",
+          "title_es": "Administrador de Base de Datos Junior",
+          "salary_min": 45000,
+          "salary_max": 60000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Data Entry Specialist",
+          "title_es": "Especialista en Entrada de Datos",
+          "salary_min": 45000,
+          "salary_max": 60000,
+          "growth": "moderate"
+        },
+        {
+          "title": "SQL Technician",
+          "title_es": "Técnico SQL",
+          "salary_min": 45000,
+          "salary_max": 60000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "SQL", "category": "technical" },
+        { "name": "Backup & Recovery", "category": "technical" },
+        { "name": "Data Modeling", "category": "technical" },
+        { "name": "Database Security", "category": "technical" },
+        { "name": "Performance Tuning", "category": "technical" }
+      ]
+    },
+    {
+      "name": "IT Support Specialist (Certificate)",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Help Desk Technician",
+          "title_es": "Técnico de Mesa de Ayuda",
+          "salary_min": 36000,
+          "salary_max": 48000,
+          "growth": "high"
+        },
+        {
+          "title": "Desktop Support",
+          "title_es": "Soporte de Escritorio",
+          "salary_min": 36000,
+          "salary_max": 48000,
+          "growth": "high"
+        },
+        {
+          "title": "Deployment Tech",
+          "title_es": "Técnico de Implementación",
+          "salary_min": 36000,
+          "salary_max": 48000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Hardware Repair", "category": "technical" },
+        { "name": "OS Installation", "category": "technical" },
+        { "name": "Ticketing Systems", "category": "tool" },
+        { "name": "Remote Support", "category": "technical" },
+        { "name": "Customer Service", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Network Support Technician (Certificate)",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Junior Network Associate",
+          "title_es": "Asociado de Redes Junior",
+          "salary_min": 38000,
+          "salary_max": 52000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Cable Installer",
+          "title_es": "Instalador de Cables",
+          "salary_min": 38000,
+          "salary_max": 52000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Field Tech",
+          "title_es": "Técnico de Campo",
+          "salary_min": 38000,
+          "salary_max": 52000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Cabling Standards", "category": "technical" },
+        { "name": "Basic Routing", "category": "technical" },
+        { "name": "Connectivity Diagnostics", "category": "technical" },
+        { "name": "Network Mapping", "category": "tool" },
+        { "name": "Switch Configuration", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Web Development (Certificate)",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Junior Web Designer",
+          "title_es": "Diseñador Web Junior",
+          "salary_min": 40000,
+          "salary_max": 55000,
+          "growth": "high"
+        },
+        {
+          "title": "Front-End Coder",
+          "title_es": "Programador Front-End",
+          "salary_min": 40000,
+          "salary_max": 55000,
+          "growth": "high"
+        },
+        {
+          "title": "WordPress Admin",
+          "title_es": "Administrador de WordPress",
+          "salary_min": 40000,
+          "salary_max": 55000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "HTML5 / CSS3", "category": "technical" },
+        { "name": "JavaScript (Basic)", "category": "technical" },
+        { "name": "CMS Management", "category": "tool" },
+        { "name": "Responsive Design", "category": "technical" },
+        { "name": "SEO Basics", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Electrical & Computer Engineering Technology (B.A.S.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Electrical Engineering Technologist",
+          "title_es": "Tecnólogo en Ingeniería Eléctrica",
+          "salary_min": 60000,
+          "salary_max": 85000,
+          "growth": "high"
+        },
+        {
+          "title": "Semiconductor Process Tech",
+          "title_es": "Técnico de Procesos de Semiconductores",
+          "salary_min": 60000,
+          "salary_max": 85000,
+          "growth": "high"
+        },
+        {
+          "title": "Photonics Specialist",
+          "title_es": "Especialista en Fotónica",
+          "salary_min": 60000,
+          "salary_max": 85000,
+          "growth": "high"
+        },
+        {
+          "title": "Control Systems Integrator",
+          "title_es": "Integrador de Sistemas de Control",
+          "salary_min": 60000,
+          "salary_max": 85000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Circuit Analysis", "category": "technical" },
+        { "name": "PLC Programming", "category": "technical" },
+        { "name": "Cleanroom Protocol", "category": "technical" },
+        { "name": "Matlab/Simulink", "category": "tool" },
+        { "name": "Technical Writing", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Electrical Engineering Technology (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Electronics Technician",
+          "title_es": "Técnico en Electrónica",
+          "salary_min": 42000,
+          "salary_max": 60000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Field Service Technician",
+          "title_es": "Técnico de Servicio de Campo",
+          "salary_min": 42000,
+          "salary_max": 60000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Test Technician",
+          "title_es": "Técnico de Pruebas",
+          "salary_min": 42000,
+          "salary_max": 60000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Assembly Technician",
+          "title_es": "Técnico de Ensamblaje",
+          "salary_min": 42000,
+          "salary_max": 60000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Soldering", "category": "technical" },
+        { "name": "Oscilloscope Usage", "category": "tool" },
+        { "name": "Schematic Reading", "category": "technical" },
+        { "name": "Multimeter Proficiency", "category": "tool" },
+        { "name": "Troubleshooting Logic", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Engineering Technology (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Manufacturing Technician",
+          "title_es": "Técnico de Manufactura",
+          "salary_min": 40000,
+          "salary_max": 58000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Quality Assurance Tech",
+          "title_es": "Técnico de Control de Calidad",
+          "salary_min": 40000,
+          "salary_max": 58000,
+          "growth": "moderate"
+        },
+        {
+          "title": "CAD Drafter",
+          "title_es": "Dibujante CAD",
+          "salary_min": 40000,
+          "salary_max": 58000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Industrial Engineering Tech",
+          "title_es": "Técnico de Ingeniería Industrial",
+          "salary_min": 40000,
+          "salary_max": 58000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "AutoCAD / SolidWorks", "category": "tool" },
+        { "name": "Metrology", "category": "technical" },
+        { "name": "Lean Manufacturing", "category": "process" },
+        { "name": "Hydraulics/Pneumatics", "category": "technical" },
+        { "name": "Materials Science", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Automotive Service Technology (Certificate)",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Automotive Technician",
+          "title_es": "Técnico Automotriz",
+          "salary_min": 35000,
+          "salary_max": 55000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Lube Technician",
+          "title_es": "Técnico de Lubricación",
+          "salary_min": 35000,
+          "salary_max": 55000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Service Advisor",
+          "title_es": "Asesor de Servicio",
+          "salary_min": 35000,
+          "salary_max": 55000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Engine Diagnostics", "category": "tool" },
+        { "name": "Brake Systems", "category": "technical" },
+        { "name": "Electrical Systems", "category": "technical" },
+        { "name": "Suspension & Steering", "category": "technical" },
+        { "name": "Safety Protocols", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Electrician (Certificate)",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Electrician Apprentice",
+          "title_es": "Aprendiz de Electricista",
+          "salary_min": 35000,
+          "salary_max": 50000,
+          "growth": "high"
+        },
+        {
+          "title": "Wireman Helper",
+          "title_es": "Ayudante de Cableado",
+          "salary_min": 35000,
+          "salary_max": 50000,
+          "growth": "high"
+        },
+        {
+          "title": "Maintenance Helper",
+          "title_es": "Ayudante de Mantenimiento",
+          "salary_min": 35000,
+          "salary_max": 50000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "NEC Code Compliance", "category": "technical" },
+        { "name": "Circuit Installation", "category": "technical" },
+        { "name": "Blueprint Reading", "category": "technical" },
+        { "name": "Conduit Bending", "category": "technical" },
+        { "name": "Safety/Lockout-Tagout", "category": "technical" }
+      ]
+    },
+    {
+      "name": "HVAC/R Technician (Certificate)",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "HVAC Installer",
+          "title_es": "Instalador de HVAC",
+          "salary_min": 40000,
+          "salary_max": 60000,
+          "growth": "very high"
+        },
+        {
+          "title": "HVAC Service Tech",
+          "title_es": "Técnico de Servicio HVAC",
+          "salary_min": 40000,
+          "salary_max": 60000,
+          "growth": "very high"
+        },
+        {
+          "title": "Refrigeration Tech",
+          "title_es": "Técnico de Refrigeración",
+          "salary_min": 40000,
+          "salary_max": 60000,
+          "growth": "very high"
+        }
+      ],
+      "skills": [
+        { "name": "EPA Certification", "category": "technical" },
+        { "name": "Electrical Troubleshooting", "category": "technical" },
+        { "name": "Brazing/Soldering", "category": "technical" },
+        { "name": "Airflow Dynamics", "category": "technical" },
+        { "name": "Customer Service", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Welding Technology (Certificate)",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Welder (MIG/TIG/Stick)",
+          "title_es": "Soldador (MIG/TIG/Arco)",
+          "salary_min": 38000,
+          "salary_max": 55000,
+          "growth": "high"
+        },
+        {
+          "title": "Structural Fabricator",
+          "title_es": "Fabricante Estructural",
+          "salary_min": 38000,
+          "salary_max": 55000,
+          "growth": "high"
+        },
+        {
+          "title": "Welder Helper",
+          "title_es": "Ayudante de Soldador",
+          "salary_min": 38000,
+          "salary_max": 55000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Welding Processes", "category": "technical" },
+        { "name": "Blueprint Reading", "category": "technical" },
+        { "name": "Metal Properties", "category": "technical" },
+        { "name": "Thermal Cutting", "category": "technical" },
+        { "name": "Quality Control", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Nursing (B.S.N.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Nurse Manager (Unit)",
+          "title_es": "Gerente de Enfermería (Unidad)",
+          "salary_min": 70000,
+          "salary_max": 95000,
+          "growth": "high"
+        },
+        {
+          "title": "Clinical Nurse Leader",
+          "title_es": "Líder Clínico de Enfermería",
+          "salary_min": 70000,
+          "salary_max": 95000,
+          "growth": "high"
+        },
+        {
+          "title": "Public Health Nurse",
+          "title_es": "Enfermera de Salud Pública",
+          "salary_min": 70000,
+          "salary_max": 95000,
+          "growth": "high"
+        },
+        {
+          "title": "Nurse Educator (Adjunct)",
+          "title_es": "Educador de Enfermería (Adjunto)",
+          "salary_min": 70000,
+          "salary_max": 95000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Evidence-Based Practice", "category": "technical" },
+        { "name": "Leadership", "category": "soft_skill" },
+        { "name": "Health Informatics", "category": "tool" },
+        { "name": "Community Health", "category": "technical" },
+        { "name": "Critical Thinking", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Health Services Administration (B.A.S.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Practice Manager",
+          "title_es": "Gerente de Consultorio",
+          "salary_min": 50000,
+          "salary_max": 75000,
+          "growth": "high"
+        },
+        {
+          "title": "Health Services Manager",
+          "title_es": "Gerente de Servicios de Salud",
+          "salary_min": 50000,
+          "salary_max": 75000,
+          "growth": "high"
+        },
+        {
+          "title": "Patient Access Director",
+          "title_es": "Director de Acceso de Pacientes",
+          "salary_min": 50000,
+          "salary_max": 75000,
+          "growth": "high"
+        },
+        {
+          "title": "Compliance Coordinator",
+          "title_es": "Coordinador de Cumplimiento",
+          "salary_min": 50000,
+          "salary_max": 75000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Healthcare Law/Ethics", "category": "technical" },
+        { "name": "Financial Management", "category": "technical" },
+        { "name": "Human Resources", "category": "technical" },
+        { "name": "Strategic Planning", "category": "technical" },
+        { "name": "EHR Systems", "category": "tool" }
+      ]
+    },
+    {
+      "name": "Nursing (A.S. - RN)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Registered Nurse (RN)",
+          "title_es": "Enfermera Registrada",
+          "salary_min": 58000,
+          "salary_max": 78000,
+          "growth": "very high"
+        },
+        {
+          "title": "Emergency Room Nurse",
+          "title_es": "Enfermera de Sala de Emergencias",
+          "salary_min": 58000,
+          "salary_max": 78000,
+          "growth": "very high"
+        },
+        {
+          "title": "ICU Nurse",
+          "title_es": "Enfermera de UCI",
+          "salary_min": 58000,
+          "salary_max": 78000,
+          "growth": "very high"
+        },
+        {
+          "title": "Home Health Nurse",
+          "title_es": "Enfermera de Salud a Domicilio",
+          "salary_min": 58000,
+          "salary_max": 78000,
+          "growth": "very high"
+        }
+      ],
+      "skills": [
+        { "name": "Patient Assessment", "category": "technical" },
+        { "name": "Medication Administration", "category": "technical" },
+        { "name": "Clinical Procedures", "category": "technical" },
+        { "name": "Critical Thinking", "category": "soft_skill" },
+        { "name": "Patient Advocacy", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Diagnostic Medical Sonography (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Diagnostic Sonographer",
+          "title_es": "Ecografista Diagnóstico",
+          "salary_min": 60000,
+          "salary_max": 80000,
+          "growth": "high"
+        },
+        {
+          "title": "Vascular Technologist",
+          "title_es": "Tecnólogo Vascular",
+          "salary_min": 60000,
+          "salary_max": 80000,
+          "growth": "high"
+        },
+        {
+          "title": "Ultrasound Tech",
+          "title_es": "Técnico de Ultrasonido",
+          "salary_min": 60000,
+          "salary_max": 80000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Anatomy/Physiology", "category": "technical" },
+        { "name": "Physics of Sound", "category": "technical" },
+        { "name": "Patient Positioning", "category": "technical" },
+        { "name": "Pathology Recognition", "category": "technical" },
+        { "name": "Image Annotation", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Dental Hygiene (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Dental Hygienist",
+          "title_es": "Higienista Dental",
+          "salary_min": 60000,
+          "salary_max": 85000,
+          "growth": "high"
+        },
+        {
+          "title": "Public Health Hygienist",
+          "title_es": "Higienista de Salud Pública",
+          "salary_min": 60000,
+          "salary_max": 85000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Periodontal Therapy", "category": "technical" },
+        { "name": "Dental Radiography", "category": "technical" },
+        { "name": "Patient Education", "category": "soft_skill" },
+        { "name": "Infection Control", "category": "technical" },
+        { "name": "Local Anesthesia", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Health Information Technology (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Health Info Technician",
+          "title_es": "Técnico de Información de Salud",
+          "salary_min": 40000,
+          "salary_max": 60000,
+          "growth": "high"
+        },
+        {
+          "title": "Medical Coder",
+          "title_es": "Codificador Médico",
+          "salary_min": 40000,
+          "salary_max": 60000,
+          "growth": "high"
+        },
+        {
+          "title": "Revenue Cycle Analyst",
+          "title_es": "Analista de Ciclo de Ingresos",
+          "salary_min": 40000,
+          "salary_max": 60000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "ICD-10 / CPT Coding", "category": "technical" },
+        { "name": "EHR Management", "category": "tool" },
+        { "name": "Data Privacy", "category": "technical" },
+        { "name": "Medical Terminology", "category": "technical" },
+        { "name": "Data Analysis", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Radiography (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Radiologic Technologist",
+          "title_es": "Tecnólogo Radiológico",
+          "salary_min": 50000,
+          "salary_max": 70000,
+          "growth": "high"
+        },
+        {
+          "title": "CT Technologist",
+          "title_es": "Tecnólogo de Tomografía Computarizada",
+          "salary_min": 50000,
+          "salary_max": 70000,
+          "growth": "high"
+        },
+        {
+          "title": "MRI Technologist",
+          "title_es": "Tecnólogo de Resonancia Magnética",
+          "salary_min": 50000,
+          "salary_max": 70000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Radiation Safety", "category": "technical" },
+        { "name": "Patient Positioning", "category": "technical" },
+        { "name": "Anatomy", "category": "technical" },
+        { "name": "Equipment Operation", "category": "technical" },
+        { "name": "Image Evaluation", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Respiratory Care (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Respiratory Therapist",
+          "title_es": "Terapeuta Respiratorio",
+          "salary_min": 55000,
+          "salary_max": 75000,
+          "growth": "high"
+        },
+        {
+          "title": "Pulmonary Function Tech",
+          "title_es": "Técnico de Función Pulmonar",
+          "salary_min": 55000,
+          "salary_max": 75000,
+          "growth": "high"
+        },
+        {
+          "title": "Neonatal/Pediatric RT",
+          "title_es": "Terapeuta Respiratorio Neonatal/Pediátrico",
+          "salary_min": 55000,
+          "salary_max": 75000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Ventilator Management", "category": "technical" },
+        { "name": "Arterial Blood Gas", "category": "technical" },
+        { "name": "Cardiopulmonary Physiology", "category": "technical" },
+        { "name": "Airway Management", "category": "technical" },
+        { "name": "Patient Education", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Physical Therapist Assistant (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Physical Therapist Assistant",
+          "title_es": "Asistente de Fisioterapeuta",
+          "salary_min": 50000,
+          "salary_max": 70000,
+          "growth": "high"
+        },
+        {
+          "title": "Home Health PTA",
+          "title_es": "Asistente de Fisioterapia a Domicilio",
+          "salary_min": 50000,
+          "salary_max": 70000,
+          "growth": "high"
+        },
+        {
+          "title": "Rehab Technician",
+          "title_es": "Técnico de Rehabilitación",
+          "salary_min": 50000,
+          "salary_max": 70000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Therapeutic Exercise", "category": "technical" },
+        { "name": "Manual Therapy", "category": "technical" },
+        { "name": "Gait Training", "category": "technical" },
+        { "name": "Documentation", "category": "technical" },
+        { "name": "Modalities", "category": "tool" }
+      ]
+    },
+    {
+      "name": "Emergency Medical Services (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Paramedic",
+          "title_es": "Paramédico",
+          "salary_min": 45000,
+          "salary_max": 65000,
+          "growth": "moderate"
+        },
+        {
+          "title": "ER Technician",
+          "title_es": "Técnico de Sala de Emergencias",
+          "salary_min": 45000,
+          "salary_max": 65000,
+          "growth": "moderate"
+        },
+        {
+          "title": "EMS Supervisor",
+          "title_es": "Supervisor de Servicios Médicos de Emergencia",
+          "salary_min": 45000,
+          "salary_max": 65000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Advanced Life Support", "category": "technical" },
+        { "name": "Pharmacology", "category": "technical" },
+        { "name": "Triage", "category": "technical" },
+        { "name": "Crisis Management", "category": "soft_skill" },
+        { "name": "Patient Transport", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Medical Billing and Coding (Certificate)",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Medical Biller",
+          "title_es": "Facturador Médico",
+          "salary_min": 38000,
+          "salary_max": 50000,
+          "growth": "high"
+        },
+        {
+          "title": "Medical Coder (Entry)",
+          "title_es": "Codificador Médico (Entrada)",
+          "salary_min": 38000,
+          "salary_max": 50000,
+          "growth": "high"
+        },
+        {
+          "title": "Billing Specialist",
+          "title_es": "Especialista en Facturación",
+          "salary_min": 38000,
+          "salary_max": 50000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "ICD-10 / CPT", "category": "technical" },
+        { "name": "Insurance Verification", "category": "technical" },
+        { "name": "Billing Software", "category": "tool" },
+        { "name": "Anatomy/Terminology", "category": "technical" },
+        { "name": "Attention to Detail", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Medical Office Administration (Certificate)",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Medical Receptionist",
+          "title_es": "Recepcionista Médico",
+          "salary_min": 32000,
+          "salary_max": 42000,
+          "growth": "high"
+        },
+        {
+          "title": "Patient Coordinator",
+          "title_es": "Coordinador de Pacientes",
+          "salary_min": 32000,
+          "salary_max": 42000,
+          "growth": "high"
+        },
+        {
+          "title": "Unit Secretary",
+          "title_es": "Secretaria de Unidad",
+          "salary_min": 32000,
+          "salary_max": 42000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Medical Terminology", "category": "technical" },
+        { "name": "HIPAA Compliance", "category": "technical" },
+        { "name": "Scheduling Software", "category": "tool" },
+        { "name": "Customer Service", "category": "soft_skill" },
+        { "name": "Office Systems", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Phlebotomy (Certificate)",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Phlebotomist",
+          "title_es": "Flebotomista",
+          "salary_min": 30000,
+          "salary_max": 40000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Lab Assistant",
+          "title_es": "Asistente de Laboratorio",
+          "salary_min": 30000,
+          "salary_max": 40000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Venipuncture", "category": "technical" },
+        { "name": "Specimen Handling", "category": "technical" },
+        { "name": "Infection Control", "category": "technical" },
+        { "name": "Patient Interaction", "category": "soft_skill" },
+        { "name": "Safety Compliance", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Practical Nursing (LPN) (Certificate)",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Licensed Practical Nurse",
+          "title_es": "Enfermera Práctica Licenciada",
+          "salary_min": 45000,
+          "salary_max": 60000,
+          "growth": "high"
+        },
+        {
+          "title": "Clinic Nurse",
+          "title_es": "Enfermera de Clínica",
+          "salary_min": 45000,
+          "salary_max": 60000,
+          "growth": "high"
+        },
+        {
+          "title": "Home Health LPN",
+          "title_es": "Enfermera Práctica de Salud a Domicilio",
+          "salary_min": 45000,
+          "salary_max": 60000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Vitals Monitoring", "category": "technical" },
+        { "name": "Patient Hygiene", "category": "technical" },
+        { "name": "Medication Administration", "category": "technical" },
+        { "name": "Wound Care", "category": "technical" },
+        { "name": "Documentation", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Business & Organizational Leadership (B.A.S.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Operations Manager",
+          "title_es": "Gerente de Operaciones",
+          "salary_min": 50000,
+          "salary_max": 80000,
+          "growth": "high"
+        },
+        {
+          "title": "HR Generalist",
+          "title_es": "Generalista de Recursos Humanos",
+          "salary_min": 50000,
+          "salary_max": 80000,
+          "growth": "high"
+        },
+        {
+          "title": "Project Manager (Entry)",
+          "title_es": "Gerente de Proyectos (Entrada)",
+          "salary_min": 50000,
+          "salary_max": 80000,
+          "growth": "high"
+        },
+        {
+          "title": "Sales Manager",
+          "title_es": "Gerente de Ventas",
+          "salary_min": 50000,
+          "salary_max": 80000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Strategic Planning", "category": "technical" },
+        { "name": "Data Analytics", "category": "technical" },
+        { "name": "Conflict Resolution", "category": "soft_skill" },
+        { "name": "Change Management", "category": "soft_skill" },
+        { "name": "Digital Recruitment", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Accounting Technology (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Bookkeeper",
+          "title_es": "Contador",
+          "salary_min": 40000,
+          "salary_max": 58000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Accounts Payable Clerk",
+          "title_es": "Empleado de Cuentas por Pagar",
+          "salary_min": 40000,
+          "salary_max": 58000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Payroll Coordinator",
+          "title_es": "Coordinador de Nómina",
+          "salary_min": 40000,
+          "salary_max": 58000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Tax Preparer",
+          "title_es": "Preparador de Impuestos",
+          "salary_min": 40000,
+          "salary_max": 58000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "QuickBooks / Excel", "category": "tool" },
+        { "name": "Tax Regulation", "category": "technical" },
+        { "name": "General Ledger", "category": "technical" },
+        { "name": "Financial Reporting", "category": "technical" },
+        { "name": "Attention to Detail", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Business Administration (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Assistant Manager",
+          "title_es": "Gerente Asistente",
+          "salary_min": 38000,
+          "salary_max": 55000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Customer Service Manager",
+          "title_es": "Gerente de Servicio al Cliente",
+          "salary_min": 38000,
+          "salary_max": 55000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Admin Services Manager",
+          "title_es": "Gerente de Servicios Administrativos",
+          "salary_min": 38000,
+          "salary_max": 55000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Sales Representative",
+          "title_es": "Representante de Ventas",
+          "salary_min": 38000,
+          "salary_max": 55000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Business Communication", "category": "soft_skill" },
+        { "name": "Marketing Principles", "category": "technical" },
+        { "name": "Team Leadership", "category": "soft_skill" },
+        { "name": "Office Software", "category": "tool" },
+        { "name": "Financial Basics", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Office Administration (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Executive Assistant",
+          "title_es": "Asistente Ejecutivo",
+          "salary_min": 38000,
+          "salary_max": 55000,
+          "growth": "low-moderate"
+        },
+        {
+          "title": "Office Manager",
+          "title_es": "Gerente de Oficina",
+          "salary_min": 38000,
+          "salary_max": 55000,
+          "growth": "low-moderate"
+        },
+        {
+          "title": "Admin Coordinator",
+          "title_es": "Coordinador Administrativo",
+          "salary_min": 38000,
+          "salary_max": 55000,
+          "growth": "low-moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Scheduling", "category": "technical" },
+        { "name": "Microsoft Office", "category": "tool" },
+        { "name": "Event Planning", "category": "technical" },
+        { "name": "Office Systems", "category": "technical" },
+        { "name": "Communication", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Public Safety Administration (B.A.S.)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Fire Battalion Chief",
+          "title_es": "Jefe de Batallón de Bomberos",
+          "salary_min": 65000,
+          "salary_max": 95000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Police Lieutenant",
+          "title_es": "Teniente de Policía",
+          "salary_min": 65000,
+          "salary_max": 95000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Emergency Management Director",
+          "title_es": "Director de Gestión de Emergencias",
+          "salary_min": 65000,
+          "salary_max": 95000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Public Safety Director",
+          "title_es": "Director de Seguridad Pública",
+          "salary_min": 65000,
+          "salary_max": 95000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Grant Administration", "category": "technical" },
+        { "name": "Public Policy", "category": "technical" },
+        { "name": "Incident Command", "category": "technical" },
+        { "name": "Budgeting", "category": "technical" },
+        { "name": "HR Management", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Fire Science Technology (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Firefighter (Career)",
+          "title_es": "Bombero (Carrera)",
+          "salary_min": 45000,
+          "salary_max": 65000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Fire Inspector",
+          "title_es": "Inspector de Incendios",
+          "salary_min": 45000,
+          "salary_max": 65000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Fire Investigator",
+          "title_es": "Investigador de Incendios",
+          "salary_min": 45000,
+          "salary_max": 65000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Fire Dynamics", "category": "technical" },
+        { "name": "Building Construction", "category": "technical" },
+        { "name": "Hazardous Materials", "category": "technical" },
+        { "name": "Fire Prevention", "category": "technical" },
+        { "name": "Tactics & Strategy", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Paralegal Studies (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Paralegal",
+          "title_es": "Asistente Legal",
+          "salary_min": 45000,
+          "salary_max": 65000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Legal Assistant",
+          "title_es": "Asistente Jurídico",
+          "salary_min": 45000,
+          "salary_max": 65000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Compliance Specialist",
+          "title_es": "Especialista en Cumplimiento",
+          "salary_min": 45000,
+          "salary_max": 65000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Legal Research", "category": "tool" },
+        { "name": "Legal Writing", "category": "technical" },
+        { "name": "Civil Litigation", "category": "technical" },
+        { "name": "E-Filing", "category": "tool" },
+        { "name": "Case Management", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Legal Assisting (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Legal Assistant",
+          "title_es": "Asistente Legal",
+          "salary_min": 45000,
+          "salary_max": 65000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Court Clerk",
+          "title_es": "Secretario del Tribunal",
+          "salary_min": 45000,
+          "salary_max": 65000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Legal Terminology", "category": "technical" },
+        { "name": "Office Management", "category": "technical" },
+        { "name": "Document Prep", "category": "technical" },
+        { "name": "Ethics", "category": "technical" },
+        { "name": "Research", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Emergency Medical Technician (EMT) (Certificate)",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "EMT-Basic",
+          "title_es": "Técnico en Emergencias Médicas Básico",
+          "salary_min": 32000,
+          "salary_max": 45000,
+          "growth": "high"
+        },
+        {
+          "title": "ER Tech",
+          "title_es": "Técnico de Sala de Emergencias",
+          "salary_min": 32000,
+          "salary_max": 45000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "CPR / First Aid", "category": "technical" },
+        { "name": "Patient Assessment", "category": "technical" },
+        { "name": "Transport", "category": "technical" },
+        { "name": "Vitals", "category": "technical" },
+        { "name": "Documentation", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Fire Fighter (Certificate)",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Firefighter",
+          "title_es": "Bombero",
+          "salary_min": 42000,
+          "salary_max": 55000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Physical Fitness", "category": "technical" },
+        { "name": "PPE Usage", "category": "technical" },
+        { "name": "Hose Handling", "category": "technical" },
+        { "name": "Search & Rescue", "category": "technical" },
+        { "name": "Ladder Operations", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Culinary Management (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Sous Chef",
+          "title_es": "Sous Chef",
+          "salary_min": 45000,
+          "salary_max": 60000,
+          "growth": "high"
+        },
+        {
+          "title": "Kitchen Manager",
+          "title_es": "Gerente de Cocina",
+          "salary_min": 45000,
+          "salary_max": 60000,
+          "growth": "high"
+        },
+        {
+          "title": "Catering Manager",
+          "title_es": "Gerente de Catering",
+          "salary_min": 45000,
+          "salary_max": 60000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Menu Planning", "category": "technical" },
+        { "name": "Food Safety", "category": "technical" },
+        { "name": "Culinary Techniques", "category": "technical" },
+        { "name": "Inventory Control", "category": "technical" },
+        { "name": "Staff Supervision", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Hospitality & Tourism Management (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Front Office Manager",
+          "title_es": "Gerente de Recepción",
+          "salary_min": 40000,
+          "salary_max": 55000,
+          "growth": "high"
+        },
+        {
+          "title": "Guest Services Manager",
+          "title_es": "Gerente de Servicios al Huésped",
+          "salary_min": 40000,
+          "salary_max": 55000,
+          "growth": "high"
+        },
+        {
+          "title": "Event Coordinator",
+          "title_es": "Coordinador de Eventos",
+          "salary_min": 40000,
+          "salary_max": 55000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Customer Service", "category": "soft_skill" },
+        { "name": "Hospitality Law", "category": "technical" },
+        { "name": "PMS Systems", "category": "tool" },
+        { "name": "Revenue Management", "category": "technical" },
+        { "name": "Event Logistics", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Film Production Technology (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Production Assistant",
+          "title_es": "Asistente de Producción",
+          "salary_min": 35000,
+          "salary_max": 55000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Camera Operator",
+          "title_es": "Operador de Cámara",
+          "salary_min": 35000,
+          "salary_max": 55000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Video Editor",
+          "title_es": "Editor de Video",
+          "salary_min": 35000,
+          "salary_max": 55000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Grip/Electric",
+          "title_es": "Grip/Eléctrico",
+          "salary_min": 35000,
+          "salary_max": 55000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Cinematography", "category": "technical" },
+        { "name": "Video Editing", "category": "tool" },
+        { "name": "Set Protocol", "category": "technical" },
+        { "name": "Sound Recording", "category": "technical" },
+        { "name": "Production Management", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Graphic Design Technology (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Junior Designer",
+          "title_es": "Diseñador Junior",
+          "salary_min": 40000,
+          "salary_max": 55000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Web Designer",
+          "title_es": "Diseñador Web",
+          "salary_min": 40000,
+          "salary_max": 55000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Production Artist",
+          "title_es": "Artista de Producción",
+          "salary_min": 40000,
+          "salary_max": 55000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Adobe Suite", "category": "tool" },
+        { "name": "Typography", "category": "technical" },
+        { "name": "Branding", "category": "technical" },
+        { "name": "Print Production", "category": "technical" },
+        { "name": "Web Design", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Interior Design (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Junior Designer",
+          "title_es": "Diseñador Junior",
+          "salary_min": 40000,
+          "salary_max": 55000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Kitchen Designer",
+          "title_es": "Diseñador de Cocinas",
+          "salary_min": 40000,
+          "salary_max": 55000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Showroom Consultant",
+          "title_es": "Consultor de Showroom",
+          "salary_min": 40000,
+          "salary_max": 55000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Space Planning", "category": "technical" },
+        { "name": "CAD / Revit", "category": "tool" },
+        { "name": "Color Theory", "category": "technical" },
+        { "name": "Building Codes", "category": "technical" },
+        { "name": "Client Presentation", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Culinary Arts (Certificate)",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Line Cook",
+          "title_es": "Cocinero de Línea",
+          "salary_min": 30000,
+          "salary_max": 40000,
+          "growth": "high"
+        },
+        {
+          "title": "Prep Cook",
+          "title_es": "Cocinero de Preparación",
+          "salary_min": 30000,
+          "salary_max": 40000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Knife Skills", "category": "technical" },
+        { "name": "Cooking Methods", "category": "technical" },
+        { "name": "Sanitation", "category": "technical" },
+        { "name": "Mise en Place", "category": "technical" },
+        { "name": "Recipe Follow", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Digital Media/Multimedia (Certificate)",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Content Creator",
+          "title_es": "Creador de Contenido",
+          "salary_min": 35000,
+          "salary_max": 50000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Multimedia Specialist",
+          "title_es": "Especialista en Multimedia",
+          "salary_min": 35000,
+          "salary_max": 50000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Junior Graphic Artist",
+          "title_es": "Artista Gráfico Junior",
+          "salary_min": 35000,
+          "salary_max": 50000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Adobe Suite", "category": "tool" },
+        { "name": "Video Editing", "category": "technical" },
+        { "name": "Storyboarding", "category": "technical" },
+        { "name": "Social Media", "category": "technical" },
+        { "name": "Graphic Design", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Early Childhood Education (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Preschool Teacher",
+          "title_es": "Maestro de Preescolar",
+          "salary_min": 30000,
+          "salary_max": 45000,
+          "growth": "high"
+        },
+        {
+          "title": "Center Director",
+          "title_es": "Director de Centro",
+          "salary_min": 30000,
+          "salary_max": 45000,
+          "growth": "high"
+        },
+        {
+          "title": "Teacher Assistant",
+          "title_es": "Asistente de Maestro",
+          "salary_min": 30000,
+          "salary_max": 45000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Child Development", "category": "technical" },
+        { "name": "Curriculum", "category": "technical" },
+        { "name": "Classroom Management", "category": "soft_skill" },
+        { "name": "Observation", "category": "technical" },
+        { "name": "Family Communication", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Early Childhood Education (Certificate)",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Childcare Worker",
+          "title_es": "Trabajador de Cuidado Infantil",
+          "salary_min": 25000,
+          "salary_max": 35000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Supervision", "category": "technical" },
+        { "name": "Play Facilitation", "category": "technical" },
+        { "name": "Hygiene", "category": "technical" },
+        { "name": "Behavior Management", "category": "technical" },
+        { "name": "Regulations", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Human Services (A.S.)",
+      "degree_type": "associates",
+      "career_paths": [
+        {
+          "title": "Case Management Aide",
+          "title_es": "Asistente de Gestión de Casos",
+          "salary_min": 35000,
+          "salary_max": 50000,
+          "growth": "high"
+        },
+        {
+          "title": "Outreach Worker",
+          "title_es": "Trabajador de Alcance Comunitario",
+          "salary_min": 35000,
+          "salary_max": 50000,
+          "growth": "high"
+        },
+        {
+          "title": "Social Services Assistant",
+          "title_es": "Asistente de Servicios Sociales",
+          "salary_min": 35000,
+          "salary_max": 50000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Crisis Intervention", "category": "technical" },
+        { "name": "Documentation", "category": "technical" },
+        { "name": "Active Listening", "category": "soft_skill" },
+        { "name": "Ethics", "category": "technical" },
+        { "name": "Resource Referral", "category": "technical" }
+      ]
+    }
+  ]
+}

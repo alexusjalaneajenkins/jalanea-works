@@ -1,11 +1,18 @@
 /**
  * GET /api/career-paths?program=program_key&school=school_id
  *
- * Returns career paths and skills for a specific program
+ * Returns career paths and skills for a specific program.
+ * First checks database for existing mappings, then falls back to O*NET API.
  */
 
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import {
+  searchCareers,
+  getOccupationDetails,
+  isONetAvailable,
+  onetCareerToCareerPath,
+} from '@/lib/onet-client'
 
 // Types for Supabase query results
 interface CareerPathRow {
@@ -111,11 +118,61 @@ export async function GET(request: NextRequest) {
         category: s.category,
       })) || []
 
+    // If no career paths found in database, try O*NET API
+    if (careerPaths.length === 0 && isONetAvailable()) {
+      try {
+        // Extract program name from programKey (format: "schoolId_programName")
+        const programName = programKey.includes('_')
+          ? programKey.split('_').slice(1).join('_').replace(/_/g, ' ')
+          : programKey.replace(/_/g, ' ')
+
+        // Search O*NET for relevant careers
+        const onetResults = await searchCareers(programName, { start: 1, end: 10 })
+
+        if (onetResults.career && onetResults.career.length > 0) {
+          // Get detailed info for each career (limit to 5 to avoid rate limits)
+          const onetCareerPaths = await Promise.all(
+            onetResults.career.slice(0, 5).map(async (career) => {
+              try {
+                const details = await getOccupationDetails(career.code)
+                return onetCareerToCareerPath(career, details)
+              } catch {
+                return onetCareerToCareerPath(career)
+              }
+            })
+          )
+
+          return NextResponse.json({
+            programKey,
+            school,
+            careerPaths: onetCareerPaths.map(cp => ({
+              id: cp.id,
+              title: cp.title,
+              titleEs: cp.title_es,
+              description: cp.description,
+              salaryMin: cp.salary_min,
+              salaryMax: cp.salary_max,
+              growthRate: cp.growth_rate,
+              onetCode: cp.onet_code,
+              brightOutlook: cp.bright_outlook,
+              greenJob: cp.green_job,
+            })),
+            skills: [],
+            source: 'onet',
+          })
+        }
+      } catch (onetError) {
+        console.error('O*NET fallback error:', onetError)
+        // Continue to return empty results if O*NET also fails
+      }
+    }
+
     return NextResponse.json({
       programKey,
       school,
       careerPaths,
       skills,
+      source: careerPaths.length > 0 ? 'database' : 'none',
     })
   } catch (error) {
     console.error('Unexpected error:', error)

@@ -150,11 +150,8 @@ function mapAvailability(schedule: string): 'open' | 'weekdays' | 'weekends' | '
 
 export default function FoundationPage() {
   const handleComplete = async (answers: Record<string, unknown>) => {
-    console.log('Onboarding v2 answers:', answers)
-
     // Transform answers to API format
     const apiData = transformAnswersToApiFormat(answers)
-    console.log('Transformed API data:', apiData)
 
     // Submit to API
     const response = await fetch('/api/onboarding', {
@@ -171,7 +168,6 @@ export default function FoundationPage() {
       throw new Error(error.message || 'Failed to save onboarding data')
     }
 
-    console.log('Onboarding saved successfully!')
     // OnboardingFlow will handle redirect to dashboard
   }
 

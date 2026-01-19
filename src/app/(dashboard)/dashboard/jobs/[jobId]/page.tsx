@@ -240,8 +240,8 @@ export default function JobDetailPage() {
     return (
       <div className="max-w-3xl mx-auto py-12">
         <div className="flex flex-col items-center justify-center">
-          <Loader2 className="w-12 h-12 animate-spin text-[#ffc425] mb-4" />
-          <p className="text-slate-400">Loading job details...</p>
+          <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
+          <p className="text-muted-foreground">Loading job details...</p>
         </div>
       </div>
     )
@@ -256,17 +256,17 @@ export default function JobDetailPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center"
         >
-          <h1 className="text-2xl font-bold text-white mb-4">
+          <h1 className="text-2xl font-bold text-foreground mb-4">
             {error === 'Job not found' ? 'Job Not Found' : 'Error Loading Job'}
           </h1>
-          <p className="text-slate-400 mb-6">
+          <p className="text-muted-foreground mb-6">
             {error === 'Job not found'
               ? 'This job listing may have been removed or the link is incorrect.'
               : 'We had trouble loading this job. Please try again.'}
           </p>
           <Link
             href="/dashboard/jobs"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#ffc425] text-[#0f172a] font-semibold hover:bg-[#ffd85d] transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors"
           >
             <ArrowLeft size={20} />
             Back to Jobs

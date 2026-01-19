@@ -581,6 +581,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signup' }: AuthModal
                   </button>
                 </div>
               )}
+
             </form>
 
             {/* Toggle Mode */}

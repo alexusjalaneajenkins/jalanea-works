@@ -78,6 +78,17 @@ const nextConfig: NextConfig = {
   // Empty turbopack config silences the warning
   turbopack: {},
 
+  // Allow images from Supabase Storage
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
+  },
+
   // Disable caching for HTML pages to prevent stale content
   async headers() {
     return [

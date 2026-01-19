@@ -1,0 +1,1055 @@
+{
+  "school": "Orange Technical College",
+  "programs": [
+    {
+      "name": "Heating, Ventilation, Air-Conditioning/Refrigeration (HVAC/R) 1",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "HVAC Helper",
+          "title_es": "Ayudante de HVAC",
+          "salary_min": 34300,
+          "salary_max": 41500,
+          "growth": "high"
+        },
+        {
+          "title": "Entry-Level HVAC Technician",
+          "title_es": "Técnico de HVAC Nivel Inicial",
+          "salary_min": 36000,
+          "salary_max": 45000,
+          "growth": "high"
+        },
+        {
+          "title": "Maintenance Technician",
+          "title_es": "Técnico de Mantenimiento",
+          "salary_min": 35000,
+          "salary_max": 42000,
+          "growth": "high"
+        },
+        {
+          "title": "Refrigeration Helper",
+          "title_es": "Ayudante de Refrigeración",
+          "salary_min": 34000,
+          "salary_max": 40000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "EPA Section 608 Certification", "category": "technical" },
+        { "name": "Thermodynamics", "category": "technical" },
+        { "name": "Soldering and Brazing", "category": "technical" },
+        { "name": "Electrical Troubleshooting", "category": "technical" },
+        { "name": "Refrigerant Handling", "category": "technical" },
+        { "name": "Schematic Reading", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Heating, Ventilation, Air-Conditioning/Refrigeration (HVAC/R) 2",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Commercial HVAC Technician",
+          "title_es": "Técnico de HVAC Comercial",
+          "salary_min": 45000,
+          "salary_max": 60000,
+          "growth": "high"
+        },
+        {
+          "title": "HVAC Service Technician",
+          "title_es": "Técnico de Servicio HVAC",
+          "salary_min": 42000,
+          "salary_max": 51800,
+          "growth": "high"
+        },
+        {
+          "title": "Refrigeration Technician",
+          "title_es": "Técnico de Refrigeración",
+          "salary_min": 45000,
+          "salary_max": 58000,
+          "growth": "high"
+        },
+        {
+          "title": "Heat Pump Specialist",
+          "title_es": "Especialista en Bombas de Calor",
+          "salary_min": 48000,
+          "salary_max": 74681,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "HVAC Excellence Certification", "category": "technical" },
+        { "name": "Psychrometrics", "category": "technical" },
+        { "name": "Light Commercial Refrigeration", "category": "technical" },
+        { "name": "Heat Pump Systems", "category": "technical" },
+        { "name": "Humidity Control", "category": "technical" },
+        { "name": "Complex Diagnostics", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Electricity",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Electrician Helper",
+          "title_es": "Ayudante de Electricista",
+          "salary_min": 35600,
+          "salary_max": 41900,
+          "growth": "high"
+        },
+        {
+          "title": "Residential Electrician",
+          "title_es": "Electricista Residencial",
+          "salary_min": 40000,
+          "salary_max": 51007,
+          "growth": "high"
+        },
+        {
+          "title": "Commercial Electrician",
+          "title_es": "Electricista Comercial",
+          "salary_min": 45000,
+          "salary_max": 61000,
+          "growth": "high"
+        },
+        {
+          "title": "Electrical Apprentice",
+          "title_es": "Aprendiz de Electricista",
+          "salary_min": 35600,
+          "salary_max": 45000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "NCCER Electrical Level 1 & 2", "category": "technical" },
+        { "name": "National Electrical Code (NEC)", "category": "technical" },
+        { "name": "Conduit Bending", "category": "technical" },
+        { "name": "Three-Phase Power Systems", "category": "technical" },
+        { "name": "OSHA Safety Standards", "category": "technical" },
+        { "name": "Blueprint Reading", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Welding Technology",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Welder Helper",
+          "title_es": "Ayudante de Soldador",
+          "salary_min": 32000,
+          "salary_max": 38000,
+          "growth": "high"
+        },
+        {
+          "title": "Shielded Metal Arc Welder",
+          "title_es": "Soldador de Arco Metálico Protegido",
+          "salary_min": 36200,
+          "salary_max": 40600,
+          "growth": "high"
+        },
+        {
+          "title": "MIG Welder",
+          "title_es": "Soldador MIG",
+          "salary_min": 38000,
+          "salary_max": 45000,
+          "growth": "high"
+        },
+        {
+          "title": "Pipe Welder",
+          "title_es": "Soldador de Tuberías",
+          "salary_min": 42000,
+          "salary_max": 51004,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "AWS Certification", "category": "technical" },
+        { "name": "SMAW (Stick Welding)", "category": "technical" },
+        { "name": "GMAW (MIG Welding)", "category": "technical" },
+        { "name": "GTAW (TIG Welding)", "category": "technical" },
+        { "name": "Blueprint Reading", "category": "technical" },
+        { "name": "Thermal Cutting", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Computer-Aided Drawing and Modeling",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "CAD Technician",
+          "title_es": "Técnico CAD",
+          "salary_min": 41100,
+          "salary_max": 52153,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Architectural Drafter",
+          "title_es": "Dibujante Arquitectónico",
+          "salary_min": 42000,
+          "salary_max": 55000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "BIM Technician",
+          "title_es": "Técnico BIM",
+          "salary_min": 45000,
+          "salary_max": 60200,
+          "growth": "high"
+        },
+        {
+          "title": "Civil CAD Drafter",
+          "title_es": "Dibujante CAD Civil",
+          "salary_min": 42000,
+          "salary_max": 55000,
+          "growth": "moderate-high"
+        }
+      ],
+      "skills": [
+        { "name": "AutoCAD", "category": "tool" },
+        { "name": "Revit", "category": "tool" },
+        { "name": "Autodesk Certified User", "category": "technical" },
+        { "name": "Building Information Modeling (BIM)", "category": "technical" },
+        { "name": "2D/3D Drafting", "category": "technical" },
+        { "name": "Technical Drawing", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Building Construction Technologies",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Construction Laborer",
+          "title_es": "Trabajador de Construcción",
+          "salary_min": 33000,
+          "salary_max": 40000,
+          "growth": "high"
+        },
+        {
+          "title": "Carpenter Helper",
+          "title_es": "Ayudante de Carpintero",
+          "salary_min": 33000,
+          "salary_max": 42000,
+          "growth": "high"
+        },
+        {
+          "title": "Concrete Finisher",
+          "title_es": "Acabador de Concreto",
+          "salary_min": 35000,
+          "salary_max": 45000,
+          "growth": "high"
+        },
+        {
+          "title": "Mason Helper",
+          "title_es": "Ayudante de Albañil",
+          "salary_min": 32000,
+          "salary_max": 40000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "OSHA 10 Certification", "category": "technical" },
+        { "name": "NCCER Core", "category": "technical" },
+        { "name": "Blueprint Reading", "category": "technical" },
+        { "name": "Carpentry", "category": "technical" },
+        { "name": "Masonry", "category": "technical" },
+        { "name": "Site Layout", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Diesel Systems Technician",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Diesel Engine Mechanic Helper",
+          "title_es": "Ayudante de Mecánico de Motor Diésel",
+          "salary_min": 40000,
+          "salary_max": 46400,
+          "growth": "high"
+        },
+        {
+          "title": "Diesel Technician",
+          "title_es": "Técnico Diésel",
+          "salary_min": 46400,
+          "salary_max": 53500,
+          "growth": "high"
+        },
+        {
+          "title": "Heavy Equipment Technician",
+          "title_es": "Técnico de Equipo Pesado",
+          "salary_min": 50000,
+          "salary_max": 73690,
+          "growth": "high"
+        },
+        {
+          "title": "Diesel Hydraulics Technician",
+          "title_es": "Técnico de Hidráulica Diésel",
+          "salary_min": 48000,
+          "salary_max": 65000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "ASE Medium-Heavy Truck Certification", "category": "technical" },
+        { "name": "Diesel Engine Overhaul", "category": "technical" },
+        { "name": "Air Brake Systems", "category": "technical" },
+        { "name": "Hydraulic Systems", "category": "technical" },
+        { "name": "Emissions Control Systems", "category": "technical" },
+        { "name": "Electronic Diagnostics", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Master Automotive Service Technology 1",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Entry-Level Automotive Technician",
+          "title_es": "Técnico Automotriz Nivel Inicial",
+          "salary_min": 38063,
+          "salary_max": 45000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Brake Technician",
+          "title_es": "Técnico de Frenos",
+          "salary_min": 38000,
+          "salary_max": 48000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Suspension Technician",
+          "title_es": "Técnico de Suspensión",
+          "salary_min": 40000,
+          "salary_max": 50000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Lube Technician",
+          "title_es": "Técnico de Lubricación",
+          "salary_min": 32000,
+          "salary_max": 40000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "ASE A1 (Engine Repair)", "category": "technical" },
+        { "name": "ASE A4 (Suspension/Steering)", "category": "technical" },
+        { "name": "ASE A5 (Brakes)", "category": "technical" },
+        { "name": "ASE A6 (Electrical)", "category": "technical" },
+        { "name": "NATEF Standards", "category": "technical" },
+        { "name": "Under-Car Systems", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Master Automotive Service Technology 2",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Automotive Diagnostician",
+          "title_es": "Diagnosticador Automotriz",
+          "salary_min": 48000,
+          "salary_max": 65000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Line Technician",
+          "title_es": "Técnico de Línea",
+          "salary_min": 45000,
+          "salary_max": 54048,
+          "growth": "moderate"
+        },
+        {
+          "title": "Transmission Technician",
+          "title_es": "Técnico de Transmisión",
+          "salary_min": 48000,
+          "salary_max": 62000,
+          "growth": "moderate"
+        },
+        {
+          "title": "ASE Master Technician",
+          "title_es": "Técnico Maestro ASE",
+          "salary_min": 55000,
+          "salary_max": 77600,
+          "growth": "moderate-high"
+        }
+      ],
+      "skills": [
+        { "name": "ASE A2 (Automatic Transmission)", "category": "technical" },
+        { "name": "ASE A3 (Manual Drivetrain)", "category": "technical" },
+        { "name": "ASE A7 (HVAC)", "category": "technical" },
+        { "name": "ASE A8 (Engine Performance)", "category": "technical" },
+        { "name": "Advanced Diagnostics", "category": "technical" },
+        { "name": "Drivability Troubleshooting", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Automotive Collision Technology Technician",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Collision Repair Technician",
+          "title_es": "Técnico de Reparación de Colisiones",
+          "salary_min": 38000,
+          "salary_max": 50000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Auto Body Painter",
+          "title_es": "Pintor de Carrocería",
+          "salary_min": 42000,
+          "salary_max": 58000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Frame Technician",
+          "title_es": "Técnico de Chasis",
+          "salary_min": 40000,
+          "salary_max": 54000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Estimator",
+          "title_es": "Estimador de Daños",
+          "salary_min": 42000,
+          "salary_max": 58000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "I-CAR Certification", "category": "technical" },
+        { "name": "ASE Collision Repair", "category": "technical" },
+        { "name": "Frame Straightening", "category": "technical" },
+        { "name": "Paint Application", "category": "technical" },
+        { "name": "Damage Analysis", "category": "technical" },
+        { "name": "Panel Repair", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Commercial Vehicle Driving",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Local Truck Driver",
+          "title_es": "Conductor de Camión Local",
+          "salary_min": 40000,
+          "salary_max": 44636,
+          "growth": "high"
+        },
+        {
+          "title": "Over-the-Road (OTR) Driver",
+          "title_es": "Conductor de Larga Distancia",
+          "salary_min": 50000,
+          "salary_max": 80000,
+          "growth": "high"
+        },
+        {
+          "title": "Delivery Driver",
+          "title_es": "Conductor de Entregas",
+          "salary_min": 38000,
+          "salary_max": 48000,
+          "growth": "high"
+        },
+        {
+          "title": "Tanker Driver",
+          "title_es": "Conductor de Tanque",
+          "salary_min": 50000,
+          "salary_max": 70000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "CDL Class A", "category": "technical" },
+        { "name": "ELDT Compliance", "category": "technical" },
+        { "name": "Vehicle Inspection", "category": "technical" },
+        { "name": "Backing Maneuvers", "category": "technical" },
+        { "name": "DOT Regulations", "category": "technical" },
+        { "name": "Defensive Driving", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Medical Assisting",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Medical Assistant",
+          "title_es": "Asistente Médico",
+          "salary_min": 38000,
+          "salary_max": 45000,
+          "growth": "very high"
+        },
+        {
+          "title": "Clinical Medical Assistant",
+          "title_es": "Asistente Médico Clínico",
+          "salary_min": 38000,
+          "salary_max": 45000,
+          "growth": "very high"
+        },
+        {
+          "title": "Phlebotomist",
+          "title_es": "Flebotomista",
+          "salary_min": 35000,
+          "salary_max": 42000,
+          "growth": "high"
+        },
+        {
+          "title": "Care Coordinator",
+          "title_es": "Coordinador de Atención",
+          "salary_min": 40000,
+          "salary_max": 50000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "CMA/RMA Certification", "category": "technical" },
+        { "name": "Phlebotomy", "category": "technical" },
+        { "name": "EKG Administration", "category": "technical" },
+        { "name": "Medical Coding", "category": "technical" },
+        { "name": "Pharmacology", "category": "technical" },
+        { "name": "Patient Care", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Dental Assisting Technology and Management",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Dental Assistant",
+          "title_es": "Asistente Dental",
+          "salary_min": 33600,
+          "salary_max": 39341,
+          "growth": "high"
+        },
+        {
+          "title": "Expanded Functions Dental Assistant",
+          "title_es": "Asistente Dental de Funciones Expandidas",
+          "salary_min": 38000,
+          "salary_max": 50000,
+          "growth": "high"
+        },
+        {
+          "title": "Dental Radiographer",
+          "title_es": "Radiógrafo Dental",
+          "salary_min": 35000,
+          "salary_max": 42000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Orthodontic Assistant",
+          "title_es": "Asistente de Ortodoncia",
+          "salary_min": 36000,
+          "salary_max": 45000,
+          "growth": "moderate-high"
+        }
+      ],
+      "skills": [
+        { "name": "Florida Expanded Functions Certificate", "category": "technical" },
+        { "name": "CDA Certification", "category": "technical" },
+        { "name": "Dental Radiography", "category": "technical" },
+        { "name": "Chairside Assisting", "category": "technical" },
+        { "name": "Infection Control", "category": "technical" },
+        { "name": "Patient Communication", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Surgical Technology",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Surgical Technologist",
+          "title_es": "Tecnólogo Quirúrgico",
+          "salary_min": 51384,
+          "salary_max": 74500,
+          "growth": "high"
+        },
+        {
+          "title": "Scrub Tech",
+          "title_es": "Técnico de Quirófano",
+          "salary_min": 50000,
+          "salary_max": 70000,
+          "growth": "high"
+        },
+        {
+          "title": "Operating Room Technician",
+          "title_es": "Técnico de Sala de Operaciones",
+          "salary_min": 48000,
+          "salary_max": 65000,
+          "growth": "high"
+        },
+        {
+          "title": "Surgical First Assistant",
+          "title_es": "Primer Asistente Quirúrgico",
+          "salary_min": 55000,
+          "salary_max": 78000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "CST Certification", "category": "technical" },
+        { "name": "Sterile Field Maintenance", "category": "technical" },
+        { "name": "Surgical Instrumentation", "category": "technical" },
+        { "name": "Anatomy and Physiology", "category": "technical" },
+        { "name": "Surgical Procedures", "category": "technical" },
+        { "name": "Attention to Detail", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Pharmacy Technician",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Pharmacy Technician",
+          "title_es": "Técnico de Farmacia",
+          "salary_min": 35000,
+          "salary_max": 43460,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Hospital Pharmacy Technician",
+          "title_es": "Técnico de Farmacia Hospitalaria",
+          "salary_min": 38000,
+          "salary_max": 48000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Compounding Technician",
+          "title_es": "Técnico de Preparación",
+          "salary_min": 38000,
+          "salary_max": 50000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Pharmacy Inventory Specialist",
+          "title_es": "Especialista en Inventario de Farmacia",
+          "salary_min": 36000,
+          "salary_max": 45000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "CPhT Certification", "category": "technical" },
+        { "name": "Sterile Compounding", "category": "technical" },
+        { "name": "Medication Chemistry", "category": "technical" },
+        { "name": "Pharmacy Law", "category": "technical" },
+        { "name": "Inventory Management", "category": "technical" },
+        { "name": "Customer Service", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Massage Therapy",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Licensed Massage Therapist",
+          "title_es": "Terapeuta de Masaje Licenciado",
+          "salary_min": 40000,
+          "salary_max": 46753,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Spa Massage Therapist",
+          "title_es": "Terapeuta de Masaje de Spa",
+          "salary_min": 38000,
+          "salary_max": 55000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Medical Massage Therapist",
+          "title_es": "Terapeuta de Masaje Médico",
+          "salary_min": 42000,
+          "salary_max": 58000,
+          "growth": "high"
+        },
+        {
+          "title": "Sports Massage Therapist",
+          "title_es": "Terapeuta de Masaje Deportivo",
+          "salary_min": 40000,
+          "salary_max": 55000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "MBLEx Licensure", "category": "technical" },
+        { "name": "Deep Tissue Massage", "category": "technical" },
+        { "name": "Neuromuscular Therapy", "category": "technical" },
+        { "name": "Anatomy and Kinesiology", "category": "technical" },
+        { "name": "Hydrotherapy", "category": "technical" },
+        { "name": "Client Relations", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Medical Administrative Specialist",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Medical Administrative Assistant",
+          "title_es": "Asistente Administrativo Médico",
+          "salary_min": 35309,
+          "salary_max": 41500,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Medical Office Manager",
+          "title_es": "Gerente de Oficina Médica",
+          "salary_min": 42000,
+          "salary_max": 55000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Unit Secretary",
+          "title_es": "Secretario de Unidad",
+          "salary_min": 34000,
+          "salary_max": 42000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Medical Billing Specialist",
+          "title_es": "Especialista en Facturación Médica",
+          "salary_min": 36000,
+          "salary_max": 45000,
+          "growth": "moderate-high"
+        }
+      ],
+      "skills": [
+        { "name": "CMAA Certification", "category": "technical" },
+        { "name": "Medical Transcription", "category": "technical" },
+        { "name": "Health Information Management", "category": "technical" },
+        { "name": "Medical Billing/Coding", "category": "technical" },
+        { "name": "Microsoft Office", "category": "tool" },
+        { "name": "Patient Communication", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Practical Nursing (LPN)",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Licensed Practical Nurse",
+          "title_es": "Enfermera Práctica Licenciada",
+          "salary_min": 45000,
+          "salary_max": 53000,
+          "growth": "high"
+        },
+        {
+          "title": "Long-Term Care LPN",
+          "title_es": "Enfermera Práctica de Cuidado a Largo Plazo",
+          "salary_min": 45000,
+          "salary_max": 55000,
+          "growth": "high"
+        },
+        {
+          "title": "Clinic LPN",
+          "title_es": "Enfermera Práctica de Clínica",
+          "salary_min": 44000,
+          "salary_max": 52000,
+          "growth": "high"
+        },
+        {
+          "title": "Home Health LPN",
+          "title_es": "Enfermera Práctica de Salud a Domicilio",
+          "salary_min": 46000,
+          "salary_max": 56000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "LPN State License", "category": "technical" },
+        { "name": "Pharmacology", "category": "technical" },
+        { "name": "Medical-Surgical Nursing", "category": "technical" },
+        { "name": "Pediatric Nursing", "category": "technical" },
+        { "name": "Geriatric Care", "category": "technical" },
+        { "name": "Patient Advocacy", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Patient Care Assistant",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Certified Nursing Assistant",
+          "title_es": "Asistente de Enfermería Certificado",
+          "salary_min": 31200,
+          "salary_max": 35000,
+          "growth": "high"
+        },
+        {
+          "title": "Patient Care Technician",
+          "title_es": "Técnico de Cuidado del Paciente",
+          "salary_min": 32000,
+          "salary_max": 38000,
+          "growth": "high"
+        },
+        {
+          "title": "Home Health Aide",
+          "title_es": "Asistente de Salud a Domicilio",
+          "salary_min": 30000,
+          "salary_max": 35000,
+          "growth": "very high"
+        },
+        {
+          "title": "Nursing Home Aide",
+          "title_es": "Asistente de Hogar de Ancianos",
+          "salary_min": 30000,
+          "salary_max": 35000,
+          "growth": "very high"
+        }
+      ],
+      "skills": [
+        { "name": "CNA State License", "category": "technical" },
+        { "name": "Vital Signs Monitoring", "category": "technical" },
+        { "name": "Activities of Daily Living (ADL)", "category": "technical" },
+        { "name": "Patient Hygiene", "category": "technical" },
+        { "name": "Basic Nursing Skills", "category": "technical" },
+        { "name": "Compassion", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Enterprise Network and Server Support Technology",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Network Technician",
+          "title_es": "Técnico de Redes",
+          "salary_min": 45000,
+          "salary_max": 49855,
+          "growth": "high"
+        },
+        {
+          "title": "SOC Analyst",
+          "title_es": "Analista de Centro de Operaciones de Seguridad",
+          "salary_min": 55000,
+          "salary_max": 97200,
+          "growth": "very high"
+        },
+        {
+          "title": "Server Administrator",
+          "title_es": "Administrador de Servidores",
+          "salary_min": 52000,
+          "salary_max": 69023,
+          "growth": "high"
+        },
+        {
+          "title": "Systems Support Specialist",
+          "title_es": "Especialista en Soporte de Sistemas",
+          "salary_min": 48000,
+          "salary_max": 62000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "CompTIA Security+", "category": "technical" },
+        { "name": "Cisco CCNA", "category": "technical" },
+        { "name": "Microsoft Certified Systems Administrator", "category": "technical" },
+        { "name": "Server Administration", "category": "technical" },
+        { "name": "Network Configuration", "category": "technical" },
+        { "name": "Virtualization", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Enterprise Desktop and Mobile Support Technology",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Help Desk Technician",
+          "title_es": "Técnico de Mesa de Ayuda",
+          "salary_min": 37000,
+          "salary_max": 42700,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Desktop Support Specialist",
+          "title_es": "Especialista en Soporte de Escritorio",
+          "salary_min": 38000,
+          "salary_max": 48000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "IT Support Technician",
+          "title_es": "Técnico de Soporte de TI",
+          "salary_min": 38000,
+          "salary_max": 50000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Mobile Device Support Specialist",
+          "title_es": "Especialista en Soporte de Dispositivos Móviles",
+          "salary_min": 40000,
+          "salary_max": 52000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "CompTIA A+", "category": "technical" },
+        { "name": "CompTIA Network+", "category": "technical" },
+        { "name": "Windows/Linux Configuration", "category": "technical" },
+        { "name": "Mobile Device Management (MDM)", "category": "technical" },
+        { "name": "Hardware Troubleshooting", "category": "technical" },
+        { "name": "Customer Service", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Digital Media/Multimedia Design",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Graphic Designer",
+          "title_es": "Diseñador Gráfico",
+          "salary_min": 41000,
+          "salary_max": 52231,
+          "growth": "moderate"
+        },
+        {
+          "title": "Web Designer",
+          "title_es": "Diseñador Web",
+          "salary_min": 42000,
+          "salary_max": 55000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Video Editor",
+          "title_es": "Editor de Video",
+          "salary_min": 40000,
+          "salary_max": 52000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Content Creator",
+          "title_es": "Creador de Contenido",
+          "salary_min": 38000,
+          "salary_max": 50000,
+          "growth": "moderate-high"
+        }
+      ],
+      "skills": [
+        { "name": "Adobe Creative Cloud", "category": "tool" },
+        { "name": "Adobe Certified Professional", "category": "technical" },
+        { "name": "Graphic Design", "category": "technical" },
+        { "name": "Web Design", "category": "technical" },
+        { "name": "Video Editing", "category": "technical" },
+        { "name": "Visual Communication", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "3-D Animation Technology",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "3D Animator",
+          "title_es": "Animador 3D",
+          "salary_min": 52700,
+          "salary_max": 76614,
+          "growth": "high"
+        },
+        {
+          "title": "3D Modeler",
+          "title_es": "Modelador 3D",
+          "salary_min": 50000,
+          "salary_max": 70000,
+          "growth": "high"
+        },
+        {
+          "title": "Simulation Developer",
+          "title_es": "Desarrollador de Simulación",
+          "salary_min": 55000,
+          "salary_max": 78000,
+          "growth": "high"
+        },
+        {
+          "title": "Texture Artist",
+          "title_es": "Artista de Texturas",
+          "salary_min": 48000,
+          "salary_max": 65000,
+          "growth": "moderate-high"
+        }
+      ],
+      "skills": [
+        { "name": "Autodesk Maya", "category": "tool" },
+        { "name": "Autodesk Certification", "category": "technical" },
+        { "name": "3D Modeling", "category": "technical" },
+        { "name": "Rigging", "category": "technical" },
+        { "name": "Texturing", "category": "technical" },
+        { "name": "Motion Capture", "category": "technical" }
+      ]
+    },
+    {
+      "name": "Cosmetology",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Cosmetologist",
+          "title_es": "Cosmetólogo",
+          "salary_min": 35000,
+          "salary_max": 40409,
+          "growth": "moderate"
+        },
+        {
+          "title": "Hair Stylist",
+          "title_es": "Estilista de Cabello",
+          "salary_min": 35000,
+          "salary_max": 60000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Salon Manager",
+          "title_es": "Gerente de Salón",
+          "salary_min": 42000,
+          "salary_max": 58000,
+          "growth": "moderate"
+        },
+        {
+          "title": "Color Specialist",
+          "title_es": "Especialista en Color",
+          "salary_min": 38000,
+          "salary_max": 55000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "Florida State Cosmetology License", "category": "technical" },
+        { "name": "Hair Design", "category": "technical" },
+        { "name": "Chemical Processes", "category": "technical" },
+        { "name": "Skin Care", "category": "technical" },
+        { "name": "Salon Management", "category": "technical" },
+        { "name": "Client Relations", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Professional Culinary Arts & Hospitality",
+      "degree_type": "certificate",
+      "career_paths": [
+        {
+          "title": "Line Cook",
+          "title_es": "Cocinero de Línea",
+          "salary_min": 32000,
+          "salary_max": 40000,
+          "growth": "high"
+        },
+        {
+          "title": "Prep Cook",
+          "title_es": "Cocinero de Preparación",
+          "salary_min": 30000,
+          "salary_max": 35068,
+          "growth": "high"
+        },
+        {
+          "title": "Sous Chef",
+          "title_es": "Sous Chef",
+          "salary_min": 42000,
+          "salary_max": 58000,
+          "growth": "moderate-high"
+        },
+        {
+          "title": "Pastry Cook",
+          "title_es": "Cocinero de Pastelería",
+          "salary_min": 35000,
+          "salary_max": 45000,
+          "growth": "moderate"
+        }
+      ],
+      "skills": [
+        { "name": "ServSafe Certification", "category": "technical" },
+        { "name": "Classical Cooking Techniques", "category": "technical" },
+        { "name": "Food Sanitation", "category": "technical" },
+        { "name": "Kitchen Management", "category": "technical" },
+        { "name": "Menu Planning", "category": "technical" },
+        { "name": "Time Management", "category": "soft_skill" }
+      ]
+    }
+  ]
+}

@@ -13,6 +13,20 @@ export interface CareerPath {
   salaryMin?: number
   salaryMax?: number
   growthRate?: GrowthRate
+  // O*NET specific fields
+  onetCode?: string
+  brightOutlook?: boolean
+  greenJob?: boolean
+  apprenticeship?: boolean
+  // Location-specific data
+  location?: string                    // e.g., "Orlando, FL"
+  localSalaryMin?: number              // Local salary estimate
+  localSalaryMax?: number
+  localJobCount?: number               // Number of local job openings
+  localJobAvailability?: 'high' | 'medium' | 'low' | 'limited'
+  // Work style tags for "day in the life"
+  workTags?: string[]                  // e.g., ["Remote Possible", "Coding Heavy", "Client Facing"]
+  educationRequired?: string           // e.g., "Bachelor's Required", "Certificate OK"
 }
 
 export interface Skill {

@@ -20,10 +20,10 @@ import {
   Briefcase,
   Bus,
   Compass,
+  FolderOpen,
   MapPin,
   Search,
   ShieldCheck,
-  Sparkles,
   Wallet,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -33,6 +33,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Job } from '@/components/jobs/JobCard'
 import { FilterBar, type FilterBarState } from '@/components/jobs/FilterBar'
 import { AllFiltersModal, type AllFiltersState } from '@/components/jobs/AllFiltersModal'
+import { JobPocketModal, type PocketTier1Data } from '@/components/jobs/JobPocketModal'
 
 // Types
 interface UserLocation {
@@ -82,48 +83,58 @@ function JobCard({
   isSaved,
   onSave,
   onPocketAndApply,
+  onViewDetails,
 }: {
   job: Job & { matchScore?: number }
   isSaved: boolean
   onSave: () => void
   onPocketAndApply: () => void
+  onViewDetails: () => void
 }) {
-  const [expanded, setExpanded] = useState(false)
-
   // Calculate match score (use real score or estimate from job data)
   const matchScore = job.matchScore || Math.floor(Math.random() * 20 + 70)
 
-  // Format salary
+  // Convert annual salary to hourly (2080 work hours/year = 52 weeks × 40 hours)
+  const annualToHourly = (annual: number) => Math.round(annual / 2080)
+
+  // Format salary - show hourly rate for users who think in hourly wages
   const formatSalary = () => {
-    if (!job.salaryMin && !job.salaryMax) return 'Salary not listed'
-    const suffix = job.salaryType === 'hourly' ? '/hr' : '/yr'
-    const format = (n: number) =>
-      job.salaryType === 'hourly' ? `$${n}` : `$${Math.round(n / 1000)}K`
-    if (job.salaryMin && job.salaryMax)
-      return `${format(job.salaryMin)}–${format(job.salaryMax)}${suffix}`
-    if (job.salaryMin) return `From ${format(job.salaryMin)}${suffix}`
-    return `Up to ${format(job.salaryMax!)}${suffix}`
+    if (!job.salaryMin && !job.salaryMax) return null
+
+    // If already hourly, just show hourly
+    if (job.salaryType === 'hourly') {
+      const min = job.salaryMin
+      const max = job.salaryMax
+      if (min && max) return `$${min}–$${max}/hr`
+      if (min) return `$${min}+/hr`
+      return `$${max}/hr`
+    }
+
+    // Annual salary - convert to hourly
+    const minHourly = job.salaryMin ? annualToHourly(job.salaryMin) : null
+    const maxHourly = job.salaryMax ? annualToHourly(job.salaryMax) : null
+
+    if (minHourly && maxHourly) return `$${minHourly}–$${maxHourly}/hr`
+    if (minHourly) return `$${minHourly}+/hr`
+    if (maxHourly) return `$${maxHourly}/hr`
+    return null
   }
 
-  // Format posted date
+  const salaryText = formatSalary()
+
+  // Format posted date (short)
   const formatPostedDate = () => {
-    if (!job.postedAt) return ''
+    if (!job.postedAt) return null
     const date = new Date(job.postedAt)
     const now = new Date()
-    const diffDays = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
-    )
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
     if (diffDays === 0) return 'Today'
-    if (diffDays === 1) return 'Yesterday'
-    if (diffDays < 7) return `${diffDays} days ago`
+    if (diffDays === 1) return '1d ago'
+    if (diffDays < 7) return `${diffDays}d ago`
     return `${Math.floor(diffDays / 7)}w ago`
   }
 
-  // Build tags
-  const tags = []
-  if (job.jobType) tags.push(job.jobType)
-  if (job.transitMinutes !== undefined) tags.push('LYNX Accessible')
-  if (job.valenciaMatch) tags.push('Valencia Match')
+  const postedDate = formatPostedDate()
 
   return (
     <motion.article
@@ -131,200 +142,132 @@ function JobCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      onClick={onViewDetails}
       className={cn(
-        'group relative overflow-hidden rounded-3xl border bg-card/60 backdrop-blur-sm',
-        'transition-all duration-300',
+        'group relative w-full overflow-hidden rounded-2xl border bg-card/60 backdrop-blur-sm cursor-pointer',
+        'transition-all duration-200',
         isSaved
-          ? 'border-primary/30 shadow-[0_8px_40px_hsl(var(--primary)/0.12)]'
-          : 'border-border hover:border-primary/20',
-        expanded && 'ring-2 ring-primary/20'
+          ? 'border-primary/30 shadow-[0_4px_20px_hsl(var(--primary)/0.1)]'
+          : 'border-border hover:border-primary/20 hover:shadow-md'
       )}
       role="article"
       aria-label={`${job.title} at ${job.company}`}
     >
-      {/* Shining light effect on hover */}
-      <div className="jw-shining-light pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-      <div className="relative p-4 sm:p-5">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            {/* Match score + Posted */}
-            <div className="flex items-center gap-3 mb-3">
-              <MatchRing value={matchScore} />
-              {job.postedAt && (
-                <span className="text-xs text-muted-foreground">{formatPostedDate()}</span>
-              )}
-            </div>
-
-            {/* Title */}
-            <h3
-              className="text-lg font-black tracking-tight text-foreground leading-tight"
-              style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
-            >
-              {job.title}
-            </h3>
-
-            {/* Company & Location */}
-            <div className="mt-1.5 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground/80">{job.company}</span>
-              <span className="text-muted-foreground/50">•</span>
-              <span className="inline-flex items-center gap-1">
-                <MapPin size={12} />
-                {job.location}
-              </span>
-              {/* Transit badge - show if job is transit accessible */}
-              {job.transitMinutes !== undefined && (
-                <>
-                  <span className="text-muted-foreground/50">•</span>
-                  <span className="inline-flex items-center gap-1 text-primary font-medium">
-                    <Bus size={12} />
-                    {job.transitMinutes} min
-                    {job.lynxRoutes && job.lynxRoutes.length > 0 && (
-                      <span className="text-[10px] text-muted-foreground">
-                        (Route {job.lynxRoutes[0]})
-                      </span>
-                    )}
-                  </span>
-                </>
-              )}
-            </div>
-
-            {/* Pay */}
-            <div className="mt-3 inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-1.5">
-              <Wallet size={14} className="text-primary" />
-              <span className="text-sm font-bold text-foreground">{formatSalary()}</span>
-            </div>
-          </div>
-
-          {/* Pocket button with tooltip */}
-          <div className="relative group/pocket">
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onSave()
-              }}
-              className={cn(
-                'flex h-11 w-11 items-center justify-center rounded-2xl border transition-all duration-200',
-                isSaved
-                  ? 'border-primary/30 bg-primary/15 text-primary'
-                  : 'border-border bg-card/80 text-muted-foreground hover:border-primary/30 hover:text-primary'
-              )}
-              aria-label={isSaved ? 'Remove from Pocket' : 'Save to Pocket'}
-              aria-pressed={isSaved}
-            >
-              <Bookmark size={18} className={isSaved ? 'fill-current' : ''} />
-            </button>
-            {/* Tooltip */}
-            <div className="absolute right-0 top-full mt-2 px-2 py-1 bg-foreground text-background text-[10px] font-medium rounded-lg opacity-0 group-hover/pocket:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
-              {isSaved ? 'In Pocket' : 'Save to Pocket'}
-            </div>
-          </div>
-        </div>
-
-        {/* Tags */}
-        <div className="mt-4 flex flex-wrap gap-2">
-          <span className="rounded-lg border border-primary/25 bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">
-            Entry Level
-          </span>
-          {tags.slice(0, 2).map((tag) => (
-            <span
-              key={tag}
-              className="rounded-lg border border-border bg-background/60 px-2.5 py-1 text-[11px] font-bold text-muted-foreground"
-            >
-              {tag}
-            </span>
-          ))}
-          {job.transitMinutes !== undefined && (
-            <span className="rounded-lg border border-border bg-background/60 px-2.5 py-1 text-[11px] font-bold text-muted-foreground inline-flex items-center gap-1">
-              <Bus size={10} />
-              {job.transitMinutes} min
-            </span>
-          )}
-        </div>
-
-        {/* Expandable details */}
-        <motion.div
-          initial={false}
-          animate={{ height: expanded ? 'auto' : 0, opacity: expanded ? 1 : 0 }}
-          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          className="overflow-hidden"
-        >
-          <div className="mt-4 pt-4 border-t border-border/50">
-            {job.description && (
-              <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
-                {job.description}
-              </p>
-            )}
-            <div className="grid gap-3 sm:grid-cols-2">
-              {/* LYNX Info */}
-              {job.transitMinutes !== undefined && (
-                <div className="rounded-2xl border border-border bg-background/40 p-3">
-                  <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide mb-2">
-                    Transit
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-foreground/80">
-                    <Bus size={14} className="text-primary" />
-                    {job.transitMinutes} min commute
-                    {job.lynxRoutes && job.lynxRoutes.length > 0 && (
-                      <span className="text-muted-foreground">
-                        • Route {job.lynxRoutes.join(', ')}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Scam Shield */}
-              <div className="rounded-2xl border border-border bg-background/40 p-3">
-                <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide mb-2">
-                  Scam Shield
-                </div>
-                <div className="flex items-center gap-2 text-sm text-foreground/80">
-                  <ShieldCheck size={14} className="text-primary" />
-                  {job.scamRiskLevel === 'low' || !job.scamRiskLevel
-                    ? 'Verified listing'
-                    : job.scamRiskLevel === 'medium'
-                    ? 'Review recommended'
-                    : 'Use caution'}
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Actions */}
-        <div className="mt-4 flex items-center gap-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              setExpanded(!expanded)
-            }}
-            className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-background/60 px-4 py-3 text-sm font-bold text-foreground hover:bg-background/80 transition-colors min-h-[44px]"
-          >
-            {expanded ? 'Show less' : 'View details'}
-            <ArrowRight
-              size={14}
-              className={cn('transition-transform', expanded && 'rotate-90')}
-            />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onPocketAndApply()
-            }}
-            className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity jw-glow-card min-h-[44px]"
-          >
-            <Sparkles size={14} />
-            Pocket & Apply
-          </button>
-        </div>
-      </div>
-
       {/* Golden accent line for saved jobs */}
       {isSaved && (
         <div className="absolute left-0 top-0 h-full w-1 bg-gradient-to-b from-primary via-primary/80 to-primary/40" />
       )}
+
+      <div className="relative p-5 lg:p-6">
+        {/* Responsive layout: vertical on mobile, horizontal on desktop */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
+
+          {/* ═══════════════════════════════════════════════════════════════════
+              LEFT SIDE: Job Info (Title, Company, Location)
+          ═══════════════════════════════════════════════════════════════════ */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between lg:justify-start lg:gap-4">
+              {/* Title - larger, no truncate on desktop */}
+              <h3
+                className="text-xl lg:text-2xl font-black tracking-tight text-foreground leading-tight"
+                style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
+              >
+                {job.title}
+              </h3>
+
+              {/* Mobile-only Match Score Badge */}
+              <span className="lg:hidden flex-shrink-0 rounded-lg border border-primary/20 bg-primary/10 px-2 py-1 text-xs font-bold text-primary">
+                {matchScore}%
+              </span>
+            </div>
+
+            {/* Subtitle: Company • Location • Date */}
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              {job.company}
+              <span className="mx-1.5 text-muted-foreground/40">•</span>
+              {job.location}
+              {postedDate && (
+                <>
+                  <span className="mx-1.5 text-muted-foreground/40">•</span>
+                  {postedDate}
+                </>
+              )}
+            </p>
+
+            {/* Badges Row - flex-wrap handles multiple badges gracefully */}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {/* Salary badge (bold - most important) */}
+              {salaryText && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-3 py-1.5 text-sm font-bold text-foreground">
+                  <Wallet size={14} className="text-primary" />
+                  {salaryText}
+                </span>
+              )}
+
+              {/* Entry Level badge */}
+              <span className="rounded-full bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">
+                Entry Level
+              </span>
+
+              {/* Transit badge - shows when job has transit data */}
+              {job.transitMinutes !== undefined && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-3 py-1.5 text-sm font-semibold text-blue-600">
+                  <Bus size={14} />
+                  {job.lynxRoutes && job.lynxRoutes.length > 0
+                    ? `Route ${job.lynxRoutes[0]}`
+                    : `${job.transitMinutes} min`}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* ═══════════════════════════════════════════════════════════════════
+              RIGHT SIDE: Action + Match Score (Desktop)
+          ═══════════════════════════════════════════════════════════════════ */}
+          <div className="flex flex-col items-stretch lg:items-end gap-3 lg:min-w-[180px]">
+            {/* Desktop Match Score with bookmark icon */}
+            <div className="hidden lg:flex items-center gap-3">
+              <div className="h-2.5 w-24 bg-border rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all"
+                  style={{ width: `${matchScore}%` }}
+                />
+              </div>
+              <span className="text-sm font-bold text-foreground">{matchScore}%</span>
+              {/* Save/Bookmark icon */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onSave()
+                }}
+                className={cn(
+                  'p-1.5 rounded-lg transition-all duration-200',
+                  isSaved
+                    ? 'text-primary'
+                    : 'text-muted-foreground/40 hover:text-primary hover:bg-primary/10'
+                )}
+                aria-label={isSaved ? 'Remove from Pocket' : 'Save to Pocket'}
+                title={isSaved ? 'Saved to Pocket' : 'Save for later'}
+              >
+                <Bookmark size={18} className={isSaved ? 'fill-current' : ''} />
+              </button>
+            </div>
+
+            {/* Pocket & Apply Button - uses FolderOpen icon (matches sidebar) */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onPocketAndApply()
+              }}
+              className="w-full lg:w-auto h-12 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
+            >
+              <FolderOpen size={16} />
+              Pocket & Apply
+            </button>
+          </div>
+
+        </div>
+      </div>
     </motion.article>
   )
 }
@@ -361,6 +304,13 @@ export default function JobsPage() {
 
   // Modal state
   const [isAllFiltersOpen, setIsAllFiltersOpen] = useState(false)
+
+  // Pocket modal state
+  const [isPocketModalOpen, setIsPocketModalOpen] = useState(false)
+  const [selectedJobForPocket, setSelectedJobForPocket] = useState<Job | null>(null)
+  const [pocketData, setPocketData] = useState<PocketTier1Data | null>(null)
+  const [isGeneratingPocket, setIsGeneratingPocket] = useState(false)
+  const [pocketProgress, setPocketProgress] = useState(0)
 
   // Jobs state
   const [jobs, setJobs] = useState<Job[]>([])
@@ -502,19 +452,193 @@ export default function JobsPage() {
     setSavedJobIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]))
   }
 
-  // Job click - navigate to job detail page
-  const handleJobClick = (job: Job) => {
+  // View job details - navigate to job detail page
+  const handleViewDetails = (job: Job) => {
     router.push(`/dashboard/jobs/${job.id}`)
   }
 
-  // Pocket & Apply - save to pocket then navigate to job detail
-  const handlePocketAndApply = (job: Job) => {
+  // Generate mock pocket data based on job
+  const generateMockPocketData = (job: Job): PocketTier1Data => {
+    // Format pay rate from job data
+    const formatPayRate = () => {
+      if (!job.salaryMin && !job.salaryMax) return '$15-$20/hr'
+      if (job.salaryType === 'hourly') {
+        if (job.salaryMin && job.salaryMax) return `$${job.salaryMin}-$${job.salaryMax}/hr`
+        if (job.salaryMin) return `$${job.salaryMin}+/hr`
+        return `$${job.salaryMax}/hr`
+      }
+      // Convert annual to hourly
+      const minHourly = job.salaryMin ? Math.round(job.salaryMin / 2080) : null
+      const maxHourly = job.salaryMax ? Math.round(job.salaryMax / 2080) : null
+      if (minHourly && maxHourly) return `$${minHourly}-$${maxHourly}/hr`
+      if (minHourly) return `$${minHourly}+/hr`
+      return `$${maxHourly}/hr`
+    }
+
+    return {
+      // Core fields
+      qualificationCheck: {
+        status: 'QUALIFIED',
+        missing: []
+      },
+      recommendation: 'APPLY_NOW',
+      matchScore: 85,
+
+      // Prep tab fields
+      talkingPoints: [
+        `Highlight your experience with customer interactions and problem-solving`,
+        `Mention your ability to work in fast-paced environments and handle multiple tasks`,
+        `Emphasize your reliability and willingness to learn new systems quickly`
+      ],
+      likelyQuestions: [
+        `Tell me about a time you dealt with a difficult customer.`,
+        `Why are you interested in working for ${job.company}?`,
+        `What does excellent customer service mean to you?`
+      ],
+      redFlags: [],
+
+      // Zone A: Logistics
+      logistics: {
+        locationType: 'on-site',
+        locationAddress: job.location,
+        schedule: 'Day Shift: 8am-4:30pm',
+        employmentType: 'Full-Time',
+        transitInfo: job.lynxRoutes && job.lynxRoutes.length > 0
+          ? `LYNX Route ${job.lynxRoutes.join(', ')}`
+          : undefined,
+        payRate: formatPayRate()
+      },
+
+      // Zone B: Profile - Enhanced with Proof Points
+      requirements: [
+        {
+          text: '6+ months customer service experience',
+          met: true,
+          proofPoint: 'Say: "At my previous job, I handled 50+ customer interactions daily and maintained a 95% satisfaction score."'
+        },
+        {
+          text: 'Reliable and punctual attendance',
+          met: true,
+          proofPoint: 'Mention: "I had perfect attendance for 6 months and covered 3 emergency shifts for coworkers."'
+        },
+        {
+          text: 'Comfortable with basic computer use',
+          met: true,
+          proofPoint: 'Share: "I regularly used POS systems and learned our inventory software in my first week."'
+        },
+        {
+          text: 'Positive attitude and team player',
+          met: true,
+          proofPoint: 'Tell them: "I trained 2 new hires at my last job and was nominated for employee of the month."'
+        }
+      ],
+      mission: `To ensure every customer at ${job.company} feels heard and receives excellent service from the moment they walk in.`,
+
+      // Zone C: Reality Check - Insider Intel
+      realityCheck: [
+        {
+          official: 'Greet and assist customers',
+          reality: 'You are the emotional firewall. De-escalate frustrated patients before they see the doctor. High emotional labor expected.',
+          intensity: 'high'
+        },
+        {
+          official: 'Process transactions',
+          reality: 'Speed matters. Target: check-ins under 2 minutes while verifying insurance codes. Expect 40+ patients per shift.',
+          intensity: 'medium'
+        },
+        {
+          official: 'Maintain work area',
+          reality: 'Light duty. Restock forms, wipe down counters between rushes. Good breather task between the chaos.',
+          intensity: 'low'
+        }
+      ],
+
+      // Skill Gaps - Learning resources
+      skillGaps: [
+        {
+          skill: 'Epic EMR',
+          gapType: 'software',
+          learnTime: '12 min',
+          resourceTitle: 'Epic EMR Basics for Front Desk',
+          resourceUrl: undefined // Will show "Coming Soon" in UI
+        }
+      ],
+
+      // Day Timeline - What a typical day looks like
+      dayTimeline: [
+        { time: '8:00 AM', activity: 'Shift Huddle', description: 'Team meeting, daily goals', intensity: 'calm' },
+        { time: '8:30 AM', activity: 'Morning Rush', description: 'Check-in peak, high volume', intensity: 'rush' },
+        { time: '11:00 AM', activity: 'Mid-Day Lull', description: 'Admin tasks, restocking forms', intensity: 'calm' },
+        { time: '1:00 PM', activity: 'Lunch Cover', description: 'Solo coverage while others break', intensity: 'busy' },
+        { time: '3:00 PM', activity: 'Discharge Wave', description: 'Paperwork rush, checkout peak', intensity: 'rush' },
+        { time: '4:00 PM', activity: 'Wind Down', description: 'End-of-day reports, handoff', intensity: 'calm' }
+      ],
+
+      // Legacy fields (kept for backwards compatibility)
+      dailyTasks: [
+        { title: 'Greet & Assist Customers', description: 'Welcome visitors and help them find what they need' },
+        { title: 'Process Transactions', description: 'Handle payments accurately and efficiently' },
+        { title: 'Maintain Work Area', description: 'Keep your station clean and organized' }
+      ],
+      toolsUsed: ['Epic EMR', 'Multi-line Phone', 'Slack']
+    }
+  }
+
+  // Pocket & Apply - open pocket modal with generated intel
+  const handlePocketAndApply = async (job: Job) => {
     // Auto-save to pocket if not already saved
     if (!savedJobIds.includes(job.id)) {
       setSavedJobIds((ids) => [...ids, job.id])
+
+      // Persist to database
+      try {
+        await fetch('/api/jobs/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobId: job.id })
+        })
+      } catch (err) {
+        console.error('Error saving job:', err)
+      }
     }
-    // Navigate to job detail page for full pocket generation
-    router.push(`/dashboard/jobs/${job.id}`)
+
+    // Set selected job and open modal
+    setSelectedJobForPocket(job)
+    setIsPocketModalOpen(true)
+    setIsGeneratingPocket(true)
+    setPocketProgress(0)
+    setPocketData(null)
+
+    // Simulate pocket generation with progress
+    const progressInterval = setInterval(() => {
+      setPocketProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval)
+          return prev
+        }
+        return prev + Math.random() * 20
+      })
+    }, 300)
+
+    // Simulate AI generation delay (2 seconds), then show mock data
+    setTimeout(() => {
+      clearInterval(progressInterval)
+      setPocketProgress(100)
+
+      // Small delay to show 100% before showing content
+      setTimeout(() => {
+        setPocketData(generateMockPocketData(job))
+        setIsGeneratingPocket(false)
+      }, 300)
+    }, 2000)
+  }
+
+  // Apply to job from pocket modal - open external URL
+  const handleApplyFromPocket = () => {
+    if (selectedJobForPocket?.applicationUrl) {
+      window.open(selectedJobForPocket.applicationUrl, '_blank', 'noopener,noreferrer')
+    }
+    setIsPocketModalOpen(false)
   }
 
   // Filtered and sorted jobs
@@ -782,7 +906,7 @@ export default function JobsPage() {
           </div>
         ) : (
           <>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="flex flex-col gap-4">
               {displayJobs.map((job) => (
                 <JobCard
                   key={job.id}
@@ -790,6 +914,7 @@ export default function JobsPage() {
                   isSaved={savedJobIds.includes(job.id)}
                   onSave={() => toggleSave(job.id)}
                   onPocketAndApply={() => handlePocketAndApply(job)}
+                  onViewDetails={() => handleViewDetails(job)}
                 />
               ))}
             </div>
@@ -844,6 +969,26 @@ export default function JobsPage() {
         onClear={clearAllFilters}
         totalJobs={total}
       />
+
+      {/* Job Pocket Modal */}
+      {selectedJobForPocket && (
+        <JobPocketModal
+          isOpen={isPocketModalOpen}
+          onClose={() => {
+            setIsPocketModalOpen(false)
+            setSelectedJobForPocket(null)
+            setPocketData(null)
+          }}
+          jobTitle={selectedJobForPocket.title}
+          companyName={selectedJobForPocket.company}
+          userTier="essential"
+          pocketData={pocketData}
+          isGenerating={isGeneratingPocket}
+          generationProgress={Math.round(pocketProgress)}
+          onUpgrade={() => router.push('/dashboard/subscription')}
+          applicationUrl={selectedJobForPocket.applicationUrl}
+        />
+      )}
     </main>
   )
 }

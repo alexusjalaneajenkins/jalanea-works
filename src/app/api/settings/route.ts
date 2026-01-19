@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getTierLimits, type TierLimits } from '@/lib/tier-limits'
 
 // Default notification preferences
 const defaultNotifications = {
@@ -26,15 +27,6 @@ const defaultPrivacy = {
   allowPersonalization: true
 }
 
-// Tier limits configuration
-const tierLimits = {
-  essential: { pockets: 5, resumes: 1, aiMessages: 25, aiSuggestions: 10 },
-  starter: { pockets: 15, resumes: 5, aiMessages: 100, aiSuggestions: 50 },
-  professional: { pockets: 50, resumes: 20, aiMessages: 500, aiSuggestions: 200 },
-  max: { pockets: null, resumes: null, aiMessages: null, aiSuggestions: null },
-  owner: { pockets: null, resumes: null, aiMessages: null, aiSuggestions: null }
-}
-
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -47,12 +39,38 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Fetch user data from database
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', user.id)
-      .single()
+    // Fetch user data and usage counts in parallel
+    const [
+      userResult,
+      pocketsResult,
+      resumesResult,
+      applicationsResult
+    ] = await Promise.all([
+      supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single(),
+      supabase
+        .from('job_pockets')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id),
+      supabase
+        .from('resumes')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id),
+      supabase
+        .from('applications')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+    ])
+
+    const { data: userData, error: userError } = userResult
+    const counts: UsageCounts = {
+      pocketsGenerated: pocketsResult.count ?? 0,
+      resumesCreated: resumesResult.count ?? 0,
+      applicationsTracked: applicationsResult.count ?? 0
+    }
 
     // If user doesn't exist in users table, create them
     if (userError && userError.code === 'PGRST116') {
@@ -76,7 +94,7 @@ export async function GET(request: NextRequest) {
       }
 
       return NextResponse.json({
-        settings: buildSettingsFromUser(newUser, user)
+        settings: await buildSettingsFromUser(newUser, user, counts)
       })
     }
 
@@ -88,7 +106,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      settings: buildSettingsFromUser(userData, user)
+      settings: await buildSettingsFromUser(userData, user, counts)
     })
   } catch (error) {
     console.error('Error fetching settings:', error)
@@ -99,10 +117,17 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Usage counts interface
+interface UsageCounts {
+  pocketsGenerated: number
+  resumesCreated: number
+  applicationsTracked: number
+}
+
 // Helper to build settings from user data
-function buildSettingsFromUser(userData: Record<string, unknown>, authUser: { id: string; email?: string }) {
+async function buildSettingsFromUser(userData: Record<string, unknown>, authUser: { id: string; email?: string }, counts?: UsageCounts) {
   const tier = (userData.tier as string) || 'starter'
-  const limits = tierLimits[tier as keyof typeof tierLimits] || tierLimits.starter
+  const limits = await getTierLimits(tier)
 
   // Parse first/last name from full_name if individual fields don't exist
   let firstName = userData.first_name as string || ''
@@ -134,13 +159,13 @@ function buildSettingsFromUser(userData: Record<string, unknown>, authUser: { id
       cancelAtPeriodEnd: false
     },
     usage: {
-      pocketsGenerated: 0, // TODO: Count from job_pockets table
+      pocketsGenerated: counts?.pocketsGenerated ?? 0,
       pocketsLimit: limits.pockets,
       advancedPocketsGenerated: 0,
       advancedPocketsLimit: null,
-      resumesCreated: 0, // TODO: Count from resumes table
+      resumesCreated: counts?.resumesCreated ?? 0,
       resumesLimit: limits.resumes,
-      applicationsTracked: 0, // TODO: Count from applications table
+      applicationsTracked: counts?.applicationsTracked ?? 0,
       applicationsLimit: null,
       aiSuggestionsUsed: 0,
       aiSuggestionsLimit: limits.aiSuggestions,
@@ -271,7 +296,7 @@ export async function PUT(request: NextRequest) {
     }
 
     return NextResponse.json({
-      settings: buildSettingsFromUser(updatedUser, user),
+      settings: await buildSettingsFromUser(updatedUser, user),
       message: `${section} settings updated successfully`
     })
   } catch (error) {

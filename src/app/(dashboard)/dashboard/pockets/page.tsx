@@ -20,6 +20,7 @@ import {
   Clock,
   Coins,
   Folder,
+  FolderOpen,
   Loader2,
   MapPin,
   RefreshCw,
@@ -27,7 +28,6 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
-  Target,
   Trash2,
   TrendingUp,
   Wallet,
@@ -540,7 +540,7 @@ function EmptyState({
     <div className="rounded-3xl border border-dashed border-border bg-card/30 p-8 md:p-12">
       <div className="text-center">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/20 bg-primary/5 text-primary">
-          <Target size={28} />
+          <FolderOpen size={28} />
         </div>
         <h2
           className="mt-5 text-2xl font-black text-foreground"
@@ -722,7 +722,7 @@ export default function PocketsPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex items-start gap-4">
             <div className="grid h-14 w-14 place-items-center rounded-2xl border border-primary/30 bg-primary/10 text-primary jw-glow-card">
-              <Target size={26} />
+              <FolderOpen size={26} />
             </div>
             <div>
               <h1

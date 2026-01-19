@@ -1,5 +1,6 @@
 // i18n Configuration for Jalanea Works
 // Simple client-side i18n without next-intl complexity
+// Updated: 2026-01-19 - Added common UI translations
 
 import en from './messages/en.json'
 import es from './messages/es.json'

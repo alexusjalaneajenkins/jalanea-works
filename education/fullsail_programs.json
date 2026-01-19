@@ -1,0 +1,1041 @@
+{
+  "school": "Full Sail University",
+  "programs": [
+    {
+      "name": "Game Development (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Junior Gameplay Programmer",
+          "title_es": "Programador de Jugabilidad Junior",
+          "salary_min": 60000,
+          "salary_max": 101000,
+          "growth": "high"
+        },
+        {
+          "title": "Software Engineer",
+          "title_es": "Ingeniero de Software",
+          "salary_min": 70000,
+          "salary_max": 101000,
+          "growth": "high"
+        },
+        {
+          "title": "Tools Programmer",
+          "title_es": "Programador de Herramientas",
+          "salary_min": 60000,
+          "salary_max": 80000,
+          "growth": "high"
+        },
+        {
+          "title": "Simulation Engineer",
+          "title_es": "Ingeniero de Simulación",
+          "salary_min": 70000,
+          "salary_max": 101000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "C++", "category": "technical" },
+        { "name": "C#", "category": "technical" },
+        { "name": "Data Structures and Algorithms", "category": "technical" },
+        { "name": "Linear Algebra", "category": "technical" },
+        { "name": "Engine Architecture", "category": "technical" },
+        { "name": "Artificial Intelligence", "category": "technical" },
+        { "name": "Unity", "category": "tool" },
+        { "name": "Unreal Engine", "category": "tool" },
+        { "name": "Problem Solving", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Game Design (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Junior Level Designer",
+          "title_es": "Diseñador de Niveles Junior",
+          "salary_min": 50000,
+          "salary_max": 65000,
+          "growth": "average"
+        },
+        {
+          "title": "System Designer",
+          "title_es": "Diseñador de Sistemas",
+          "salary_min": 50000,
+          "salary_max": 65000,
+          "growth": "average"
+        },
+        {
+          "title": "Quest Designer",
+          "title_es": "Diseñador de Misiones",
+          "salary_min": 50000,
+          "salary_max": 65000,
+          "growth": "average"
+        },
+        {
+          "title": "Quality Assurance Analyst",
+          "title_es": "Analista de Control de Calidad",
+          "salary_min": 35000,
+          "salary_max": 45000,
+          "growth": "average"
+        }
+      ],
+      "skills": [
+        { "name": "Game Mechanics Design", "category": "technical" },
+        { "name": "Systems Balancing", "category": "technical" },
+        { "name": "Level Design", "category": "technical" },
+        { "name": "Psychology of Play", "category": "technical" },
+        { "name": "Unity", "category": "tool" },
+        { "name": "Unreal Engine", "category": "tool" },
+        { "name": "Critical Thinking", "category": "soft_skill" },
+        { "name": "Player Empathy", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Game Art (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Junior 3D Environment Artist",
+          "title_es": "Artista de Entornos 3D Junior",
+          "salary_min": 49000,
+          "salary_max": 60000,
+          "growth": "low"
+        },
+        {
+          "title": "Prop Artist",
+          "title_es": "Artista de Props",
+          "salary_min": 49000,
+          "salary_max": 60000,
+          "growth": "low"
+        },
+        {
+          "title": "Character Artist",
+          "title_es": "Artista de Personajes",
+          "salary_min": 49000,
+          "salary_max": 60000,
+          "growth": "low"
+        },
+        {
+          "title": "Technical Artist",
+          "title_es": "Artista Técnico",
+          "salary_min": 52000,
+          "salary_max": 65000,
+          "growth": "low"
+        }
+      ],
+      "skills": [
+        { "name": "3D Modeling", "category": "technical" },
+        { "name": "Texturing", "category": "technical" },
+        { "name": "PBR Workflows", "category": "technical" },
+        { "name": "Rigging", "category": "technical" },
+        { "name": "Game Animation", "category": "technical" },
+        { "name": "Maya", "category": "tool" },
+        { "name": "ZBrush", "category": "tool" },
+        { "name": "Adobe Substance Painter", "category": "tool" },
+        { "name": "Attention to Detail", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Game Business & Esports (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Esports Event Coordinator",
+          "title_es": "Coordinador de Eventos de Esports",
+          "salary_min": 41000,
+          "salary_max": 58000,
+          "growth": "average"
+        },
+        {
+          "title": "Team Manager",
+          "title_es": "Gerente de Equipo",
+          "salary_min": 41000,
+          "salary_max": 58000,
+          "growth": "average"
+        },
+        {
+          "title": "Community Manager",
+          "title_es": "Gerente de Comunidad",
+          "salary_min": 36000,
+          "salary_max": 48000,
+          "growth": "average"
+        },
+        {
+          "title": "Sponsorship Sales Associate",
+          "title_es": "Asociado de Ventas de Patrocinio",
+          "salary_min": 38000,
+          "salary_max": 55000,
+          "growth": "average"
+        }
+      ],
+      "skills": [
+        { "name": "Esports Management", "category": "technical" },
+        { "name": "Game Business Models", "category": "technical" },
+        { "name": "Player Contracts", "category": "technical" },
+        { "name": "Social Media Management", "category": "technical" },
+        { "name": "Communication", "category": "soft_skill" },
+        { "name": "Leadership", "category": "soft_skill" },
+        { "name": "Conflict Resolution", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Computer Science (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Junior Software Engineer",
+          "title_es": "Ingeniero de Software Junior",
+          "salary_min": 70000,
+          "salary_max": 110000,
+          "growth": "high"
+        },
+        {
+          "title": "Mobile Application Developer",
+          "title_es": "Desarrollador de Aplicaciones Móviles",
+          "salary_min": 65000,
+          "salary_max": 95000,
+          "growth": "high"
+        },
+        {
+          "title": "Full Stack Developer",
+          "title_es": "Desarrollador Full Stack",
+          "salary_min": 75000,
+          "salary_max": 110000,
+          "growth": "high"
+        },
+        {
+          "title": "AI Specialist",
+          "title_es": "Especialista en IA",
+          "salary_min": 80000,
+          "salary_max": 120000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Software Development Lifecycle", "category": "technical" },
+        { "name": "Machine Learning", "category": "technical" },
+        { "name": "Deep Learning", "category": "technical" },
+        { "name": "Swift", "category": "technical" },
+        { "name": "Kotlin", "category": "technical" },
+        { "name": "Git", "category": "tool" },
+        { "name": "Agile Methodologies", "category": "technical" },
+        { "name": "Problem Solving", "category": "soft_skill" },
+        { "name": "Analytical Thinking", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Cybersecurity (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Information Security Analyst",
+          "title_es": "Analista de Seguridad de la Información",
+          "salary_min": 80000,
+          "salary_max": 111000,
+          "growth": "very_high"
+        },
+        {
+          "title": "Security Operations Center Analyst",
+          "title_es": "Analista del Centro de Operaciones de Seguridad",
+          "salary_min": 58000,
+          "salary_max": 95000,
+          "growth": "very_high"
+        },
+        {
+          "title": "Vulnerability Assessor",
+          "title_es": "Evaluador de Vulnerabilidades",
+          "salary_min": 65000,
+          "salary_max": 95000,
+          "growth": "very_high"
+        }
+      ],
+      "skills": [
+        { "name": "Threat Intelligence", "category": "technical" },
+        { "name": "Incident Response", "category": "technical" },
+        { "name": "Network Security", "category": "technical" },
+        { "name": "CompTIA Security+", "category": "technical" },
+        { "name": "CompTIA CySA+", "category": "technical" },
+        { "name": "Virtual Sandbox Environments", "category": "tool" },
+        { "name": "Critical Thinking", "category": "soft_skill" },
+        { "name": "Attention to Detail", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Information Technology (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "IT Support Specialist",
+          "title_es": "Especialista de Soporte de TI",
+          "salary_min": 47000,
+          "salary_max": 58000,
+          "growth": "average"
+        },
+        {
+          "title": "Network Administrator",
+          "title_es": "Administrador de Red",
+          "salary_min": 55000,
+          "salary_max": 75000,
+          "growth": "average"
+        },
+        {
+          "title": "Cloud Support Associate",
+          "title_es": "Asociado de Soporte en la Nube",
+          "salary_min": 50000,
+          "salary_max": 70000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Cloud Networking", "category": "technical" },
+        { "name": "Virtualization Technologies", "category": "technical" },
+        { "name": "Systems Administration", "category": "technical" },
+        { "name": "Scripting", "category": "technical" },
+        { "name": "AWS", "category": "tool" },
+        { "name": "Azure", "category": "tool" },
+        { "name": "Troubleshooting", "category": "soft_skill" },
+        { "name": "Communication", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Web Development (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Web Developer",
+          "title_es": "Desarrollador Web",
+          "salary_min": 73000,
+          "salary_max": 82000,
+          "growth": "high"
+        },
+        {
+          "title": "Front-End Engineer",
+          "title_es": "Ingeniero Front-End",
+          "salary_min": 70000,
+          "salary_max": 95000,
+          "growth": "high"
+        },
+        {
+          "title": "Back-End Developer",
+          "title_es": "Desarrollador Back-End",
+          "salary_min": 73000,
+          "salary_max": 90000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "HTML", "category": "technical" },
+        { "name": "CSS", "category": "technical" },
+        { "name": "JavaScript", "category": "technical" },
+        { "name": "React", "category": "technical" },
+        { "name": "Node.js", "category": "technical" },
+        { "name": "SQL", "category": "technical" },
+        { "name": "NoSQL", "category": "technical" },
+        { "name": "Cloud Application Deployment", "category": "technical" },
+        { "name": "Problem Solving", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "User Experience (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "UX Designer",
+          "title_es": "Diseñador UX",
+          "salary_min": 76000,
+          "salary_max": 96000,
+          "growth": "high"
+        },
+        {
+          "title": "UI Designer",
+          "title_es": "Diseñador UI",
+          "salary_min": 69000,
+          "salary_max": 84000,
+          "growth": "high"
+        },
+        {
+          "title": "Product Designer",
+          "title_es": "Diseñador de Producto",
+          "salary_min": 76000,
+          "salary_max": 96000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "UX Research", "category": "technical" },
+        { "name": "Human-Centered Design", "category": "technical" },
+        { "name": "Psychology of Perception", "category": "technical" },
+        { "name": "Wireframing", "category": "technical" },
+        { "name": "Prototyping", "category": "technical" },
+        { "name": "Figma", "category": "tool" },
+        { "name": "Adobe XD", "category": "tool" },
+        { "name": "User Testing", "category": "technical" },
+        { "name": "Empathy", "category": "soft_skill" },
+        { "name": "Communication", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Computer Animation (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "3D Animator",
+          "title_es": "Animador 3D",
+          "salary_min": 52000,
+          "salary_max": 60000,
+          "growth": "low"
+        },
+        {
+          "title": "Rigger",
+          "title_es": "Rigger",
+          "salary_min": 52000,
+          "salary_max": 65000,
+          "growth": "low"
+        },
+        {
+          "title": "Lighter",
+          "title_es": "Iluminador",
+          "salary_min": 50000,
+          "salary_max": 60000,
+          "growth": "low"
+        },
+        {
+          "title": "Compositor",
+          "title_es": "Compositor",
+          "salary_min": 52000,
+          "salary_max": 65000,
+          "growth": "low"
+        }
+      ],
+      "skills": [
+        { "name": "Storyboarding", "category": "technical" },
+        { "name": "3D Modeling", "category": "technical" },
+        { "name": "Rigging", "category": "technical" },
+        { "name": "Animation", "category": "technical" },
+        { "name": "Compositing", "category": "technical" },
+        { "name": "Adobe Creative Cloud", "category": "tool" },
+        { "name": "Maxon One", "category": "tool" },
+        { "name": "Nuke", "category": "tool" },
+        { "name": "Creativity", "category": "soft_skill" },
+        { "name": "Attention to Detail", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Digital Arts & Design (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Motion Graphics Artist",
+          "title_es": "Artista de Gráficos en Movimiento",
+          "salary_min": 48000,
+          "salary_max": 56000,
+          "growth": "average"
+        },
+        {
+          "title": "Broadcast Designer",
+          "title_es": "Diseñador de Broadcast",
+          "salary_min": 45000,
+          "salary_max": 58000,
+          "growth": "average"
+        },
+        {
+          "title": "Multimedia Artist",
+          "title_es": "Artista Multimedia",
+          "salary_min": 45000,
+          "salary_max": 56000,
+          "growth": "average"
+        }
+      ],
+      "skills": [
+        { "name": "Motion Graphics", "category": "technical" },
+        { "name": "3D for Motion Design", "category": "technical" },
+        { "name": "Live Event Design", "category": "technical" },
+        { "name": "Projection Mapping", "category": "technical" },
+        { "name": "After Effects", "category": "tool" },
+        { "name": "Cinema 4D", "category": "tool" },
+        { "name": "Creativity", "category": "soft_skill" },
+        { "name": "Time Management", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Graphic Design (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Junior Graphic Designer",
+          "title_es": "Diseñador Gráfico Junior",
+          "salary_min": 44000,
+          "salary_max": 56000,
+          "growth": "low"
+        },
+        {
+          "title": "Production Artist",
+          "title_es": "Artista de Producción",
+          "salary_min": 40000,
+          "salary_max": 50000,
+          "growth": "low"
+        },
+        {
+          "title": "Visual Designer",
+          "title_es": "Diseñador Visual",
+          "salary_min": 45000,
+          "salary_max": 56000,
+          "growth": "low"
+        }
+      ],
+      "skills": [
+        { "name": "Branding & Identity", "category": "technical" },
+        { "name": "Logo Design", "category": "technical" },
+        { "name": "Typography", "category": "technical" },
+        { "name": "Print Design", "category": "technical" },
+        { "name": "Packaging Design", "category": "technical" },
+        { "name": "Digital Publishing", "category": "technical" },
+        { "name": "Adobe Creative Suite", "category": "tool" },
+        { "name": "Creativity", "category": "soft_skill" },
+        { "name": "Attention to Detail", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Film (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Production Assistant",
+          "title_es": "Asistente de Producción",
+          "salary_min": 35000,
+          "salary_max": 40000,
+          "growth": "average"
+        },
+        {
+          "title": "Camera Assistant",
+          "title_es": "Asistente de Cámara",
+          "salary_min": 38000,
+          "salary_max": 48000,
+          "growth": "average"
+        },
+        {
+          "title": "Grip",
+          "title_es": "Grip",
+          "salary_min": 36000,
+          "salary_max": 45000,
+          "growth": "average"
+        },
+        {
+          "title": "Assistant Editor",
+          "title_es": "Editor Asistente",
+          "salary_min": 41000,
+          "salary_max": 54000,
+          "growth": "average"
+        },
+        {
+          "title": "Videographer",
+          "title_es": "Videógrafo",
+          "salary_min": 45000,
+          "salary_max": 60000,
+          "growth": "average"
+        }
+      ],
+      "skills": [
+        { "name": "Set Operations", "category": "technical" },
+        { "name": "Lighting", "category": "technical" },
+        { "name": "Camera Operation", "category": "technical" },
+        { "name": "Video Editing", "category": "technical" },
+        { "name": "Visual Effects", "category": "technical" },
+        { "name": "4K Digital Cinema Cameras", "category": "tool" },
+        { "name": "Teamwork", "category": "soft_skill" },
+        { "name": "Adaptability", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Digital Cinematography (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Content Creator",
+          "title_es": "Creador de Contenido",
+          "salary_min": 40000,
+          "salary_max": 55000,
+          "growth": "average"
+        },
+        {
+          "title": "Corporate Videographer",
+          "title_es": "Videógrafo Corporativo",
+          "salary_min": 42000,
+          "salary_max": 55000,
+          "growth": "average"
+        },
+        {
+          "title": "Digital Media Producer",
+          "title_es": "Productor de Medios Digitales",
+          "salary_min": 45000,
+          "salary_max": 58000,
+          "growth": "average"
+        }
+      ],
+      "skills": [
+        { "name": "Electronic Field Production", "category": "technical" },
+        { "name": "Documentary Shooting", "category": "technical" },
+        { "name": "Data Management", "category": "technical" },
+        { "name": "Solo Production", "category": "technical" },
+        { "name": "Digital Workflow", "category": "technical" },
+        { "name": "Self-Direction", "category": "soft_skill" },
+        { "name": "Time Management", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Creative Writing (Bachelor of Fine Arts)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Junior Copywriter",
+          "title_es": "Redactor Junior",
+          "salary_min": 41000,
+          "salary_max": 60000,
+          "growth": "average"
+        },
+        {
+          "title": "Script Reader",
+          "title_es": "Lector de Guiones",
+          "salary_min": 35000,
+          "salary_max": 45000,
+          "growth": "average"
+        },
+        {
+          "title": "Narrative Designer",
+          "title_es": "Diseñador Narrativo",
+          "salary_min": 50000,
+          "salary_max": 65000,
+          "growth": "average"
+        },
+        {
+          "title": "Editorial Assistant",
+          "title_es": "Asistente Editorial",
+          "salary_min": 35000,
+          "salary_max": 45000,
+          "growth": "average"
+        }
+      ],
+      "skills": [
+        { "name": "Scriptwriting", "category": "technical" },
+        { "name": "Television Writing", "category": "technical" },
+        { "name": "Transmedia Writing", "category": "technical" },
+        { "name": "Writing for Games", "category": "technical" },
+        { "name": "Storytelling", "category": "soft_skill" },
+        { "name": "Creativity", "category": "soft_skill" },
+        { "name": "Research", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Media Communications (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Social Media Coordinator",
+          "title_es": "Coordinador de Redes Sociales",
+          "salary_min": 36500,
+          "salary_max": 48000,
+          "growth": "high"
+        },
+        {
+          "title": "Public Relations Assistant",
+          "title_es": "Asistente de Relaciones Públicas",
+          "salary_min": 46000,
+          "salary_max": 56000,
+          "growth": "average"
+        },
+        {
+          "title": "Content Strategist",
+          "title_es": "Estratega de Contenido",
+          "salary_min": 45000,
+          "salary_max": 58000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Multimedia Storytelling", "category": "technical" },
+        { "name": "Media Research", "category": "technical" },
+        { "name": "Media Sociology", "category": "technical" },
+        { "name": "Integrated Media Campaigns", "category": "technical" },
+        { "name": "Communication", "category": "soft_skill" },
+        { "name": "Strategic Thinking", "category": "soft_skill" },
+        { "name": "Audience Analysis", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Sportscasting (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Multimedia Journalist",
+          "title_es": "Periodista Multimedia",
+          "salary_min": 30000,
+          "salary_max": 45000,
+          "growth": "average"
+        },
+        {
+          "title": "Sports Reporter",
+          "title_es": "Reportero Deportivo",
+          "salary_min": 30000,
+          "salary_max": 45000,
+          "growth": "average"
+        },
+        {
+          "title": "Play-by-Play Announcer",
+          "title_es": "Narrador de Juego por Juego",
+          "salary_min": 35000,
+          "salary_max": 55000,
+          "growth": "average"
+        },
+        {
+          "title": "Production Assistant",
+          "title_es": "Asistente de Producción",
+          "salary_min": 32000,
+          "salary_max": 42000,
+          "growth": "average"
+        }
+      ],
+      "skills": [
+        { "name": "Vocal Training", "category": "technical" },
+        { "name": "On-Camera Delivery", "category": "technical" },
+        { "name": "Sports Digital Production", "category": "technical" },
+        { "name": "Video Editing", "category": "technical" },
+        { "name": "Public Speaking", "category": "soft_skill" },
+        { "name": "Composure Under Pressure", "category": "soft_skill" },
+        { "name": "Sports Knowledge", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Recording Arts (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Audio Engineer",
+          "title_es": "Ingeniero de Audio",
+          "salary_min": 50000,
+          "salary_max": 78000,
+          "growth": "low"
+        },
+        {
+          "title": "Studio Runner",
+          "title_es": "Asistente de Estudio",
+          "salary_min": 30000,
+          "salary_max": 40000,
+          "growth": "low"
+        },
+        {
+          "title": "Live Sound Technician",
+          "title_es": "Técnico de Sonido en Vivo",
+          "salary_min": 32000,
+          "salary_max": 45000,
+          "growth": "low"
+        },
+        {
+          "title": "AV Technician",
+          "title_es": "Técnico Audiovisual",
+          "salary_min": 41000,
+          "salary_max": 50000,
+          "growth": "low"
+        }
+      ],
+      "skills": [
+        { "name": "Studio Engineering", "category": "technical" },
+        { "name": "Signal Flow", "category": "technical" },
+        { "name": "Mixing Techniques", "category": "technical" },
+        { "name": "Audio Post-Production", "category": "technical" },
+        { "name": "Sound Design", "category": "technical" },
+        { "name": "Foley", "category": "technical" },
+        { "name": "Large-Format Consoles", "category": "tool" },
+        { "name": "Pro Tools", "category": "tool" },
+        { "name": "Active Listening", "category": "soft_skill" },
+        { "name": "Attention to Detail", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Audio Production (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Freelance Sound Designer",
+          "title_es": "Diseñador de Sonido Freelance",
+          "salary_min": 40000,
+          "salary_max": 65000,
+          "growth": "low"
+        },
+        {
+          "title": "Game Audio Specialist",
+          "title_es": "Especialista de Audio para Juegos",
+          "salary_min": 45000,
+          "salary_max": 70000,
+          "growth": "average"
+        },
+        {
+          "title": "Podcast Producer",
+          "title_es": "Productor de Podcast",
+          "salary_min": 38000,
+          "salary_max": 55000,
+          "growth": "average"
+        }
+      ],
+      "skills": [
+        { "name": "Project Studio Workflow", "category": "technical" },
+        { "name": "Game Audio Production", "category": "technical" },
+        { "name": "Adaptive Music Implementation", "category": "technical" },
+        { "name": "Digital Audio Workstation", "category": "tool" },
+        { "name": "Audio Interface", "category": "tool" },
+        { "name": "Self-Direction", "category": "soft_skill" },
+        { "name": "Client Communication", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Music Production (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Music Producer",
+          "title_es": "Productor Musical",
+          "salary_min": 35000,
+          "salary_max": 60000,
+          "growth": "low"
+        },
+        {
+          "title": "Composer",
+          "title_es": "Compositor",
+          "salary_min": 35000,
+          "salary_max": 65000,
+          "growth": "low"
+        },
+        {
+          "title": "Arranger",
+          "title_es": "Arreglista",
+          "salary_min": 35000,
+          "salary_max": 55000,
+          "growth": "low"
+        },
+        {
+          "title": "Beatmaker",
+          "title_es": "Beatmaker",
+          "salary_min": 30000,
+          "salary_max": 50000,
+          "growth": "low"
+        }
+      ],
+      "skills": [
+        { "name": "Music Composition", "category": "technical" },
+        { "name": "Musical Structure and Analysis", "category": "technical" },
+        { "name": "Songwriting", "category": "technical" },
+        { "name": "Musical Arrangement", "category": "technical" },
+        { "name": "Instrumentation", "category": "technical" },
+        { "name": "Orchestration", "category": "technical" },
+        { "name": "DAW Software", "category": "tool" },
+        { "name": "Creativity", "category": "soft_skill" },
+        { "name": "Collaboration", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Show Production (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Live Sound Engineer",
+          "title_es": "Ingeniero de Sonido en Vivo",
+          "salary_min": 40000,
+          "salary_max": 60000,
+          "growth": "average"
+        },
+        {
+          "title": "Lighting Technician",
+          "title_es": "Técnico de Iluminación",
+          "salary_min": 38000,
+          "salary_max": 55000,
+          "growth": "average"
+        },
+        {
+          "title": "AV Installer",
+          "title_es": "Instalador Audiovisual",
+          "salary_min": 42000,
+          "salary_max": 55000,
+          "growth": "average"
+        }
+      ],
+      "skills": [
+        { "name": "Live Sound Systems", "category": "technical" },
+        { "name": "Intelligent Lighting Programming", "category": "technical" },
+        { "name": "Video Wall Management", "category": "technical" },
+        { "name": "Power Distribution", "category": "technical" },
+        { "name": "Stage Management", "category": "technical" },
+        { "name": "Line Array Systems", "category": "tool" },
+        { "name": "Lighting Consoles", "category": "tool" },
+        { "name": "Problem Solving", "category": "soft_skill" },
+        { "name": "Teamwork", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Entertainment Business (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Production Coordinator",
+          "title_es": "Coordinador de Producción",
+          "salary_min": 40000,
+          "salary_max": 52000,
+          "growth": "average"
+        },
+        {
+          "title": "Talent Assistant",
+          "title_es": "Asistente de Talento",
+          "salary_min": 35000,
+          "salary_max": 45000,
+          "growth": "average"
+        },
+        {
+          "title": "Event Coordinator",
+          "title_es": "Coordinador de Eventos",
+          "salary_min": 38000,
+          "salary_max": 48000,
+          "growth": "high"
+        },
+        {
+          "title": "Marketing Assistant",
+          "title_es": "Asistente de Marketing",
+          "salary_min": 40000,
+          "salary_max": 52000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Business Law", "category": "technical" },
+        { "name": "Finance", "category": "technical" },
+        { "name": "Management", "category": "technical" },
+        { "name": "Entertainment Business Models", "category": "technical" },
+        { "name": "Organizational Skills", "category": "soft_skill" },
+        { "name": "Communication", "category": "soft_skill" },
+        { "name": "Networking", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Music Business (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Artist Manager",
+          "title_es": "Gerente de Artistas",
+          "salary_min": 35000,
+          "salary_max": 60000,
+          "growth": "average"
+        },
+        {
+          "title": "Touring Coordinator",
+          "title_es": "Coordinador de Giras",
+          "salary_min": 35000,
+          "salary_max": 50000,
+          "growth": "average"
+        },
+        {
+          "title": "Publishing Assistant",
+          "title_es": "Asistente de Publicación",
+          "salary_min": 32000,
+          "salary_max": 45000,
+          "growth": "average"
+        },
+        {
+          "title": "Ticket Sales Representative",
+          "title_es": "Representante de Ventas de Boletos",
+          "salary_min": 24000,
+          "salary_max": 40000,
+          "growth": "average"
+        }
+      ],
+      "skills": [
+        { "name": "Artist Management", "category": "technical" },
+        { "name": "Music Copyright", "category": "technical" },
+        { "name": "Music Publishing", "category": "technical" },
+        { "name": "Contract Negotiation", "category": "technical" },
+        { "name": "Streaming Revenue Models", "category": "technical" },
+        { "name": "Networking", "category": "soft_skill" },
+        { "name": "Negotiation", "category": "soft_skill" },
+        { "name": "Relationship Building", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Digital Marketing (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "SEO Specialist",
+          "title_es": "Especialista en SEO",
+          "salary_min": 45000,
+          "salary_max": 55000,
+          "growth": "high"
+        },
+        {
+          "title": "Digital Marketing Coordinator",
+          "title_es": "Coordinador de Marketing Digital",
+          "salary_min": 50000,
+          "salary_max": 60000,
+          "growth": "high"
+        },
+        {
+          "title": "Social Media Manager",
+          "title_es": "Gerente de Redes Sociales",
+          "salary_min": 45000,
+          "salary_max": 58000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Digital Analytics", "category": "technical" },
+        { "name": "Search Engine Optimization", "category": "technical" },
+        { "name": "Social Media Marketing", "category": "technical" },
+        { "name": "Campaign Management", "category": "technical" },
+        { "name": "Google Analytics", "category": "tool" },
+        { "name": "SEMrush", "category": "tool" },
+        { "name": "Analytical Thinking", "category": "soft_skill" },
+        { "name": "Creativity", "category": "soft_skill" },
+        { "name": "Communication", "category": "soft_skill" }
+      ]
+    },
+    {
+      "name": "Sports Marketing & Media (Bachelor of Science)",
+      "degree_type": "bachelors",
+      "career_paths": [
+        {
+          "title": "Sports Marketing Coordinator",
+          "title_es": "Coordinador de Marketing Deportivo",
+          "salary_min": 44000,
+          "salary_max": 55000,
+          "growth": "high"
+        },
+        {
+          "title": "Ticket Sales Representative",
+          "title_es": "Representante de Ventas de Boletos",
+          "salary_min": 30000,
+          "salary_max": 45000,
+          "growth": "average"
+        },
+        {
+          "title": "Brand Ambassador",
+          "title_es": "Embajador de Marca",
+          "salary_min": 35000,
+          "salary_max": 50000,
+          "growth": "average"
+        },
+        {
+          "title": "Sports Marketing Assistant",
+          "title_es": "Asistente de Marketing Deportivo",
+          "salary_min": 38000,
+          "salary_max": 48000,
+          "growth": "high"
+        }
+      ],
+      "skills": [
+        { "name": "Fan Engagement", "category": "technical" },
+        { "name": "Social Media Methods", "category": "technical" },
+        { "name": "Sports Sales", "category": "technical" },
+        { "name": "Sponsorship Management", "category": "technical" },
+        { "name": "Community Building", "category": "soft_skill" },
+        { "name": "Sales Skills", "category": "soft_skill" },
+        { "name": "Enthusiasm", "category": "soft_skill" }
+      ]
+    }
+  ]
+}

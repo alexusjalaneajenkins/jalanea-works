@@ -6,7 +6,12 @@
     "save": "Save",
     "cancel": "Cancel",
     "done": "Done",
-    "stepOf": "Step {current} of {total}"
+    "stepOf": "Step {current} of {total}",
+    "completeSetup": "Complete Setup",
+    "launchDashboard": "Launch Dashboard",
+    "saving": "Saving...",
+    "pressEnterToContinue": "Press Enter to continue",
+    "clickToSelect": "Click to select"
   },
   "language": {
     "title": "Choose your language",
@@ -115,6 +120,85 @@
       "subtitle": "Let's find you a job.",
       "summary": "Here's what we know about you:",
       "goToDashboard": "Go to Dashboard"
+    },
+    "questions": {
+      "name": {
+        "title": "What's your name?",
+        "placeholder": "Enter your full name"
+      },
+      "location": {
+        "title": "Where are you located?",
+        "subtitle": "Used to find jobs in your area",
+        "placeholder": "City, State"
+      },
+      "educationLevel": {
+        "title": "Highest education level?",
+        "highSchool": "High School / GED",
+        "someCollege": "Some College",
+        "completed": "Completed Degree",
+        "completedSub": "We'll ask for details"
+      },
+      "school": {
+        "title": "Which school did you attend?",
+        "subtitle": "Select your institution"
+      },
+      "educationDetails": {
+        "title": "Tell us about your degree",
+        "subtitle": "This info helps craft your resume"
+      },
+      "careerPaths": {
+        "title": "What career paths interest you?",
+        "subtitle": "Select all that match your goals"
+      },
+      "transport": {
+        "title": "How do you get around?",
+        "car": "Car",
+        "bus": "Bus",
+        "rideshare": "Rideshare",
+        "bikeWalk": "Bike/Walk"
+      },
+      "commute": {
+        "title": "Max commute time?",
+        "min15": "15 min",
+        "min30": "30 min",
+        "min45": "45 min",
+        "min60": "60+ min"
+      },
+      "schedule": {
+        "title": "When can you work?",
+        "flexible": "Flexible / Any Day",
+        "specific": "Specific Days Only",
+        "specificSub": "I'll pick the days"
+      },
+      "scheduleDays": {
+        "title": "Which days can you work?",
+        "subtitle": "Select all days you're available"
+      },
+      "shifts": {
+        "title": "Preferred shifts?",
+        "morning": "Morning",
+        "afternoon": "Afternoon",
+        "evening": "Evening",
+        "overnight": "Overnight"
+      },
+      "careerPhase": {
+        "title": "Where are you in your journey?",
+        "subtitle": "This helps us find the right opportunities"
+      },
+      "salaryBreakdown": {
+        "title": "Here's what you can afford",
+        "subtitle": "Based on your career phase selection"
+      },
+      "challenges": {
+        "title": "Any challenges we can help with?",
+        "subtitle": "Optional - helps us find support resources",
+        "none": "None",
+        "transport": "Transportation",
+        "childcare": "Childcare",
+        "language": "Language barrier",
+        "health": "Health",
+        "record": "Background"
+      }
     }
   }
 }

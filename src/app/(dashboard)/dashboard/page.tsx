@@ -16,8 +16,8 @@
  * - Desktop (1024px+): 8/4 split grid, full padding
  */
 
-import { useMemo, useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useMemo, useState } from 'react'
+import { motion } from 'framer-motion'
 import {
   ArrowRight,
   BadgeCheck,
@@ -26,14 +26,13 @@ import {
   CheckCircle2,
   FileText,
   Flame,
-  HeartHandshake,
+  FolderOpen,
   Lightbulb,
   ShieldCheck,
   Sparkles,
   Star,
   Target,
   TrendingUp,
-  X,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -46,6 +45,8 @@ import {
   OnboardingGatekeeper,
   type OnboardingStep,
 } from '@/components/dashboard/OnboardingGatekeeper'
+import { StatCardCarousel, type StatCarouselItem } from '@/components/dashboard/StatCardCarousel'
+import { getTopCards } from '@/components/dashboard/HiringIntelCarousel/hiringIntelData'
 
 // ---------------- COMPONENTS ----------------
 
@@ -172,48 +173,6 @@ function DailyPlanRow({
   )
 }
 
-function AdvantageItem({
-  id,
-  icon,
-  title,
-  desc,
-  onDismiss,
-}: {
-  id: string
-  icon: React.ReactNode
-  title: string
-  desc: string
-  onDismiss?: (id: string) => void
-}) {
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95, height: 0, marginBottom: 0 }}
-      transition={{ duration: 0.2 }}
-      className="group relative flex items-start gap-3 rounded-2xl border border-border bg-background/40 p-3"
-    >
-      <div className="grid h-8 w-8 place-items-center rounded-lg border border-border bg-muted/30 text-slate-500 dark:text-slate-400 shrink-0">
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-bold text-foreground">{title}</div>
-        <div className="mt-0.5 text-xs text-muted-foreground">{desc}</div>
-      </div>
-      {onDismiss && (
-        <button
-          onClick={() => onDismiss(id)}
-          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground shrink-0"
-          aria-label={`Dismiss ${title}`}
-        >
-          <X size={14} />
-        </button>
-      )}
-    </motion.div>
-  )
-}
-
 // Daily Plan content component (extracted for reuse with OnboardingGatekeeper)
 function DailyPlanContent({
   isLoading,
@@ -315,47 +274,12 @@ function DailyPlanContent({
 
 // ---------------- MAIN PAGE ----------------
 
-// Advantage items configuration
-const ADVANTAGE_ITEMS = [
-  { id: 'scam-shield', icon: <ShieldCheck size={16} />, title: 'Scam Shield', desc: 'Blocks predatory job posts automatically.' },
-  { id: 'transit-filter', icon: <Bus size={16} />, title: 'Transit Filter', desc: 'Only see jobs you can actually reach.' },
-  { id: 'resume-translation', icon: <Sparkles size={16} />, title: 'Resume Translation', desc: 'Turn retail experience into office language.' },
-  { id: 'my-pockets', icon: <Target size={16} />, title: 'My Pockets', desc: 'Turn any listing into an application strategy.' },
-]
-
-const DISMISSED_ADVANTAGES_KEY = 'jw-dismissed-advantages'
-
 export default function DashboardHomePage() {
   const router = useRouter()
   const { user } = useAuth()
   const userId = user?.id
   const { mode } = useJalaneaMode()
   const [, setSeed] = useState(0) // Used to trigger refresh
-
-  // Dismissible advantage cards state
-  const [dismissedAdvantages, setDismissedAdvantages] = useState<string[]>([])
-
-  // Load dismissed advantages from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem(DISMISSED_ADVANTAGES_KEY)
-    if (stored) {
-      try {
-        setDismissedAdvantages(JSON.parse(stored))
-      } catch {
-        // Ignore invalid JSON
-      }
-    }
-  }, [])
-
-  // Handle dismissing an advantage card
-  const handleDismissAdvantage = (id: string) => {
-    const updated = [...dismissedAdvantages, id]
-    setDismissedAdvantages(updated)
-    localStorage.setItem(DISMISSED_ADVANTAGES_KEY, JSON.stringify(updated))
-  }
-
-  // Get visible advantage items
-  const visibleAdvantages = ADVANTAGE_ITEMS.filter(item => !dismissedAdvantages.includes(item.id))
 
   // Fetch dashboard data
   const {
@@ -385,6 +309,69 @@ export default function DashboardHomePage() {
     if (h < 18) return 'Good afternoon'
     return 'Good evening'
   }, [])
+
+  // Benefits carousel items (Your Advantage features)
+  const benefitsCarouselItems: StatCarouselItem[] = useMemo(() => [
+    {
+      id: 'scam-shield',
+      icon: <ShieldCheck size={18} />,
+      label: 'Scam Shield',
+      value: 'On',
+      hint: 'Protected',
+    },
+    {
+      id: 'transit-filter',
+      icon: <Bus size={18} />,
+      label: 'Transit Filter',
+      value: 'On',
+      hint: 'LYNX ready',
+    },
+    {
+      id: 'resume-help',
+      icon: <Sparkles size={18} />,
+      label: 'Resume Builder',
+      value: 'Ready',
+      hint: 'AI-powered',
+      onClick: () => router.push('/dashboard/resume'),
+    },
+    {
+      id: 'saved-jobs',
+      icon: <FolderOpen size={18} />,
+      label: 'Saved Jobs',
+      value: '0',
+      hint: 'Your pockets',
+      onClick: () => router.push('/dashboard/pockets'),
+    },
+  ], [router])
+
+  // Hiring Intel carousel items (seasonal tips) - simplified for card format
+  const hiringIntelCarouselItems: StatCarouselItem[] = useMemo(() => {
+    const cards = getTopCards(3) // Limit to 3 most relevant
+    return cards.map(card => {
+      // Create short, punchy labels based on card type
+      const shortLabel = card.type === 'hot'
+        ? 'Hiring Now'
+        : card.type === 'upcoming'
+        ? 'Coming Soon'
+        : card.type === 'warning'
+        ? 'Watch Out'
+        : 'Pro Tip'
+
+      // Extract key sector/topic for value
+      const shortValue = card.title.split(' ').slice(0, 2).join(' ')
+
+      return {
+        id: card.id,
+        icon: <Flame size={18} />,
+        label: shortLabel,
+        value: shortValue,
+        hint: 'Jan intel',
+        onClick: card.cta.action === 'search' && card.cta.payload
+          ? () => router.push(`/dashboard/jobs?q=${encodeURIComponent(card.cta.payload!)}`)
+          : undefined,
+      }
+    })
+  }, [router])
 
   // Transform daily plan jobs into display format
   const dayPlan = useMemo(() => {
@@ -577,7 +564,7 @@ export default function DashboardHomePage() {
                   href="/dashboard/pockets"
                   className="inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <Target size={16} />
+                  <FolderOpen size={16} />
                   My Pockets
                 </Link>
               </div>
@@ -602,17 +589,16 @@ export default function DashboardHomePage() {
                 }
                 hint="LYNX reachable"
               />
-              <StatCard
-                icon={<ShieldCheck size={18} />}
-                label="Scam Shield"
-                value="Active"
-                hint="Protection on"
+              {/* Benefits Carousel */}
+              <StatCardCarousel
+                items={benefitsCarouselItems}
+                autoRotateInterval={5000}
               />
-              <StatCard
-                icon={<Flame size={18} />}
-                label="Streak"
-                value={isLoading ? '...' : `${stats.daysActive} days`}
-                hint="Keep going!"
+              {/* Hiring Intel Carousel */}
+              <StatCardCarousel
+                items={hiringIntelCarouselItems}
+                autoRotateInterval={6000}
+                accent
               />
             </div>
           </div>
@@ -644,69 +630,9 @@ export default function DashboardHomePage() {
           )}
         </div>
 
-        {/* Sidebar - Your Advantage */}
+        {/* Sidebar - Your Progress */}
         <div className="lg:col-span-4">
           <div className="rounded-2xl md:rounded-[2rem] border border-border bg-card/60 backdrop-blur-sm p-4 sm:p-5 md:p-7">
-            <div className="flex items-start gap-3">
-              <div className="grid h-12 w-12 place-items-center rounded-2xl border border-primary/30 bg-primary/10 text-primary">
-                <HeartHandshake size={22} />
-              </div>
-              <div>
-                <h2
-                  className="text-lg font-black text-foreground"
-                  style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}
-                >
-                  Your Advantage
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Tools designed for entry-level success.
-                </p>
-              </div>
-            </div>
-
-            {visibleAdvantages.length > 0 ? (
-              <div className="mt-5 space-y-3">
-                <AnimatePresence mode="popLayout">
-                  {visibleAdvantages.map((item) => (
-                    <AdvantageItem
-                      key={item.id}
-                      id={item.id}
-                      icon={item.icon}
-                      title={item.title}
-                      desc={item.desc}
-                      onDismiss={handleDismissAdvantage}
-                    />
-                  ))}
-                </AnimatePresence>
-              </div>
-            ) : (
-              <div className="mt-5 p-4 rounded-2xl border border-dashed border-border bg-muted/20 text-center">
-                <p className="text-sm text-muted-foreground">
-                  All tips dismissed.{' '}
-                  <button
-                    onClick={() => {
-                      setDismissedAdvantages([])
-                      localStorage.removeItem(DISMISSED_ADVANTAGES_KEY)
-                    }}
-                    className="text-primary hover:underline font-semibold"
-                  >
-                    Reset
-                  </button>
-                </p>
-              </div>
-            )}
-
-            <Link
-              href="/dashboard/pockets"
-              className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-background/60 px-5 py-3 text-sm font-semibold text-foreground hover:bg-background/80 transition-colors"
-            >
-              View My Pockets
-              <ArrowRight size={14} />
-            </Link>
-          </div>
-
-          {/* Quick Stats Card */}
-          <div className="mt-4 md:mt-6 rounded-2xl md:rounded-[2rem] border border-border bg-card/60 backdrop-blur-sm p-4 sm:p-5 md:p-7">
             <h3
               className="text-base font-black text-foreground mb-4"
               style={{ fontFamily: 'Clash Display, Satoshi, sans-serif' }}

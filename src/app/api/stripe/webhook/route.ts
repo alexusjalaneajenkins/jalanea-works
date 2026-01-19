@@ -16,6 +16,7 @@ import { headers } from 'next/headers'
 import Stripe from 'stripe'
 import { stripe, getTierByPriceId, COMMUNITY_CONTRIBUTION_RATES } from '@/lib/stripe'
 import { createClient } from '@supabase/supabase-js'
+import { sendPaymentFailedEmail } from '@/lib/email'
 
 // Use service role for webhook (no auth context)
 const supabaseAdmin = createClient(
@@ -293,6 +294,10 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
     })
     .eq('id', user.id)
 
-  // TODO: Send email notification about failed payment
+  // Send email notification about failed payment
+  if (user.email) {
+    await sendPaymentFailedEmail(user.email)
+  }
+
   console.log(`Payment failed for user ${user.id}`)
 }

@@ -11,6 +11,7 @@ import { headers } from 'next/headers'
 import Stripe from 'stripe'
 import { stripe, getTierByPriceId, type SubscriptionTier } from '@/lib/stripe'
 import { createClient } from '@/lib/supabase/server'
+import { sendPaymentFailedEmail } from '@/lib/email'
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
@@ -397,7 +398,10 @@ async function handlePaymentFailed(
     created_at: new Date().toISOString()
   })
 
-  // TODO: Send email notification about failed payment
+  // Send email notification about failed payment
+  if (profile.email) {
+    await sendPaymentFailedEmail(profile.email)
+  }
 
   console.log(`Payment failed for user ${profile.id}`)
 }

@@ -10,12 +10,12 @@
 import { useState, useEffect } from 'react'
 import {
   Heart,
-  Target,
   TrendingUp,
   GraduationCap,
   Sparkles,
   Clock,
-  ExternalLink
+  ExternalLink,
+  Loader2
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -62,9 +62,27 @@ const PLANNED_CATEGORIES = [
 ]
 
 export default function CommunityFundPage() {
-  const [currentRevenue, setCurrentRevenue] = useState(0) // Will come from API later
+  const [currentRevenue, setCurrentRevenue] = useState(0)
+  const [loading, setLoading] = useState(true)
   const targetRevenue = 4583 // $55k/yr = $4,583/mo
   const progressPercent = Math.min(100, (currentRevenue / targetRevenue) * 100)
+
+  useEffect(() => {
+    async function fetchRevenue() {
+      try {
+        const response = await fetch('/api/community-fund')
+        if (response.ok) {
+          const data = await response.json()
+          setCurrentRevenue(data.revenue?.monthlyRevenue || 0)
+        }
+      } catch (error) {
+        console.error('Failed to fetch revenue data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchRevenue()
+  }, [])
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -114,9 +132,16 @@ export default function CommunityFundPage() {
         <div className="mb-6">
           <div className="flex justify-between text-sm mb-2">
             <span className="text-gray-500">Current Progress</span>
-            <span className="font-medium text-purple-600">
-              ${currentRevenue.toLocaleString()} / ${targetRevenue.toLocaleString()}/mo
-            </span>
+            {loading ? (
+              <span className="flex items-center gap-1 text-gray-400">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Loading...
+              </span>
+            ) : (
+              <span className="font-medium text-purple-600">
+                ${currentRevenue.toLocaleString()} / ${targetRevenue.toLocaleString()}/mo
+              </span>
+            )}
           </div>
           <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
             <div

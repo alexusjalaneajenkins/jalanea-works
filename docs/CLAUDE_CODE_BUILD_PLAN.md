@@ -32,11 +32,16 @@
 
 ### Task 1.2: Database Schema - Core Tables
 
-**Status**: 🟡 Partially Complete
+**Status**: ✅ Complete
 
-**What exists**: `profiles` table extended, `passkeys` table, career mapping tables
-
-**What's needed**: Full schema from TECHNICAL_ARCHITECTURE_v1.0.md
+**What exists**: All 36+ tables verified in Supabase dashboard
+- profiles, passkeys, career_mappings, resumes, jobs, job_pockets
+- applications, interviews, interview_notes, application_notes
+- daily_plans, shadow_calendar_events, subscriptions, payments
+- community_fund_transactions, community_fund_grants
+- lynx_routes, lynx_stops, valencia_programs, orlando_rent_data
+- RLS policies in place for user data tables
+- Public reference tables have RLS disabled (intentional)
 
 <details>
 <summary>📋 Claude Code Prompt</summary>
@@ -108,9 +113,16 @@ We're building a job search platform for Orlando/Valencia College graduates. The
 
 ### Task 1.4: Authentication - Auth Modal Component
 
-**Status**: 🟡 In Progress (per your chat history)
+**Status**: ✅ Complete
 
-**What exists**: Basic auth pages, modal component started
+**What exists**: Full AuthModal component with all auth methods
+- Google OAuth authentication
+- Passkey registration and login
+- Magic Link email authentication
+- Animated modal with framer-motion
+- Sign In / Sign Up mode toggle
+- Error/success message display
+- Mobile responsive design
 
 <details>
 <summary>📋 Claude Code Prompt</summary>
@@ -168,9 +180,17 @@ We need a single modal for both sign-in and sign-up that supports:
 
 ### Task 1.5: Onboarding - V2 Flow with Dark Theme
 
-**Status**: 🟡 In Progress (per your chat history)
+**Status**: ✅ Complete
 
-**What exists**: 5-step onboarding, i18n support, basic UI
+**What exists**: Full 4-phase onboarding flow with dark theme
+- Phase 1: About You (language, name, location)
+- Phase 2: Education (level, school, degree details, career paths)
+- Phase 3: Work Preferences (transport, commute, days, shifts)
+- Phase 4: Goals (career phase, affordability calculator, challenges)
+- Dark theme with lightning-fast setup branding
+- Progress sidebar with phase indicators
+- Mobile responsive design
+- Redirects to dashboard after completion
 
 <details>
 <summary>📋 Claude Code Prompt</summary>

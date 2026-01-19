@@ -10,12 +10,13 @@
  * - Privacy & data management
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/components/providers/auth-provider'
 import { useRouter } from 'next/navigation'
 import {
   Bell,
+  Camera,
   Check,
   Crown,
   Download,
@@ -23,8 +24,10 @@ import {
   Shield,
   Star,
   User,
+  X,
   Loader2
 } from 'lucide-react'
+import Image from 'next/image'
 import {
   PricingTiers,
   type UserSettings,
@@ -174,6 +177,10 @@ export default function SettingsPage() {
   })
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const [avatarError, setAvatarError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Fetch settings on mount
   useEffect(() => {
@@ -192,6 +199,10 @@ export default function SettingsPage() {
             location: data.settings.profile.location || '',
             linkedinUrl: data.settings.profile.linkedinUrl || ''
           })
+          // Sync avatar URL
+          if (data.settings.profile.avatarUrl) {
+            setAvatarUrl(data.settings.profile.avatarUrl)
+          }
         }
       } catch (error) {
         console.error('Failed to fetch settings:', error)
@@ -305,6 +316,74 @@ export default function SettingsPage() {
       }
     } catch (error) {
       console.error('Failed to download data:', error)
+    }
+  }
+
+  // Avatar upload handler
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setAvatarUploading(true)
+    setAvatarError(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('avatar', file)
+
+      const response = await fetch('/api/settings/avatar', {
+        method: 'POST',
+        body: formData
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setAvatarUrl(data.avatarUrl)
+        setSettings((prev) => ({
+          ...prev,
+          profile: { ...prev.profile, avatarUrl: data.avatarUrl }
+        }))
+      } else {
+        setAvatarError(data.error || 'Failed to upload avatar')
+      }
+    } catch (error) {
+      console.error('Avatar upload error:', error)
+      setAvatarError('Failed to upload avatar')
+    } finally {
+      setAvatarUploading(false)
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  // Avatar remove handler
+  const handleAvatarRemove = async () => {
+    setAvatarUploading(true)
+    setAvatarError(null)
+
+    try {
+      const response = await fetch('/api/settings/avatar', {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        setAvatarUrl(null)
+        setSettings((prev) => ({
+          ...prev,
+          profile: { ...prev.profile, avatarUrl: undefined }
+        }))
+      } else {
+        const data = await response.json()
+        setAvatarError(data.error || 'Failed to remove avatar')
+      }
+    } catch (error) {
+      console.error('Avatar remove error:', error)
+      setAvatarError('Failed to remove avatar')
+    } finally {
+      setAvatarUploading(false)
     }
   }
 
@@ -550,6 +629,68 @@ export default function SettingsPage() {
                   'Save Profile'
                 )}
               </button>
+            </div>
+
+            {/* Avatar Section */}
+            <div className="mt-4 flex items-center gap-4 rounded-2xl border border-border bg-background/40 p-4">
+              <div className="relative">
+                {/* Avatar Display */}
+                <div className="relative h-20 w-20 overflow-hidden rounded-2xl border-2 border-border bg-card/40">
+                  {avatarUrl ? (
+                    <Image
+                      src={avatarUrl}
+                      alt="Profile avatar"
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-primary/10 text-2xl font-bold text-primary">
+                      {(profileForm.firstName?.[0] || '') + (profileForm.lastName?.[0] || '') || 'U'}
+                    </div>
+                  )}
+                  {avatarUploading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                      <Loader2 className="h-6 w-6 animate-spin text-white" />
+                    </div>
+                  )}
+                </div>
+                {/* Camera Button */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={avatarUploading}
+                  className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow-md hover:opacity-90 disabled:opacity-50"
+                >
+                  <Camera size={14} />
+                </button>
+                {/* Remove Button (show only if avatar exists) */}
+                {avatarUrl && !avatarUploading && (
+                  <button
+                    type="button"
+                    onClick={handleAvatarRemove}
+                    className="absolute -right-1 -top-1 grid h-6 w-6 place-items-center rounded-full border-2 border-background bg-destructive text-destructive-foreground shadow-md hover:opacity-90"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+                {/* Hidden File Input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
+              </div>
+              <div className="flex-1">
+                <div className="text-sm font-semibold text-foreground">Profile Photo</div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  Upload a photo to personalize your profile. Max 5MB.
+                </div>
+                {avatarError && (
+                  <div className="mt-2 text-xs text-destructive">{avatarError}</div>
+                )}
+              </div>
             </div>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">

@@ -6,7 +6,12 @@
     "save": "Guardar",
     "cancel": "Cancelar",
     "done": "Listo",
-    "stepOf": "Paso {current} de {total}"
+    "stepOf": "Paso {current} de {total}",
+    "completeSetup": "Completar Configuración",
+    "launchDashboard": "Ir al Panel",
+    "saving": "Guardando...",
+    "pressEnterToContinue": "Presiona Enter para continuar",
+    "clickToSelect": "Haz clic para seleccionar"
   },
   "language": {
     "title": "Elige tu idioma",
@@ -115,6 +120,85 @@
       "subtitle": "Vamos a encontrarte un trabajo.",
       "summary": "Esto es lo que sabemos de ti:",
       "goToDashboard": "Ir al Panel"
+    },
+    "questions": {
+      "name": {
+        "title": "¿Cuál es tu nombre?",
+        "placeholder": "Ingresa tu nombre completo"
+      },
+      "location": {
+        "title": "¿Dónde estás ubicado?",
+        "subtitle": "Para encontrar trabajos en tu área",
+        "placeholder": "Ciudad, Estado"
+      },
+      "educationLevel": {
+        "title": "¿Nivel de educación más alto?",
+        "highSchool": "Preparatoria / GED",
+        "someCollege": "Algo de Universidad",
+        "completed": "Título Completado",
+        "completedSub": "Te pediremos detalles"
+      },
+      "school": {
+        "title": "¿A qué escuela asististe?",
+        "subtitle": "Selecciona tu institución"
+      },
+      "educationDetails": {
+        "title": "Cuéntanos sobre tu título",
+        "subtitle": "Esta información ayuda a crear tu currículum"
+      },
+      "careerPaths": {
+        "title": "¿Qué carreras te interesan?",
+        "subtitle": "Selecciona todas las que coincidan con tus metas"
+      },
+      "transport": {
+        "title": "¿Cómo te transportas?",
+        "car": "Carro",
+        "bus": "Autobús",
+        "rideshare": "Uber/Lyft",
+        "bikeWalk": "Bici/Caminar"
+      },
+      "commute": {
+        "title": "¿Tiempo máximo de viaje?",
+        "min15": "15 min",
+        "min30": "30 min",
+        "min45": "45 min",
+        "min60": "60+ min"
+      },
+      "schedule": {
+        "title": "¿Cuándo puedes trabajar?",
+        "flexible": "Flexible / Cualquier Día",
+        "specific": "Solo Días Específicos",
+        "specificSub": "Elegiré los días"
+      },
+      "scheduleDays": {
+        "title": "¿Qué días puedes trabajar?",
+        "subtitle": "Selecciona todos los días disponibles"
+      },
+      "shifts": {
+        "title": "¿Turnos preferidos?",
+        "morning": "Mañana",
+        "afternoon": "Tarde",
+        "evening": "Noche",
+        "overnight": "Madrugada"
+      },
+      "careerPhase": {
+        "title": "¿En qué etapa de tu carrera estás?",
+        "subtitle": "Esto nos ayuda a encontrar las oportunidades correctas"
+      },
+      "salaryBreakdown": {
+        "title": "Esto es lo que puedes pagar",
+        "subtitle": "Basado en tu selección de fase de carrera"
+      },
+      "challenges": {
+        "title": "¿Algún desafío en el que podamos ayudar?",
+        "subtitle": "Opcional - ayuda a encontrar recursos de apoyo",
+        "none": "Ninguno",
+        "transport": "Transporte",
+        "childcare": "Cuidado de niños",
+        "language": "Barrera del idioma",
+        "health": "Salud",
+        "record": "Antecedentes"
+      }
     }
   }
 }

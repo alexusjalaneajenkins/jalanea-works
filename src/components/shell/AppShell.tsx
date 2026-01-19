@@ -11,7 +11,7 @@
  * - Jalanea Mode (Survival / Bridge / Career) as a first-class "space"
  */
 
-import { useState, useEffect, type ReactNode } from 'react'
+import { useState, useEffect, useLayoutEffect, type ReactNode } from 'react'
 import { SideRail } from './SideRail'
 import { TopBar } from './TopBar'
 import { SearchOverlay } from './SearchOverlay'
@@ -22,8 +22,12 @@ interface AppShellProps {
   userName?: string
   userLocation?: string
   userInitial?: string
+  userAvatarUrl?: string | null
   isOwner?: boolean
 }
+
+// Safe useLayoutEffect that falls back to useEffect on server
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
 
 export function AppShell({
   children,
@@ -31,13 +35,20 @@ export function AppShell({
   userName = 'User',
   userLocation = 'Central Florida',
   userInitial = 'U',
+  userAvatarUrl,
   isOwner = false
 }: AppShellProps) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light')
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
+  const [isHydrated, setIsHydrated] = useState(false)
 
-  // Load theme from localStorage on mount
-  useEffect(() => {
+  // Initialize theme and sidebar state synchronously to prevent flash
+  useIsomorphicLayoutEffect(() => {
+    // Mark as hydrated
+    setIsHydrated(true)
+
+    // Load theme
     const stored = localStorage.getItem('theme')
     if (stored === 'dark') {
       setThemeMode('dark')
@@ -52,7 +63,23 @@ export function AppShell({
         document.documentElement.classList.add('dark')
       }
     }
+
+    // Load sidebar collapsed state from localStorage
+    // Default: collapsed on tablet (< 1024px), expanded on desktop
+    const sidebarState = localStorage.getItem('sidebar-collapsed')
+    if (sidebarState !== null) {
+      setSidebarCollapsed(sidebarState === 'true')
+    } else {
+      // No saved preference - default based on screen size
+      setSidebarCollapsed(window.innerWidth < 1024)
+    }
   }, [])
+
+  const toggleSidebar = () => {
+    const newState = !sidebarCollapsed
+    setSidebarCollapsed(newState)
+    localStorage.setItem('sidebar-collapsed', String(newState))
+  }
 
   const toggleTheme = () => {
     const newMode = themeMode === 'light' ? 'dark' : 'light'
@@ -78,8 +105,11 @@ export function AppShell({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
+  // Use consistent initial state for SSR, actual state applied after hydration
+  const effectiveCollapsed = isHydrated ? sidebarCollapsed : true
+
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-clip">
+    <div className="min-h-screen bg-background text-foreground overflow-x-clip" suppressHydrationWarning>
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
 
       <div className="flex">
@@ -88,11 +118,17 @@ export function AppShell({
           userName={userName}
           userLocation={userLocation}
           userInitial={userInitial}
+          userAvatarUrl={userAvatarUrl}
           isOwner={isOwner}
+          collapsed={effectiveCollapsed}
+          onToggleCollapse={toggleSidebar}
         />
 
         {/* Main content area - offset by fixed sidebar width */}
-        <div className="flex-1 overflow-x-clip md:ml-[72px] lg:ml-[280px]">
+        <div
+          className={`flex-1 overflow-x-clip transition-all duration-300 ${effectiveCollapsed ? 'md:ml-[72px]' : 'md:ml-[260px]'}`}
+          suppressHydrationWarning
+        >
           <TopBar
             onOpenSearch={() => setSearchOpen(true)}
             onToggleTheme={toggleTheme}

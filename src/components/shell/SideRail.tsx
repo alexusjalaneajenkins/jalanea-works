@@ -6,14 +6,19 @@
  * Responsive navigation rail for JalaneaWorks "Mission Control".
  * Features:
  * - Mobile (<768px): Hidden, uses hamburger menu
- * - Tablet (768-1023px): Collapsed icons-only, expands on hover
- * - Desktop (1024px+): Full sidebar with labels
+ * - Tablet (768-1023px): Collapsed icons-only by default, click to expand
+ * - Desktop (1024px+): Expanded with labels by default, click to collapse
+ *
+ * Click-to-toggle behavior (no hover expansion):
+ * - Toggle button at bottom of sidebar
+ * - State persisted to localStorage
  */
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { ChevronDown, LogOut, MessageSquare, Rocket, Sparkles, Sun, FlaskConical } from 'lucide-react'
+import { ChevronDown, LogOut, MessageSquare, Rocket, Sparkles, Sun, FlaskConical, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { primaryNavItems, secondaryNavItems, footerNavItems } from './nav'
 import { useJalaneaMode } from '@/lib/mode/ModeContext'
@@ -26,7 +31,10 @@ interface SideRailProps {
   userName?: string
   userLocation?: string
   userInitial?: string
+  userAvatarUrl?: string | null
   isOwner?: boolean
+  collapsed?: boolean
+  onToggleCollapse?: () => void
 }
 
 function TierSwitcher({ onTierChange, collapsed }: { onTierChange: (tier: TestableTier | null) => void; collapsed?: boolean }) {
@@ -105,13 +113,15 @@ export function SideRail({
   userName = 'User',
   userLocation = 'Central Florida',
   userInitial = 'U',
-  isOwner = false
+  userAvatarUrl,
+  isOwner = false,
+  collapsed = false,
+  onToggleCollapse
 }: SideRailProps) {
   const pathname = usePathname()
   const router = useRouter()
   const { mode } = useJalaneaMode()
   const { signOut } = useAuth()
-  const [isHovered, setIsHovered] = useState(false)
 
   const handleSignOut = async () => {
     await signOut()
@@ -129,41 +139,45 @@ export function SideRail({
     return pathname.startsWith(to)
   }
 
-  // Collapsed state: tablet without hover
-  // Expanded state: desktop OR tablet with hover
-  const isExpanded = isHovered
+  // Expanded = not collapsed (no hover override)
+  const isExpanded = !collapsed
 
   return (
     <aside
       className={cn(
-        'hidden md:flex shrink-0 flex-col border-r border-border bg-card backdrop-blur-xl fixed top-0 left-0 h-screen z-40 transition-all duration-300 ease-in-out',
-        // Tablet: 72px collapsed, Desktop: 280px always
-        'w-[72px] lg:w-[280px]',
-        // On tablet hover, expand to full width
-        isHovered && 'md:w-[280px]'
+        'hidden md:flex shrink-0 flex-col border-r border-border bg-card backdrop-blur-xl fixed top-0 left-0 h-screen z-50 transition-all duration-300 ease-in-out',
+        // Collapsed: 72px, Expanded: 260px
+        collapsed ? 'w-[72px]' : 'w-[260px]'
       )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Brand header */}
-      <div className="relative px-3 lg:px-5 pt-4 lg:pt-5 pb-3 lg:pb-4">
+      <div className={cn(
+        'relative pt-4 pb-3 transition-all duration-300',
+        isExpanded ? 'px-5 pt-5 pb-4' : 'px-2.5 flex items-center justify-center'
+      )}>
         {/* Ambient glow - only on expanded */}
         <div className={cn(
           'absolute -top-10 -left-10 h-40 w-40 rounded-full bg-primary/10 blur-3xl pointer-events-none transition-opacity',
-          isExpanded ? 'opacity-100' : 'lg:opacity-100 opacity-0'
+          isExpanded ? 'opacity-100' : 'opacity-0'
         )} />
 
-        <div className="relative flex items-center gap-3">
+        <div className={cn(
+          'relative flex items-center',
+          isExpanded ? 'gap-3' : 'w-full justify-center'
+        )}>
           {/* Sun icon - rounded square shape */}
-          <div className="relative grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+          <div className={cn(
+            'relative grid shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20',
+            isExpanded ? 'h-11 w-11' : 'h-12 w-12'
+          )}>
             <Sun size={20} className="drop-shadow-sm" />
             <div className="absolute inset-0 rounded-2xl bg-primary animate-ping opacity-20" />
           </div>
 
-          {/* Text - hidden on collapsed tablet, shown on expanded/desktop */}
+          {/* Text - hidden when collapsed, shown when expanded */}
           <div className={cn(
             'transition-all duration-300 overflow-hidden',
-            isExpanded ? 'opacity-100 w-auto' : 'lg:opacity-100 lg:w-auto opacity-0 w-0'
+            isExpanded ? 'opacity-100 w-auto flex-1' : 'opacity-0 w-0 hidden'
           )}>
             <span
               className="text-base font-black tracking-tight whitespace-nowrap"
@@ -178,28 +192,31 @@ export function SideRail({
         {/* Owner Tier Switcher */}
         {isOwner && (
           <div className="relative mt-3">
-            <TierSwitcher onTierChange={handleTierChange} collapsed={!isExpanded && !isHovered} />
+            <TierSwitcher onTierChange={handleTierChange} collapsed={!isExpanded} />
           </div>
         )}
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 overflow-y-auto px-2 lg:px-3 pb-4 pt-2">
+      <div className={cn(
+        'flex-1 overflow-y-auto pb-4 pt-2 transition-all duration-300',
+        isExpanded ? 'px-3' : 'px-2.5'
+      )}>
         <nav aria-label="Main navigation">
           {/* Primary nav */}
           <ul className="space-y-1">
             {primaryNavItems.map((item) => {
               const active = isActive(item.to)
               return (
-                <li key={item.key}>
+                <li key={item.key} className={cn(!isExpanded && 'flex justify-center')}>
                   <Link
                     href={item.to}
                     className={cn(
-                      'group flex items-center gap-3 rounded-2xl transition-all duration-200',
+                      'group flex items-center rounded-2xl transition-all duration-200',
                       // Padding: collapsed vs expanded
-                      isExpanded ? 'px-4 py-3' : 'lg:px-4 lg:py-3 px-3 py-3 justify-center lg:justify-start',
+                      isExpanded ? 'px-4 py-3 gap-3' : 'p-2 justify-center',
                       active
-                        ? 'bg-primary/10 border border-primary/30 shadow-sm'
+                        ? 'bg-amber-100 dark:bg-amber-900/30 border border-amber-300/50 dark:border-amber-700/50 shadow-sm'
                         : 'hover:bg-muted/30'
                     )}
                     aria-current={active ? 'page' : undefined}
@@ -209,7 +226,7 @@ export function SideRail({
                       className={cn(
                         'grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors',
                         active
-                          ? 'bg-primary/15 text-primary'
+                          ? 'bg-amber-200/60 dark:bg-amber-800/40 text-amber-700 dark:text-amber-300'
                           : 'bg-muted/50 text-muted-foreground group-hover:text-foreground'
                       )}
                     >
@@ -218,14 +235,14 @@ export function SideRail({
                     <span
                       className={cn(
                         'text-sm font-semibold tracking-tight transition-all duration-300 whitespace-nowrap',
-                        active ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground',
-                        isExpanded ? 'opacity-100' : 'lg:opacity-100 opacity-0 w-0 lg:w-auto overflow-hidden'
+                        active ? 'text-amber-800 dark:text-amber-200' : 'text-muted-foreground group-hover:text-foreground',
+                        isExpanded ? 'opacity-100 w-auto' : 'opacity-0 w-0 overflow-hidden'
                       )}
                     >
                       {item.label}
                     </span>
                     {active && isExpanded && (
-                      <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary hidden lg:block" aria-hidden="true" />
+                      <span className="ml-auto h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden="true" />
                     )}
                   </Link>
                 </li>
@@ -238,7 +255,7 @@ export function SideRail({
             {/* Section title - only when expanded */}
             <div className={cn(
               'px-4 mb-2 transition-opacity duration-300',
-              isExpanded ? 'opacity-100' : 'lg:opacity-100 opacity-0 h-0 lg:h-auto overflow-hidden'
+              isExpanded ? 'opacity-100 h-auto' : 'opacity-0 h-0 overflow-hidden'
             )}>
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                 Tools
@@ -248,14 +265,14 @@ export function SideRail({
               {secondaryNavItems.map((item) => {
                 const active = isActive(item.to)
                 return (
-                  <li key={item.key}>
+                  <li key={item.key} className={cn(!isExpanded && 'flex justify-center')}>
                     <Link
                       href={item.to}
                       className={cn(
-                        'group flex items-center gap-3 rounded-2xl transition-all duration-200',
-                        isExpanded ? 'px-4 py-2.5' : 'lg:px-4 lg:py-2.5 px-3 py-2.5 justify-center lg:justify-start',
+                        'group flex items-center rounded-2xl transition-all duration-200',
+                        isExpanded ? 'px-4 py-2.5 gap-3' : 'p-2 justify-center',
                         active
-                          ? 'bg-primary/10 border border-primary/30'
+                          ? 'bg-amber-100 dark:bg-amber-900/30 border border-amber-300/50 dark:border-amber-700/50'
                           : 'hover:bg-muted/30'
                       )}
                       title={!isExpanded ? item.label : undefined}
@@ -264,7 +281,7 @@ export function SideRail({
                         className={cn(
                           'grid h-7 w-7 shrink-0 place-items-center rounded-lg transition-colors',
                           active
-                            ? 'bg-primary/15 text-primary'
+                            ? 'bg-amber-200/60 dark:bg-amber-800/40 text-amber-700 dark:text-amber-300'
                             : 'bg-muted/50 text-muted-foreground group-hover:text-foreground'
                         )}
                       >
@@ -273,8 +290,8 @@ export function SideRail({
                       <span
                         className={cn(
                           'text-sm font-medium tracking-tight transition-all duration-300 whitespace-nowrap',
-                          active ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground',
-                          isExpanded ? 'opacity-100' : 'lg:opacity-100 opacity-0 w-0 lg:w-auto overflow-hidden'
+                          active ? 'text-amber-800 dark:text-amber-200' : 'text-muted-foreground group-hover:text-foreground',
+                          isExpanded ? 'opacity-100 w-auto' : 'opacity-0 w-0 overflow-hidden'
                         )}
                       >
                         {item.label}
@@ -290,7 +307,7 @@ export function SideRail({
         {/* Promo card - only when expanded */}
         <div className={cn(
           'mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-4 transition-all duration-300',
-          isExpanded ? 'opacity-100' : 'lg:opacity-100 lg:block hidden'
+          isExpanded ? 'opacity-100' : 'hidden'
         )}>
           <div className="flex items-center gap-3">
             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
@@ -298,7 +315,7 @@ export function SideRail({
             </div>
             <div className={cn(
               'transition-opacity duration-300',
-              isExpanded ? 'opacity-100' : 'lg:opacity-100 opacity-0'
+              isExpanded ? 'opacity-100' : 'opacity-0'
             )}>
               <div className="text-sm font-bold text-foreground whitespace-nowrap">Start a Business</div>
               <div className="text-xs text-muted-foreground whitespace-nowrap">Light the Block toolkit</div>
@@ -306,27 +323,44 @@ export function SideRail({
           </div>
           <button className={cn(
             'mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-bold text-primary-foreground hover:opacity-90 transition-opacity',
-            isExpanded ? '' : 'lg:flex hidden'
+            isExpanded ? '' : 'hidden'
           )}>
             <Sparkles size={14} />
-            <span className={cn(isExpanded ? '' : 'lg:inline hidden')}>Explore</span>
+            <span className={cn(isExpanded ? '' : 'hidden')}>Explore</span>
           </button>
         </div>
       </div>
 
       {/* Account section */}
-      <div className="border-t border-border p-2 lg:p-3 bg-card/50 backdrop-blur-sm">
-        <div className={cn(
-          'flex items-center rounded-2xl bg-background/60 p-2 lg:p-3',
-          isExpanded ? 'justify-between' : 'lg:justify-between justify-center'
-        )}>
+      <div className={cn(
+        'border-t border-border bg-card/50 backdrop-blur-sm transition-all duration-300',
+        isExpanded ? 'p-3' : 'p-2.5'
+      )}>
+        <Link
+          href="/dashboard/settings"
+          className={cn(
+            'flex items-center rounded-2xl bg-background/60 transition-all duration-300 hover:bg-muted/50',
+            isExpanded ? 'p-3 justify-between' : 'p-2 justify-center'
+          )}
+          title="Settings"
+        >
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="h-9 w-9 shrink-0 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-sm font-bold text-primary">
-              {userInitial}
+            <div className="h-9 w-9 shrink-0 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-sm font-bold text-primary overflow-hidden">
+              {userAvatarUrl ? (
+                <Image
+                  src={userAvatarUrl}
+                  alt={userName}
+                  width={36}
+                  height={36}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                userInitial
+              )}
             </div>
             <div className={cn(
               'transition-all duration-300 min-w-0',
-              isExpanded ? 'opacity-100' : 'lg:opacity-100 lg:block hidden'
+              isExpanded ? 'opacity-100' : 'hidden'
             )}>
               <div className="text-sm font-bold text-foreground truncate">{userName}</div>
               <div className="flex items-center gap-2 mt-0.5">
@@ -335,26 +369,61 @@ export function SideRail({
               </div>
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* Action buttons - only when expanded */}
         <div className={cn(
           'mt-2 grid grid-cols-2 gap-2 transition-all duration-300',
-          isExpanded ? 'opacity-100' : 'lg:opacity-100 lg:grid hidden'
+          isExpanded ? 'opacity-100 grid' : 'hidden'
         )}>
           <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors">
             <MessageSquare size={14} />
-            <span className={cn(isExpanded ? '' : 'lg:inline hidden')}>Feedback</span>
+            <span className={cn(isExpanded ? '' : 'hidden')}>Feedback</span>
           </button>
           <button
             onClick={handleSignOut}
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background/60 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
           >
             <LogOut size={14} />
-            <span className={cn(isExpanded ? '' : 'lg:inline hidden')}>Sign out</span>
+            <span className={cn(isExpanded ? '' : 'hidden')}>Sign out</span>
           </button>
         </div>
+
+        {/* Toggle button - positioned at bottom */}
+        {onToggleCollapse && (
+          <button
+            onClick={onToggleCollapse}
+            className={cn(
+              'mt-3 w-full flex items-center justify-center gap-2 rounded-xl border border-border bg-background/80 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-background transition-all',
+              !isExpanded && 'px-2'
+            )}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {collapsed ? (
+              <>
+                <ChevronRight size={16} />
+                <span className={cn(isExpanded ? '' : 'sr-only')}>Expand</span>
+              </>
+            ) : (
+              <>
+                <ChevronLeft size={16} />
+                <span>Collapse</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
+
+      {/* Circular toggle button on the edge - visible when collapsed */}
+      {onToggleCollapse && collapsed && (
+        <button
+          onClick={onToggleCollapse}
+          className="absolute -right-3 bottom-20 h-6 w-6 flex items-center justify-center rounded-full border border-border bg-card shadow-sm text-muted-foreground hover:text-foreground hover:bg-background transition-all z-50"
+          title="Expand sidebar"
+        >
+          <ChevronRight size={14} />
+        </button>
+      )}
     </aside>
   )
 }

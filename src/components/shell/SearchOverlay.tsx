@@ -18,8 +18,8 @@ import {
   Clock,
   Compass,
   FileText,
+  FolderOpen,
   Search,
-  Target,
   X
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
@@ -50,7 +50,7 @@ const quickActions: QuickAction[] = [
     id: 'pocket',
     label: 'New Job Pocket',
     description: 'Create a job intelligence report',
-    icon: <Target size={18} />,
+    icon: <FolderOpen size={18} />,
     href: '/dashboard/pockets'
   },
   {

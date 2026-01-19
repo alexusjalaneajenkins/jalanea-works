@@ -24,7 +24,8 @@ import {
   ArrowRight,
   ExternalLink,
   Sparkles,
-  PieChart
+  PieChart,
+  AlertTriangle
 } from 'lucide-react'
 
 interface FundStats {
@@ -84,6 +85,7 @@ interface FundData {
 export default function CommunityFundPage() {
   const [fundData, setFundData] = useState<FundData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadFundData() {
@@ -92,9 +94,12 @@ export default function CommunityFundPage() {
         if (response.ok) {
           const data = await response.json()
           setFundData(data)
+        } else {
+          setError('Unable to load fund data. Please try again later.')
         }
       } catch (error) {
         console.error('Failed to load fund data:', error)
+        setError('Unable to load fund data. Please try again later.')
       } finally {
         setLoading(false)
       }
@@ -124,6 +129,26 @@ export default function CommunityFundPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto" />
           <p className="mt-4 text-gray-600">Loading fund data...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="w-8 h-8 text-amber-600" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Unable to Load Fund Data</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-pink-600 text-white font-medium rounded-xl hover:bg-pink-700 transition-colors"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     )

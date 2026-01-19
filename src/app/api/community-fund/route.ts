@@ -13,6 +13,7 @@ import {
   getNextMilestone,
   formatCurrency
 } from '@/lib/community-fund'
+import { SUBSCRIPTION_TIERS, COMMUNITY_FUND_REVENUE_THRESHOLD } from '@/lib/stripe'
 
 /**
  * GET - Get community fund statistics
@@ -41,6 +42,27 @@ export async function GET() {
 
   let userContribution = 0
   let userMonthsSubscribed = 0
+
+  // Calculate MRR from active subscriptions
+  let monthlyRevenue = 0
+  try {
+    // Count active subscribers by tier
+    const { data: tierCounts } = await supabase
+      .from('users')
+      .select('tier')
+      .eq('subscription_status', 'active')
+      .not('tier', 'eq', 'free')
+
+    if (tierCounts) {
+      // Sum up MRR based on tier prices
+      monthlyRevenue = tierCounts.reduce((sum, user) => {
+        const tierConfig = SUBSCRIPTION_TIERS.find(t => t.id === user.tier)
+        return sum + (tierConfig?.price || 0)
+      }, 0)
+    }
+  } catch {
+    // Table might not have tier column yet
+  }
 
   try {
     // Get total contributions
@@ -139,6 +161,12 @@ export async function GET() {
       formattedTotalAllocated: formatCurrency(stats.totalAllocated),
       formattedCurrentBalance: formatCurrency(stats.currentBalance),
       formattedAverageGrant: formatCurrency(stats.averageGrant)
+    },
+    revenue: {
+      monthlyRevenue,
+      targetRevenue: COMMUNITY_FUND_REVENUE_THRESHOLD,
+      progressPercent: Math.min(100, (monthlyRevenue / COMMUNITY_FUND_REVENUE_THRESHOLD) * 100),
+      isActive: monthlyRevenue >= COMMUNITY_FUND_REVENUE_THRESHOLD
     },
     userImpact: {
       totalContribution: userContribution,

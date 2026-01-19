@@ -10,9 +10,9 @@ import {
   Briefcase,
   Compass,
   FileText,
+  FolderOpen,
   LayoutDashboard,
   Settings,
-  Target,
   Calendar,
   Users,
   CreditCard,
@@ -59,7 +59,7 @@ export const navItems: NavItem[] = [
     key: 'pockets',
     label: 'My Pockets',
     to: '/dashboard/pockets',
-    icon: <Target size={18} />,
+    icon: <FolderOpen size={18} />,
     description: 'Your job intelligence reports'
   },
   {

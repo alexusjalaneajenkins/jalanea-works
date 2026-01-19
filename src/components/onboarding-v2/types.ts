@@ -96,6 +96,7 @@ export interface EducationDetails {
   school: string
   degreeType: string
   degreeName: string
+  programKey?: string  // Database key for career path lookup
   gradYear: string
   gpa?: string
 }
