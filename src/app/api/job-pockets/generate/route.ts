@@ -289,6 +289,14 @@ export async function POST(request: NextRequest) {
       pocket = providedPocketData
       modelUsed = 'mock'
     } else {
+      // jobData is guaranteed to be set when providedPocketData is false
+      if (!jobData) {
+        return NextResponse.json(
+          { error: 'Failed to prepare job data for pocket generation' },
+          { status: 500 }
+        )
+      }
+
       console.log(`Generating ${requestedTier} pocket for job ${jobId}...`)
 
       switch (requestedTier) {
@@ -347,7 +355,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('Pocket saved successfully:', savedPocket?.id)
+    // Fallback: If upsert didn't return ID, query for it
+    let pocketId = savedPocket?.id
+    if (!pocketId) {
+      console.log('Upsert did not return ID, querying for pocket...')
+      const { data: existingPocket } = await supabase
+        .from('job_pockets')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('job_id', jobId)
+        .eq('tier', requestedTier)
+        .single()
+      pocketId = existingPocket?.id
+    }
+
+    console.log('Pocket saved successfully:', pocketId)
 
     // Increment usage for Premium/Unlimited tiers (skip for mock data)
     if (!providedPocketData && (requestedTier === 'premium' || requestedTier === 'unlimited')) {
@@ -364,7 +386,7 @@ export async function POST(request: NextRequest) {
         model: modelUsed,
         generation_time_ms: generationTime,
         tokens_used: tokensUsed,
-        pocket_id: savedPocket?.id
+        pocket_id: pocketId
       }
     }).then(() => {}) // Fire and forget
 
@@ -372,7 +394,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       pocket,
-      pocketId: savedPocket?.id,
+      pocketId,
       tier: requestedTier,
       cached: false,
       modelUsed,
