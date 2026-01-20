@@ -10,6 +10,7 @@
  *     - jobId: string - The job ID to generate pocket for
  *     - tier: 'essential' | 'starter' | 'premium' | 'unlimited' - User's subscription tier
  *     - forceRegenerate: boolean - Skip cache and regenerate
+ *     - pocketData: object (optional) - Pre-generated pocket data (skips AI generation)
  *
  * Tier mapping:
  *   - Essential ($15): Tier 1 pocket (20-second intel) - Unlimited
@@ -124,7 +125,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { jobId, tier, forceRegenerate } = body
+    const { jobId, tier, forceRegenerate, pocketData: providedPocketData } = body
 
     if (!jobId) {
       return NextResponse.json(
@@ -221,87 +222,104 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fetch job details directly from database
-    const { data: job, error: jobError } = await supabase
-      .from('jobs')
-      .select('*')
-      .eq('id', jobId)
-      .single()
-
-    if (jobError || !job) {
-      return NextResponse.json(
-        { error: 'Job not found' },
-        { status: 404 }
-      )
-    }
-
-    // Get user's resume/profile data for personalization
-    const { data: resumeData } = await supabase
-      .from('resumes')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single()
-
-    const userProfile = {
+    // Only fetch job from database if we need to generate real pocket data
+    // When providedPocketData is set, we skip this lookup entirely
+    let job = null
+    let jobData = null
+    let userProfile = {
       name: `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Candidate',
-      resume: resumeData
+      resume: null as any
     }
 
-    // Transform job data for pocket generation
-    const jobData = {
-      id: job.id,
-      title: job.title,
-      company: job.company,
-      location: job.location_address || `${job.location_city || ''}, ${job.location_state || 'FL'}`.trim(),
-      description: job.description,
-      fullDescription: job.description,
-      requirements: job.requirements ? (typeof job.requirements === 'string' ? job.requirements.split('\n') : job.requirements) : [],
-      benefits: job.benefits ? (typeof job.benefits === 'string' ? job.benefits.split('\n') : job.benefits) : [],
-      salaryMin: job.salary_min,
-      salaryMax: job.salary_max,
-      salaryType: job.salary_period === 'hourly' ? 'hourly' as const : 'yearly' as const,
-      valenciaMatch: job.valencia_friendly,
-      valenciaMatchPercentage: job.valencia_match_score,
-      scamRiskLevel: job.scam_severity?.toLowerCase() as 'low' | 'medium' | 'high' | 'critical' | undefined,
-      scamReasons: job.scam_flags || []
+    if (!providedPocketData) {
+      // Fetch job details directly from database
+      const { data: jobResult, error: jobError } = await supabase
+        .from('jobs')
+        .select('*')
+        .eq('id', jobId)
+        .single()
+
+      if (jobError || !jobResult) {
+        return NextResponse.json(
+          { error: 'Job not found' },
+          { status: 404 }
+        )
+      }
+      job = jobResult
+
+      // Get user's resume/profile data for personalization
+      const { data: resumeData } = await supabase
+        .from('resumes')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      userProfile.resume = resumeData
+
+      // Transform job data for pocket generation
+      jobData = {
+        id: job.id,
+        title: job.title,
+        company: job.company,
+        location: job.location_address || `${job.location_city || ''}, ${job.location_state || 'FL'}`.trim(),
+        description: job.description,
+        fullDescription: job.description,
+        requirements: job.requirements ? (typeof job.requirements === 'string' ? job.requirements.split('\n') : job.requirements) : [],
+        benefits: job.benefits ? (typeof job.benefits === 'string' ? job.benefits.split('\n') : job.benefits) : [],
+        salaryMin: job.salary_min,
+        salaryMax: job.salary_max,
+        salaryType: job.salary_period === 'hourly' ? 'hourly' as const : 'yearly' as const,
+        valenciaMatch: job.valencia_friendly,
+        valenciaMatchPercentage: job.valencia_match_score,
+        scamRiskLevel: job.scam_severity?.toLowerCase() as 'low' | 'medium' | 'high' | 'critical' | undefined,
+        scamReasons: job.scam_flags || []
+      }
     }
 
-    // Generate pocket based on tier
+    // Generate pocket based on tier (or use provided mock data)
     let pocket
     let modelUsed: string
 
-    console.log(`Generating ${requestedTier} pocket for job ${jobId}...`)
+    if (providedPocketData) {
+      // Use provided pocket data (mock data for UI development)
+      console.log(`Using provided pocket data for job ${jobId}`)
+      pocket = providedPocketData
+      modelUsed = 'mock'
+    } else {
+      console.log(`Generating ${requestedTier} pocket for job ${jobId}...`)
 
-    switch (requestedTier) {
-      case 'unlimited':
-        // Unlimited users get the extended 12-page Deep Research report
-        pocket = await generateTier3Pocket(jobData, userProfile)
-        modelUsed = 'gemini-2.0-pro'
-        break
-      case 'premium':
-        // Premium users get the 8-page comprehensive report
-        pocket = await generateTier3Pocket(jobData, userProfile)
-        modelUsed = 'gemini-2.0-pro'
-        break
-      case 'starter':
-        pocket = await generateTier2Pocket(jobData, userProfile)
-        modelUsed = 'gemini-2.0-flash'
-        break
-      case 'essential':
-      default:
-        pocket = await generateTier1Pocket(jobData, userProfile)
-        modelUsed = 'gemini-2.0-flash'
-        break
+      switch (requestedTier) {
+        case 'unlimited':
+          // Unlimited users get the extended 12-page Deep Research report
+          pocket = await generateTier3Pocket(jobData, userProfile)
+          modelUsed = 'gemini-2.0-pro'
+          break
+        case 'premium':
+          // Premium users get the 8-page comprehensive report
+          pocket = await generateTier3Pocket(jobData, userProfile)
+          modelUsed = 'gemini-2.0-pro'
+          break
+        case 'starter':
+          pocket = await generateTier2Pocket(jobData, userProfile)
+          modelUsed = 'gemini-2.0-flash'
+          break
+        case 'essential':
+        default:
+          pocket = await generateTier1Pocket(jobData, userProfile)
+          modelUsed = 'gemini-2.0-flash'
+          break
+      }
     }
 
     const generationTime = Date.now() - startTime
-    const tokensUsed = estimateTokens(JSON.stringify(pocket))
+    const tokensUsed = providedPocketData ? 0 : estimateTokens(JSON.stringify(pocket))
 
-    // Save pocket to database
-    const { error: saveError } = await supabase
+    // Save pocket to database and get the ID back
+    console.log('Saving pocket for job:', jobId, 'user:', user.id, 'tier:', requestedTier)
+    const { data: savedPocket, error: saveError } = await supabase
       .from('job_pockets')
       .upsert({
         user_id: user.id,
@@ -317,34 +335,44 @@ export async function POST(request: NextRequest) {
       }, {
         onConflict: 'user_id,job_id,tier'
       })
+      .select('id')
+      .single()
 
     if (saveError) {
       console.error('Error saving pocket:', saveError)
-      // Continue anyway - pocket was generated successfully
+      // Return error with details for debugging
+      return NextResponse.json(
+        { error: 'Failed to save pocket', details: saveError.message, code: saveError.code },
+        { status: 500 }
+      )
     }
 
-    // Increment usage for Premium/Unlimited tiers
-    if (requestedTier === 'premium' || requestedTier === 'unlimited') {
+    console.log('Pocket saved successfully:', savedPocket?.id)
+
+    // Increment usage for Premium/Unlimited tiers (skip for mock data)
+    if (!providedPocketData && (requestedTier === 'premium' || requestedTier === 'unlimited')) {
       await incrementUsage(supabase, user.id, requestedTier, tokensUsed)
     }
 
     // Track analytics event
     await supabase.from('events').insert({
       user_id: user.id,
-      event_name: 'pocket_generated',
+      event_name: providedPocketData ? 'pocket_saved' : 'pocket_generated',
       event_data: {
         job_id: jobId,
         tier: requestedTier,
         model: modelUsed,
         generation_time_ms: generationTime,
-        tokens_used: tokensUsed
+        tokens_used: tokensUsed,
+        pocket_id: savedPocket?.id
       }
     }).then(() => {}) // Fire and forget
 
-    console.log(`Pocket generated in ${generationTime}ms using ${modelUsed}`)
+    console.log(`Pocket ${providedPocketData ? 'saved' : 'generated'} in ${generationTime}ms using ${modelUsed}`)
 
     return NextResponse.json({
       pocket,
+      pocketId: savedPocket?.id,
       tier: requestedTier,
       cached: false,
       modelUsed,

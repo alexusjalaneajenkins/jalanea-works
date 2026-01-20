@@ -584,53 +584,68 @@ export default function JobsPage() {
     }
   }
 
-  // Pocket & Apply - open pocket modal with generated intel
+  // Pocket & Apply - generate pocket and navigate to pocket page
   const handlePocketAndApply = async (job: Job) => {
-    // Auto-save to pocket if not already saved
+    // Mark job as saved locally
     if (!savedJobIds.includes(job.id)) {
       setSavedJobIds((ids) => [...ids, job.id])
-
-      // Persist to database
-      try {
-        await fetch('/api/jobs/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ jobId: job.id })
-        })
-      } catch (err) {
-        console.error('Error saving job:', err)
-      }
     }
 
-    // Set selected job and open modal
+    // Show loading state
     setSelectedJobForPocket(job)
-    setIsPocketModalOpen(true)
     setIsGeneratingPocket(true)
     setPocketProgress(0)
-    setPocketData(null)
 
-    // Simulate pocket generation with progress
+    // Simulate progress while API call is in progress
     const progressInterval = setInterval(() => {
       setPocketProgress(prev => {
         if (prev >= 90) {
           clearInterval(progressInterval)
           return prev
         }
-        return prev + Math.random() * 20
+        return prev + Math.random() * 15
       })
-    }, 300)
+    }, 200)
 
-    // Simulate AI generation delay (2 seconds), then show mock data
-    setTimeout(() => {
+    try {
+      // Generate mock pocket data
+      const mockData = generateMockPocketData(job)
+
+      // Save pocket to database via API (with mock data, no AI call)
+      const response = await fetch('/api/job-pockets/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jobId: job.id,
+          tier: 'essential',
+          pocketData: mockData
+        })
+      })
+
       clearInterval(progressInterval)
       setPocketProgress(100)
 
-      // Small delay to show 100% before showing content
-      setTimeout(() => {
-        setPocketData(generateMockPocketData(job))
+      if (!response.ok) {
+        const error = await response.json()
+        console.error('Failed to generate pocket:', error.error)
         setIsGeneratingPocket(false)
-      }, 300)
-    }, 2000)
+        return
+      }
+
+      const data = await response.json()
+
+      // Navigate to the pocket page
+      if (data.pocketId) {
+        router.push(`/dashboard/pockets/${data.pocketId}`)
+      } else {
+        console.error('No pocket ID returned from API')
+        setIsGeneratingPocket(false)
+      }
+    } catch (err) {
+      console.error('Error creating pocket:', err)
+      clearInterval(progressInterval)
+      setIsGeneratingPocket(false)
+    }
   }
 
   // Apply to job from pocket modal - open external URL

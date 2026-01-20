@@ -229,9 +229,10 @@ async function calculateBatchTransit(
   return results
 }
 
-// Save jobs to database (upsert based on external_id)
-async function saveJobsToDatabase(jobs: any[]): Promise<void> {
-  if (jobs.length === 0) return
+// Save jobs to database (upsert based on external_id) and return with DB IDs
+async function saveJobsToDatabase(jobs: any[]): Promise<{ map: Map<string, string>, error?: string }> {
+  const externalIdToDbId = new Map<string, string>()
+  if (jobs.length === 0) return { map: externalIdToDbId }
 
   try {
     const supabase = createAdminClient()
@@ -254,8 +255,8 @@ async function saveJobsToDatabase(jobs: any[]): Promise<void> {
       apply_url: job.applicationUrl || job.apply_url,
       posted_at: job.postedAt || job.posted_at,
       employment_type: job.jobType || job.employment_type,
-      // Scam shield data
-      scam_severity: job.scamRiskLevel || job.scam_severity,
+      // Scam shield data (DB expects uppercase: CRITICAL, HIGH, MEDIUM, LOW)
+      scam_severity: (job.scamRiskLevel || job.scam_severity)?.toUpperCase(),
       scam_flags: job.scamReasons ? job.scamReasons.map((r: string) => ({ description: r })) : job.scam_flags,
       // Valencia match data
       valencia_friendly: job.valencia_friendly || false,
@@ -263,19 +264,31 @@ async function saveJobsToDatabase(jobs: any[]): Promise<void> {
     }))
 
     // Upsert jobs (update if external_id exists, insert if not)
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('jobs')
       .upsert(dbJobs, {
         onConflict: 'external_id',
         ignoreDuplicates: false
       })
+      .select('id, external_id')
 
     if (error) {
       console.error('Error saving jobs to database:', error)
+      return { map: externalIdToDbId, error: error.message }
     }
-  } catch (error) {
+
+    if (data) {
+      // Build mapping from external_id to database id
+      for (const job of data) {
+        externalIdToDbId.set(job.external_id, job.id)
+      }
+    }
+  } catch (error: any) {
     console.error('Failed to save jobs:', error)
+    return { map: externalIdToDbId, error: error?.message }
   }
+
+  return { map: externalIdToDbId }
 }
 
 // Fetch jobs from database
@@ -499,11 +512,19 @@ export async function GET(request: NextRequest) {
             })
 
             // Apply Valencia match scoring
-            const jobsWithValencia = applyBatchValenciaMatch(transformedJobs, valenciaProgram)
+            let jobsWithValencia = applyBatchValenciaMatch(transformedJobs, valenciaProgram)
 
-            // Save jobs to database (async, don't wait)
-            saveJobsToDatabase(jobsWithValencia).catch(err => {
-              console.error('Background job save failed:', err)
+            // Save jobs to database and get back the database IDs
+            const saveResult = await saveJobsToDatabase(jobsWithValencia)
+            const idMap = saveResult.map
+
+            // Update job IDs with actual database IDs
+            jobsWithValencia = jobsWithValencia.map(job => {
+              const dbId = idMap.get(job.external_id)
+              if (dbId) {
+                return { ...job, id: dbId }
+              }
+              return job
             })
 
             // Filter out critical scam jobs
@@ -631,11 +652,16 @@ export async function GET(request: NextRequest) {
         })
 
         // Apply Valencia match scoring
-        const jobsWithValencia = applyBatchValenciaMatch(transformedJobs, valenciaProgram)
+        let jobsWithValencia = applyBatchValenciaMatch(transformedJobs, valenciaProgram)
 
-        // Save jobs to database (async, don't wait)
-        saveJobsToDatabase(jobsWithValencia).catch(err => {
-          console.error('Background job save failed:', err)
+        // Save jobs to database and get back the database IDs
+        const saveResult = await saveJobsToDatabase(jobsWithValencia)
+        const idMap = saveResult.map
+
+        // Update job IDs with actual database IDs
+        jobsWithValencia = jobsWithValencia.map(job => {
+          const dbId = idMap.get(job.external_id)
+          return dbId ? { ...job, id: dbId } : job
         })
 
         // Filter out critical scam jobs
