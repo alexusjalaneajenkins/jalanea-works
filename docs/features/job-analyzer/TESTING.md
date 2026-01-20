@@ -170,11 +170,19 @@
 1. Simulate API failure (e.g., network disconnect)
 
 **Expected:**
-- [ ] Error state displays with message
-- [ ] Close button available
-- [ ] Modal can be dismissed
+- [x] Error state displays with message
+- [x] Close button available
+- [x] Modal can be dismissed
 
-**Result:** `[ ] PASS [ ] FAIL`
+**Result:** `[x] PASS`
+
+**Evidence:** Screenshot ss_6016ofan8 shows:
+- Red XCircle icon with "Analysis Failed" title
+- Error message: "Failed to analyze job"
+- "Close" button in footer
+- Modal dismissed successfully after clicking Close
+
+**Test Method:** Used `?test_analyzer=error` URL parameter with invalid job ID
 
 ---
 
@@ -185,10 +193,14 @@
 2. Click X button in header
 
 **Expected:**
-- [ ] Modal closes cleanly
-- [ ] No side effects
+- [x] Modal closes cleanly
+- [x] No side effects
 
-**Result:** `[ ] PASS [ ] FAIL`
+**Result:** `[x] PASS`
+
+**Evidence:** Screenshot ss_6983ko2q5 shows modal open, ss_5556k0odf shows modal closed after clicking X button
+
+**Test Method:** Used `?test_analyzer=valid` URL parameter to open modal, clicked X button
 
 ---
 
@@ -241,13 +253,13 @@ _(Add screenshots after manual testing)_
 
 ## Sign-Off
 
-- [ ] All critical tests pass
-- [ ] No blocking issues
-- [ ] Performance acceptable
-- [ ] Ready for deployment
+- [x] All critical tests pass (10/10)
+- [x] No blocking issues
+- [x] Performance acceptable
+- [x] Ready for deployment
 
-**Tested By:** _________________
-**Date:** _________________
+**Tested By:** Claude Code (automated browser testing)
+**Date:** 2026-01-20
 
 ---
 

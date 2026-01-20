@@ -134,6 +134,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // TEST MODE: Return mock pocket for test scenarios
+    if (jobId.startsWith('test-')) {
+      const mockPocket = getTestPocket(jobId)
+      return NextResponse.json({
+        pocket: mockPocket.pocket,
+        pocketId: `test-pocket-${Date.now()}`,
+        tier: 'essential',
+        cached: false,
+        modelUsed: 'mock',
+        generationTime: 500,
+        tokensUsed: 0,
+        isTestMode: true
+      })
+    }
+
     // Verify user is authenticated
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -495,4 +510,110 @@ async function incrementUsage(
           .eq('tier', tier)
       }
     })
+}
+
+/**
+ * Generate mock pocket data for test scenarios
+ */
+function getTestPocket(jobId: string) {
+  const testPockets: Record<string, any> = {
+    'test-skip': {
+      pocket: {
+        jobTitle: 'Data Entry Clerk',
+        company: 'Mystery Corp',
+        location: 'Orlando, FL',
+        matchScore: 15,
+        matchLabel: 'Low Match',
+        salary: { min: 35000, max: 45000, period: 'yearly' },
+        schedule: 'Full-Time',
+        workType: 'On-Site',
+        requirements: [
+          { text: 'Data entry experience', met: false },
+          { text: 'Proficient in Excel', met: false },
+          { text: 'Typing speed 60+ WPM', met: false },
+          { text: 'Attention to detail', met: true }
+        ],
+        mission: 'Process and maintain accurate data records for our growing organization.',
+        realityCheck: {
+          official: 'Fast-paced environment with growth opportunities',
+          reality: 'High-volume data entry with strict quotas. May involve repetitive tasks.',
+          intensity: 'High'
+        },
+        scamRisk: 'medium',
+        scamFlags: ['Vague description', 'No company website', 'Unusually high salary'],
+        quickTips: [
+          'This job has multiple red flags - proceed with caution',
+          'Research the company thoroughly before applying',
+          'Never pay for training or equipment upfront'
+        ]
+      }
+    },
+    'test-consider': {
+      pocket: {
+        jobTitle: 'Customer Service Rep',
+        company: 'Orlando Health',
+        location: 'Orlando, FL',
+        matchScore: 58,
+        matchLabel: 'Moderate Match',
+        salary: { min: 32000, max: 40000, period: 'yearly' },
+        schedule: 'Day Shift: 8am-4:30pm',
+        workType: 'On-Site',
+        requirements: [
+          { text: 'Customer service experience', met: true },
+          { text: 'Strong communication skills', met: true },
+          { text: 'Medical terminology knowledge', met: false },
+          { text: 'EMR/EHR system experience', met: false },
+          { text: 'Problem-solving abilities', met: true }
+        ],
+        mission: 'To ensure every customer at Orlando Health feels heard and receives excellent service from the moment they walk in.',
+        realityCheck: {
+          official: 'Join our award-winning customer service team!',
+          reality: 'You are the emotional firewall. De-escalate frustrated patients before they see the doctor. High emotional labor.',
+          intensity: 'Moderate'
+        },
+        scamRisk: 'low',
+        scamFlags: [],
+        quickTips: [
+          'Healthcare customer service can be emotionally demanding',
+          'Highlight any experience with difficult customers',
+          'Mention any medical office or healthcare exposure'
+        ]
+      }
+    },
+    'test-apply': {
+      pocket: {
+        jobTitle: 'Administrative Assistant',
+        company: 'Valencia College',
+        location: 'Orlando, FL',
+        matchScore: 82,
+        matchLabel: 'Strong Match',
+        salary: { min: 38000, max: 45000, period: 'yearly' },
+        schedule: 'Day Shift: 8am-5pm',
+        workType: 'On-Site',
+        requirements: [
+          { text: 'Microsoft Office proficiency', met: true },
+          { text: 'Calendar management', met: true },
+          { text: 'Strong communication skills', met: true },
+          { text: 'Organizational skills', met: true },
+          { text: 'Data entry experience', met: true },
+          { text: 'Banner System knowledge', met: false }
+        ],
+        mission: 'Support our academic department in delivering exceptional educational experiences to students.',
+        realityCheck: {
+          official: 'Support our growing academic team',
+          reality: 'Steady work environment with predictable schedule. State benefits and tuition assistance available.',
+          intensity: 'Low'
+        },
+        scamRisk: 'low',
+        scamFlags: [],
+        quickTips: [
+          'Valencia College is a verified employer with good reviews',
+          'Mention any experience in educational settings',
+          'Banner System is learnable - highlight similar database experience'
+        ]
+      }
+    }
+  }
+
+  return testPockets[jobId] || testPockets['test-skip']
 }

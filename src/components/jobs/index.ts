@@ -18,3 +18,6 @@ export { PocketTier2, type PocketTier2Data } from './PocketTier2'
 export { PocketTier3, type PocketTier3Data } from './PocketTier3'
 export { JobPocketModal, type UserTier } from './JobPocketModal'
 export { PocketUsageIndicator } from './PocketUsageIndicator'
+
+// Job Analyzer (pre-pocket analysis)
+export { JobAnalyzerModal } from './JobAnalyzerModal'

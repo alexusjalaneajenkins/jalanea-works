@@ -34,6 +34,7 @@ import type { Job } from '@/components/jobs/JobCard'
 import { FilterBar, type FilterBarState } from '@/components/jobs/FilterBar'
 import { AllFiltersModal, type AllFiltersState } from '@/components/jobs/AllFiltersModal'
 import { JobPocketModal, type PocketTier1Data } from '@/components/jobs/JobPocketModal'
+import { JobAnalyzerModal } from '@/components/jobs/JobAnalyzerModal'
 
 // Types
 interface UserLocation {
@@ -312,6 +313,34 @@ export default function JobsPage() {
   const [isGeneratingPocket, setIsGeneratingPocket] = useState(false)
   const [pocketProgress, setPocketProgress] = useState(0)
 
+  // Job Analyzer modal state (pre-pocket quick check)
+  const [isAnalyzerModalOpen, setIsAnalyzerModalOpen] = useState(false)
+  const [selectedJobForAnalysis, setSelectedJobForAnalysis] = useState<Job | null>(null)
+
+  // TEST MODE: Preview analyzer with different scenarios
+  // Usage: ?test_analyzer=skip | consider | apply
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const testMode = urlParams.get('test_analyzer')
+    if (testMode) {
+      // Use different job IDs based on test scenario
+      // These map to mock responses in the API
+      const testJobs: Record<string, { id: string; title: string; company: string }> = {
+        skip: { id: 'test-skip', title: 'Data Entry Clerk', company: 'Mystery Corp' },
+        consider: { id: 'test-consider', title: 'Customer Service Rep', company: 'Orlando Health' },
+        apply: { id: 'test-apply', title: 'Administrative Assistant', company: 'Valencia College' }
+      }
+      const job = testJobs[testMode] || testJobs.skip
+      setSelectedJobForAnalysis({
+        id: job.id,
+        title: job.title,
+        company: job.company,
+        location: 'Orlando, FL',
+      } as Job)
+      setIsAnalyzerModalOpen(true)
+    }
+  }, [])
+
   // Jobs state
   const [jobs, setJobs] = useState<Job[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -584,10 +613,27 @@ export default function JobsPage() {
     }
   }
 
-  // Pocket & Apply - generate pocket and navigate to pocket page
-  const handlePocketAndApply = async (job: Job) => {
-    // Mark job as saved locally
-    if (!savedJobIds.includes(job.id)) {
+  // Pocket & Apply - show analyzer first for quick check
+  const handlePocketAndApply = (job: Job) => {
+    // Open analyzer modal for quick check before generating pocket
+    setSelectedJobForAnalysis(job)
+    setIsAnalyzerModalOpen(true)
+  }
+
+  // Handle analyzer proceed - user wants to generate pocket after seeing analysis
+  const handleAnalyzerProceed = async () => {
+    const job = selectedJobForAnalysis
+    if (!job) return
+
+    // Check if this is a test job
+    const isTestMode = job.id.startsWith('test-')
+
+    // Close analyzer and open pocket flow
+    setIsAnalyzerModalOpen(false)
+    setSelectedJobForAnalysis(null)
+
+    // Mark job as saved locally (skip for test mode)
+    if (!isTestMode && !savedJobIds.includes(job.id)) {
       setSavedJobIds((ids) => [...ids, job.id])
     }
 
@@ -608,8 +654,9 @@ export default function JobsPage() {
     }, 200)
 
     try {
-      // Generate mock pocket data
-      const mockData = generateMockPocketData(job)
+      // For test mode, don't pass pocketData - let API return test data
+      // For real jobs, generate mock pocket data
+      const mockData = isTestMode ? undefined : generateMockPocketData(job)
 
       // Save pocket to database via API (with mock data, no AI call)
       const response = await fetch('/api/job-pockets/generate', {
@@ -618,7 +665,7 @@ export default function JobsPage() {
         body: JSON.stringify({
           jobId: job.id,
           tier: 'essential',
-          pocketData: mockData
+          ...(mockData && { pocketData: mockData })
         })
       })
 
@@ -634,6 +681,13 @@ export default function JobsPage() {
 
       const data = await response.json()
 
+      // For test mode, show success message instead of navigating
+      if (data.isTestMode) {
+        setIsGeneratingPocket(false)
+        alert(`✅ Test Mode Success!\n\nPocket generated for: ${job.title}\nMatch Score: ${data.pocket?.matchScore}%\n\nIn production, this would navigate to the pocket page.`)
+        return
+      }
+
       // Navigate to the pocket page
       if (data.pocketId) {
         router.push(`/dashboard/pockets/${data.pocketId}`)
@@ -646,6 +700,12 @@ export default function JobsPage() {
       clearInterval(progressInterval)
       setIsGeneratingPocket(false)
     }
+  }
+
+  // Handle analyzer skip - user decides this job isn't worth it
+  const handleAnalyzerSkip = () => {
+    setIsAnalyzerModalOpen(false)
+    setSelectedJobForAnalysis(null)
   }
 
   // Apply to job from pocket modal - open external URL
@@ -984,6 +1044,22 @@ export default function JobsPage() {
         onClear={clearAllFilters}
         totalJobs={total}
       />
+
+      {/* Job Analyzer Modal (Pre-Pocket Quick Check) */}
+      {selectedJobForAnalysis && (
+        <JobAnalyzerModal
+          isOpen={isAnalyzerModalOpen}
+          onClose={() => {
+            setIsAnalyzerModalOpen(false)
+            setSelectedJobForAnalysis(null)
+          }}
+          jobTitle={selectedJobForAnalysis.title}
+          companyName={selectedJobForAnalysis.company}
+          jobId={selectedJobForAnalysis.id}
+          onProceed={handleAnalyzerProceed}
+          onSkip={handleAnalyzerSkip}
+        />
+      )}
 
       {/* Job Pocket Modal */}
       {selectedJobForPocket && (
