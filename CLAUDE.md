@@ -150,6 +150,88 @@ Verification: <how to confirm it works>
 
 ---
 
+## Completion Verification (MANDATORY)
+
+**NO task can be marked complete without visible proof on localhost:3003.**
+
+### Required Evidence:
+
+1. **Screenshot on localhost:3003** showing the feature working
+   - Not code snippets. Not "it should work." An actual screenshot.
+   - URL bar must be visible showing `localhost:3003/...`
+   - If screenshot cannot be taken → task is NOT complete
+
+2. **If data should persist:**
+   - Show database query proving the row exists
+   - Example: `SELECT * FROM job_pockets WHERE id = 'xxx'`
+
+3. **If navigation involved:**
+   - Screenshot of the destination page
+   - URL bar must show `localhost:3003/expected-path`
+
+4. **User can reject any "complete" claim** that lacks this evidence
+
+### Hard Rules:
+
+- If browser automation fails → fix it first or acknowledge BLOCKED
+- No workarounds like "verified via code inspection"
+- No marking complete based on "the code looks right"
+
+---
+
+## Task Workflow (VISIBLE CHECKPOINTS)
+
+### Before Coding:
+1. State what "done" looks like in plain English
+2. List the specific test steps to perform on localhost:3003
+3. Get user confirmation if anything is unclear
+
+### During Coding:
+4. After EACH change, test immediately on localhost:3003
+5. Screenshot any errors or unexpected behavior
+6. If something breaks → STOP, show user, fix before continuing
+7. Update todo list after each sub-step with proof
+
+### After Coding:
+8. Run through the FULL user flow on localhost:3003
+9. Provide all screenshots/DB queries as evidence
+10. Only then mark complete
+
+### If Blocked:
+- Say `🛑 BLOCKED: [reason]` - don't silently work around it
+- Don't mark complete with workarounds
+- Browser issues = blocker, not excuse to skip testing
+
+---
+
+## Checkbox Evidence Rule
+
+**A checkbox is ONLY valid if it has attached proof the user can see.**
+
+### Invalid (no proof):
+```
+[x] Button navigates to pocket page
+```
+
+### Valid (with proof):
+```
+[x] Button navigates to pocket page
+    └── PROOF: Screenshot ss_7234abc showing localhost:3003/dashboard/pockets/xyz
+```
+
+### Acceptable Proof Types:
+- Screenshot ID from browser automation tool
+- Command output (pasted in full, not summarized)
+- Database query result (actual rows shown)
+- Console output with timestamp
+
+### User Verification:
+- User can request to see any screenshot/proof
+- If proof is missing or unclear → checkbox is invalid → task not complete
+- "Trust but verify" = user spot-checks any claim
+
+---
+
 ## Project Structure Reference
 
 ```
@@ -169,4 +251,4 @@ jalanea-works/
 
 ---
 
-*Protocol Version: 1.0 | Created: 2025-01-04*
+*Protocol Version: 1.1 | Updated: 2026-01-19 | Added: Completion Verification, Task Workflow, Checkbox Evidence Rule*

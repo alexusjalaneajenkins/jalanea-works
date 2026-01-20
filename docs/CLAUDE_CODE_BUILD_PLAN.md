@@ -253,9 +253,9 @@ The current onboarding has 5 steps. The redesign consolidates into 4 phases with
 
 ### Task 1.6: Onboarding - Career Path Selection
 
-**Status**: 🔴 Not Started
+**Status**: ✅ Complete
 
-**What exists**: Database tables created, API endpoints ready, Valencia JSON loaded
+**What exists**: Full implementation including CareerPathSelector, CareerPathCard with "Learn More" button, CareerDetailModal with O*NET integration, program-to-career mapping, sorting options, and i18n support.
 
 <details>
 <summary>📋 Claude Code Prompt</summary>
