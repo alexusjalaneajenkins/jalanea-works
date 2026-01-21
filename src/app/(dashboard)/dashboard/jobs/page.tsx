@@ -684,6 +684,46 @@ export default function JobsPage() {
 
       const data = await response.json()
 
+      // For test mode, store pocket data in sessionStorage before navigating
+      if (data.isTestMode && data.pocketId) {
+        const testData = {
+          pocket: {
+            id: data.pocketId,
+            jobId: job.id,
+            tier: data.tier,
+            data: data.pocket,
+            modelUsed: data.modelUsed,
+            generationTimeMs: data.generationTime,
+            tokensUsed: data.tokensUsed,
+            isFavorite: false,
+            viewedAt: new Date().toISOString(),
+            appliedAfterViewing: false,
+            createdAt: new Date().toISOString(),
+            expiresAt: null,
+            isExpired: false
+          },
+          job: {
+            id: job.id,
+            title: job.title,
+            company: job.company,
+            location: job.location,
+            salaryMin: job.salaryMin || null,
+            salaryMax: job.salaryMax || null,
+            salaryPeriod: job.salaryType || null,
+            description: 'Test job description',
+            requirements: null,
+            benefits: null,
+            applyUrl: job.applicationUrl || '#',
+            postedAt: job.postedAt || new Date().toISOString(),
+            valenciaMatch: false,
+            valenciaMatchScore: null,
+            scamSeverity: null,
+            scamFlags: null
+          }
+        }
+        sessionStorage.setItem(`test-pocket-${data.pocketId}`, JSON.stringify(testData))
+      }
+
       // Navigate to the pocket page (works for both test mode and real mode)
       if (data.pocketId) {
         router.push(`/dashboard/pockets/${data.pocketId}`)

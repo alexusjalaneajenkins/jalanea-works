@@ -118,6 +118,18 @@ export default function PocketWorkbenchPage() {
       setError(null)
 
       try {
+        // Check for test pocket in sessionStorage
+        if (pocketId.startsWith('test-pocket-')) {
+          const testData = sessionStorage.getItem(`test-pocket-${pocketId}`)
+          if (testData) {
+            const parsed = JSON.parse(testData)
+            setPocket(parsed.pocket)
+            setJob(parsed.job)
+            setIsLoading(false)
+            return
+          }
+        }
+
         const response = await fetch(`/api/job-pockets/${pocketId}`)
 
         if (!response.ok) {
