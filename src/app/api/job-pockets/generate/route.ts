@@ -134,18 +134,52 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // TEST MODE: Return mock pocket for test scenarios
+    // TEST MODE: Insert real pocket for test scenarios
     if (jobId.startsWith('test-')) {
+      const supabase = await createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        return NextResponse.json(
+          { error: 'Unauthorized - please sign in to test' },
+          { status: 401 }
+        )
+      }
+
       const mockPocket = getTestPocket(jobId)
+
+      // Insert test pocket into database so pocket page can display it
+      const { data: insertedPocket, error: insertError } = await supabase
+        .from('job_pockets')
+        .insert({
+          user_id: user.id,
+          job_id: jobId,
+          tier: 'essential',
+          pocket_data: mockPocket.pocket,
+          model_used: 'test-mock',
+          generation_time_ms: 500,
+          tokens_used: 0,
+          is_favorite: false
+        })
+        .select('id')
+        .single()
+
+      if (insertError) {
+        console.error('Test pocket insert error:', insertError)
+        return NextResponse.json(
+          { error: 'Failed to create test pocket' },
+          { status: 500 }
+        )
+      }
+
       return NextResponse.json({
         pocket: mockPocket.pocket,
-        pocketId: `test-pocket-${Date.now()}`,
+        pocketId: insertedPocket.id,
         tier: 'essential',
         cached: false,
-        modelUsed: 'mock',
+        modelUsed: 'test-mock',
         generationTime: 500,
-        tokensUsed: 0,
-        isTestMode: true
+        tokensUsed: 0
       })
     }
 

@@ -684,15 +684,7 @@ export default function JobsPage() {
 
       const data = await response.json()
 
-      // For test mode, show the pocket modal with the generated data
-      if (data.isTestMode) {
-        setIsGeneratingPocket(false)
-        setPocketData(data.pocket)
-        setIsPocketModalOpen(true)
-        return
-      }
-
-      // Navigate to the pocket page
+      // Navigate to the pocket page (works for both test mode and real mode)
       if (data.pocketId) {
         router.push(`/dashboard/pockets/${data.pocketId}`)
       } else {
