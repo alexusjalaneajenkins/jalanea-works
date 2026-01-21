@@ -27,6 +27,51 @@ What we provide is **THE HOW**—efficiency and planning.
 
 ---
 
+## The 5 Components of Jalanea Works
+
+Jalanea Works is built around 5 core components. Each component has its own documentation in `docs/components/`.
+
+### 1. Career Profile
+*Understanding who the user is and what they bring to the table.*
+
+- **Master Resume** — Everything about the user (experience, education, credentials, skills, projects)
+- **Onboarding** — Initial data gathering and self-assessment
+- **Job Type Selection** — Survival / Bridge / Career mode
+- **Schedule & Availability** — When and where they can work
+
+### 2. Job Discovery
+*Finding the right opportunities efficiently.*
+
+- **Job Search** — Real listings from multiple sources
+- **ATS Matching** — Qualification analysis against job requirements
+- **Pre-Screening** — Quick assessment before deep dive
+- **Bridge Recommendations** — "You're at 50%, do XYZ to hit 85%"
+
+### 3. Job Pockets
+*AI-powered briefings tailored to each job type.*
+
+- **Basic Pocket** — For Survival Jobs (clarity + tailored resume + cover letter)
+- **Advanced Pocket** — For Bridge Jobs (strategic rebranding + skill bridging)
+- **Professional Pocket** — For Career Jobs (power skills + professional branding)
+
+### 4. Application Tools
+*Everything needed to submit strong applications.*
+
+- **Resume Tailoring** — Customize resume per job
+- **Cover Letter** — AI-generated, job-specific
+- **CoPilot** — Chrome extension for autofill (Starter+)
+- **References** — Management and preparation
+
+### 5. Planning & Support
+*Keeping users on track and informed.*
+
+- **Calendar** — Realistic scheduling based on availability
+- **Tasks & Microtasks** — Daily actions with fallback mini-tasks
+- **AI Coach** — Real questions, real answers
+- **Education Hub** — Definitions, components, types for job-hunting concepts
+
+---
+
 ## The 4 Components of Job Hunting
 
 Users focus on four key areas when job hunting. Jalanea Works supports all of them.
