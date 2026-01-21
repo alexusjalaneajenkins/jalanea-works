@@ -588,8 +588,11 @@ export default function JobsPage() {
           skill: 'Epic EMR',
           gapType: 'software',
           learnTime: '12 min',
+          priority: 'helpful' as const,
           resourceTitle: 'Epic EMR Basics for Front Desk',
-          resourceUrl: undefined // Will show "Coming Soon" in UI
+          resourceUrl: undefined, // Will show "Coming Soon" in UI
+          freeAlternative: 'YouTube: "Epic EMR Overview for Beginners"',
+          whyItMatters: 'Required for patient check-in and records access'
         }
       ],
 

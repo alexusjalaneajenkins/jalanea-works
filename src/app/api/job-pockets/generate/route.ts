@@ -519,97 +519,214 @@ function getTestPocket(jobId: string) {
   const testPockets: Record<string, any> = {
     'test-skip': {
       pocket: {
-        jobTitle: 'Data Entry Clerk',
-        company: 'Mystery Corp',
-        location: 'Orlando, FL',
+        qualificationCheck: {
+          status: 'NOT_QUALIFIED',
+          missing: ['data entry', 'excel', 'typing']
+        },
+        recommendation: 'SKIP',
         matchScore: 15,
-        matchLabel: 'Low Match',
-        salary: { min: 35000, max: 45000, period: 'yearly' },
-        schedule: 'Full-Time',
-        workType: 'On-Site',
+        atsScore: 35,
+        quickBrief: 'Mystery Corp is looking for a Data Entry Clerk. This role has multiple red flags and low skill match.',
+        talkingPoints: [
+          'Highlight any data entry or typing experience you have',
+          'Mention your attention to detail with specific examples'
+        ],
+        likelyQuestions: [
+          'What is your typing speed?',
+          'Describe your experience with data entry software.'
+        ],
+        redFlags: ['Vague description', 'No company website', 'Unusually high salary'],
         requirements: [
-          { text: 'Data entry experience', met: false },
+          { text: 'Data entry experience', met: false, proofPoint: 'Describe a time you maintained accurate records or processed high volumes of information.' },
           { text: 'Proficient in Excel', met: false },
           { text: 'Typing speed 60+ WPM', met: false },
-          { text: 'Attention to detail', met: true }
+          { text: 'Attention to detail', met: true, proofPoint: 'Share an example of catching an error that others missed.' }
         ],
         mission: 'Process and maintain accurate data records for our growing organization.',
-        realityCheck: {
-          official: 'Fast-paced environment with growth opportunities',
-          reality: 'High-volume data entry with strict quotas. May involve repetitive tasks.',
-          intensity: 'High'
-        },
-        scamRisk: 'medium',
-        scamFlags: ['Vague description', 'No company website', 'Unusually high salary'],
-        quickTips: [
-          'This job has multiple red flags - proceed with caution',
-          'Research the company thoroughly before applying',
-          'Never pay for training or equipment upfront'
+        skillGaps: [
+          {
+            skill: 'Excel',
+            gapType: 'software',
+            learnTime: '2-4 hours',
+            priority: 'critical',
+            resourceTitle: 'Excel Essential Training - LinkedIn Learning',
+            resourceUrl: 'https://www.linkedin.com/learning/excel-essential-training-microsoft-365',
+            freeAlternative: 'YouTube: "Excel Tutorial for Beginners" by Kevin Stratvert',
+            whyItMatters: 'Required for data analysis and reporting tasks'
+          },
+          {
+            skill: 'Typing Speed',
+            gapType: 'experience',
+            learnTime: '2-4 weeks practice',
+            priority: 'critical',
+            resourceTitle: 'Typing.com (Free typing practice)',
+            resourceUrl: 'https://www.typing.com/',
+            freeAlternative: 'Typing.com - completely free',
+            whyItMatters: 'Most roles require 40+ WPM for efficient work'
+          }
+        ],
+        atsBypassStrategies: [
+          {
+            strategy: 'Apply Direct',
+            action: 'Find and apply on Mystery Corp\'s careers page instead of through the job board',
+            impact: '2x more likely to be seen by a human',
+            timeEstimate: '5-10 min'
+          },
+          {
+            strategy: 'LinkedIn Outreach',
+            action: 'Find the hiring manager or HR recruiter for Mystery Corp on LinkedIn and send a personalized connection request',
+            impact: '15% response rate vs 2% through ATS alone',
+            timeEstimate: '10-15 min'
+          }
         ]
       }
     },
     'test-consider': {
       pocket: {
-        jobTitle: 'Customer Service Rep',
-        company: 'Orlando Health',
-        location: 'Orlando, FL',
+        qualificationCheck: {
+          status: 'PARTIALLY_QUALIFIED',
+          missing: ['medical terminology', 'EMR systems']
+        },
+        recommendation: 'CONSIDER',
         matchScore: 58,
-        matchLabel: 'Moderate Match',
-        salary: { min: 32000, max: 40000, period: 'yearly' },
-        schedule: 'Day Shift: 8am-4:30pm',
-        workType: 'On-Site',
+        atsScore: 62,
+        quickBrief: 'Orlando Health is looking for a Customer Service Rep. You have a moderate match with some skill gaps to address.',
+        talkingPoints: [
+          'Lead with your customer service experience and conflict resolution skills',
+          'Mention any healthcare exposure, even as a patient advocate',
+          'Show enthusiasm for helping people in healthcare settings'
+        ],
+        likelyQuestions: [
+          'Tell me about a time you handled a difficult customer.',
+          'How do you stay calm under pressure?',
+          'What interests you about working in healthcare?'
+        ],
+        redFlags: [],
         requirements: [
-          { text: 'Customer service experience', met: true },
-          { text: 'Strong communication skills', met: true },
+          { text: 'Customer service experience', met: true, proofPoint: 'Describe a time you turned an unhappy customer into a satisfied one by listening to their concerns and finding a solution.' },
+          { text: 'Strong communication skills', met: true, proofPoint: 'Share an example of resolving a misunderstanding through active listening and clear communication.' },
           { text: 'Medical terminology knowledge', met: false },
           { text: 'EMR/EHR system experience', met: false },
-          { text: 'Problem-solving abilities', met: true }
+          { text: 'Problem-solving abilities', met: true, proofPoint: 'Describe a situation where you identified a problem before it became critical and implemented a solution.' }
         ],
-        mission: 'To ensure every customer at Orlando Health feels heard and receives excellent service from the moment they walk in.',
-        realityCheck: {
-          official: 'Join our award-winning customer service team!',
-          reality: 'You are the emotional firewall. De-escalate frustrated patients before they see the doctor. High emotional labor.',
-          intensity: 'Moderate'
-        },
-        scamRisk: 'low',
-        scamFlags: [],
-        quickTips: [
-          'Healthcare customer service can be emotionally demanding',
-          'Highlight any experience with difficult customers',
-          'Mention any medical office or healthcare exposure'
+        mission: 'To ensure every patient at Orlando Health feels heard and receives excellent service from the moment they walk in.',
+        skillGaps: [
+          {
+            skill: 'Medical Terminology',
+            gapType: 'certification',
+            learnTime: '10-20 hours',
+            priority: 'critical',
+            resourceTitle: 'Medical Terminology Course - Coursera',
+            resourceUrl: 'https://www.coursera.org/learn/medical-terminology',
+            freeAlternative: 'YouTube: "Medical Terminology Made Easy" series',
+            whyItMatters: 'Essential for communication in healthcare settings'
+          },
+          {
+            skill: 'EMR Systems',
+            gapType: 'software',
+            learnTime: '3-5 hours',
+            priority: 'helpful',
+            resourceTitle: 'Electronic Medical Records Training',
+            freeAlternative: 'YouTube: "EMR Basics for Healthcare Workers"',
+            whyItMatters: 'Required for patient documentation and care coordination'
+          }
+        ],
+        atsBypassStrategies: [
+          {
+            strategy: 'Attend Career Fair',
+            action: 'Orlando Health hosts regular career fairs - check their events page for upcoming dates',
+            impact: 'Face-to-face interaction with recruiters',
+            timeEstimate: '2-4 hours'
+          },
+          {
+            strategy: 'Apply Direct',
+            action: 'Find and apply on Orlando Health\'s careers page instead of through the job board',
+            impact: '2x more likely to be seen by a human',
+            timeEstimate: '5-10 min'
+          },
+          {
+            strategy: 'LinkedIn Outreach',
+            action: 'Find the hiring manager or HR recruiter for Orlando Health on LinkedIn and send a personalized connection request',
+            impact: '15% response rate vs 2% through ATS alone',
+            timeEstimate: '10-15 min'
+          },
+          {
+            strategy: 'Find a Referral',
+            action: 'Search LinkedIn for 1st or 2nd degree connections at Orlando Health who could refer you',
+            impact: 'Referrals get ~50% interview rate',
+            timeEstimate: '15-20 min'
+          }
         ]
       }
     },
     'test-apply': {
       pocket: {
-        jobTitle: 'Administrative Assistant',
-        company: 'Valencia College',
-        location: 'Orlando, FL',
+        qualificationCheck: {
+          status: 'QUALIFIED',
+          missing: ['banner system']
+        },
+        recommendation: 'APPLY_NOW',
         matchScore: 82,
-        matchLabel: 'Strong Match',
-        salary: { min: 38000, max: 45000, period: 'yearly' },
-        schedule: 'Day Shift: 8am-5pm',
-        workType: 'On-Site',
+        atsScore: 78,
+        quickBrief: 'Valencia College is looking for an Administrative Assistant. This is a strong match with verified employer and excellent benefits.',
+        talkingPoints: [
+          'Lead with your Microsoft Office expertise and specific examples',
+          'Highlight your organizational skills and how you manage multiple priorities',
+          'Mention any experience in educational settings',
+          'Show enthusiasm for supporting students and academic missions'
+        ],
+        likelyQuestions: [
+          'How do you prioritize tasks when everything seems urgent?',
+          'Describe your experience with calendar management.',
+          'What software systems are you comfortable with?',
+          'Why do you want to work in higher education?'
+        ],
+        redFlags: [],
         requirements: [
-          { text: 'Microsoft Office proficiency', met: true },
-          { text: 'Calendar management', met: true },
-          { text: 'Strong communication skills', met: true },
-          { text: 'Organizational skills', met: true },
+          { text: 'Microsoft Office proficiency', met: true, proofPoint: 'Mention specific projects where you used Excel for data analysis or Word for professional documents.' },
+          { text: 'Calendar management', met: true, proofPoint: 'Describe how you organized a chaotic calendar or coordinated complex scheduling across multiple stakeholders.' },
+          { text: 'Strong communication skills', met: true, proofPoint: 'Share an example of communicating effectively with different audiences (faculty, students, administrators).' },
+          { text: 'Organizational skills', met: true, proofPoint: 'Describe your system for managing multiple projects and priorities simultaneously.' },
           { text: 'Data entry experience', met: true },
           { text: 'Banner System knowledge', met: false }
         ],
         mission: 'Support our academic department in delivering exceptional educational experiences to students.',
-        realityCheck: {
-          official: 'Support our growing academic team',
-          reality: 'Steady work environment with predictable schedule. State benefits and tuition assistance available.',
-          intensity: 'Low'
-        },
-        scamRisk: 'low',
-        scamFlags: [],
-        quickTips: [
-          'Valencia College is a verified employer with good reviews',
-          'Mention any experience in educational settings',
-          'Banner System is learnable - highlight similar database experience'
+        skillGaps: [
+          {
+            skill: 'Banner System',
+            gapType: 'software',
+            learnTime: '2-4 hours',
+            priority: 'helpful',
+            resourceTitle: 'Banner Student Information System Training',
+            freeAlternative: 'YouTube: "Banner Basics for Administrative Staff"',
+            whyItMatters: 'Required for student registration and records management'
+          }
+        ],
+        atsBypassStrategies: [
+          {
+            strategy: 'Contact Career Services',
+            action: 'If you\'re a Valencia student/alum, contact Career Services for internal job posting access',
+            impact: 'Priority consideration for Valencia candidates',
+            timeEstimate: '30 min'
+          },
+          {
+            strategy: 'Apply Direct',
+            action: 'Find and apply on Valencia College\'s careers page instead of through the job board',
+            impact: '2x more likely to be seen by a human',
+            timeEstimate: '5-10 min'
+          },
+          {
+            strategy: 'LinkedIn Outreach',
+            action: 'Find the hiring manager or HR recruiter for Valencia College on LinkedIn and send a personalized connection request',
+            impact: '15% response rate vs 2% through ATS alone',
+            timeEstimate: '10-15 min'
+          },
+          {
+            strategy: 'Find a Referral',
+            action: 'Search LinkedIn for 1st or 2nd degree connections at Valencia College who could refer you',
+            impact: 'Referrals get ~50% interview rate',
+            timeEstimate: '15-20 min'
+          }
         ]
       }
     }

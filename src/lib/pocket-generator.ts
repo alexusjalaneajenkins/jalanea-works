@@ -20,6 +20,9 @@ import {
   generateTier2PocketAI,
   generateTier3PocketAI
 } from './gemini-client'
+import { analyzeResumeATS, type ResumeData, type JobData } from './ats-optimizer'
+import { getSkillResource, determineSkillPriority, generateGenericResource } from './skill-resources'
+import { generateATSBypassStrategies } from './ats-bypass'
 
 // Flag to enable/disable AI generation
 const USE_AI = isGeminiAvailable()
@@ -166,6 +169,262 @@ function determineRecommendation(
 }
 
 /**
+ * Calculate ATS score for a job/resume combination
+ */
+function calculateATSScore(job: Job, profile: UserProfile): number {
+  // If no resume, return a default score
+  if (!profile.resume) {
+    return 65 // Default "okay" score
+  }
+
+  try {
+    // Build resume data for ATS analyzer
+    const resumeText = buildResumeText(profile)
+    const resumeData: ResumeData = {
+      fullText: resumeText
+    }
+
+    // Build job data
+    const jobData: JobData = {
+      title: job.title,
+      company: job.company,
+      description: job.description || job.fullDescription || '',
+      requirements: job.requirements,
+      skills: [] // Will be extracted from description
+    }
+
+    // Run ATS analysis
+    const analysis = analyzeResumeATS(resumeData, jobData)
+    return analysis.score
+  } catch (error) {
+    console.error('ATS score calculation failed:', error)
+    return 65 // Default fallback
+  }
+}
+
+/**
+ * Build resume text from profile for ATS analysis
+ */
+function buildResumeText(profile: UserProfile): string {
+  const resume = profile.resume
+  if (!resume) return ''
+
+  const sections: string[] = []
+
+  // Name
+  sections.push(profile.name || '')
+
+  // Summary
+  if (resume.summary) {
+    sections.push(`SUMMARY\n${resume.summary}`)
+  }
+
+  // Skills
+  if (resume.skills && Array.isArray(resume.skills)) {
+    sections.push(`SKILLS\n${resume.skills.join(', ')}`)
+  }
+
+  // Experience
+  if (resume.experience && Array.isArray(resume.experience)) {
+    const expText = resume.experience.map((exp: Record<string, unknown>) => {
+      const title = exp.title || ''
+      const company = exp.company || ''
+      const description = exp.description || ''
+      return `${title} at ${company}\n${description}`
+    }).join('\n\n')
+    sections.push(`EXPERIENCE\n${expText}`)
+  }
+
+  // Education
+  if (resume.education && Array.isArray(resume.education)) {
+    const eduText = resume.education.map((edu: Record<string, unknown>) => {
+      const degree = edu.degree || ''
+      const school = edu.school || edu.institution || ''
+      return `${degree} - ${school}`
+    }).join('\n')
+    sections.push(`EDUCATION\n${eduText}`)
+  }
+
+  return sections.join('\n\n')
+}
+
+/**
+ * Generate skill gaps with learning resources
+ */
+function generateSkillGaps(
+  job: Job,
+  profile: UserProfile,
+  missingSkills: string[]
+): PocketTier1Data['skillGaps'] {
+  if (!missingSkills || missingSkills.length === 0) {
+    return []
+  }
+
+  // Get user's existing skills for comparison
+  const userSkills = new Set(
+    (profile.resume?.skills || []).map((s: string) => s.toLowerCase())
+  )
+
+  // Track which skills appear multiple times in job description
+  const skillMentionCount: Record<string, number> = {}
+  const jobText = `${job.title} ${job.description || ''} ${job.requirements?.join(' ') || ''}`.toLowerCase()
+
+  missingSkills.forEach(skill => {
+    const normalizedSkill = skill.toLowerCase()
+    const regex = new RegExp(normalizedSkill, 'gi')
+    const matches = jobText.match(regex)
+    skillMentionCount[skill] = matches?.length || 1
+  })
+
+  // Generate skill gaps with resources
+  return missingSkills.slice(0, 5).map(skill => {
+    const resource = getSkillResource(skill) || generateGenericResource(skill)
+    const priority = determineSkillPriority(
+      skill,
+      job.requirements?.some(r => r.toLowerCase().includes(skill.toLowerCase())) || false,
+      skillMentionCount[skill] || 1
+    )
+
+    return {
+      skill: resource.skill,
+      gapType: resource.category === 'soft-skill' ? 'experience' : resource.category as 'software' | 'certification' | 'experience',
+      learnTime: resource.learnTime,
+      priority,
+      resourceTitle: resource.resourceTitle,
+      resourceUrl: resource.resourceUrl,
+      freeAlternative: resource.freeAlternative,
+      whyItMatters: resource.whyItMatters
+    }
+  }).sort((a, b) => {
+    // Sort by priority: critical > helpful > nice-to-have
+    const priorityOrder = { 'critical': 0, 'helpful': 1, 'nice-to-have': 2 }
+    return priorityOrder[a.priority] - priorityOrder[b.priority]
+  })
+}
+
+/**
+ * Generate proof points for soft skill requirements
+ */
+function generateProofPoints(
+  requirements: string[],
+  profile: UserProfile
+): { text: string; met: boolean; proofPoint?: string }[] {
+  const skillsArray: string[] = (profile.resume?.skills || []).map((s: string) => s.toLowerCase())
+  const userSkills = new Set<string>(skillsArray)
+
+  const userExperience = profile.resume?.experience || []
+
+  return requirements.map(req => {
+    const reqLower = req.toLowerCase()
+    const met = userSkills.has(reqLower) ||
+                skillsArray.some(skill => reqLower.includes(skill)) ||
+                reqLower.split(' ').some(word => userSkills.has(word))
+
+    // Generate proof point for soft skills
+    let proofPoint: string | undefined
+
+    if (reqLower.includes('communication')) {
+      proofPoint = getProofPointForSkill('communication', userExperience)
+    } else if (reqLower.includes('customer service')) {
+      proofPoint = getProofPointForSkill('customer service', userExperience)
+    } else if (reqLower.includes('problem') || reqLower.includes('solving')) {
+      proofPoint = getProofPointForSkill('problem solving', userExperience)
+    } else if (reqLower.includes('team') || reqLower.includes('collaboration')) {
+      proofPoint = getProofPointForSkill('teamwork', userExperience)
+    } else if (reqLower.includes('leadership') || reqLower.includes('manage')) {
+      proofPoint = getProofPointForSkill('leadership', userExperience)
+    } else if (reqLower.includes('attention to detail') || reqLower.includes('detail-oriented')) {
+      proofPoint = getProofPointForSkill('attention to detail', userExperience)
+    } else if (reqLower.includes('organization') || reqLower.includes('organize')) {
+      proofPoint = getProofPointForSkill('organization', userExperience)
+    } else if (reqLower.includes('time management') || reqLower.includes('deadline')) {
+      proofPoint = getProofPointForSkill('time management', userExperience)
+    } else if (reqLower.includes('multitask')) {
+      proofPoint = getProofPointForSkill('multitasking', userExperience)
+    }
+
+    return { text: req, met, proofPoint }
+  })
+}
+
+/**
+ * Get a proof point script for a specific soft skill
+ */
+function getProofPointForSkill(skill: string, experience: Record<string, unknown>[]): string {
+  const proofPointTemplates: Record<string, string[]> = {
+    'communication': [
+      'When asked, mention a time you explained complex information to someone unfamiliar with the topic, ensuring they understood clearly.',
+      'Describe how you kept stakeholders informed during a project, using regular updates and clear status reports.',
+      'Share an example of resolving a misunderstanding through active listening and clear communication.'
+    ],
+    'customer service': [
+      'Describe a time you turned an unhappy customer into a satisfied one by listening to their concerns and finding a solution.',
+      'Share how you went above and beyond to help a customer, even when it wasn\'t strictly required.',
+      'Mention your approach to handling difficult customers: staying calm, empathizing, and focusing on solutions.'
+    ],
+    'problem solving': [
+      'Describe a situation where you identified a problem before it became critical and implemented a solution.',
+      'Share an example of when you had to think creatively to solve a problem with limited resources.',
+      'Explain your problem-solving process: gathering information, analyzing options, and implementing the best solution.'
+    ],
+    'teamwork': [
+      'Describe how you collaborated with team members who had different working styles to complete a project successfully.',
+      'Share a time when you helped a struggling colleague, improving the whole team\'s outcome.',
+      'Explain how you contribute to team meetings and support group decisions.'
+    ],
+    'leadership': [
+      'Describe a time you took initiative on a project without being asked, leading others to follow your example.',
+      'Share how you mentored or trained a new team member, helping them succeed in their role.',
+      'Explain a situation where you had to make a difficult decision and how you guided others through it.'
+    ],
+    'attention to detail': [
+      'Describe a time you caught an error that others missed, preventing a larger problem.',
+      'Share your personal system for double-checking work and ensuring accuracy.',
+      'Explain how your attention to detail improved a process or prevented mistakes in a previous role.'
+    ],
+    'organization': [
+      'Describe your system for managing multiple projects and priorities simultaneously.',
+      'Share how you organized a chaotic process or workspace, improving efficiency.',
+      'Explain the tools and methods you use to stay organized (calendars, task lists, etc.).'
+    ],
+    'time management': [
+      'Describe how you handled a situation with competing deadlines and successfully delivered on all of them.',
+      'Share your approach to prioritizing tasks when everything seems urgent.',
+      'Explain a time you identified time-wasters and improved your productivity.'
+    ],
+    'multitasking': [
+      'Describe a typical busy day and how you managed multiple responsibilities without dropping the ball.',
+      'Share how you stay focused when interrupted frequently, quickly returning to your main tasks.',
+      'Explain your strategy for handling urgent requests while still meeting regular deadlines.'
+    ]
+  }
+
+  const templates = proofPointTemplates[skill] || []
+  if (templates.length === 0) return ''
+
+  // Return a random template
+  return templates[Math.floor(Math.random() * templates.length)]
+}
+
+/**
+ * Generate ATS bypass strategies for a job
+ */
+function generateBypassStrategies(job: Job): PocketTier1Data['atsBypassStrategies'] {
+  const strategies = generateATSBypassStrategies({
+    company: job.company,
+    title: job.title,
+    applyUrl: undefined // Could be added to Job interface if available
+  })
+
+  return strategies.slice(0, 4).map(s => ({
+    strategy: s.strategy,
+    action: s.action,
+    impact: s.impact,
+    timeEstimate: s.timeEstimate
+  }))
+}
+
+/**
  * Generate Tier 1 (Essential) Pocket
  * ~20 second read
  */
@@ -200,6 +459,14 @@ export async function generateTier1Pocket(
         }
       )
 
+      // Calculate enhanced fields even for AI generation
+      const atsScore = calculateATSScore(job, profile)
+      const skillGaps = generateSkillGaps(job, profile, aiResult.qualificationCheck.missing)
+      const requirements = job.requirements
+        ? generateProofPoints(job.requirements, profile)
+        : undefined
+      const atsBypassStrategies = generateBypassStrategies(job)
+
       return {
         qualificationCheck: {
           status: aiResult.qualificationCheck.status as 'QUALIFIED' | 'PARTIALLY_QUALIFIED' | 'NOT_QUALIFIED',
@@ -209,7 +476,12 @@ export async function generateTier1Pocket(
         talkingPoints: aiResult.talkingPoints,
         likelyQuestions: aiResult.likelyQuestions,
         redFlags: aiResult.redFlags,
-        recommendation: aiResult.recommendation
+        recommendation: aiResult.recommendation,
+        matchScore: job.valenciaMatchPercentage || 75,
+        atsScore,
+        skillGaps,
+        requirements,
+        atsBypassStrategies
       }
     } catch (error) {
       console.error('AI generation failed, falling back to rule-based:', error)
@@ -221,13 +493,32 @@ export async function generateTier1Pocket(
 
   const qualCheck = analyzeQualifications(job, profile)
 
+  // Calculate ATS score
+  const atsScore = calculateATSScore(job, profile)
+
+  // Generate skill gaps with resources
+  const skillGaps = generateSkillGaps(job, profile, qualCheck.missing)
+
+  // Generate requirements with proof points
+  const requirements = job.requirements
+    ? generateProofPoints(job.requirements, profile)
+    : undefined
+
+  // Generate ATS bypass strategies
+  const atsBypassStrategies = generateBypassStrategies(job)
+
   return {
     qualificationCheck: qualCheck,
     quickBrief: `${job.company} is looking for a ${job.title} in ${job.location}. This ${job.valenciaMatch ? 'matches your Valencia degree (' + job.valenciaMatchPercentage + '% match)' : 'role'} offers ${job.salaryMin && job.salaryMax ? formatSalary(job.salaryMin, job.salaryMax, job.salaryType) : 'competitive compensation'} with ${job.benefits?.length || 'standard'} benefits.`,
     talkingPoints: generateTalkingPoints(job, profile),
     likelyQuestions: generateLikelyQuestions(job),
     redFlags: identifyRedFlags(job),
-    recommendation: determineRecommendation(qualCheck.status, job)
+    recommendation: determineRecommendation(qualCheck.status, job),
+    matchScore: job.valenciaMatchPercentage || 75,
+    atsScore,
+    skillGaps,
+    requirements,
+    atsBypassStrategies
   }
 }
 

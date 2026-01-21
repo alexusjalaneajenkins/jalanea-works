@@ -26,6 +26,7 @@ export interface PocketTier1Data {
   }
   recommendation: 'APPLY_NOW' | 'CONSIDER' | 'SKIP'
   matchScore?: number
+  atsScore?: number  // ATS compatibility score (0-100)
 
   // Legacy field (deprecated - use structured zones instead)
   quickBrief?: string
@@ -67,13 +68,16 @@ export interface PocketTier1Data {
     intensity: 'low' | 'medium' | 'high'
   }[]
 
-  // Skill Gaps - Learning bridge for missing skills
+  // Skill Gaps - Learning bridge for missing skills (Enhanced)
   skillGaps?: {
     skill: string
     gapType: 'software' | 'certification' | 'experience'
     learnTime: string
+    priority: 'critical' | 'helpful' | 'nice-to-have'
     resourceTitle: string
     resourceUrl?: string
+    freeAlternative?: string
+    whyItMatters?: string
   }[]
 
   // Day Timeline - Visualize the actual workday rhythm
@@ -82,6 +86,14 @@ export interface PocketTier1Data {
     activity: string
     description: string
     intensity: 'calm' | 'busy' | 'rush'
+  }[]
+
+  // ATS Bypass Strategies - Ways to get past automated screening
+  atsBypassStrategies?: {
+    strategy: string
+    action: string
+    impact: string
+    timeEstimate: string
   }[]
 }
 

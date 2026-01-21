@@ -406,50 +406,79 @@ function OverviewTab({ data }: { data: PocketTier1Data }) {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          SKILL GAPS - Learning Bridge
+          SKILL GAPS - Learning Bridge (Enhanced)
           Goal: "How do I close the gap?" - Quick upskill resources
       ═══════════════════════════════════════════════════════════════════ */}
       {data.skillGaps && data.skillGaps.length > 0 && (
         <div>
           <h3 className="flex items-center gap-2 text-xs font-semibold text-orange-400 uppercase tracking-wider mb-3">
             <AlertTriangle size={12} />
-            Skill Gaps Detected
+            Skill Gaps to Close
           </h3>
-          <div className="space-y-2">
-            {data.skillGaps.map((gap, i) => (
-              <div key={i} className="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm text-orange-300">{gap.skill}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      Fix: Watch &ldquo;{gap.resourceTitle}&rdquo;
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-500 flex items-center gap-1">
+          <div className="space-y-3">
+            {data.skillGaps.map((gap, i) => {
+              const priorityConfig = {
+                'critical': { label: 'CRITICAL', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20' },
+                'helpful': { label: 'HELPFUL', color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
+                'nice-to-have': { label: 'NICE TO HAVE', color: 'text-slate-400', bg: 'bg-slate-500/10', border: 'border-slate-500/20' }
+              }
+              const config = priorityConfig[gap.priority || 'helpful']
+
+              return (
+                <div key={i} className={`p-4 rounded-xl ${config.bg} border ${config.border}`}>
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-sm text-white">{gap.skill}</p>
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${config.color} ${config.bg}`}>
+                        {config.label}
+                      </span>
+                    </div>
+                    <span className="text-xs text-slate-500 flex items-center gap-1 flex-shrink-0">
                       <Clock size={10} />
                       {gap.learnTime}
                     </span>
-                    {gap.resourceUrl ? (
-                      <a
-                        href={gap.resourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#ffc425] text-[#0f172a] text-xs font-semibold hover:bg-[#ffd85d] transition-colors"
-                      >
-                        <Play size={10} />
-                        Watch
-                      </a>
-                    ) : (
-                      <span className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-700 text-slate-300 text-xs font-medium">
-                        <Play size={10} />
-                        Coming Soon
-                      </span>
+                  </div>
+
+                  {/* Why it matters */}
+                  {gap.whyItMatters && (
+                    <p className="text-xs text-slate-400 mb-3 italic">
+                      Why: {gap.whyItMatters}
+                    </p>
+                  )}
+
+                  {/* Resources */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs text-slate-300 truncate flex-1">
+                        {gap.resourceTitle}
+                      </p>
+                      {gap.resourceUrl ? (
+                        <a
+                          href={gap.resourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#ffc425] text-[#0f172a] text-xs font-semibold hover:bg-[#ffd85d] transition-colors flex-shrink-0"
+                        >
+                          <ExternalLink size={10} />
+                          Learn
+                        </a>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-lg bg-slate-700 text-slate-400 text-xs font-medium flex-shrink-0">
+                          Search
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Free alternative */}
+                    {gap.freeAlternative && (
+                      <p className="text-xs text-green-400">
+                        Free: {gap.freeAlternative}
+                      </p>
                     )}
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
@@ -560,29 +589,157 @@ function PrepTab({ data }: { data: PocketTier1Data }) {
   )
 }
 
-// Strategy Tab Content (The Upsell)
-function StrategyTab({ onUpgrade }: { onUpgrade?: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-full text-center px-4">
-      <div className="w-16 h-16 rounded-2xl bg-[#ffc425]/20 flex items-center justify-center mb-4">
-        <Lock size={32} className="text-[#ffc425]" />
+// Strategy Tab Content - ATS Bypass Strategies
+function StrategyTab({ data, onUpgrade }: { data: PocketTier1Data; onUpgrade?: () => void }) {
+  const hasStrategies = data.atsBypassStrategies && data.atsBypassStrategies.length > 0
+
+  if (!hasStrategies) {
+    // Fallback to upsell if no strategies
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center px-4">
+        <div className="w-16 h-16 rounded-2xl bg-[#ffc425]/20 flex items-center justify-center mb-4">
+          <Lock size={32} className="text-[#ffc425]" />
+        </div>
+        <h3 className="text-xl font-bold text-white mb-2">
+          Unlock Deeper Insights
+        </h3>
+        <p className="text-slate-400 mb-6 max-w-sm">
+          Get company culture analysis, salary negotiation tips, and a 90-second role breakdown with Starter.
+        </p>
+        <button
+          onClick={onUpgrade}
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#ffc425] text-[#0f172a] font-semibold hover:bg-[#ffd85d] transition-colors"
+        >
+          Upgrade to Starter
+          <ArrowRight size={18} />
+        </button>
+        <p className="text-xs text-slate-500 mt-3">
+          Starting at $25/month
+        </p>
       </div>
-      <h3 className="text-xl font-bold text-white mb-2">
-        Unlock Deeper Insights
-      </h3>
-      <p className="text-slate-400 mb-6 max-w-sm">
-        Get company culture analysis, salary negotiation tips, and a 90-second role breakdown with Starter.
-      </p>
-      <button
-        onClick={onUpgrade}
-        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#ffc425] text-[#0f172a] font-semibold hover:bg-[#ffd85d] transition-colors"
-      >
-        Upgrade to Starter
-        <ArrowRight size={18} />
-      </button>
-      <p className="text-xs text-slate-500 mt-3">
-        Starting at $25/month
-      </p>
+    )
+  }
+
+  return (
+    <div className="space-y-6 h-full overflow-y-auto">
+      {/* ATS Score Header */}
+      {data.atsScore !== undefined && (
+        <div className="p-4 rounded-xl bg-gradient-to-r from-slate-800/80 to-slate-800/40 border border-slate-700/50">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                ATS Compatibility Score
+              </h3>
+              <p className="text-xs text-slate-500">
+                How well your resume matches this job for automated screening
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="relative h-14 w-14">
+                <svg className="h-14 w-14 -rotate-90" viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="14" fill="none" className="stroke-slate-700" strokeWidth="3" />
+                  <circle
+                    cx="18" cy="18" r="14" fill="none"
+                    className={data.atsScore >= 70 ? 'stroke-green-400' : data.atsScore >= 50 ? 'stroke-yellow-400' : 'stroke-red-400'}
+                    strokeWidth="3"
+                    strokeDasharray={`${data.atsScore * 0.88} 88`}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <span className={`absolute inset-0 flex items-center justify-center text-lg font-bold ${
+                  data.atsScore >= 70 ? 'text-green-400' : data.atsScore >= 50 ? 'text-yellow-400' : 'text-red-400'
+                }`}>
+                  {data.atsScore}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ATS Bypass Strategies */}
+      <div>
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
+          <Target size={14} className="text-[#ffc425]" />
+          Beat the ATS
+        </h3>
+        <p className="text-xs text-slate-400 mb-4">
+          Only 2% of applications through job boards get a response. Here&apos;s how to improve your odds:
+        </p>
+        <div className="space-y-3">
+          {data.atsBypassStrategies?.map((strategy, i) => (
+            <div
+              key={i}
+              className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-[#ffc425]/30 transition-colors"
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#ffc425]/20 text-[#ffc425] flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                  {i + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-white mb-1">{strategy.strategy}</h4>
+                  <p className="text-sm text-slate-300 mb-2">{strategy.action}</p>
+                  <div className="flex items-center gap-4 text-xs">
+                    <span className="flex items-center gap-1 text-green-400">
+                      <Zap size={12} />
+                      {strategy.impact}
+                    </span>
+                    <span className="flex items-center gap-1 text-slate-500">
+                      <Clock size={12} />
+                      {strategy.timeEstimate}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Success Rate Education */}
+      <div className="p-4 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-blue-400 uppercase tracking-wider mb-3">
+          <Lightbulb size={14} />
+          The Math Behind Job Hunting
+        </h3>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="p-3 rounded-lg bg-slate-800/50">
+            <div className="text-2xl font-bold text-red-400">2%</div>
+            <div className="text-xs text-slate-400">Job board response rate</div>
+          </div>
+          <div className="p-3 rounded-lg bg-slate-800/50">
+            <div className="text-2xl font-bold text-yellow-400">15%</div>
+            <div className="text-xs text-slate-400">LinkedIn outreach rate</div>
+          </div>
+          <div className="p-3 rounded-lg bg-slate-800/50">
+            <div className="text-2xl font-bold text-green-400">50%</div>
+            <div className="text-xs text-slate-400">Referral interview rate</div>
+          </div>
+          <div className="p-3 rounded-lg bg-slate-800/50">
+            <div className="text-2xl font-bold text-[#ffc425]">25x</div>
+            <div className="text-xs text-slate-400">Better odds with referral</div>
+          </div>
+        </div>
+        <p className="text-xs text-slate-400 mt-3 text-center">
+          Pro tip: 40% of all hires come through referrals. Network first!
+        </p>
+      </div>
+
+      {/* Upgrade prompt at bottom */}
+      {onUpgrade && (
+        <div className="p-4 rounded-xl border border-dashed border-slate-700 text-center">
+          <p className="text-sm text-slate-400 mb-3">
+            Want company culture analysis and salary negotiation tips?
+          </p>
+          <button
+            onClick={onUpgrade}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700 text-white text-sm font-medium hover:bg-slate-600 transition-colors"
+          >
+            Upgrade to Starter
+            <ArrowRight size={14} />
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -736,7 +893,7 @@ export function JobPocketModal({
                   >
                     {activeTab === 'overview' && <OverviewTab data={pocketData} />}
                     {activeTab === 'prep' && <PrepTab data={pocketData} />}
-                    {activeTab === 'strategy' && <StrategyTab onUpgrade={onUpgrade} />}
+                    {activeTab === 'strategy' && <StrategyTab data={pocketData} onUpgrade={onUpgrade} />}
                   </motion.div>
                 </AnimatePresence>
               ) : (
