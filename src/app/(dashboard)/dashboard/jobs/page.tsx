@@ -684,10 +684,11 @@ export default function JobsPage() {
 
       const data = await response.json()
 
-      // For test mode, show success message instead of navigating
+      // For test mode, show the pocket modal with the generated data
       if (data.isTestMode) {
         setIsGeneratingPocket(false)
-        alert(`✅ Test Mode Success!\n\nPocket generated for: ${job.title}\nMatch Score: ${data.pocket?.matchScore}%\n\nIn production, this would navigate to the pocket page.`)
+        setPocketData(data.pocket)
+        setIsPocketModalOpen(true)
         return
       }
 
